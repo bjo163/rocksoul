@@ -374,9 +374,9 @@ Implement the persistent runtime facade and operator surface: restore LifeState,
     - Add plan/intention schemas, dry-run simulation, Guardian budgets, approval, idempotency, cancellation, and failure recovery.
     - Irreversible actions remain denied by default. Implementation started in `crates/rocksoul-core/src/planning.rs`.
 
-18. **CR-030 — Release certification and operational observability** (after CR-029)
+18. **CR-030 — Release certification and operational observability** (IN PROGRESS)
     - Produce repeatable certification covering provenance, policy, dependencies, tests, audit, resource bounds, rollback, binary identity, and operator health.
-    - Complete only when code, docs, contracts, policies, registry, and `MASTER-TODO.json` are synchronized.
+    - Complete only when code, docs, contracts, policies, registry, and `MASTER-TODO.json` are synchronized. Implementation started in `crates/rocksoul-core/src/certification.rs` and `docs/CERTIFICATION.md`.
 
 ### Deep insight and design principles
 
