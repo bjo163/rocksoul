@@ -12,3 +12,8 @@ verification and promotion gates.
 
 CR-031 is complete only when this contract is consumed by a host integration
 without bypassing these constraints and the end-to-end smoke flow is verified.
+
+The `CognitiveSmokeReport` covers the bounded vertical slice in order:
+`sense`, `advisory-inference`, `policy`, `evaluation`, `event-replay`, and
+`snapshot`. A successful report must explicitly prove that no side effects and
+no canonical writes occurred.
