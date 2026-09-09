@@ -346,9 +346,9 @@ Implement the persistent runtime facade and operator surface: restore LifeState,
     - Prove failed evaluations cannot reward progression and trust changes remain within policy bounds.
     - Acceptance: migration, replay, negative-path, and policy tests pass. Implementation started in `crates/rocksoul-life/src/progression.rs`.
 
-11. **CR-023 — Advisory model inference contract** (after CR-022)
+11. **CR-023 — Advisory model inference contract** (IN PROGRESS)
     - Define provider-neutral request/response schemas with model identity, input/output hashes, confidence, expiry, safety status, and provenance.
-    - Keep inference advisory; model output cannot directly promote a claim or write canonical research semantics.
+    - Keep inference advisory; model output cannot directly promote a claim or write canonical research semantics. Implementation started in `crates/rocksoul-core/src/inference.rs`.
 
 12. **CR-024 — Nano/MiniMind adapter and deterministic fallback** (after CR-023)
     - Load versioned artifacts through the Brain interface with compatibility and hash checks.
