@@ -350,9 +350,9 @@ Implement the persistent runtime facade and operator surface: restore LifeState,
     - Define provider-neutral request/response schemas with model identity, input/output hashes, confidence, expiry, safety status, and provenance.
     - Keep inference advisory; model output cannot directly promote a claim or write canonical research semantics. Implementation started in `crates/rocksoul-core/src/inference.rs`.
 
-12. **CR-024 — Nano/MiniMind adapter and deterministic fallback** (after CR-023)
+12. **CR-024 — Nano/MiniMind adapter and deterministic fallback** (IN PROGRESS)
     - Load versioned artifacts through the Brain interface with compatibility and hash checks.
-    - Enforce resource limits, offline fallback, provider substitution, and no-canonical-write tests.
+    - Enforce resource limits, offline fallback, provider substitution, and no-canonical-write tests. Implementation started in `crates/rocksoul-core/src/brain_adapter.rs`.
 
 13. **CR-025 — Cognitive event sourcing and replay expansion** (after CR-024)
     - Persist observation, evaluation, inference, policy, progression, and recovery events under versioned schemas.
