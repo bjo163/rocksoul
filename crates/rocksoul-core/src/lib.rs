@@ -10,6 +10,7 @@ use uuid::Uuid;
 
 pub mod brain;
 pub mod brain_adapter;
+pub mod certification;
 pub mod cognition;
 pub mod event_log;
 pub mod inference;
