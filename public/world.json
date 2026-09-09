@@ -1,0 +1,106 @@
+{
+  "schemaVersion": 1,
+  "world": "Internet",
+  "sourceOfTruth": "GitHub + runtime evidence",
+  "statusVocabulary": ["VERIFIED", "OBSERVED", "INFERRED", "PENDING", "BLOCKED", "UNKNOWN"],
+  "assets": {
+    "repository": "bjo163/rocksoul-assets",
+    "acceptedRevision": "5b035d0d83612f847ccd8b35f2c1b04022500110",
+    "headObserved": "d72db569b287faa4bea9a6ab89e49433dd6d9ddb",
+    "policy": "Use the revision accepted by rocksoul-ui until a newer asset head is reviewed."
+  },
+  "ui": {
+    "repository": "bjo163/rocksoul-ui",
+    "revision": "d4d7f21dfdf17ab1485181b1e5e4aae71555c12c",
+    "package": "@rocksoul/ui",
+    "version": "0.12.0",
+    "role": "canonical implementation grammar; RockSoul runtime reuses its contracts without forking the design system"
+  },
+  "places": [
+    {
+      "id": "world-core",
+      "name": "RockSoul World Core",
+      "kind": "repository",
+      "href": "https://github.com/bjo163/rocksoul",
+      "api": "https://api.github.com/repos/bjo163/rocksoul",
+      "evidence": "OBSERVED"
+    },
+    {
+      "id": "assets",
+      "name": "RockSoul Assets",
+      "kind": "world-resource",
+      "href": "https://github.com/bjo163/rocksoul-assets",
+      "api": "https://api.github.com/repos/bjo163/rocksoul-assets",
+      "evidence": "OBSERVED"
+    },
+    {
+      "id": "ui",
+      "name": "RockSoul UI",
+      "kind": "world-system",
+      "href": "https://github.com/bjo163/rocksoul-ui",
+      "api": "https://api.github.com/repos/bjo163/rocksoul-ui",
+      "evidence": "OBSERVED"
+    },
+    {
+      "id": "mind",
+      "name": "RockSoul Mind",
+      "kind": "cognition-lab",
+      "href": "https://github.com/bjo163/rocksoul-mind",
+      "api": "https://api.github.com/repos/bjo163/rocksoul-mind",
+      "evidence": "OBSERVED"
+    },
+    {
+      "id": "project",
+      "name": "GitHub Project / World Map",
+      "kind": "world-map",
+      "href": "https://github.com/users/bjo163/projects?query=rocksoul",
+      "evidence": "PENDING",
+      "note": "Activation requires ROCKSOUL_GITHUB_TOKEN with project scope."
+    },
+    {
+      "id": "wiki",
+      "name": "GitHub Wiki / Archive",
+      "kind": "archive",
+      "href": "https://github.com/bjo163/rocksoul/wiki",
+      "evidence": "PENDING",
+      "note": "Repository Wiki is enabled; canonical /docs sync requires ROCKSOUL_GITHUB_TOKEN."
+    },
+    {
+      "id": "pages",
+      "name": "GitHub Pages / Codex",
+      "kind": "codex-portal",
+      "href": "https://bjo163.github.io/rocksoul/",
+      "evidence": "PENDING",
+      "note": "Pages deployment is configured by the repository sync plane after Pages is enabled."
+    },
+    {
+      "id": "vercel",
+      "name": "Vercel / Live World Portal",
+      "kind": "live-portal",
+      "href": null,
+      "evidence": "PENDING",
+      "note": "No canonical bjo163/rocksoul Vercel project has been verified yet."
+    },
+    {
+      "id": "cloudflare",
+      "name": "Cloudflare / Gateway",
+      "kind": "gateway",
+      "href": null,
+      "evidence": "PENDING",
+      "note": "Private-first. No tunnel is required until a private service has a justified public exposure path."
+    }
+  ],
+  "discovery": ["UNKNOWN", "DISCOVERED", "OBSERVED", "VISITED", "STUDIED", "VERIFIED", "TRUSTED"],
+  "rpg": {
+    "issue": "QUEST",
+    "milestone": "CHAPTER / REGION",
+    "project": "WORLD MAP",
+    "release": "WORLD BUILD",
+    "runner": "WORLD NODE",
+    "deployment": "PORTAL",
+    "documentation": "CODEX",
+    "verification": "TRUST GATE",
+    "xp": "VERIFIED EXPERIENCE",
+    "level": "CAPABILITY PROGRESSION"
+  }
+}
