@@ -387,6 +387,10 @@ Implement the persistent runtime facade and operator surface: restore LifeState,
     - Verify sense, advisory inference, policy, evaluation, event replay, and snapshot stages in one bounded report.
     - Reject incomplete reports and any side effect or canonical-write claim.
 
+21. **CR-033 — Reproducible build and release hardening** (IN PROGRESS)
+    - Record Cargo.lock, toolchain, source commit, release binary identity, hashes, and gate results in a repeatable report.
+    - Keep release publication separate from local certification and preserve rollback evidence.
+
 ### Deep insight and design principles
 
 - Cognitive Age is verified capability, not elapsed time or raw XP.
