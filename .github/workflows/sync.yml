@@ -62,9 +62,11 @@ jobs:
             description=$(jq -r '.description' <<<"$item")
             number=$(jq -r --arg title "$title" '.[] | select(.title == $title) | .number' <<<"$milestones" | head -n1)
             if [[ -z "$number" ]]; then
-              gh api --method POST "repos/$GITHUB_REPOSITORY/milestones" -f title="$title" -f description="$description" >/dev/null
+              gh api --method POST "repos/$GITHUB_REPOSITORY/milestones" \
+                -f title="$title" -f description="$description" >/dev/null
             else
-              gh api --method PATCH "repos/$GITHUB_REPOSITORY/milestones/$number" -f title="$title" -f description="$description" >/dev/null
+              gh api --method PATCH "repos/$GITHUB_REPOSITORY/milestones/$number" \
+                -f title="$title" -f description="$description" >/dev/null
             fi
           done
 
@@ -74,11 +76,15 @@ jobs:
             milestone=$(jq -r '.milestone' <<<"$item")
             labels=$(jq -r '.labels | join(",")' <<<"$item")
             body=$(jq -r '.body' <<<"$item")
-            number=$(jq -r --arg title "$title" '.[] | select((.pull_request | not) and .title == $title) | .number' <<<"$all_issues" | head -n1)
+            number=$(jq -r --arg title "$title" \
+              '.[] | select((.pull_request | not) and .title == $title) | .number' \
+              <<<"$all_issues" | head -n1)
             if [[ -z "$number" ]]; then
-              gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" --body "$body" --milestone "$milestone" --label "$labels" >/dev/null
+              gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" --body "$body" \
+                --milestone "$milestone" --label "$labels" >/dev/null
             else
-              gh issue edit "$number" --repo "$GITHUB_REPOSITORY" --body "$body" --milestone "$milestone" --add-label "$labels" >/dev/null
+              gh issue edit "$number" --repo "$GITHUB_REPOSITORY" --body "$body" \
+                --milestone "$milestone" --add-label "$labels" >/dev/null
             fi
           done
 
@@ -121,20 +127,42 @@ jobs:
             --readme "$project_readme"
           gh project link "$number" --owner "$owner" --repo "$GITHUB_REPOSITORY" || true
 
-          fields=$(gh project field-list "$number" --owner "$owner" --limit 100 --format json)
-          if ! jq -e '.fields[]? | select(.name == "Priority")' <<<"$fields" >/dev/null; then
-            gh project field-create "$number" --owner "$owner" --name Priority --data-type SINGLE_SELECT --single-select-options 'P0,P1,P2,P3' >/dev/null
-          fi
-          if ! jq -e '.fields[]? | select(.name == "Phase")' <<<"$fields" >/dev/null; then
-            gh project field-create "$number" --owner "$owner" --name Phase --data-type SINGLE_SELECT --single-select-options 'Foundation,A,B,C,D,E,F,G,H,I,J,K,L,M' >/dev/null
-          fi
+          normalize_field() {
+            local name="$1"
+            local options="$2"
+            local fields field_id actual expected
+            fields=$(gh project field-list "$number" --owner "$owner" --limit 100 --format json)
+            field_id=$(jq -r --arg name "$name" '.fields[]? | select(.name == $name) | .id' <<<"$fields" | head -n1)
+            actual=$(jq -r --arg name "$name" \
+              '[.fields[]? | select(.name == $name) | .options[]?.name] | sort | join(",")' \
+              <<<"$fields")
+            expected=$(tr ',' '\n' <<<"$options" | sort | paste -sd, -)
+
+            if [[ -n "$field_id" && "$actual" != "$expected" ]]; then
+              gh project field-delete --id "$field_id" >/dev/null
+              field_id=''
+              echo "Recreated drifted Project field: $name ($actual -> $expected)." >> "$GITHUB_STEP_SUMMARY"
+            fi
+            if [[ -z "$field_id" ]]; then
+              gh project field-create "$number" --owner "$owner" --name "$name" \
+                --data-type SINGLE_SELECT --single-select-options "$options" >/dev/null
+            fi
+          }
+
+          normalize_field Priority 'P0,P1,P2,P3'
+          normalize_field Phase 'Foundation,A,B,C,D,E,F,G,H,I,J,K,L,M'
 
           project_id=$(gh project view "$number" --owner "$owner" --format json --jq '.id')
-          existing_views=$(gh api graphql -f query='query($id:ID!){node(id:$id){... on ProjectV2{views(first:50){nodes{name layout}}}}}' -F id="$project_id")
+          existing_views=$(gh api graphql \
+            -f query='query($id:ID!){node(id:$id){... on ProjectV2{views(first:50){nodes{name layout}}}}}' \
+            -F id="$project_id")
           create_view() {
-            local name="$1" layout="$2"
-            if ! jq -e --arg name "$name" '.data.node.views.nodes[]? | select(.name == $name)' <<<"$existing_views" >/dev/null; then
-              gh api graphql -f query='mutation($id:ID!,$name:String!,$layout:ProjectV2ViewLayout!){createProjectV2View(input:{projectId:$id,name:$name,layout:$layout}){projectV2View{id}}}' \
+            local name="$1"
+            local layout="$2"
+            if ! jq -e --arg name "$name" '.data.node.views.nodes[]? | select(.name == $name)' \
+              <<<"$existing_views" >/dev/null; then
+              gh api graphql \
+                -f query='mutation($id:ID!,$name:String!,$layout:ProjectV2ViewLayout!){createProjectV2View(input:{projectId:$id,name:$name,layout:$layout}){projectV2View{id}}}' \
                 -F id="$project_id" -f name="$name" -f layout="$layout" >/dev/null
             fi
           }
@@ -142,7 +170,8 @@ jobs:
           create_view Roadmap ROADMAP_LAYOUT
           create_view Backlog TABLE_LAYOUT
 
-          gh issue list --repo "$GITHUB_REPOSITORY" --state open --limit 300 --json url,labels --jq '.[] | @base64' | while read -r row; do
+          gh issue list --repo "$GITHUB_REPOSITORY" --state open --limit 300 \
+            --json url,labels --jq '.[] | @base64' | while read -r row; do
             item=$(base64 --decode <<<"$row")
             url=$(jq -r '.url' <<<"$item")
             labels=$(jq -r '[.labels[].name] | join(" ")' <<<"$item")
@@ -150,7 +179,8 @@ jobs:
 
             for p in 0 1 2 3; do
               if grep -qw "priority:p$p" <<<"$labels"; then
-                gh project item-edit "$number" --owner "$owner" --url "$url" --field Priority --value "P$p" >/dev/null
+                gh project item-edit "$number" --owner "$owner" --url "$url" \
+                  --field Priority --value "P$p" >/dev/null
               fi
             done
 
@@ -158,7 +188,8 @@ jobs:
             if [[ "$labels" =~ phase:([a-m])- ]]; then
               phase="${BASH_REMATCH[1]^^}"
             fi
-            gh project item-edit "$number" --owner "$owner" --url "$url" --field Phase --value "$phase" >/dev/null
+            gh project item-edit "$number" --owner "$owner" --url "$url" \
+              --field Phase --value "$phase" >/dev/null
           done
 
   repository:
@@ -185,17 +216,10 @@ jobs:
             --description 'RockSoul World — local-first Rust cognitive runtime, Operator TUI, Codex, Quests and evidence-driven World Map.' \
             --homepage 'https://bjo163.github.io/rocksoul/' \
             --enable-issues --enable-projects --enable-wiki --enable-discussions \
-            --enable-squash-merge \
-            --enable-merge-commit=false \
-            --enable-rebase-merge=false \
-            --delete-branch-on-merge \
-            --template \
-            --add-topic rust \
-            --add-topic ratatui \
-            --add-topic local-first \
-            --add-topic ai-agent \
-            --add-topic digital-world \
-            --add-topic cognitive-architecture
+            --enable-squash-merge --enable-merge-commit=false --enable-rebase-merge=false \
+            --delete-branch-on-merge --template \
+            --add-topic rust --add-topic ratatui --add-topic local-first \
+            --add-topic ai-agent --add-topic digital-world --add-topic cognitive-architecture
       - name: Synchronize main ruleset
         if: env.GH_TOKEN != ''
         shell: bash
@@ -207,11 +231,11 @@ jobs:
           payload=$(mktemp)
           printf '%s\n' '{"name":"rocksoul-main-protection","target":"branch","enforcement":"active","conditions":{"ref_name":{"include":["refs/heads/main"],"exclude":[]}},"rules":[{"type":"deletion"},{"type":"non_fast_forward"},{"type":"pull_request","parameters":{"allowed_merge_methods":["squash"],"dismiss_stale_reviews_on_push":false,"require_code_owner_review":false,"require_last_push_approval":false,"required_approving_review_count":0,"required_review_thread_resolution":true}},{"type":"required_status_checks","parameters":{"do_not_enforce_on_create":false,"required_status_checks":[{"context":"policy"},{"context":"rust"},{"context":"dependencies"},{"context":"docs"},{"context":"codeql"}],"strict_required_status_checks_policy":false}}]}' > "$payload"
           if [[ -z "$ruleset_id" ]]; then
-            gh api --method POST "repos/$GITHUB_REPOSITORY/rulesets" -H 'X-GitHub-Api-Version: 2026-03-10' --input "$payload" >/dev/null
-            echo 'Created active main ruleset: rocksoul-main-protection.' >> "$GITHUB_STEP_SUMMARY"
+            gh api --method POST "repos/$GITHUB_REPOSITORY/rulesets" \
+              -H 'X-GitHub-Api-Version: 2026-03-10' --input "$payload" >/dev/null
           else
-            gh api --method PUT "repos/$GITHUB_REPOSITORY/rulesets/$ruleset_id" -H 'X-GitHub-Api-Version: 2026-03-10' --input "$payload" >/dev/null
-            echo "Updated active main ruleset #$ruleset_id." >> "$GITHUB_STEP_SUMMARY"
+            gh api --method PUT "repos/$GITHUB_REPOSITORY/rulesets/$ruleset_id" \
+              -H 'X-GitHub-Api-Version: 2026-03-10' --input "$payload" >/dev/null
           fi
       - name: Enable GitHub Pages workflow source
         if: env.GH_TOKEN != ''
@@ -221,10 +245,8 @@ jobs:
           endpoint="repos/$GITHUB_REPOSITORY/pages"
           if gh api "$endpoint" >/dev/null 2>&1; then
             gh api --method PUT "$endpoint" -f build_type=workflow >/dev/null
-            echo 'GitHub Pages already existed; workflow publishing is configured.' >> "$GITHUB_STEP_SUMMARY"
           else
             gh api --method POST "$endpoint" -f build_type=workflow >/dev/null
-            echo 'GitHub Pages created with workflow publishing.' >> "$GITHUB_STEP_SUMMARY"
           fi
 
   wiki:
@@ -371,7 +393,7 @@ jobs:
           git tag -a "$tag" -m "RockSoul cognitive age $age revision $revision"
           git push origin "$tag"
           gh workflow run gate.yml --repo "$GITHUB_REPOSITORY" --ref "$tag"
-          echo "Created $tag and dispatched rocksoul-gate on the tag ref. The gate will create the GitHub World Build and attach binaries." >> "$GITHUB_STEP_SUMMARY"
+          echo "Created $tag and dispatched rocksoul-gate on the tag ref." >> "$GITHUB_STEP_SUMMARY"
 
   stale:
     name: stale hygiene
