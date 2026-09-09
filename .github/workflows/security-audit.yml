@@ -29,6 +29,9 @@ jobs:
       - name: Generate lockfile for audit
         run: cargo generate-lockfile
       - name: Install cargo-audit
-        run: cargo +stable install cargo-audit --version 0.22.2 --locked
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-audit@0.22.2
+          fallback: none
       - name: Audit Rust dependencies
-        run: cargo +stable audit
+        run: cargo audit
