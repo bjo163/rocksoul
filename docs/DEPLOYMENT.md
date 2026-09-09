@@ -61,9 +61,10 @@ Release publication is deliberately lightweight:
 
 1. Release Drafter continuously prepares human-readable notes from merged PR labels.
 2. Run `rocksoul-sync` manually with `publish_age_release=true` when a public build is worth publishing.
-3. The sync workflow calculates the next tag as `v0.<COGNITIVE_AGE>.<revision>`.
-4. `rocksoul-gate` validates the tag and builds downloadable binaries.
-5. GitHub Release receives Linux x86_64, Windows x86_64 `.exe`, and macOS arm64 archives.
+3. The sync workflow calculates and pushes the next tag as `v0.<COGNITIVE_AGE>.<revision>`.
+4. Because GitHub suppresses recursive workflow triggers from ordinary `GITHUB_TOKEN` pushes, the sync workflow explicitly dispatches `rocksoul-gate` on that exact tag ref.
+5. `rocksoul-gate` reruns policy, Rust, docs, security and CodeQL checks, creates the GitHub Release if needed, then builds downloadable binaries.
+6. GitHub Release receives Linux x86_64, Windows x86_64 `.exe`, and macOS arm64 archives.
 
 Example while cognitive age is `0`:
 
