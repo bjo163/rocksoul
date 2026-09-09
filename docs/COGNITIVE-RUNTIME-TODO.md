@@ -391,6 +391,10 @@ Implement the persistent runtime facade and operator surface: restore LifeState,
     - Record Cargo.lock, toolchain, source commit, release binary identity, hashes, and gate results in a repeatable report.
     - Keep release publication separate from local certification and preserve rollback evidence.
 
+22. **CR-034 — Runtime performance and resource limits** (IN PROGRESS)
+    - Enforce bounded input, output, event, and replay budgets at the integration boundary.
+    - Add rejection tests and document host enforcement requirements.
+
 ### Deep insight and design principles
 
 - Cognitive Age is verified capability, not elapsed time or raw XP.
