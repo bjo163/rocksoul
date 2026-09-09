@@ -16,6 +16,7 @@ pub mod inference;
 pub mod memory;
 pub mod policy;
 pub mod sense;
+pub mod sense_registry;
 pub mod skills;
 pub mod workspace;
 pub mod world;
