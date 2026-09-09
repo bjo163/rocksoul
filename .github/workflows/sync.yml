@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
   pull_request_target:
-    types: [opened, synchronize, reopened, closed, labeled]
+    types: [opened, synchronize, reopened, closed]
   issues:
     types: [opened, edited, labeled, unlabeled, closed, reopened]
   schedule:
@@ -49,6 +49,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+
           jq -c '.[]' .github/labels.json | while read -r item; do
             gh label create "$(jq -r '.name' <<<"$item")" --repo "$GITHUB_REPOSITORY" \
               --color "$(jq -r '.color' <<<"$item")" \
@@ -118,7 +119,7 @@ jobs:
           gh project edit "$number" --owner "$owner" --visibility PUBLIC \
             --description 'Public World Map: Kanban + roadmap for the RockSoul local-first cognitive runtime.' \
             --readme "$project_readme"
-          gh project link "$number" --owner "$owner" --repo "${GITHUB_REPOSITORY#*/}" || true
+          gh project link "$number" --owner "$owner" --repo "$GITHUB_REPOSITORY" || true
 
           fields=$(gh project field-list "$number" --owner "$owner" --limit 100 --format json)
           if ! jq -e '.fields[]? | select(.name == "Priority")' <<<"$fields" >/dev/null; then
@@ -137,9 +138,9 @@ jobs:
                 -F id="$project_id" -f name="$name" -f layout="$layout" >/dev/null
             fi
           }
-          create_view Kanban BOARD
-          create_view Roadmap ROADMAP
-          create_view Backlog TABLE
+          create_view Kanban BOARD_LAYOUT
+          create_view Roadmap ROADMAP_LAYOUT
+          create_view Backlog TABLE_LAYOUT
 
           gh issue list --repo "$GITHUB_REPOSITORY" --state open --limit 300 --json url,labels --jq '.[] | @base64' | while read -r row; do
             item=$(base64 --decode <<<"$row")
@@ -153,12 +154,11 @@ jobs:
               fi
             done
 
-            phase=$(grep -oE 'phase:[a-m]-[^ ]+' <<<"$labels" | head -n1 | cut -d: -f2 | cut -d- -f1 | tr '[:lower:]' '[:upper:]')
-            if [[ -n "$phase" ]]; then
-              gh project item-edit "$number" --owner "$owner" --url "$url" --field Phase --value "$phase" >/dev/null
-            else
-              gh project item-edit "$number" --owner "$owner" --url "$url" --field Phase --value Foundation >/dev/null
+            phase=Foundation
+            if [[ "$labels" =~ phase:([a-m])- ]]; then
+              phase="${BASH_REMATCH[1]^^}"
             fi
+            gh project item-edit "$number" --owner "$owner" --url "$url" --field Phase --value "$phase" >/dev/null
           done
 
   repository:
@@ -327,8 +327,7 @@ jobs:
     name: age release
     if: >-
       (github.event_name == 'workflow_dispatch' && inputs.publish_age_release == true) ||
-      (github.event_name == 'pull_request_target' && github.event.pull_request.merged == true &&
-       (github.event.action == 'closed' || github.event.action == 'labeled'))
+      (github.event_name == 'pull_request_target' && github.event.action == 'closed' && github.event.pull_request.merged == true)
     runs-on: ubuntu-latest
     permissions:
       actions: write
