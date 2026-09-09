@@ -1,16 +1,63 @@
 # Project Management
 
-RockSoul uses **issues + milestones as the canonical project model**. GitHub Project v2 is a visualization/planning layer over those canonical issues, not an independent source of truth.
+RockSoul uses **Issues + Milestones + Labels as the canonical project model**. The public GitHub Project named **`rocksoul`** is a synchronized visualization layer, not an independent database.
 
-## Why this split
+## Public Project layout
 
-Issues and milestones are repository-native, easy to automate with `GITHUB_TOKEN`, and remain useful even if a Project view is deleted or reconfigured.
+`rocksoul-sync` creates or reuses the user-owned Project `rocksoul`, sets it to **PUBLIC**, links this repository, and keeps open issues present.
 
-GitHub Project v2 is useful for board/table/roadmap views, but user-owned Projects require a token with the `project` scope. The default Actions token is not assumed to have that authority.
+The intended views are:
 
-## Canonical phases
+### Kanban
+
+Board view for execution flow. GitHub's built-in Status field remains the visual workflow column; labels provide orthogonal information such as priority, type, area and phase.
+
+Recommended status flow:
 
 ```text
+Todo → In Progress → Done
+```
+
+Do not encode the same state again in several custom fields.
+
+### Roadmap
+
+Roadmap view for milestones/phases. Foundation and Phase A–M milestones communicate the larger sequence while the custom `Phase` Project field provides compact grouping/filtering.
+
+### Backlog
+
+Table view for dense triage and planning across all open issues.
+
+Useful columns/filters include:
+
+- Status
+- Priority
+- Phase
+- Milestone
+- labels
+- assignee
+
+## Canonical fields
+
+### Labels
+
+Labels remain the richest machine-readable taxonomy:
+
+```text
+type:*
+area:*
+priority:p0..p3
+status:*
+phase:*
+release:*
+```
+
+### Milestones
+
+Milestones represent Foundation and major cognitive phases:
+
+```text
+Foundation
 A  Birth
 B  World
 C  Memory
@@ -26,29 +73,43 @@ L  Collective Intelligence
 M  ASI Research Gate
 ```
 
-The governance sync workflow creates a milestone and canonical tracking issue for each phase.
+### Project custom fields
 
-## Optional GitHub Project v2
+Only two additional single-select fields are created initially:
 
-`.github/workflows/project-sync.yml` can create/link **RockSoul Roadmap** and add open repository issues to it.
+- **Priority:** P0, P1, P2, P3
+- **Phase:** Foundation, A–M
 
-It requires a repository Actions secret:
+Those fields are synchronized from issue labels. We deliberately do not create redundant Type/Area/Milestone custom fields because GitHub already exposes labels and milestones.
+
+## Synchronization
+
+The synchronization contract is one-way for canonical metadata:
 
 ```text
-ROCKSOUL_PROJECT_TOKEN
+.github/labels.json ───────────────→ GitHub Labels
+.github/milestones.json ──────────→ GitHub Milestones
+.github/roadmap-issues.json ──────→ canonical Issues
+Issue labels + milestone ─────────→ public Project fields/views
+/docs ────────────────────────────→ GitHub Wiki
 ```
 
-The token must belong to an account allowed to manage the user-owned project and include GitHub's `project` scope.
+Issues remain usable even if the Project is removed, recreated or temporarily inaccessible.
 
-The workflow is intentionally manual (`workflow_dispatch`) so a project-scoped token is never exercised unexpectedly.
+## Activation token
 
-## Recommended Project views
+Basic Issue/Label/Milestone sync works with GitHub Actions' normal repository token.
 
-Once synced:
+Public Project, Wiki push and repository-admin settings use one optional secret:
 
-- **Board:** Status
-- **Roadmap:** Phase / milestone
-- **Table:** priority, labels, milestone, assignee
-- **Current:** open issues in the active phase
+```text
+ROCKSOUL_GITHUB_TOKEN
+```
 
-Project fields beyond GitHub's built-in Status should only be added when they represent information not already captured reliably by labels/milestones.
+The token should belong to the repository owner and include the GitHub Projects `project` scope plus sufficient public-repository administration/Wiki access for the requested synchronization.
+
+Using one privileged sync token is preferable to separate Project/Wiki/repository tokens because it reduces secret and automation overlap.
+
+## Tags and releases
+
+Git tags are not a planning database. They represent immutable public versions after a deliberate age-release action. See `DEPLOYMENT.md` and `GOVERNANCE.md`.
