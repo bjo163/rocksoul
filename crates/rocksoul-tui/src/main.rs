@@ -31,7 +31,7 @@ fn run(terminal: &mut DefaultTerminal, life: LifeState) -> Result<()> {
 }
 
 fn render(frame: &mut Frame, life: &LifeState) {
-    let [header, body, footer] = Layout::default()
+    let [header_area, body_area, footer_area] = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
             Constraint::Length(3),
@@ -48,7 +48,7 @@ fn render(frame: &mut Frame, life: &LifeState) {
     let header = Paragraph::new(title)
         .alignment(Alignment::Center)
         .block(Block::default().borders(Borders::ALL));
-    frame.render_widget(header, header);
+    frame.render_widget(header, header_area);
 
     let label = |text: &'static str| {
         Span::styled(
@@ -78,10 +78,10 @@ fn render(frame: &mut Frame, life: &LifeState) {
             .title(" HOME ")
             .borders(Borders::ALL),
     );
-    frame.render_widget(body, body);
+    frame.render_widget(body, body_area);
 
     let footer = Paragraph::new("q / Esc: exit")
         .alignment(Alignment::Center)
         .block(Block::default().borders(Borders::ALL));
-    frame.render_widget(footer, footer);
+    frame.render_widget(footer, footer_area);
 }
