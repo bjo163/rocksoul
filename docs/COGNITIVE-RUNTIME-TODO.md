@@ -358,9 +358,9 @@ Implement the persistent runtime facade and operator surface: restore LifeState,
     - Persist observation, evaluation, inference, policy, progression, and recovery events under versioned schemas.
     - Reject sequence gaps, duplicates, tampering, and unsupported versions; prove identical replayed state. Implementation started in `crates/rocksoul-core/src/event_log.rs`.
 
-14. **CR-026 — Snapshot migration and recovery certification** (after CR-025)
+14. **CR-026 — Snapshot migration and recovery certification** (IN PROGRESS)
     - Add forward-compatible migrations, checksums, atomic recovery, corrupt-snapshot diagnostics, and backup/restore tests.
-    - Do not use destructive cleanup as a migration strategy.
+    - Do not use destructive cleanup as a migration strategy. Implementation started in `crates/rocksoul-life/src/lib.rs` with versioned checksum envelopes and backup support.
 
 15. **CR-027 — Multi-sense observation registry** (after CR-026)
     - Register repository, GitHub, filesystem, model, and future senses through capability metadata, scope, freshness, redaction, rate, and provenance.
