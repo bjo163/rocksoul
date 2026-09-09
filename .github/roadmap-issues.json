@@ -3,7 +3,7 @@
     "title":"[Foundation] Enable main branch protection and required checks",
     "milestone":"Foundation — Governance",
     "labels":["type:maintenance","area:ci","priority:p0","status:ready"],
-    "body":"## Goal\nProtect `main` from accidental direct/unchecked changes.\n\n## Required settings\n- require pull request before merge\n- require the `rocksoul-gate` status checks\n- block force pushes and branch deletion\n- keep squash merge as the preferred history style\n\n## Note\nThis is an admin setting and is intentionally not claimed as automated until GitHub reports the branch/ruleset protected.\n\n## Acceptance\n- `main` reports protection/ruleset enabled\n- a PR cannot merge while required `rocksoul-gate` checks are failing"
+    "body":"## Goal\nProtect `main` from accidental direct/unchecked changes and converge the repository on the approved branch model.\n\n## Required settings\n- require pull request before merge\n- require the `rocksoul-gate` status checks\n- block force pushes and protected-branch deletion\n- keep squash merge as the preferred history style\n- allow long-lived branches only `main` and `dev`; human work uses short-lived `feature/*`\n- remove legacy `chore/*` branches after confirming they contain no unique work\n- Dependabot may use transient `dependabot/*` branches as the sole bot exception\n\n## Note\nThis is an admin/ruleset setting and is intentionally not claimed as automated until GitHub reports the branch/ruleset protected and legacy refs are gone.\n\n## Acceptance\n- `main` reports protection/ruleset enabled\n- a PR cannot merge while required `rocksoul-gate` checks are failing\n- branch inventory contains only `main`, `dev`, active `feature/*`, and transient approved bot refs"
   },
   {
     "title":"[Foundation] Choose and add an explicit repository license",
@@ -14,8 +14,8 @@
   {
     "title":"[Foundation] Activate public Project, Wiki and repository sync",
     "milestone":"Foundation — Governance",
-    "labels":["type:maintenance","area:ci","priority:p2","status:blocked"],
-    "body":"## Goal\nActivate the privileged synchronization surfaces that cannot be managed by the default Actions token alone.\n\n## Target\n- user-owned public GitHub Project named `rocksoul`\n- Kanban, Roadmap and Backlog views\n- Priority and Phase fields synchronized from labels\n- repository linked to the Project\n- Wiki synchronized from `/docs`\n- repository description/topics/template/discussions/merge settings synchronized\n\n## Blocker\nAdd one Actions secret named `ROCKSOUL_GITHUB_TOKEN`. The token must have GitHub Projects `project` scope plus sufficient public-repository administration and Wiki access.\n\n`rocksoul-sync` intentionally skips this privileged job with a notice when the secret is absent; labels, milestones and canonical Issues continue to synchronize with `GITHUB_TOKEN`.\n\n## Acceptance\n- Project `rocksoul` exists and is PUBLIC\n- Kanban/Roadmap/Backlog views exist\n- open canonical issues are present\n- Wiki pages mirror `/docs`\n- repository metadata/template/discussion/merge settings match governance\n- Issues + milestones + labels remain canonical sources of truth"
+    "labels":["type:maintenance","area:ci","area:web","priority:p2","status:blocked"],
+    "body":"## Goal\nActivate the privileged GitHub surfaces that cannot be fully managed by the default Actions token alone.\n\n## Target\n- user-owned public GitHub Project named `rocksoul`\n- Kanban, Roadmap and Backlog views\n- Priority and Phase fields synchronized from labels\n- repository linked to the Project\n- Wiki / Archive synchronized from `/docs`, including `WORLD.md`\n- GitHub Pages enabled with `build_type=workflow` and deployed as the Codex from `public/`\n- repository description/homepage/topics/template/discussions/merge settings synchronized\n\n## Blocker\nAdd one Actions secret named `ROCKSOUL_GITHUB_TOKEN`. It needs GitHub Projects `project` access plus sufficient public-repository Administration, Wiki and Pages permissions for the requested sync.\n\n`rocksoul-sync` intentionally skips privileged activation with a notice when the secret is absent; labels, milestones and canonical Issues continue to synchronize with `GITHUB_TOKEN`.\n\n## Acceptance\n- Project `rocksoul` exists and is PUBLIC\n- Kanban/Roadmap/Backlog views exist\n- open canonical Issues are present\n- Wiki pages mirror `/docs`\n- Pages API reports the site configured for workflow publishing\n- a Pages deployment succeeds and the Codex URL is observable\n- repository metadata/template/discussion/merge settings match governance\n- Issues + milestones + labels remain canonical sources of truth"
   },
   {
     "title":"[Foundation] Commit Cargo.lock for reproducible application builds",
@@ -27,13 +27,19 @@
     "title":"[Foundation] Configure GitHub repository metadata and topics",
     "milestone":"Foundation — Governance",
     "labels":["type:maintenance","area:ci","priority:p2","status:ready"],
-    "body":"## Goal\nMake the GitHub repository landing metadata consistent with the README and architecture.\n\n## Scope\n- concise repository description\n- focused discovery topics\n- template/discussions/wiki/project settings\n- merge strategy and automatic merged-branch deletion\n\n## Acceptance\n- repository About metadata matches current positioning\n- topics do not overclaim AGI/ASI\n- optional GitHub features have deliberate roles\n- README and repository metadata do not contradict each other"
+    "body":"## Goal\nMake the GitHub World Entry metadata consistent with README, World and architecture contracts.\n\n## Scope\n- concise repository description\n- focused discovery topics/tags\n- Pages homepage after verified activation\n- template/discussions/wiki/project settings\n- squash-only merge strategy and automatic merged-branch deletion\n\n## Acceptance\n- repository About metadata matches current RockSoul World positioning\n- topics do not overclaim AGI/ASI\n- optional GitHub features have deliberate roles\n- README and repository metadata do not contradict each other"
   },
   {
     "title":"[Foundation] Connect canonical Web mirror to Vercel",
     "milestone":"Foundation — Governance",
     "labels":["type:maintenance","area:web","area:ci","priority:p1","status:ready"],
-    "body":"## Goal\nDeploy the zero-build `public/` interface from this canonical repository to Vercel without creating a second frontend source.\n\n## Scope\n- import `bjo163/rocksoul` as its own Vercel project\n- project root is repository root\n- framework preset Other / static output from `public/`\n- production follows `main`\n- feature branches receive preview deployments\n- verify TUI/Web display parity from `public/brand.env`\n\n## Non-goal\nDo not repurpose the existing unrelated `rocksoul-web` Vercel project unless it is explicitly migrated later.\n\n## Acceptance\n- canonical RockSoul Vercel deployment exists\n- production deployment comes from `main`\n- Web surface renders the same identity/state labels as the TUI\n- deployment URL is added to repository homepage metadata"
+    "body":"## Goal\nDeploy the zero-build `public/` World Surface from this canonical repository to Vercel as the Live World Portal without creating a second frontend source.\n\n## Scope\n- import `bjo163/rocksoul` as its own Vercel project named `rocksoul`\n- project root is repository root\n- framework preset Other / static output from `public/`\n- production follows `main`\n- feature branches receive preview deployments\n- verify Web reads `brand.env` + `world.json` and displays live public GitHub evidence\n\n## Non-goal\nDo not repurpose the existing unrelated `rocksoul-web` Vercel project unless it is explicitly migrated later.\n\n## Acceptance\n- canonical RockSoul Vercel project exists and is linked to `bjo163/rocksoul`\n- production deployment comes from `main`\n- preview deployment can be traced to an exact feature SHA\n- Web and TUI share identity/topology semantics\n- deployment URL is recorded only after it is observable"
+  },
+  {
+    "title":"[Foundation] Inventory World Nodes and route eligible CI workloads",
+    "milestone":"Foundation — Governance",
+    "labels":["type:maintenance","area:ci","priority:p1","status:blocked"],
+    "body":"## Goal\nBuild an evidence-backed inventory of self-hosted runners available to `bjo163/rocksoul`, then route only suitable workloads to them.\n\n## Required inventory\nFor each World Node record name, GitHub labels, OS, architecture, Rust, Node, Python, Docker/Compose, network reachability class and intended workload capability.\n\n## Current blocker\nPublic workflow/job evidence proves the current RockSoul gate used GitHub-hosted runners, while the available connector cannot read this repository's authenticated Actions runner inventory. Self-hosted runner definitions observed in other RockSoul repositories are not proof that those nodes are registered or online here.\n\n## Safety\n- never display ONLINE/READY/BUSY/OFFLINE without actual runner evidence\n- do not change `runs-on` to `self-hosted` blindly\n- keep secrets/private network details out of public World data\n\n## Acceptance\n- authorized runner inventory is captured without exposing secrets\n- capability matrix is documented\n- at least one eligible workload is routed only if labels/capabilities match\n- fallback behavior is explicit\n- World Node UI status comes from actual runner/job evidence"
   },
   {
     "title":"[Phase A] Persist birth identity and append-only lifecycle journal",
@@ -45,13 +51,13 @@
     "title":"[Phase B] Implement World Graph, discovery state and Ratatui map",
     "milestone":"Phase B — World",
     "labels":["roadmap","type:feature","area:world","area:tui","priority:p1","phase:b-world","status:needs-design"],
-    "body":"## Goal\nRepresent the Internet and authorized digital environment as an explicit navigable world.\n\n## Scope\nWorld/place/entity primitives, relations, discovery/fog-of-war, current location/activity, provenance/trust metadata, finite exploration budgets, Ratatui WORLD view.\n\n## Non-goal\nNo 3D/metaverse renderer in this phase.\n\n## Acceptance\nThe same world state can be serialized, tested, and rendered without coupling cognition to Ratatui."
+    "body":"## Goal\nRepresent the Internet and authorized digital environment as an explicit navigable World.\n\n## Existing presentation contract\n`public/world.json`, the Web World Map and Ratatui MAP view currently represent verified repository/system topology. They are presentation/state-contract foundations, not the persistent Phase B World Graph itself.\n\n## Scope\nWorld/place/entity primitives, relations, discovery/fog-of-war, current location/activity, provenance/trust metadata, finite exploration budgets and persistent serializable state.\n\n## Non-goal\nNo 3D/metaverse renderer in this phase.\n\n## Acceptance\nThe same persistent World state can be serialized, tested and rendered without coupling cognition to Ratatui or Web; discovery states follow actual evidence."
   },
   {
     "title":"[Phase C] Implement persistent four-part memory system",
     "milestone":"Phase C — Memory",
     "labels":["roadmap","type:feature","area:memory","priority:p1","phase:c-memory","status:needs-design"],
-    "body":"## Goal\nImplement working, episodic, semantic and procedural memory with persistence.\n\n## Scope\nPostgreSQL, provenance, freshness, supersession, deterministic retrieval contracts. Add pgvector only when semantic retrieval evidence warrants it.\n\n## Acceptance\nMemory types remain distinguishable, provenance survives persistence, stale/superseded knowledge is representable, and retrieval is testable."
+    "body":"## Goal\nImplement working, episodic, semantic and procedural memory with persistence.\n\n## Scope\nPostgreSQL, provenance, freshness, supersession, deterministic retrieval contracts. Add pgvector only when semantic retrieval demonstrates a need.\n\n## Acceptance\nMemory types remain distinguishable, provenance survives persistence, stale/superseded knowledge is representable, and retrieval is testable."
   },
   {
     "title":"[Phase D] Integrate RockSoul Nano behind a stable Rust Brain interface",
@@ -87,7 +93,7 @@
     "title":"[Phase I] Integrate evidence-selected RockSoul Cortex",
     "milestone":"Phase I — Cortex",
     "labels":["roadmap","type:research","area:brain","area:cognition","priority:p2","phase:i-cortex","status:needs-design"],
-    "body":"## Goal\nIntegrate the reasoning/planning Cortex selected by evidence from `rocksoul-mind` (research target roughly 300–600M, not a fixed promise).\n\n## Acceptance\nMeasured gains in reasoning/planning justify runtime cost; Cortex uses the same world/memory/evidence contracts rather than becoming a parallel system."
+    "body":"## Goal\nIntegrate the reasoning/planning Cortex selected by evidence from `rocksoul-mind` (research target roughly 300–600M, not a fixed promise).\n\n## Acceptance\nMeasured gains in reasoning/planning justify runtime cost; Cortex uses the same World/memory/evidence contracts rather than becoming a parallel system."
   },
   {
     "title":"[Phase J] Add on-demand Shura multi-perspective reasoning",
@@ -105,7 +111,7 @@
     "title":"[Phase L] Design controlled collective intelligence",
     "milestone":"Phase L — Collective Intelligence",
     "labels":["roadmap","type:research","area:cognition","area:memory","priority:p3","phase:l-collective","status:needs-design"],
-    "body":"## Goal\nShare verified world knowledge and validated experience between controlled RockSoul instances.\n\n## Acceptance\nIdentity, provenance, trust boundaries, conflict resolution, stale-data handling and revocation are designed before cross-instance learning is enabled."
+    "body":"## Goal\nShare verified World knowledge and validated experience between controlled RockSoul instances.\n\n## Acceptance\nIdentity, provenance, trust boundaries, conflict resolution, stale-data handling and revocation are designed before cross-instance learning is enabled."
   },
   {
     "title":"[Phase M] Define empirical ASI research gate and evaluation protocol",
