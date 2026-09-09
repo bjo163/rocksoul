@@ -25,7 +25,13 @@ enum View {
 }
 
 impl View {
-    const ALL: [Self; 5] = [Self::World, Self::Map, Self::Quests, Self::Codex, Self::System];
+    const ALL: [Self; 5] = [
+        Self::World,
+        Self::Map,
+        Self::Quests,
+        Self::Codex,
+        Self::System,
+    ];
 
     fn name(self) -> &'static str {
         match self {
@@ -132,9 +138,11 @@ fn render_header(frame: &mut Frame, life: &LifeState, area: Rect) {
         life.level
     );
     frame.render_widget(
-        Paragraph::new(title)
-            .alignment(Alignment::Center)
-            .block(Block::default().title(" OPERATOR WINDOW ").borders(Borders::ALL)),
+        Paragraph::new(title).alignment(Alignment::Center).block(
+            Block::default()
+                .title(" OPERATOR WINDOW ")
+                .borders(Borders::ALL),
+        ),
         area,
     );
 }
@@ -171,12 +179,23 @@ fn render_world(frame: &mut Frame, life: &LifeState, area: Rect) {
         )
     };
     let lines = vec![
-        Line::from(vec![label("Name"), Span::raw(brand_value("NAME").unwrap_or("RockSoul"))]),
+        Line::from(vec![
+            label("Name"),
+            Span::raw(brand_value("NAME").unwrap_or("RockSoul")),
+        ]),
         Line::from(vec![
             label("Born"),
-            Span::raw(life.identity.born_at.format("%Y-%m-%d %H:%M:%S UTC").to_string()),
+            Span::raw(
+                life.identity
+                    .born_at
+                    .format("%Y-%m-%d %H:%M:%S UTC")
+                    .to_string(),
+            ),
         ]),
-        Line::from(vec![label("Cognitive Age"), Span::raw(life.cognitive_age.to_string())]),
+        Line::from(vec![
+            label("Cognitive Age"),
+            Span::raw(life.cognitive_age.to_string()),
+        ]),
         Line::from(vec![label("Level"), Span::raw(life.level.to_string())]),
         Line::from(vec![label("XP"), Span::raw(life.xp.to_string())]),
         Line::from(vec![label("Trust"), Span::raw(life.trust.to_string())]),
@@ -184,7 +203,9 @@ fn render_world(frame: &mut Frame, life: &LifeState, area: Rect) {
         Line::from(vec![label("State"), Span::raw(life.status.as_str())]),
         Line::from(""),
         Line::from(format!("{phase} — brain not connected yet.")),
-        Line::from("Web may observe public GitHub state; native runtime networking is not connected yet."),
+        Line::from(
+            "Web may observe public GitHub state; native runtime networking is not connected yet.",
+        ),
     ];
     frame.render_widget(
         Paragraph::new(lines)
@@ -202,11 +223,23 @@ fn render_map(frame: &mut Frame, area: Rect) {
     ];
     if let Some(places) = parsed.get("places").and_then(Value::as_array) {
         for place in places {
-            let name = place.get("name").and_then(Value::as_str).unwrap_or("Unknown place");
-            let kind = place.get("kind").and_then(Value::as_str).unwrap_or("unknown");
-            let state = place.get("evidence").and_then(Value::as_str).unwrap_or("UNKNOWN");
+            let name = place
+                .get("name")
+                .and_then(Value::as_str)
+                .unwrap_or("Unknown place");
+            let kind = place
+                .get("kind")
+                .and_then(Value::as_str)
+                .unwrap_or("unknown");
+            let state = place
+                .get("evidence")
+                .and_then(Value::as_str)
+                .unwrap_or("UNKNOWN");
             lines.push(Line::from(vec![
-                Span::styled(format!("{state:<10}"), Style::default().add_modifier(Modifier::BOLD)),
+                Span::styled(
+                    format!("{state:<10}"),
+                    Style::default().add_modifier(Modifier::BOLD),
+                ),
                 Span::raw(format!(" {name} [{kind}]")),
             ]));
         }
@@ -234,7 +267,9 @@ fn render_quests(frame: &mut Frame, area: Rect) {
         Line::from("This is intentionally UNKNOWN rather than a stale copied quest list."),
         Line::from(""),
         Line::from("Use the Web World Portal or GitHub Project for observed open quests."),
-        Line::from("Future Sense/API integration may expose the same structured quest feed locally."),
+        Line::from(
+            "Future Sense/API integration may expose the same structured quest feed locally.",
+        ),
     ];
     frame.render_widget(
         Paragraph::new(lines)
@@ -248,14 +283,15 @@ fn render_codex(frame: &mut Frame, area: Rect) {
     let lines = vec![
         Line::from("CODEX / KNOWLEDGE LAYER"),
         Line::from(""),
-        Line::from("README.md                 World Entry"),
-        Line::from("docs/ARCHITECTURE.md      Architecture"),
-        Line::from("docs/ROADMAP.md           Chapters / progression"),
+        Line::from("README.md                  World Entry"),
+        Line::from("docs/WORLD.md              Digital World semantics"),
+        Line::from("docs/ARCHITECTURE.md       Architecture"),
+        Line::from("docs/ROADMAP.md            Chapters / progression"),
         Line::from("docs/PROJECT_MANAGEMENT.md World Map / quests"),
-        Line::from("docs/STORAGE.md           Local-first data placement"),
-        Line::from("docs/AUTOMATION.md        World systems"),
-        Line::from("docs/DEPLOYMENT.md        Portals / builds"),
-        Line::from("docs/TEMPLATE.md          New-world identity guide"),
+        Line::from("docs/STORAGE.md            Local-first data placement"),
+        Line::from("docs/AUTOMATION.md         World systems"),
+        Line::from("docs/DEPLOYMENT.md         Portals / builds"),
+        Line::from("docs/TEMPLATE.md           New-world identity guide"),
         Line::from(""),
         Line::from("GitHub Wiki mirrors canonical /docs after privileged sync is activated."),
     ];
@@ -270,18 +306,25 @@ fn render_codex(frame: &mut Frame, area: Rect) {
 fn render_system(frame: &mut Frame, area: Rect) {
     let assets = brand_value("ASSETS_REVISION").unwrap_or("unknown");
     let ui = brand_value("UI_REVISION").unwrap_or("unknown");
+    let world_core = brand_value("GITHUB_REPO").unwrap_or("unknown");
+    let assets_repo = brand_value("ASSETS_REPO").unwrap_or("unknown");
+    let ui_repo = brand_value("UI_REPO").unwrap_or("unknown");
+    let mind_repo = brand_value("MIND_REPO").unwrap_or("unknown");
     let lines = vec![
         Line::from("SYSTEM / NODES / PORTALS"),
         Line::from(""),
-        Line::from("OBSERVED  World Core       bjo163/rocksoul"),
-        Line::from("OBSERVED  World Resource   bjo163/rocksoul-assets"),
-        Line::from("OBSERVED  UI Grammar       bjo163/rocksoul-ui"),
-        Line::from("OBSERVED  Cognition Lab    bjo163/rocksoul-mind"),
+        Line::from(format!("OBSERVED  World Core       {world_core}")),
+        Line::from(format!("OBSERVED  World Resource   {assets_repo}")),
+        Line::from(format!("OBSERVED  UI Grammar       {ui_repo}")),
+        Line::from(format!("OBSERVED  Cognition Lab    {mind_repo}")),
         Line::from("UNKNOWN   World Nodes      authenticated runner inventory not available here"),
         Line::from("PENDING   Vercel Portal    canonical deployment not verified"),
         Line::from("PENDING   Cloudflare       no justified private-service tunnel target"),
         Line::from(""),
-        Line::from(format!("Assets accepted: {}", &assets[..assets.len().min(12)])),
+        Line::from(format!(
+            "Assets accepted: {}",
+            &assets[..assets.len().min(12)]
+        )),
         Line::from(format!("UI revision:     {}", &ui[..ui.len().min(12)])),
         Line::from("Policy: PRIVATE FIRST • one authoritative store per data domain"),
     ];
@@ -300,13 +343,21 @@ mod tests {
     #[test]
     fn shared_brand_contract_has_required_navigation() {
         assert_eq!(brand_value("NAME"), Some("RockSoul"));
-        assert_eq!(brand_value("NAV"), Some("WORLD,MAP,QUESTS,CODEX,SYSTEM"));
+        assert_eq!(
+            brand_value("NAV"),
+            Some("WORLD,MAP,QUESTS,CODEX,SYSTEM")
+        );
+        assert_eq!(brand_value("GITHUB_REPO"), Some("bjo163/rocksoul"));
     }
 
     #[test]
     fn shared_world_contract_is_valid_json() {
         let value: Value = serde_json::from_str(WORLD).expect("world.json must be valid JSON");
         assert_eq!(value["schemaVersion"], 1);
-        assert!(value["places"].as_array().is_some_and(|places| !places.is_empty()));
+        assert!(
+            value["places"]
+                .as_array()
+                .is_some_and(|places| !places.is_empty())
+        );
     }
 }
