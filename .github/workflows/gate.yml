@@ -39,6 +39,7 @@ jobs:
           python -m json.tool .github/milestones.json >/dev/null
           python -m json.tool .github/roadmap-issues.json >/dev/null
           python -m json.tool public/world.json >/dev/null
+          test -f LICENSE
           test -f public/brand.env
           test -f public/index.html
           test -f public/styles.css
@@ -66,6 +67,8 @@ jobs:
               env[key] = value
 
           world = json.loads(Path('public/world.json').read_text())
+          assert env['NAME']
+          assert env['GITHUB_REPO']
           assert env['NAV'] == 'WORLD,MAP,QUESTS,CODEX,SYSTEM'
           assert env['ASSETS_REVISION'] == world['assets']['acceptedRevision']
           assert env['UI_REVISION'] == world['ui']['revision']
@@ -144,9 +147,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          grep -q '^NAME=RockSoul$' public/brand.env
+          grep -Eq '^NAME=.+$' public/brand.env
+          grep -Eq '^GITHUB_REPO=.+/.+$' public/brand.env
           grep -q 'styles.css' public/index.html
           grep -q 'app.js' public/index.html
+          grep -q 'WORLD CORE / OPERATOR' public/index.html
           grep -q 'world.json' public/app.js
           grep -q 'api.github.com' public/app.js
           grep -q 'outputDirectory' vercel.json
@@ -158,7 +163,7 @@ jobs:
             if curl --fail --silent http://127.0.0.1:4173/ >/dev/null; then break; fi
             sleep 0.25
           done
-          curl --fail --silent http://127.0.0.1:4173/ | grep -q 'ROCKSOUL'
+          curl --fail --silent http://127.0.0.1:4173/ | grep -q 'WORLD CORE / OPERATOR'
           curl --fail --silent http://127.0.0.1:4173/world.json | python -m json.tool >/dev/null
           curl --fail --silent http://127.0.0.1:4173/app.js >/dev/null
           curl --fail --silent http://127.0.0.1:4173/styles.css >/dev/null
