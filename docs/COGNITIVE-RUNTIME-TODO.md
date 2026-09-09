@@ -299,3 +299,30 @@ Evidence: CI run, local verification transcript, artifact hashes, security scan,
 `CR-013` is tracked as [GitHub issue #32](https://github.com/bjo163/rocksoul/issues/32).
 
 Implement the persistent runtime facade and operator surface: restore LifeState, journal, World, Memory, Guardian, and Workspace after restart; expose one versioned JSON snapshot to CLI/TUI; and verify the read-only/simulated vertical slice through the operator interface.
+
+### Follow-up queue
+
+1. **CR-013 — Persistent runtime facade and TUI integration** ([Issue #32](https://github.com/bjo163/rocksoul/issues/32), READY)
+   - Restore LifeState, LifecycleJournal, WorldGraph, MemoryStore, Guardian, and Workspace after restart.
+   - Expose one versioned JSON snapshot consumed by CLI and TUI.
+   - Prove read-only Sense and simulated Skill behavior through the operator surface.
+
+2. **CR-014 — Durable cognitive snapshot and migration contract** (after CR-013)
+   - Define snapshot schema/versioning, atomic writes, corruption recovery, and backward-compatible migrations.
+   - Add replay-vs-snapshot equivalence tests and explicit freshness metadata.
+
+3. **CR-015 — Operator observability and evidence views** (after CR-014)
+   - Show provenance, epistemic status, policy decision, budgets, model availability, and blocked reasons in TUI/CLI.
+   - Add empty, stale, offline, conflict, and error states without visual overclaiming.
+
+4. **CR-016 — Real read-only repository Sense connector** (after CR-015)
+   - Consume public repository/issue/release observations through a bounded provider adapter.
+   - Enforce timeouts, rate limits, freshness, payload hashes, and observation-only ingestion.
+
+5. **CR-017 — Versioned Nano/MiniMind artifact integration** (after CR-016)
+   - Load an exported artifact from `rocksoul-mind` through the stable brain interface.
+   - Validate schema, role, context limits, artifact hash, fallback behavior, and advisory-only output.
+
+6. **CR-018 — Controlled action pilot and release certification** (after CR-017)
+   - Add one reversible, explicitly approved skill behind Guardian and simulation-first execution.
+   - Run end-to-end replay, policy, security, performance, documentation, and release gates.
