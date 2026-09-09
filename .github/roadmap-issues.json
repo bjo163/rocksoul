@@ -1,0 +1,98 @@
+[
+  {
+    "title":"[Foundation] Enable main branch protection and required checks",
+    "milestone":"Foundation — Governance",
+    "labels":["type:maintenance","area:ci","priority:p0","status:ready"],
+    "body":"## Goal\nProtect `main` from accidental direct/unchecked changes.\n\n## Required settings\n- require pull request before merge\n- require `rocksoul-ci` status check\n- block force pushes and branch deletion\n- keep squash merge as the preferred history style\n\n## Note\nThis is an admin setting and is intentionally not claimed as automated until the repository ruleset is actually enabled.\n\n## Acceptance\n- `main` reports protection/ruleset enabled\n- a PR cannot merge while `rocksoul-ci` is failing"
+  },
+  {
+    "title":"[Foundation] Choose and add an explicit repository license",
+    "milestone":"Foundation — Governance",
+    "labels":["type:maintenance","priority:p1","status:needs-design"],
+    "body":"## Goal\nChoose the intended RockSoul source license explicitly rather than implicitly publishing with no license.\n\n## Acceptance\n- license decision is documented\n- root license file exists\n- README reflects the chosen license\n- dependency/license compatibility is reviewed"
+  },
+  {
+    "title":"[Foundation] Configure RockSoul Roadmap GitHub Project v2",
+    "milestone":"Foundation — Governance",
+    "labels":["type:maintenance","area:ci","priority:p2","status:blocked"],
+    "body":"## Goal\nCreate/link the user-owned `RockSoul Roadmap` Project v2 and populate it from canonical issues.\n\n## Blocker\nGitHub Project v2 requires a token with `project` scope. Add `ROCKSOUL_PROJECT_TOKEN` as an Actions secret, then manually run `project-sync.yml`.\n\n## Acceptance\n- RockSoul Roadmap project exists\n- repository is linked\n- open canonical issues are present\n- issues/milestones remain source of truth"
+  },
+  {
+    "title":"[Phase A] Persist birth identity and append-only lifecycle journal",
+    "milestone":"Phase A — Birth",
+    "labels":["roadmap","type:feature","area:life","area:core","priority:p0","phase:a-birth","status:ready"],
+    "body":"## Goal\nMake RockSoul's birth and lifecycle restart-safe.\n\n## Scope\n- persist identity and birth event\n- append-only lifecycle/event journal\n- derive chronological age from persisted birth\n- recovery/restart tests\n\n## Non-goals\n- PostgreSQL memory system\n- World graph\n- model inference\n\n## Acceptance\n- restart does not create a new identity/birth\n- journal preserves lifecycle events\n- corrupted/missing state fails explicitly\n- CI remains green"
+  },
+  {
+    "title":"[Phase B] Implement World Graph, discovery state and Ratatui map",
+    "milestone":"Phase B — World",
+    "labels":["roadmap","type:feature","area:world","area:tui","priority:p1","phase:b-world","status:needs-design"],
+    "body":"## Goal\nRepresent the Internet and authorized digital environment as an explicit navigable world.\n\n## Scope\nWorld/place/entity primitives, relations, discovery/fog-of-war, current location/activity, provenance/trust metadata, finite exploration budgets, Ratatui WORLD view.\n\n## Non-goal\nNo 3D/metaverse renderer in this phase.\n\n## Acceptance\nThe same world state can be serialized, tested, and rendered without coupling cognition to Ratatui."
+  },
+  {
+    "title":"[Phase C] Implement persistent four-part memory system",
+    "milestone":"Phase C — Memory",
+    "labels":["roadmap","type:feature","area:memory","priority:p1","phase:c-memory","status:needs-design"],
+    "body":"## Goal\nImplement working, episodic, semantic and procedural memory with persistence.\n\n## Scope\nPostgreSQL, provenance, freshness, supersession, deterministic retrieval contracts. Add pgvector only when semantic retrieval evidence warrants it.\n\n## Acceptance\nMemory types remain distinguishable, provenance survives persistence, stale/superseded knowledge is representable, and retrieval is testable."
+  },
+  {
+    "title":"[Phase D] Integrate RockSoul Nano behind a stable Rust Brain interface",
+    "milestone":"Phase D — Nano",
+    "labels":["roadmap","type:feature","area:brain","priority:p1","phase:d-nano","status:needs-design"],
+    "body":"## Goal\nConsume a versioned RockSoul Nano artifact from `rocksoul-mind` without depending on its Python internals.\n\n## Scope\nStable Brain trait/interface, artifact metadata/versioning, Rust-native inference path, intent/routing/extraction/structured output evaluation.\n\n## Acceptance\nProduction inference runs without a Python service and model swaps do not change higher-level cognition contracts."
+  },
+  {
+    "title":"[Phase E] Build deterministic Skills / Yad executor",
+    "milestone":"Phase E — Skills",
+    "labels":["roadmap","type:feature","area:skills","priority:p1","phase:e-skills","status:needs-design"],
+    "body":"## Goal\nGive RockSoul controlled action capability through deterministic tools.\n\n## Initial scope\nWeb/search abstraction, files, GitHub, HTTP/API and PostgreSQL read.\n\n## Acceptance\nEvery skill has typed/validated input, bounded execution, explicit result/error output, audit metadata and no hidden authority escalation."
+  },
+  {
+    "title":"[Phase F] Implement the Global Cognitive Workspace and finite executive loop",
+    "milestone":"Phase F — Cognition",
+    "labels":["roadmap","type:feature","area:cognition","priority:p1","phase:f-cognition","status:needs-design"],
+    "body":"## Goal\nReplace transcript-only state with explicit structured cognition.\n\n## State\nGoals, constraints, facts, beliefs, unknowns, hypotheses, evidence, plans, actions, observations, confidence and budgets.\n\n## Acceptance\nFacts/beliefs/hypotheses remain distinct and every executive loop has finite step/tool/replan/time/cost/risk budgets."
+  },
+  {
+    "title":"[Phase G] Implement Tabayyun / Guardian verification and authority gates",
+    "milestone":"Phase G — Guardian",
+    "labels":["roadmap","type:feature","type:security","area:guardian","priority:p0","phase:g-guardian","status:needs-design"],
+    "body":"## Goal\nMake verification, provenance and authorization first-class runtime gates.\n\n## Scope\nSchema validation, source provenance, freshness, contradiction detection, confidence, permission policy, action risk classes and audit trail.\n\n## Invariant\nIntelligence never implies authority.\n\n## Acceptance\nConsequential actions cannot bypass policy even if suggested by the model."
+  },
+  {
+    "title":"[Phase H] Implement missions, validated XP, level, cognitive age and trust progression",
+    "milestone":"Phase H — Life",
+    "labels":["roadmap","type:feature","area:life","priority:p2","phase:h-life","status:needs-design"],
+    "body":"## Goal\nTurn life progression into measurable observability/evaluation rather than decorative game numbers.\n\n## Scope\nMissions, domain XP, level curve, achievements, cognitive-age benchmark gates, trust/delegation metrics.\n\n## Acceptance\nUnvalidated activity earns no success XP; cognitive age can regress/reject candidates; trust never bypasses policy."
+  },
+  {
+    "title":"[Phase I] Integrate evidence-selected RockSoul Cortex",
+    "milestone":"Phase I — Cortex",
+    "labels":["roadmap","type:research","area:brain","area:cognition","priority:p2","phase:i-cortex","status:needs-design"],
+    "body":"## Goal\nIntegrate the reasoning/planning Cortex selected by evidence from `rocksoul-mind` (research target roughly 300–600M, not a fixed promise).\n\n## Acceptance\nMeasured gains in reasoning/planning justify runtime cost; Cortex uses the same world/memory/evidence contracts rather than becoming a parallel system."
+  },
+  {
+    "title":"[Phase J] Add on-demand Shura multi-perspective reasoning",
+    "milestone":"Phase J — Shura",
+    "labels":["roadmap","type:research","area:cognition","priority:p3","phase:j-shura","status:needs-design"],
+    "body":"## Goal\nUse multiple perspectives only when complexity warrants it.\n\n## Non-goal\nNo permanent agent swarm.\n\n## Acceptance\nRouting has an explicit complexity trigger, bounded cost, shared workspace/evidence, and evaluation showing benefit over single-Cortex reasoning."
+  },
+  {
+    "title":"[Phase K] Build policy-gated autonomous research loops",
+    "milestone":"Phase K — Autonomous Research",
+    "labels":["roadmap","type:research","area:cognition","area:guardian","priority:p3","phase:k-research","status:needs-design"],
+    "body":"## Goal\nSupport finite goal → research → hypothesis → experiment/code → observe → verify → report loops.\n\n## Acceptance\nLoops are budgeted, interruptible, auditable, evidence-grounded and permission-gated. Failures terminate explicitly rather than wandering indefinitely."
+  },
+  {
+    "title":"[Phase L] Design controlled collective intelligence",
+    "milestone":"Phase L — Collective Intelligence",
+    "labels":["roadmap","type:research","area:cognition","area:memory","priority:p3","phase:l-collective","status:needs-design"],
+    "body":"## Goal\nShare verified world knowledge and validated experience between controlled RockSoul instances.\n\n## Acceptance\nIdentity, provenance, trust boundaries, conflict resolution, stale-data handling and revocation are designed before cross-instance learning is enabled."
+  },
+  {
+    "title":"[Phase M] Define empirical ASI research gate and evaluation protocol",
+    "milestone":"Phase M — ASI Research Gate",
+    "labels":["roadmap","type:research","priority:p3","phase:m-asi","status:needs-design"],
+    "body":"## Goal\nDefine what evidence would be required before any ASI classification is even considered.\n\n## Invariant\nAge, level, parameter count, autonomy, multi-agent architecture or product branding are not evidence of ASI.\n\n## Acceptance\nEvaluation protocol requires broad, reproducible, adversarially tested capability evidence beyond top human performance across relevant domains."
+  }
+]

@@ -1,0 +1,63 @@
+type:docs:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'docs/**'
+          - 'README.md'
+          - 'CONTRIBUTING.md'
+          - 'SECURITY.md'
+          - 'CODE_OF_CONDUCT.md'
+
+type:maintenance:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '.github/**'
+          - 'Cargo.toml'
+          - 'Cargo.lock'
+          - 'rust-toolchain.toml'
+
+area:ci:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '.github/workflows/**'
+          - '.github/dependabot.yml'
+          - '.github/labeler.yml'
+
+area:core:
+  - changed-files:
+      - any-glob-to-any-file: ['crates/rocksoul-core/**']
+
+area:life:
+  - changed-files:
+      - any-glob-to-any-file: ['crates/rocksoul-life/**']
+
+area:tui:
+  - changed-files:
+      - any-glob-to-any-file: ['crates/rocksoul-tui/**']
+
+area:world:
+  - changed-files:
+      - any-glob-to-any-file: ['crates/rocksoul-world/**']
+
+area:memory:
+  - changed-files:
+      - any-glob-to-any-file: ['crates/rocksoul-memory/**']
+
+area:brain:
+  - changed-files:
+      - any-glob-to-any-file: ['crates/rocksoul-brain/**']
+
+area:senses:
+  - changed-files:
+      - any-glob-to-any-file: ['crates/rocksoul-senses/**']
+
+area:skills:
+  - changed-files:
+      - any-glob-to-any-file: ['crates/rocksoul-skills/**']
+
+area:cognition:
+  - changed-files:
+      - any-glob-to-any-file: ['crates/rocksoul-cognition/**']
+
+area:guardian:
+  - changed-files:
+      - any-glob-to-any-file: ['crates/rocksoul-guardian/**']
