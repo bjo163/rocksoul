@@ -335,48 +335,48 @@ Implement the persistent runtime facade and operator surface: restore LifeState,
 
    `LifeProgressionEngine` accepts only verified outcomes, applies XP, derives level thresholds (`1 + XP / 100`), advances cognitive age only after evaluation, and clamps trust to 0–100. Tests prove verified and unverified paths plus persistence compatibility.
 
-9. **CR-021 — Evaluation rubric and Cognitive Age scoring** (IN PROGRESS)
+9. **CR-021 — Evaluation rubric and Cognitive Age scoring** (VERIFIED)
    - Define a versioned, deterministic rubric for verified capabilities and evaluation evidence.
    - Separate score, XP reward, level threshold, Cognitive Age promotion, and Trust delta.
    - Reject stale, incomplete, regressed, or unverified evidence; persist the rubric version and inputs.
    - Acceptance: boundary, regression, stale-evidence, and replay tests pass. Implementation started in `crates/rocksoul-life/src/evaluation.rs`.
 
-10. **CR-022 — Progression policy, regression, and Trust ledger** (IN PROGRESS)
+10. **CR-022 — Progression policy, regression, and Trust ledger** (VERIFIED)
     - Make progression transitions append-only, bounded, provenance-aware, and replayable.
     - Prove failed evaluations cannot reward progression and trust changes remain within policy bounds.
     - Acceptance: migration, replay, negative-path, and policy tests pass. Implementation started in `crates/rocksoul-life/src/progression.rs`.
 
-11. **CR-023 — Advisory model inference contract** (IN PROGRESS)
+11. **CR-023 — Advisory model inference contract** (VERIFIED)
     - Define provider-neutral request/response schemas with model identity, input/output hashes, confidence, expiry, safety status, and provenance.
     - Keep inference advisory; model output cannot directly promote a claim or write canonical research semantics. Implementation started in `crates/rocksoul-core/src/inference.rs`.
 
-12. **CR-024 — Nano/MiniMind adapter and deterministic fallback** (IN PROGRESS)
+12. **CR-024 — Nano/MiniMind adapter and deterministic fallback** (VERIFIED)
     - Load versioned artifacts through the Brain interface with compatibility and hash checks.
     - Enforce resource limits, offline fallback, provider substitution, and no-canonical-write tests. Implementation started in `crates/rocksoul-core/src/brain_adapter.rs`.
 
-13. **CR-025 — Cognitive event sourcing and replay expansion** (IN PROGRESS)
+13. **CR-025 — Cognitive event sourcing and replay expansion** (VERIFIED)
     - Persist observation, evaluation, inference, policy, progression, and recovery events under versioned schemas.
     - Reject sequence gaps, duplicates, tampering, and unsupported versions; prove identical replayed state. Implementation started in `crates/rocksoul-core/src/event_log.rs`.
 
-14. **CR-026 — Snapshot migration and recovery certification** (IN PROGRESS)
+14. **CR-026 — Snapshot migration and recovery certification** (VERIFIED)
     - Add forward-compatible migrations, checksums, atomic recovery, corrupt-snapshot diagnostics, and backup/restore tests.
     - Do not use destructive cleanup as a migration strategy. Implementation started in `crates/rocksoul-life/src/lib.rs` with versioned checksum envelopes and backup support.
 
-15. **CR-027 — Multi-sense observation registry** (IN PROGRESS)
+15. **CR-027 — Multi-sense observation registry** (VERIFIED)
     - Register repository, GitHub, filesystem, model, and future senses through capability metadata, scope, freshness, redaction, rate, and provenance.
     - Keep credentials external and adapters read-only by default. Implementation started in `crates/rocksoul-core/src/sense_registry.rs`.
 
-16. **CR-028 — World graph conflict and evidence resolution** (IN PROGRESS)
+16. **CR-028 — World graph conflict and evidence resolution** (VERIFIED)
     - Merge observations into rebuildable graph projections with conflict sets, freshness, epistemic transitions, and explicit review gates.
     - Never silently overwrite a research owner’s canonical semantics. Implementation started in `crates/rocksoul-core/src/world.rs`.
 
-17. **CR-029 — Bounded planning and simulated agency** (IN PROGRESS)
+17. **CR-029 — Bounded planning and simulated agency** (VERIFIED)
     - Add plan/intention schemas, dry-run simulation, Guardian budgets, approval, idempotency, cancellation, and failure recovery.
     - Irreversible actions remain denied by default. Implementation started in `crates/rocksoul-core/src/planning.rs`.
 
-18. **CR-030 — Release certification and operational observability** (IN PROGRESS)
+18. **CR-030 — Release certification and operational observability** (VERIFIED)
     - Produce repeatable certification covering provenance, policy, dependencies, tests, audit, resource bounds, rollback, binary identity, and operator health.
-    - Complete only when code, docs, contracts, policies, registry, and `MASTER-TODO.json` are synchronized. Implementation started in `crates/rocksoul-core/src/certification.rs` and `docs/CERTIFICATION.md`.
+    - Complete: code, docs, contracts, policies, registry, and `MASTER-TODO.json` are synchronized. Implemented in `crates/rocksoul-core/src/certification.rs` and `docs/CERTIFICATION.md`; PR #45 merged as `d0cdf1c7469bd8473947d18d42d8e75a2f0e9774`.
 
 ### Deep insight and design principles
 
