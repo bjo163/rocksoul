@@ -14,6 +14,7 @@ type:maintenance:
           - 'Cargo.toml'
           - 'Cargo.lock'
           - 'rust-toolchain.toml'
+          - 'vercel.json'
 
 area:ci:
   - changed-files:
@@ -21,6 +22,19 @@ area:ci:
           - '.github/workflows/**'
           - '.github/dependabot.yml'
           - '.github/labeler.yml'
+          - '.github/*.json'
+
+area:web:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'public/**'
+          - 'vercel.json'
+
+area:storage:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'data/**'
+          - 'docs/STORAGE.md'
 
 area:core:
   - changed-files:
