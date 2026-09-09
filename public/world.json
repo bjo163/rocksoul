@@ -21,10 +21,10 @@
     {"id":"assets","name":"World Assets","kind":"world-resource","href":"@assets","api":"@assets-api","evidence":"OBSERVED"},
     {"id":"ui","name":"UI Grammar","kind":"world-system","href":"@ui","api":"@ui-api","evidence":"OBSERVED"},
     {"id":"mind","name":"Cognition Lab","kind":"cognition-lab","href":"@mind","api":"@mind-api","evidence":"OBSERVED"},
-    {"id":"project","name":"GitHub Project / World Map","kind":"world-map","href":"@project","evidence":"PENDING","note":"Activation requires ROCKSOUL_GITHUB_TOKEN with project scope."},
+    {"id":"project","name":"GitHub Project / World Map","kind":"world-map","href":"@project","evidence":"PENDING","note":"Activation requires privileged Project synchronization."},
     {"id":"wiki","name":"GitHub Wiki / Archive","kind":"archive","href":"@wiki","evidence":"PENDING","note":"Canonical /docs synchronization requires privileged repository sync."},
     {"id":"pages","name":"GitHub Pages / Codex","kind":"codex-portal","href":"@pages","evidence":"PENDING","note":"Pages must be enabled and a workflow deployment must succeed before promotion."},
-    {"id":"vercel","name":"Vercel / Live World Portal","kind":"live-portal","href":"@vercel","evidence":"PENDING","note":"A canonical deployment URL is populated only after the configured repository is verified."},
+    {"id":"vercel","name":"Vercel / Live World Portal","kind":"live-portal","href":"@vercel","evidence":"VERIFIED","note":"Vercel API reports project rocksoul linked to the configured GitHub repository with a READY production deployment from main."},
     {"id":"cloudflare","name":"Cloudflare / Gateway","kind":"gateway","href":null,"evidence":"PENDING","note":"Private-first. No tunnel is required until a private service has a justified public exposure path."}
   ],
   "discovery": ["UNKNOWN", "DISCOVERED", "OBSERVED", "VISITED", "STUDIED", "VERIFIED", "TRUSTED"],
