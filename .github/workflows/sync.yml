@@ -1,0 +1,256 @@
+name: rocksoul-sync
+
+on:
+  push:
+    branches: [main]
+  pull_request_target:
+    types: [opened, synchronize, reopened, closed]
+  issues:
+    types: [opened, edited, labeled, unlabeled, closed, reopened]
+  schedule:
+    - cron: '17 22 * * 0'
+  workflow_dispatch:
+    inputs:
+      publish_age_release:
+        description: 'Create the next v0.<cognitive-age>.<revision> tag'
+        required: false
+        default: false
+        type: boolean
+
+concurrency:
+  group: rocksoul-sync-${{ github.event_name }}
+  cancel-in-progress: false
+
+jobs:
+  label-pr:
+    name: label PR
+    if: github.event_name == 'pull_request_target'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/labeler@v6
+        with:
+          repo-token: '${{ secrets.GITHUB_TOKEN }}'
+
+  governance:
+    name: governance
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - name: Sync labels, milestones and canonical issues
+        shell: bash
+        run: |
+          set -euo pipefail
+          jq -c '.[]' .github/labels.json | while read -r item; do
+            gh label create "$(jq -r '.name' <<<"$item")" --repo "$GITHUB_REPOSITORY" \
+              --color "$(jq -r '.color' <<<"$item")" \
+              --description "$(jq -r '.description' <<<"$item")" --force
+          done
+
+          milestones=$(gh api --paginate "repos/$GITHUB_REPOSITORY/milestones?state=all&per_page=100")
+          jq -c '.[]' .github/milestones.json | while read -r item; do
+            title=$(jq -r '.title' <<<"$item")
+            description=$(jq -r '.description' <<<"$item")
+            number=$(jq -r --arg title "$title" '.[] | select(.title == $title) | .number' <<<"$milestones" | head -n1)
+            if [[ -z "$number" ]]; then
+              gh api --method POST "repos/$GITHUB_REPOSITORY/milestones" -f title="$title" -f description="$description" >/dev/null
+            else
+              gh api --method PATCH "repos/$GITHUB_REPOSITORY/milestones/$number" -f title="$title" -f description="$description" >/dev/null
+            fi
+          done
+
+          all_issues=$(gh api --paginate "repos/$GITHUB_REPOSITORY/issues?state=all&per_page=100")
+          jq -c '.[]' .github/roadmap-issues.json | while read -r item; do
+            title=$(jq -r '.title' <<<"$item")
+            milestone=$(jq -r '.milestone' <<<"$item")
+            labels=$(jq -r '.labels | join(",")' <<<"$item")
+            body=$(jq -r '.body' <<<"$item")
+            number=$(jq -r --arg title "$title" '.[] | select((.pull_request | not) and .title == $title) | .number' <<<"$all_issues" | head -n1)
+            if [[ -z "$number" ]]; then
+              gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" --body "$body" --milestone "$milestone" --label "$labels" >/dev/null
+            else
+              gh issue edit "$number" --repo "$GITHUB_REPOSITORY" --body "$body" --milestone "$milestone" --add-label "$labels" >/dev/null
+            fi
+          done
+
+  project-and-wiki:
+    name: project + wiki + repo settings
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.ROCKSOUL_GITHUB_TOKEN }}
+      PROJECT_TITLE: rocksoul
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - name: Sync public Project, repository metadata and Wiki
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${GH_TOKEN:-}" ]]; then
+            echo '::notice::ROCKSOUL_GITHUB_TOKEN is not configured. Deterministic issue governance still runs; Project/Wiki/admin settings are skipped.'
+            exit 0
+          fi
+
+          gh repo edit "$GITHUB_REPOSITORY" \
+            --description 'Local-first Rust digital cognitive runtime with synchronized TUI/Web surfaces.' \
+            --enable-issues --enable-projects --enable-wiki --enable-discussions \
+            --enable-squash-merge --enable-merge-commit=false --enable-rebase-merge=false \
+            --delete-branch-on-merge --template \
+            --add-topic rust --add-topic ratatui --add-topic local-first --add-topic ai-agent --add-topic cognitive-architecture
+
+          owner="$GITHUB_REPOSITORY_OWNER"
+          project=$(gh project list --owner "$owner" --limit 100 --format json | jq -c --arg title "$PROJECT_TITLE" '(.projects // .)[]? | select(.title == $title)' | head -n1)
+          number=$(jq -r '.number // empty' <<<"$project")
+          if [[ -z "$number" ]]; then
+            number=$(gh project create --owner "$owner" --title "$PROJECT_TITLE" --format json --jq '.number')
+          fi
+
+          project_readme=$(cat <<'EOF'
+# rocksoul
+
+Public execution board for RockSoul. Issues and milestones are canonical; this Project is the synchronized visualization layer.
+
+- **Kanban** — execution flow
+- **Roadmap** — milestone/phase timeline
+- **Backlog** — high-density issue view
+- Labels describe type, area, priority and phase.
+- Milestones represent Foundation and cognitive phases.
+EOF
+          )
+          gh project edit "$number" --owner "$owner" --visibility PUBLIC \
+            --description 'Public Kanban + roadmap for the RockSoul digital-life runtime.' \
+            --readme "$project_readme"
+          gh project link "$number" --owner "$owner" --repo "${GITHUB_REPOSITORY#*/}" || true
+
+          fields=$(gh project field-list "$number" --owner "$owner" --format json)
+          if ! jq -e '.fields[]? | select(.name == "Priority")' <<<"$fields" >/dev/null; then
+            gh project field-create "$number" --owner "$owner" --name Priority --data-type SINGLE_SELECT --single-select-options 'P0,P1,P2,P3' >/dev/null
+          fi
+          if ! jq -e '.fields[]? | select(.name == "Phase")' <<<"$fields" >/dev/null; then
+            gh project field-create "$number" --owner "$owner" --name Phase --data-type SINGLE_SELECT --single-select-options 'Foundation,A,B,C,D,E,F,G,H,I,J,K,L,M' >/dev/null
+          fi
+
+          project_id=$(gh project view "$number" --owner "$owner" --format json --jq '.id')
+          existing_views=$(gh api graphql -f query='query($id:ID!){node(id:$id){... on ProjectV2{views(first:50){nodes{name layout}}}}}' -F id="$project_id")
+          create_view() {
+            local name="$1" layout="$2"
+            if ! jq -e --arg name "$name" '.data.node.views.nodes[]? | select(.name == $name)' <<<"$existing_views" >/dev/null; then
+              gh api graphql -f query='mutation($id:ID!,$name:String!,$layout:ProjectV2ViewLayout!){createProjectV2View(input:{projectId:$id,name:$name,layout:$layout}){projectV2View{id}}}' -F id="$project_id" -f name="$name" -f layout="$layout" >/dev/null
+            fi
+          }
+          create_view Kanban BOARD
+          create_view Roadmap ROADMAP
+          create_view Backlog TABLE
+
+          gh issue list --repo "$GITHUB_REPOSITORY" --state open --limit 300 --json url,labels --jq '.[] | @base64' | while read -r row; do
+            item=$(base64 --decode <<<"$row")
+            url=$(jq -r '.url' <<<"$item")
+            labels=$(jq -r '[.labels[].name] | join(" ")' <<<"$item")
+            gh project item-add "$number" --owner "$owner" --url "$url" >/dev/null 2>&1 || true
+            for p in 0 1 2 3; do
+              if grep -qw "priority:p$p" <<<"$labels"; then gh project item-edit "$number" --owner "$owner" --url "$url" --field Priority --value "P$p" >/dev/null 2>&1 || true; fi
+            done
+            if grep -qw 'roadmap' <<<"$labels"; then
+              phase=$(sed -n 's/.*phase:\([a-m]\)-[^ ]*.*/\1/p' <<<"$labels" | head -n1 | tr '[:lower:]' '[:upper:]')
+              [[ -n "$phase" ]] && gh project item-edit "$number" --owner "$owner" --url "$url" --field Phase --value "$phase" >/dev/null 2>&1 || true
+            else
+              gh project item-edit "$number" --owner "$owner" --url "$url" --field Phase --value Foundation >/dev/null 2>&1 || true
+            fi
+          done
+
+          wiki_dir="$RUNNER_TEMP/rocksoul-wiki"
+          rm -rf "$wiki_dir"
+          wiki_url="https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.wiki.git"
+          git clone -q "$wiki_url" "$wiki_dir" 2>/dev/null || { mkdir -p "$wiki_dir"; git -C "$wiki_dir" init -q; git -C "$wiki_dir" remote add origin "$wiki_url"; }
+          cp docs/README.md "$wiki_dir/Home.md"
+          for file in ARCHITECTURE ROADMAP DEVELOPMENT GOVERNANCE AUTOMATION PROJECT_MANAGEMENT STORAGE DEPLOYMENT TEMPLATE; do cp "docs/$file.md" "$wiki_dir/$file.md"; done
+          cat > "$wiki_dir/_Sidebar.md" <<'EOF'
+### RockSoul Wiki
+- [Home](Home)
+- [Architecture](ARCHITECTURE)
+- [Roadmap](ROADMAP)
+- [Development](DEVELOPMENT)
+- [Governance](GOVERNANCE)
+- [Automation](AUTOMATION)
+- [Project Management](PROJECT_MANAGEMENT)
+- [Storage](STORAGE)
+- [Deployment](DEPLOYMENT)
+- [Template / Fork](TEMPLATE)
+EOF
+          git -C "$wiki_dir" config user.name 'rocksoul-sync[bot]'
+          git -C "$wiki_dir" config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git -C "$wiki_dir" add -A
+          if ! git -C "$wiki_dir" diff --cached --quiet; then
+            git -C "$wiki_dir" commit -qm 'docs: sync canonical RockSoul Wiki'
+            git -C "$wiki_dir" push -q origin HEAD:master
+          fi
+
+  release-draft:
+    name: release draft
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: read
+    steps:
+      - uses: release-drafter/release-drafter@v7.7.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  publish-age-release:
+    name: age release
+    if: github.event_name == 'workflow_dispatch' && inputs.publish_age_release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 0
+      - name: Create next age tag
+        shell: bash
+        run: |
+          set -euo pipefail
+          age=$(awk -F= '$1=="COGNITIVE_AGE"{gsub(/\r/,"",$2); print $2}' public/brand.env)
+          [[ "$age" =~ ^[0-9]+$ ]] || { echo '::error::COGNITIVE_AGE must be an integer'; exit 1; }
+          latest=$(git tag -l "v0.${age}.*" --sort=-v:refname | head -n1)
+          revision=1
+          if [[ -n "$latest" ]]; then revision=$(( ${latest##*.} + 1 )); fi
+          tag="v0.${age}.${revision}"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git tag -a "$tag" -m "RockSoul cognitive age $age revision $revision"
+          git push origin "$tag"
+          echo "Created $tag. rocksoul-gate will build and publish release binaries."
+
+  stale:
+    name: stale hygiene
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
+    steps:
+      - uses: actions/stale@v10
+        with:
+          repo-token: '${{ secrets.GITHUB_TOKEN }}'
+          days-before-stale: 45
+          days-before-close: 14
+          stale-issue-label: stale
+          stale-pr-label: stale
+          exempt-issue-labels: 'roadmap,type:security,priority:p0,priority:p1,status:blocked'
+          exempt-pr-labels: 'type:security,priority:p0,priority:p1'
+          stale-issue-message: 'This issue has been quiet for 45 days. Roadmap, security, blocked, P0 and P1 work is exempt.'
+          stale-pr-message: 'This PR has been quiet for 45 days. Refresh or close it if it is no longer active.'
+          close-issue-message: 'Closed by repository hygiene after the stale window. Reopen if the work becomes active again.'
+          close-pr-message: 'Closed by repository hygiene after the stale window.'
