@@ -1,0 +1,21 @@
+[workspace]
+members = [
+    "crates/rocksoul-core",
+    "crates/rocksoul-life",
+    "crates/rocksoul-tui",
+]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.88"
+
+[workspace.dependencies]
+anyhow = "1"
+chrono = { version = "0.4", features = ["clock", "serde"] }
+crossterm = "0.29"
+ratatui = "0.30.2"
+serde = { version = "1", features = ["derive"] }
+thiserror = "2"
+uuid = { version = "1", features = ["serde", "v4"] }
