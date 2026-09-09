@@ -57,6 +57,36 @@ pub enum IntegrationError {
     OutputTooLarge { limit: usize },
     #[error("canonical write authority is not allowed at the cognitive boundary")]
     CanonicalWriteAuthority,
+    #[error("resource usage exceeds the configured budget")]
+    ResourceBudgetExceeded,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ResourceBudget {
+    pub max_input_bytes: usize,
+    pub max_output_bytes: usize,
+    pub max_events: usize,
+    pub max_replay_records: usize,
+}
+
+impl ResourceBudget {
+    #[must_use]
+    pub const fn bounded() -> Self {
+        Self {
+            max_input_bytes: 16 * 1024,
+            max_output_bytes: 16 * 1024,
+            max_events: 1024,
+            max_replay_records: 4096,
+        }
+    }
+
+    #[must_use]
+    pub const fn allows(self, input: usize, output: usize, events: usize, replay: usize) -> bool {
+        input <= self.max_input_bytes
+            && output <= self.max_output_bytes
+            && events <= self.max_events
+            && replay <= self.max_replay_records
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -208,5 +238,13 @@ mod tests {
         report = CognitiveSmokeReport::complete();
         report.canonical_writes = true;
         assert!(!report.is_successful());
+    }
+
+    #[test]
+    fn resource_budget_is_bounded_and_rejects_overages() {
+        let budget = ResourceBudget::bounded();
+        assert!(budget.allows(100, 100, 2, 3));
+        assert!(!budget.allows(100, 100, budget.max_events + 1, 3));
+        assert!(!budget.allows(100, 100, 2, budget.max_replay_records + 1));
     }
 }

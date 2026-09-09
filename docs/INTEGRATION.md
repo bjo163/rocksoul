@@ -17,3 +17,7 @@ The `CognitiveSmokeReport` covers the bounded vertical slice in order:
 `sense`, `advisory-inference`, `policy`, `evaluation`, `event-replay`, and
 `snapshot`. A successful report must explicitly prove that no side effects and
 no canonical writes occurred.
+
+`ResourceBudget::bounded()` defines default upper bounds for input, output,
+event count, and replay records. Hosts should reject work that exceeds these
+limits before invoking a provider or side-effecting operation.
