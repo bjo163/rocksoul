@@ -354,9 +354,9 @@ Implement the persistent runtime facade and operator surface: restore LifeState,
     - Load versioned artifacts through the Brain interface with compatibility and hash checks.
     - Enforce resource limits, offline fallback, provider substitution, and no-canonical-write tests. Implementation started in `crates/rocksoul-core/src/brain_adapter.rs`.
 
-13. **CR-025 — Cognitive event sourcing and replay expansion** (after CR-024)
+13. **CR-025 — Cognitive event sourcing and replay expansion** (IN PROGRESS)
     - Persist observation, evaluation, inference, policy, progression, and recovery events under versioned schemas.
-    - Reject sequence gaps, duplicates, tampering, and unsupported versions; prove identical replayed state.
+    - Reject sequence gaps, duplicates, tampering, and unsupported versions; prove identical replayed state. Implementation started in `crates/rocksoul-core/src/event_log.rs`.
 
 14. **CR-026 — Snapshot migration and recovery certification** (after CR-025)
     - Add forward-compatible migrations, checksums, atomic recovery, corrupt-snapshot diagnostics, and backup/restore tests.
