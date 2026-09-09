@@ -111,16 +111,16 @@ jobs:
           project_readme=$(cat <<'EOF'
 # rocksoul
 
-Public execution board for RockSoul. Issues, labels and milestones are canonical; this Project is their synchronized visualization layer.
+Public execution board for RockSoul. Issues, labels and milestones are canonical; this Project is their synchronized World Map.
 
-- **Kanban** — Status-based execution flow
-- **Roadmap** — phase/milestone planning
-- **Backlog** — dense issue triage
+- **Kanban** — Status-based Quest execution
+- **Roadmap** — Chapter / milestone planning
+- **Backlog** — dense Quest triage
 - **Priority** and **Phase** fields mirror canonical labels
 EOF
           )
           gh project edit "$number" --owner "$owner" --visibility PUBLIC \
-            --description 'Public Kanban + roadmap for the RockSoul local-first cognitive runtime.' \
+            --description 'Public World Map: Kanban + roadmap for the RockSoul local-first cognitive runtime.' \
             --readme "$project_readme"
           gh project link "$number" --owner "$owner" --repo "${GITHUB_REPOSITORY#*/}" || true
 
@@ -163,7 +163,7 @@ EOF
           done
 
   repo-and-wiki:
-    name: repository + Wiki
+    name: repository + Wiki + Pages activation
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     env:
@@ -174,7 +174,7 @@ EOF
         shell: bash
         run: |
           if [[ -z "${GH_TOKEN:-}" ]]; then
-            echo 'ROCKSOUL_GITHUB_TOKEN is not configured; repository-admin and Wiki synchronization is skipped.' >> "$GITHUB_STEP_SUMMARY"
+            echo 'ROCKSOUL_GITHUB_TOKEN is not configured; repository-admin, Wiki and Pages activation are skipped.' >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
       - name: Synchronize repository settings
@@ -183,7 +183,8 @@ EOF
         run: |
           set -euo pipefail
           gh repo edit "$GITHUB_REPOSITORY" \
-            --description 'Local-first Rust digital cognitive runtime with synchronized TUI/Web surfaces.' \
+            --description 'RockSoul World — local-first Rust cognitive runtime, Operator TUI, Codex, Quests and evidence-driven World Map.' \
+            --homepage 'https://bjo163.github.io/rocksoul/' \
             --enable-issues --enable-projects --enable-wiki --enable-discussions \
             --enable-squash-merge \
             --enable-merge-commit=false \
@@ -194,7 +195,21 @@ EOF
             --add-topic ratatui \
             --add-topic local-first \
             --add-topic ai-agent \
+            --add-topic digital-world \
             --add-topic cognitive-architecture
+      - name: Enable GitHub Pages workflow source
+        if: env.GH_TOKEN != ''
+        shell: bash
+        run: |
+          set -euo pipefail
+          endpoint="repos/$GITHUB_REPOSITORY/pages"
+          if gh api "$endpoint" >/dev/null 2>&1; then
+            gh api --method PUT "$endpoint" -f build_type=workflow >/dev/null
+            echo 'GitHub Pages already existed; workflow publishing is configured.' >> "$GITHUB_STEP_SUMMARY"
+          else
+            gh api --method POST "$endpoint" -f build_type=workflow >/dev/null
+            echo 'GitHub Pages created with workflow publishing.' >> "$GITHUB_STEP_SUMMARY"
+          fi
       - name: Synchronize Wiki from canonical docs
         if: env.GH_TOKEN != ''
         shell: bash
@@ -209,12 +224,13 @@ EOF
             git -C "$wiki_dir" remote add origin "$wiki_url"
           }
           cp docs/README.md "$wiki_dir/Home.md"
-          for file in ARCHITECTURE ROADMAP DEVELOPMENT GOVERNANCE AUTOMATION PROJECT_MANAGEMENT STORAGE DEPLOYMENT TEMPLATE; do
+          for file in WORLD ARCHITECTURE ROADMAP DEVELOPMENT GOVERNANCE AUTOMATION PROJECT_MANAGEMENT STORAGE DEPLOYMENT TEMPLATE; do
             cp "docs/$file.md" "$wiki_dir/$file.md"
           done
           cat > "$wiki_dir/_Sidebar.md" <<'EOF'
-### RockSoul Wiki
+### RockSoul Archive
 - [Home](Home)
+- [World](WORLD)
 - [Architecture](ARCHITECTURE)
 - [Roadmap](ROADMAP)
 - [Development](DEVELOPMENT)
@@ -229,9 +245,48 @@ EOF
           git -C "$wiki_dir" config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git -C "$wiki_dir" add -A
           if ! git -C "$wiki_dir" diff --cached --quiet; then
-            git -C "$wiki_dir" commit -qm 'docs: sync canonical RockSoul Wiki'
+            git -C "$wiki_dir" commit -qm 'docs: sync canonical RockSoul Archive'
             git -C "$wiki_dir" push -q origin HEAD:master
           fi
+
+  pages:
+    name: Codex Pages
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    needs: [repo-and-wiki]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - name: Detect configured Pages site
+        id: pages
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          if gh api "repos/$GITHUB_REPOSITORY/pages" >/dev/null 2>&1; then
+            echo 'enabled=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'enabled=false' >> "$GITHUB_OUTPUT"
+            echo 'GitHub Pages is not configured; Codex deployment remains PENDING.' >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Configure Pages
+        if: steps.pages.outputs.enabled == 'true'
+        uses: actions/configure-pages@v5
+      - name: Upload Codex artifact
+        if: steps.pages.outputs.enabled == 'true'
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: public
+      - name: Deploy Codex
+        if: steps.pages.outputs.enabled == 'true'
+        id: deployment
+        uses: actions/deploy-pages@v4
 
   release-draft:
     name: release draft
@@ -276,7 +331,7 @@ EOF
             echo 'release=true' >> "$GITHUB_OUTPUT"
           else
             echo 'release=false' >> "$GITHUB_OUTPUT"
-            echo 'Merged PR is not labeled release:ready; no public release is created.' >> "$GITHUB_STEP_SUMMARY"
+            echo 'Merged PR is not labeled release:ready; no public World Build is created.' >> "$GITHUB_STEP_SUMMARY"
           fi
       - name: Create next age tag and dispatch release gate
         if: steps.request.outputs.release == 'true'
@@ -294,7 +349,7 @@ EOF
           git tag -a "$tag" -m "RockSoul cognitive age $age revision $revision"
           git push origin "$tag"
           gh workflow run gate.yml --repo "$GITHUB_REPOSITORY" --ref "$tag"
-          echo "Created $tag and dispatched rocksoul-gate on the tag ref. The gate will create the GitHub Release and attach binaries." >> "$GITHUB_STEP_SUMMARY"
+          echo "Created $tag and dispatched rocksoul-gate on the tag ref. The gate will create the GitHub World Build and attach binaries." >> "$GITHUB_STEP_SUMMARY"
 
   stale:
     name: stale hygiene
@@ -313,7 +368,7 @@ EOF
           stale-pr-label: stale
           exempt-issue-labels: 'roadmap,type:security,priority:p0,priority:p1,status:blocked'
           exempt-pr-labels: 'type:security,priority:p0,priority:p1'
-          stale-issue-message: 'This issue has been quiet for 45 days. Roadmap, security, blocked, P0 and P1 work is exempt.'
-          stale-pr-message: 'This PR has been quiet for 45 days. Refresh or close it if it is no longer active.'
-          close-issue-message: 'Closed by repository hygiene after the stale window. Reopen if the work becomes active again.'
+          stale-issue-message: 'This Quest has been quiet for 45 days. Roadmap, security, blocked, P0 and P1 work is exempt.'
+          stale-pr-message: 'This Contribution has been quiet for 45 days. Refresh or close it if it is no longer active.'
+          close-issue-message: 'Closed by repository hygiene after the stale window. Reopen if the Quest becomes active again.'
           close-pr-message: 'Closed by repository hygiene after the stale window.'
