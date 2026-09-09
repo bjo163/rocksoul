@@ -250,6 +250,7 @@ EOF
     if: github.event_name == 'workflow_dispatch' && inputs.publish_age_release
     runs-on: ubuntu-latest
     permissions:
+      actions: write
       contents: write
     env:
       GH_TOKEN: ${{ github.token }}
@@ -257,7 +258,7 @@ EOF
       - uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0
-      - name: Create next age tag
+      - name: Create next age tag and dispatch release gate
         shell: bash
         run: |
           set -euo pipefail
@@ -271,7 +272,8 @@ EOF
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git tag -a "$tag" -m "RockSoul cognitive age $age revision $revision"
           git push origin "$tag"
-          echo "Created $tag. rocksoul-gate will create the GitHub Release and attach binaries." >> "$GITHUB_STEP_SUMMARY"
+          gh workflow run gate.yml --repo "$GITHUB_REPOSITORY" --ref "$tag"
+          echo "Created $tag and dispatched rocksoul-gate on the tag ref. The gate will create the GitHub Release and attach binaries." >> "$GITHUB_STEP_SUMMARY"
 
   stale:
     name: stale hygiene
