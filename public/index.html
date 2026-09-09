@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="description" content="Local-first Rust digital cognitive World: Codex, Quests, World Map and verified progression.">
+  <title>Digital World</title>
+  <link rel="preconnect" href="https://raw.githubusercontent.com">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="shell">
+    <header class="hud topbar">
+      <div class="brand">
+        <img src="https://raw.githubusercontent.com/bjo163/rocksoul-assets/5b035d0d83612f847ccd8b35f2c1b04022500110/moonwitness/architecture-diagram-pack/svg/repository-node.svg" alt="" aria-hidden="true">
+        <div class="brand-copy">
+          <div class="eyebrow">WORLD CORE / OPERATOR</div>
+          <h1 id="brand-name">Digital World</h1>
+        </div>
+      </div>
+      <nav class="nav" aria-label="World navigation">
+        <button type="button" data-target="WORLD">1 WORLD</button>
+        <button type="button" data-target="MAP">2 MAP</button>
+        <button type="button" data-target="QUESTS">3 QUESTS</button>
+        <button type="button" data-target="CODEX">4 CODEX</button>
+        <button type="button" data-target="SYSTEM">5 SYSTEM</button>
+      </nav>
+      <div class="presence" aria-live="polite"><span class="dot" id="presence-dot"></span><span id="presence-text">OBSERVING WORLD</span></div>
+    </header>
+
+    <main>
+      <section class="screen" data-screen="WORLD">
+        <div class="hero">
+          <article class="panel hero-copy">
+            <div class="eyebrow">ENTER WORLD / <span id="phase">Phase A / Birth</span></div>
+            <h2 id="hero-name">Digital World</h2>
+            <p id="hero-copy">Local-first digital cognitive runtime</p>
+            <div class="hero-actions">
+              <a class="btn primary" href="#map" data-jump="MAP">EXPLORE WORLD</a>
+              <a class="btn" id="core-link" href="#" target="_blank" rel="noreferrer">WORLD CORE ↗</a>
+              <a class="btn" id="release-link" href="#" target="_blank" rel="noreferrer">WORLD BUILDS ↗</a>
+            </div>
+          </article>
+          <aside class="panel">
+            <div class="panel-title"><span>LIFE STATE</span><span id="world-status">UNKNOWN</span></div>
+            <div class="metrics" id="life-metrics"></div>
+          </aside>
+        </div>
+
+        <section class="section">
+          <div class="section-heading"><h3>WORLD STATUS</h3><p>Observed state, never simulated as production truth.</p></div>
+          <div class="grid">
+            <article class="panel">
+              <div class="panel-title"><span>CONTROL PLANE</span><span class="mono">GITHUB</span></div>
+              <div class="metrics">
+                <div class="metric"><div class="metric-label">DEFAULT BRANCH</div><div class="metric-value" id="repo-branch">unknown</div></div>
+                <div class="metric"><div class="metric-label">OPEN QUESTS OBSERVED</div><div class="metric-value" id="open-quests">0</div></div>
+                <div class="metric"><div class="metric-label">LATEST WORLD BUILD</div><div class="metric-value" id="release-version">none</div></div>
+                <div class="metric"><div class="metric-label">REPOSITORY PUSH</div><div class="metric-value" id="repo-updated">unknown</div></div>
+              </div>
+            </article>
+            <article class="panel">
+              <div class="panel-title"><span>WORLD EVENT LOG</span><span class="mono">GITHUB EVIDENCE</span></div>
+              <div class="event-list" id="event-list"><div class="empty">Observing GitHub evidence…</div></div>
+            </article>
+          </div>
+        </section>
+      </section>
+
+      <section class="screen" data-screen="MAP" id="map">
+        <section class="section">
+          <div class="section-heading"><h3>WORLD MAP</h3><p>Actual repositories, control surfaces and pending portals.</p></div>
+          <article class="panel world-map">
+            <div class="map-grid" id="map-grid"></div>
+            <div class="fog" id="fog" aria-label="Discovery progression"></div>
+            <div class="provenance" id="asset-provenance">Loading asset provenance…</div>
+          </article>
+        </section>
+      </section>
+
+      <section class="screen" data-screen="QUESTS">
+        <section class="section">
+          <div class="section-heading"><h3>QUESTS</h3><p>GitHub Issues are the task source of truth.</p></div>
+          <article class="panel">
+            <div class="panel-title"><span>ACTIVE QUEST LOG</span><a id="quest-github" href="#" target="_blank" rel="noreferrer">OPEN GITHUB ↗</a></div>
+            <div class="quest-list" id="quest-list"><div class="empty">Observing quests…</div></div>
+          </article>
+        </section>
+      </section>
+
+      <section class="screen" data-screen="CODEX">
+        <section class="section">
+          <div class="section-heading"><h3>CODEX</h3><p>GitHub Pages enters here by default; /docs remains canonical.</p></div>
+          <article class="panel">
+            <div class="panel-title"><span>KNOWLEDGE LAYER</span><span class="mono">CANONICAL DOCS</span></div>
+            <div class="codex-list" id="codex-list"></div>
+          </article>
+        </section>
+      </section>
+
+      <section class="screen" data-screen="SYSTEM">
+        <section class="section">
+          <div class="section-heading"><h3>SYSTEM</h3><p>World systems with explicit evidence state.</p></div>
+          <article class="panel">
+            <div class="panel-title"><span>SYSTEM / NODES / PORTALS</span><span class="mono">PRIVATE FIRST</span></div>
+            <div class="system-list" id="system-list"></div>
+            <div class="provenance" id="system-provenance"></div>
+          </article>
+        </section>
+      </section>
+    </main>
+
+    <footer class="hud footer">
+      <span id="footer-identity">Digital World</span>
+      <span id="observed-at">Not observed yet</span>
+      <span><span class="kbd">1–5</span> navigate • evidence before trust</span>
+    </footer>
+  </div>
+  <script type="module" src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,247 @@
+name: rocksoul-gate
+
+on:
+  push:
+    branches: [main, dev]
+    tags: ['v*']
+  pull_request:
+    branches: [main, dev]
+  schedule:
+    - cron: '31 20 * * 3'
+  workflow_dispatch:
+
+concurrency:
+  group: rocksoul-gate-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  policy:
+    name: policy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - name: Branch and repository policy
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            head='${{ github.head_ref }}'
+            case "$head" in
+              dev|feature/*|dependabot/*) ;;
+              *) echo "::error::Human branches must be dev or feature/* (Dependabot is the only bot exception). Got: $head"; exit 1 ;;
+            esac
+          fi
+          python -m json.tool .github/labels.json >/dev/null
+          python -m json.tool .github/milestones.json >/dev/null
+          python -m json.tool .github/roadmap-issues.json >/dev/null
+          python -m json.tool public/world.json >/dev/null
+          test -f LICENSE
+          test -f public/brand.env
+          test -f public/index.html
+          test -f public/styles.css
+          test -f public/app.js
+          test -f public/world.json
+          test -f data/public/README.md
+          test -f docs/STORAGE.md
+          test -f docs/DEPLOYMENT.md
+          test -f docs/TEMPLATE.md
+
+      - name: Shared world contract consistency
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          env = {}
+          for raw in Path('public/brand.env').read_text().splitlines():
+              raw = raw.strip()
+              if not raw or raw.startswith('#') or '=' not in raw:
+                  continue
+              key, value = raw.split('=', 1)
+              env[key] = value
+
+          world = json.loads(Path('public/world.json').read_text())
+          assert env['NAME']
+          assert env['GITHUB_REPO']
+          assert env['NAV'] == 'WORLD,MAP,QUESTS,CODEX,SYSTEM'
+          assert env['ASSETS_REVISION'] == world['assets']['acceptedRevision']
+          assert env['UI_REVISION'] == world['ui']['revision']
+          assert env['UI_VERSION'] == world['ui']['version']
+          assert world['statusVocabulary'] == ['VERIFIED', 'OBSERVED', 'INFERRED', 'PENDING', 'BLOCKED', 'UNKNOWN']
+          assert world['discovery'] == ['UNKNOWN', 'DISCOVERED', 'OBSERVED', 'VISITED', 'STUDIED', 'VERIFIED', 'TRUSTED']
+          PY
+
+  rust:
+    name: rust
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - name: Install pinned Rust
+        run: |
+          rustup toolchain install 1.88.0 --profile minimal --component rustfmt,clippy
+          rustup default 1.88.0
+      - name: Format
+        run: cargo fmt --all -- --check
+      - name: Check
+        run: cargo check --workspace --all-targets
+      - name: Clippy
+        run: cargo clippy --workspace --all-targets -- -D warnings
+      - name: Test
+        run: cargo test --workspace
+      - name: Generate lockfile for audit
+        run: cargo generate-lockfile
+      - name: Install cargo-audit
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-audit@0.22.2
+          fallback: none
+      - name: RustSec audit
+        run: cargo audit
+
+  dependency-review:
+    name: dependencies
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - name: Detect GitHub Dependency Graph
+        id: graph
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          if gh api "repos/$GITHUB_REPOSITORY/dependency-graph/sbom" >/dev/null 2>&1; then
+            echo 'enabled=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'enabled=false' >> "$GITHUB_OUTPUT"
+            echo '::notice::GitHub Dependency Graph is disabled/unavailable; Dependency Review is skipped. RustSec remains fail-closed in the Rust gate.'
+          fi
+      - name: Review dependency changes
+        if: steps.graph.outputs.enabled == 'true'
+        uses: actions/dependency-review-action@v5
+        with:
+          fail-on-severity: moderate
+
+  docs:
+    name: docs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - name: Markdown links
+        uses: lycheeverse/lychee-action@v2.9.0
+        with:
+          args: >-
+            --verbose --no-progress
+            --exclude 'https://github\.com/bjo163/rocksoul/(wiki|discussions)(/.*)?$'
+            **/*.md
+          fail: true
+      - name: World Portal smoke
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -Eq '^NAME=.+$' public/brand.env
+          grep -Eq '^GITHUB_REPO=.+/.+$' public/brand.env
+          grep -q 'styles.css' public/index.html
+          grep -q 'app.js' public/index.html
+          grep -q 'WORLD CORE / OPERATOR' public/index.html
+          grep -q 'world.json' public/app.js
+          grep -q 'api.github.com' public/app.js
+          grep -q 'outputDirectory' vercel.json
+          node --check public/app.js
+          python -m http.server 4173 -d public >/tmp/rocksoul-web.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          for _ in {1..20}; do
+            if curl --fail --silent http://127.0.0.1:4173/ >/dev/null; then break; fi
+            sleep 0.25
+          done
+          curl --fail --silent http://127.0.0.1:4173/ | grep -q 'WORLD CORE / OPERATOR'
+          curl --fail --silent http://127.0.0.1:4173/world.json | python -m json.tool >/dev/null
+          curl --fail --silent http://127.0.0.1:4173/app.js >/dev/null
+          curl --fail --silent http://127.0.0.1:4173/styles.css >/dev/null
+
+  codeql:
+    name: codeql
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: github/codeql-action/init@v4
+        with:
+          languages: rust
+          build-mode: none
+      - uses: github/codeql-action/analyze@v4
+        with:
+          category: '/language:rust'
+
+  create-release:
+    name: release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [policy, rust, docs, codeql]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Create GitHub Release if absent
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" \
+              --title "RockSoul $GITHUB_REF_NAME" \
+              --generate-notes
+          fi
+
+  release-binaries:
+    name: release-${{ matrix.target }}
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [create-release]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            archive: rocksoul-linux-x86_64.tar.gz
+            binary: rocksoul
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            archive: rocksoul-windows-x86_64.zip
+            binary: rocksoul.exe
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            archive: rocksoul-macos-arm64.tar.gz
+            binary: rocksoul
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - name: Install target
+        shell: bash
+        run: rustup target add '${{ matrix.target }}'
+      - name: Build
+        shell: bash
+        run: cargo build --release -p rocksoul-tui --target '${{ matrix.target }}'
+      - name: Package Unix
+        if: runner.os != 'Windows'
+        shell: bash
+        run: tar -C 'target/${{ matrix.target }}/release' -czf '${{ matrix.archive }}' '${{ matrix.binary }}'
+      - name: Package Windows
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: Compress-Archive -Path 'target/${{ matrix.target }}/release/${{ matrix.binary }}' -DestinationPath '${{ matrix.archive }}'
+      - name: Publish binary asset
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: gh release upload '${{ github.ref_name }}' '${{ matrix.archive }}' --repo "$GITHUB_REPOSITORY" --clobber

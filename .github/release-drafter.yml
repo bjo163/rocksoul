@@ -1,10 +1,16 @@
-name-template: 'v$RESOLVED_VERSION'
-tag-template: 'v$RESOLVED_VERSION'
+name-template: 'Next RockSoul age release'
+tag-template: 'draft-$RESOLVED_VERSION'
 change-template: '- $TITLE (#$NUMBER) @$AUTHOR'
 no-changes-template: '- No user-visible changes'
+exclude-labels:
+  - 'release:skip'
 categories:
-  - title: '🚀 Features'
+  - title: '🚀 Runtime & Features'
     labels: ['type:feature']
+  - title: '🖥️ TUI / Web'
+    labels: ['area:tui', 'area:web']
+  - title: '💾 Storage & Data'
+    labels: ['area:storage']
   - title: '🐛 Fixes'
     labels: ['type:bug']
   - title: '🔐 Security'
@@ -25,5 +31,8 @@ template: |
   ## Changes
   $CHANGES
 
-  ## Verification
-  Release contents are drafted from merged PR metadata. Publishing remains a deliberate maintainer action.
+  ## Distribution
+  Public versions are not taken from this draft's semantic placeholder. When a build is worth publishing, run `rocksoul-sync` with `publish_age_release=true`. The resulting `v0.<cognitive-age>.<revision>` tag is validated and packaged by `rocksoul-gate`.
+
+  ## Artifacts
+  Tag releases are expected to include Linux x86_64, Windows x86_64 (`rocksoul.exe`) and macOS arm64 archives.
