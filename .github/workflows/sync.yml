@@ -89,7 +89,7 @@ jobs:
       GH_TOKEN: ${{ secrets.ROCKSOUL_GITHUB_TOKEN }}
       PROJECT_TITLE: rocksoul
     steps:
-      - name: Require optional privileged sync token
+      - name: Require privileged sync token
         shell: bash
         run: |
           if [[ -z "${GH_TOKEN:-}" ]]; then
@@ -108,17 +108,7 @@ jobs:
             number=$(gh project create --owner "$owner" --title "$PROJECT_TITLE" --format json --jq '.number')
           fi
 
-          project_readme=$(cat <<'EOF'
-# rocksoul
-
-Public execution board for RockSoul. Issues, labels and milestones are canonical; this Project is their synchronized World Map.
-
-- **Kanban** — Status-based Quest execution
-- **Roadmap** — Chapter / milestone planning
-- **Backlog** — dense Quest triage
-- **Priority** and **Phase** fields mirror canonical labels
-EOF
-          )
+          project_readme=$'# rocksoul\n\nPublic execution board for RockSoul. Issues, labels and milestones are canonical; this Project is their synchronized World Map.\n\n- **Kanban** — Status-based Quest execution\n- **Roadmap** — Chapter / milestone planning\n- **Backlog** — dense Quest triage\n- **Priority** and **Phase** fields mirror canonical labels'
           gh project edit "$number" --owner "$owner" --visibility PUBLIC \
             --description 'Public World Map: Kanban + roadmap for the RockSoul local-first cognitive runtime.' \
             --readme "$project_readme"
@@ -137,7 +127,8 @@ EOF
           create_view() {
             local name="$1" layout="$2"
             if ! jq -e --arg name "$name" '.data.node.views.nodes[]? | select(.name == $name)' <<<"$existing_views" >/dev/null; then
-              gh api graphql -f query='mutation($id:ID!,$name:String!,$layout:ProjectV2ViewLayout!){createProjectV2View(input:{projectId:$id,name:$name,layout:$layout}){projectV2View{id}}}' -F id="$project_id" -f name="$name" -f layout="$layout" >/dev/null
+              gh api graphql -f query='mutation($id:ID!,$name:String!,$layout:ProjectV2ViewLayout!){createProjectV2View(input:{projectId:$id,name:$name,layout:$layout}){projectV2View{id}}}' \
+                -F id="$project_id" -f name="$name" -f layout="$layout" >/dev/null
             fi
           }
           create_view Kanban BOARD
@@ -162,7 +153,7 @@ EOF
             fi
           done
 
-  repo-and-wiki:
+  repository:
     name: repository + ruleset + Wiki + Pages activation
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
@@ -170,11 +161,11 @@ EOF
       GH_TOKEN: ${{ secrets.ROCKSOUL_GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v7.0.1
-      - name: Require optional privileged sync token
+      - name: Require privileged sync token
         shell: bash
         run: |
           if [[ -z "${GH_TOKEN:-}" ]]; then
-            echo 'ROCKSOUL_GITHUB_TOKEN is not configured; repository-admin, ruleset, Wiki and Pages activation are skipped.' >> "$GITHUB_STEP_SUMMARY"
+            echo 'ROCKSOUL_GITHUB_TOKEN is not configured; repository-admin synchronization is skipped.' >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
       - name: Synchronize repository settings
@@ -206,55 +197,12 @@ EOF
           ruleset_id=$(gh api --paginate "repos/$GITHUB_REPOSITORY/rulesets?includes_parents=false&per_page=100" \
             --jq ".[] | select(.name == \"$ruleset_name\") | .id" | head -n1)
           payload=$(mktemp)
-          cat > "$payload" <<'JSON'
-          {
-            "name": "rocksoul-main-protection",
-            "target": "branch",
-            "enforcement": "active",
-            "conditions": {
-              "ref_name": {
-                "include": ["refs/heads/main"],
-                "exclude": []
-              }
-            },
-            "rules": [
-              {"type": "deletion"},
-              {"type": "non_fast_forward"},
-              {
-                "type": "pull_request",
-                "parameters": {
-                  "allowed_merge_methods": ["squash"],
-                  "dismiss_stale_reviews_on_push": false,
-                  "require_code_owner_review": false,
-                  "require_last_push_approval": false,
-                  "required_approving_review_count": 0,
-                  "required_review_thread_resolution": true
-                }
-              },
-              {
-                "type": "required_status_checks",
-                "parameters": {
-                  "do_not_enforce_on_create": false,
-                  "required_status_checks": [
-                    {"context": "policy"},
-                    {"context": "rust"},
-                    {"context": "dependencies"},
-                    {"context": "docs"},
-                    {"context": "codeql"}
-                  ],
-                  "strict_required_status_checks_policy": false
-                }
-              }
-            ]
-          }
-          JSON
+          printf '%s\n' '{"name":"rocksoul-main-protection","target":"branch","enforcement":"active","conditions":{"ref_name":{"include":["refs/heads/main"],"exclude":[]}},"rules":[{"type":"deletion"},{"type":"non_fast_forward"},{"type":"pull_request","parameters":{"allowed_merge_methods":["squash"],"dismiss_stale_reviews_on_push":false,"require_code_owner_review":false,"require_last_push_approval":false,"required_approving_review_count":0,"required_review_thread_resolution":true}},{"type":"required_status_checks","parameters":{"do_not_enforce_on_create":false,"required_status_checks":[{"context":"policy"},{"context":"rust"},{"context":"dependencies"},{"context":"docs"},{"context":"codeql"}],"strict_required_status_checks_policy":false}}]}' > "$payload"
           if [[ -z "$ruleset_id" ]]; then
-            gh api --method POST "repos/$GITHUB_REPOSITORY/rulesets" \
-              -H 'X-GitHub-Api-Version: 2026-03-10' --input "$payload" >/dev/null
+            gh api --method POST "repos/$GITHUB_REPOSITORY/rulesets" -H 'X-GitHub-Api-Version: 2026-03-10' --input "$payload" >/dev/null
             echo 'Created active main ruleset: rocksoul-main-protection.' >> "$GITHUB_STEP_SUMMARY"
           else
-            gh api --method PUT "repos/$GITHUB_REPOSITORY/rulesets/$ruleset_id" \
-              -H 'X-GitHub-Api-Version: 2026-03-10' --input "$payload" >/dev/null
+            gh api --method PUT "repos/$GITHUB_REPOSITORY/rulesets/$ruleset_id" -H 'X-GitHub-Api-Version: 2026-03-10' --input "$payload" >/dev/null
             echo "Updated active main ruleset #$ruleset_id." >> "$GITHUB_STEP_SUMMARY"
           fi
       - name: Enable GitHub Pages workflow source
@@ -287,20 +235,19 @@ EOF
           for file in WORLD ARCHITECTURE ROADMAP DEVELOPMENT GOVERNANCE AUTOMATION PROJECT_MANAGEMENT STORAGE DEPLOYMENT TEMPLATE; do
             cp "docs/$file.md" "$wiki_dir/$file.md"
           done
-          cat > "$wiki_dir/_Sidebar.md" <<'EOF'
-### RockSoul Archive
-- [Home](Home)
-- [World](WORLD)
-- [Architecture](ARCHITECTURE)
-- [Roadmap](ROADMAP)
-- [Development](DEVELOPMENT)
-- [Governance](GOVERNANCE)
-- [Automation](AUTOMATION)
-- [Project Management](PROJECT_MANAGEMENT)
-- [Storage](STORAGE)
-- [Deployment](DEPLOYMENT)
-- [Template / Fork](TEMPLATE)
-EOF
+          printf '%s\n' \
+            '### RockSoul Archive' \
+            '- [Home](Home)' \
+            '- [World](WORLD)' \
+            '- [Architecture](ARCHITECTURE)' \
+            '- [Roadmap](ROADMAP)' \
+            '- [Development](DEVELOPMENT)' \
+            '- [Governance](GOVERNANCE)' \
+            '- [Automation](AUTOMATION)' \
+            '- [Project Management](PROJECT_MANAGEMENT)' \
+            '- [Storage](STORAGE)' \
+            '- [Deployment](DEPLOYMENT)' \
+            '- [Template / Fork](TEMPLATE)' > "$wiki_dir/_Sidebar.md"
           git -C "$wiki_dir" config user.name 'rocksoul-sync[bot]'
           git -C "$wiki_dir" config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git -C "$wiki_dir" add -A
@@ -312,7 +259,7 @@ EOF
   pages:
     name: Codex Pages
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
-    needs: [repo-and-wiki]
+    needs: [repository]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -320,7 +267,6 @@ EOF
       id-token: write
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v7.0.1
       - name: Detect configured Pages site
@@ -345,7 +291,6 @@ EOF
           path: public
       - name: Deploy Codex
         if: steps.pages.outputs.enabled == 'true'
-        id: deployment
         uses: actions/deploy-pages@v4
 
   release-draft:
@@ -363,7 +308,7 @@ EOF
   publish-age-release:
     name: age release
     if: >-
-      (github.event_name == 'workflow_dispatch' && inputs.publish_age_release) ||
+      (github.event_name == 'workflow_dispatch' && inputs.publish_age_release == true) ||
       (github.event_name == 'pull_request_target' && github.event.pull_request.merged == true &&
        (github.event.action == 'closed' || github.event.action == 'labeled'))
     runs-on: ubuntu-latest
