@@ -283,6 +283,8 @@ pnpm verify           # format, clippy, tests, release build, and RustSec audit
 
 The `audit` script expects `cargo-audit` to be installed and available on `PATH`. Runtime state is stored in `data/runtime-state.json`; override it with `ROCKSOUL_STATE_PATH`.
 
+From the ecosystem root, you can also double-click `ROCKSOUL-COGNITIVE.cmd`, or run `ROCKSOUL-COGNITIVE.cmd --json` for the operator snapshot and `ROCKSOUL-COGNITIVE.cmd --verify` for the full verification suite.
+
 Optional local World Surface:
 
 ```bash
