@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>RockSoul</title>
+  <style>
+    :root{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono",monospace;background:#090b0d;color:#e8edf2}*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;background:radial-gradient(circle at top,#131a20 0,#090b0d 55%)}main{width:min(920px,94vw);display:grid;gap:16px}.box{border:1px solid #65717d;border-radius:4px;background:rgba(8,12,15,.92);box-shadow:0 18px 70px rgba(0,0,0,.38)}header,footer{padding:14px 18px;text-align:center;letter-spacing:.06em}.panel{padding:0 20px 22px}.legend{display:inline-block;transform:translateY(-.7em);padding:0 10px;background:#090b0d;font-weight:700}.rows{display:grid;grid-template-columns:180px 1fr;gap:10px 20px}.key{font-weight:700;color:#b8c5d0}.value{overflow-wrap:anywhere}.phase{margin-top:22px;padding-top:18px;border-top:1px dashed #3a4249;color:#b8c5d0}.links{display:flex;justify-content:center;flex-wrap:wrap;gap:10px;margin-top:2px}.links a{color:#dbe7f0;text-decoration:none;border:1px solid #44505a;padding:7px 10px;border-radius:4px}.links a:hover{background:#151c22}@media(max-width:560px){.rows{grid-template-columns:1fr}.key{margin-top:8px}}
+  </style>
+</head>
+<body>
+<main>
+  <header class="box" id="header">ROCKSOUL • GEN 1 • AGE 0 • LV 1</header>
+  <section class="box panel">
+    <span class="legend">HOME</span>
+    <div class="rows" id="rows"></div>
+    <div class="phase" id="phase">Phase A / Birth — brain not connected yet.</div>
+  </section>
+  <footer class="box">
+    <div id="tagline">Local-first digital cognitive runtime</div>
+    <div class="links">
+      <a href="https://github.com/bjo163/rocksoul">GitHub</a>
+      <a href="https://github.com/bjo163/rocksoul/wiki">Wiki</a>
+      <a href="https://github.com/bjo163/rocksoul/issues">Issues</a>
+      <a href="https://github.com/bjo163/rocksoul/releases">Releases</a>
+    </div>
+  </footer>
+</main>
+<script>
+const parseEnv=t=>Object.fromEntries(t.split(/\r?\n/).filter(Boolean).filter(x=>!x.trim().startsWith('#')).map(line=>{const i=line.indexOf('=');return [line.slice(0,i),line.slice(i+1)]}));
+fetch('/brand.env',{cache:'no-store'}).then(r=>r.text()).then(t=>{
+  const c=parseEnv(t); document.title=c.NAME||'RockSoul';
+  document.querySelector('#header').textContent=`${(c.NAME||'RockSoul').toUpperCase()} • GEN ${c.GENERATION||1} • AGE ${c.COGNITIVE_AGE||0} • LV ${c.LEVEL||1}`;
+  const born=new Date().toISOString().replace('T',' ').replace(/\.\d{3}Z$/,' UTC');
+  const rows=[['Name',c.NAME],['Born',born],['Cognitive Age',c.COGNITIVE_AGE],['Level',c.LEVEL],['XP',c.XP],['Trust',c.TRUST],['World',c.WORLD],['State',c.STATE]];
+  document.querySelector('#rows').innerHTML=rows.map(([k,v])=>`<div class="key">${k}</div><div class="value">${v??''}</div>`).join('');
+  document.querySelector('#phase').textContent=`${c.PHASE||'Phase A / Birth'} — brain not connected yet.`;
+  document.querySelector('#tagline').textContent=c.TAGLINE||'';
+}).catch(()=>document.querySelector('#rows').innerHTML='<div class="key">State</div><div class="value">brand.env unavailable</div>');
+</script>
+</body>
+</html>
