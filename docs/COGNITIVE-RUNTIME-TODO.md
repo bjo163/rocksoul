@@ -378,24 +378,24 @@ Implement the persistent runtime facade and operator surface: restore LifeState,
     - Produce repeatable certification covering provenance, policy, dependencies, tests, audit, resource bounds, rollback, binary identity, and operator health.
     - Complete: code, docs, contracts, policies, registry, and `MASTER-TODO.json` are synchronized. Implemented in `crates/rocksoul-core/src/certification.rs` and `docs/CERTIFICATION.md`; PR #45 merged as `d0cdf1c7469bd8473947d18d42d8e75a2f0e9774`.
 
-19. **CR-031 — Runtime integration boundary** (IN PROGRESS)
+19. **CR-031 — Runtime integration boundary** (VERIFIED)
     - Expose a versioned, bounded, provider-neutral cognitive contract for the host runtime.
     - Preserve advisory-only output and deny canonical research writes at the boundary.
     - Implementation started in `crates/rocksoul-core/src/integration.rs` and `docs/INTEGRATION.md`.
 
-20. **CR-032 — End-to-end cognitive smoke flow** (IN PROGRESS)
+20. **CR-032 — End-to-end cognitive smoke flow** (VERIFIED)
     - Verify sense, advisory inference, policy, evaluation, event replay, and snapshot stages in one bounded report.
     - Reject incomplete reports and any side effect or canonical-write claim.
 
-21. **CR-033 — Reproducible build and release hardening** (IN PROGRESS)
+21. **CR-033 — Reproducible build and release hardening** (VERIFIED)
     - Record Cargo.lock, toolchain, source commit, release binary identity, hashes, and gate results in a repeatable report.
     - Keep release publication separate from local certification and preserve rollback evidence.
 
-22. **CR-034 — Runtime performance and resource limits** (IN PROGRESS)
+22. **CR-034 — Runtime performance and resource limits** (VERIFIED)
     - Enforce bounded input, output, event, and replay budgets at the integration boundary.
     - Add rejection tests and document host enforcement requirements.
 
-23. **CR-035 — Operator integration and health surface** (IN PROGRESS)
+23. **CR-035 — Operator integration and health surface** (VERIFIED)
     - Expose read-only readiness, smoke, certification, and resource-budget health to the host operator surface.
     - Degrade safely when verification is incomplete; never grant canonical write authority.
 
