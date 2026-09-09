@@ -18,7 +18,7 @@ on:
         type: boolean
 
 concurrency:
-  group: rocksoul-sync-${{ github.event_name }}
+  group: rocksoul-sync
   cancel-in-progress: false
 
 jobs:
@@ -81,34 +81,29 @@ jobs:
             fi
           done
 
-  project-and-wiki:
-    name: project + wiki + repo settings
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+  project:
+    name: public Project
+    if: github.event_name == 'push' || github.event_name == 'issues' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ secrets.ROCKSOUL_GITHUB_TOKEN }}
       PROJECT_TITLE: rocksoul
     steps:
-      - uses: actions/checkout@v7.0.1
-      - name: Sync public Project, repository metadata and Wiki
+      - name: Require optional privileged sync token
+        shell: bash
+        run: |
+          if [[ -z "${GH_TOKEN:-}" ]]; then
+            echo 'ROCKSOUL_GITHUB_TOKEN is not configured; public Project synchronization is skipped.' >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+      - name: Synchronize Project
+        if: env.GH_TOKEN != ''
         shell: bash
         run: |
           set -euo pipefail
-          if [[ -z "${GH_TOKEN:-}" ]]; then
-            echo '::notice::ROCKSOUL_GITHUB_TOKEN is not configured. Deterministic issue governance still runs; Project/Wiki/admin settings are skipped.'
-            exit 0
-          fi
-
-          gh repo edit "$GITHUB_REPOSITORY" \
-            --description 'Local-first Rust digital cognitive runtime with synchronized TUI/Web surfaces.' \
-            --enable-issues --enable-projects --enable-wiki --enable-discussions \
-            --enable-squash-merge --enable-merge-commit=false --enable-rebase-merge=false \
-            --delete-branch-on-merge --template \
-            --add-topic rust --add-topic ratatui --add-topic local-first --add-topic ai-agent --add-topic cognitive-architecture
-
           owner="$GITHUB_REPOSITORY_OWNER"
           project=$(gh project list --owner "$owner" --limit 100 --format json | jq -c --arg title "$PROJECT_TITLE" '(.projects // .)[]? | select(.title == $title)' | head -n1)
-          number=$(jq -r '.number // empty' <<<"$project")
+          number=$(jq -r '.number // empty' <<<"${project:-{}}")
           if [[ -z "$number" ]]; then
             number=$(gh project create --owner "$owner" --title "$PROJECT_TITLE" --format json --jq '.number')
           fi
@@ -116,21 +111,20 @@ jobs:
           project_readme=$(cat <<'EOF'
 # rocksoul
 
-Public execution board for RockSoul. Issues and milestones are canonical; this Project is the synchronized visualization layer.
+Public execution board for RockSoul. Issues, labels and milestones are canonical; this Project is their synchronized visualization layer.
 
-- **Kanban** — execution flow
-- **Roadmap** — milestone/phase timeline
-- **Backlog** — high-density issue view
-- Labels describe type, area, priority and phase.
-- Milestones represent Foundation and cognitive phases.
+- **Kanban** — Status-based execution flow
+- **Roadmap** — phase/milestone planning
+- **Backlog** — dense issue triage
+- **Priority** and **Phase** fields mirror canonical labels
 EOF
           )
           gh project edit "$number" --owner "$owner" --visibility PUBLIC \
-            --description 'Public Kanban + roadmap for the RockSoul digital-life runtime.' \
+            --description 'Public Kanban + roadmap for the RockSoul local-first cognitive runtime.' \
             --readme "$project_readme"
           gh project link "$number" --owner "$owner" --repo "${GITHUB_REPOSITORY#*/}" || true
 
-          fields=$(gh project field-list "$number" --owner "$owner" --format json)
+          fields=$(gh project field-list "$number" --owner "$owner" --limit 100 --format json)
           if ! jq -e '.fields[]? | select(.name == "Priority")' <<<"$fields" >/dev/null; then
             gh project field-create "$number" --owner "$owner" --name Priority --data-type SINGLE_SELECT --single-select-options 'P0,P1,P2,P3' >/dev/null
           fi
@@ -156,22 +150,68 @@ EOF
             labels=$(jq -r '[.labels[].name] | join(" ")' <<<"$item")
             gh project item-add "$number" --owner "$owner" --url "$url" >/dev/null 2>&1 || true
             for p in 0 1 2 3; do
-              if grep -qw "priority:p$p" <<<"$labels"; then gh project item-edit "$number" --owner "$owner" --url "$url" --field Priority --value "P$p" >/dev/null 2>&1 || true; fi
+              if grep -qw "priority:p$p" <<<"$labels"; then
+                gh project item-edit "$number" --owner "$owner" --url "$url" --field Priority --value "P$p" >/dev/null
+              fi
             done
-            if grep -qw 'roadmap' <<<"$labels"; then
-              phase=$(sed -n 's/.*phase:\([a-m]\)-[^ ]*.*/\1/p' <<<"$labels" | head -n1 | tr '[:lower:]' '[:upper:]')
-              [[ -n "$phase" ]] && gh project item-edit "$number" --owner "$owner" --url "$url" --field Phase --value "$phase" >/dev/null 2>&1 || true
+            phase=$(sed -n 's/.*phase:\([a-m]\)-[^ ]*.*/\1/p' <<<"$labels" | head -n1 | tr '[:lower:]' '[:upper:]')
+            if [[ -n "$phase" ]]; then
+              gh project item-edit "$number" --owner "$owner" --url "$url" --field Phase --value "$phase" >/dev/null
             else
-              gh project item-edit "$number" --owner "$owner" --url "$url" --field Phase --value Foundation >/dev/null 2>&1 || true
+              gh project item-edit "$number" --owner "$owner" --url "$url" --field Phase --value Foundation >/dev/null
             fi
           done
 
+  repo-and-wiki:
+    name: repository + Wiki
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.ROCKSOUL_GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - name: Require optional privileged sync token
+        shell: bash
+        run: |
+          if [[ -z "${GH_TOKEN:-}" ]]; then
+            echo 'ROCKSOUL_GITHUB_TOKEN is not configured; repository-admin and Wiki synchronization is skipped.' >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+      - name: Synchronize repository settings
+        if: env.GH_TOKEN != ''
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh repo edit "$GITHUB_REPOSITORY" \
+            --description 'Local-first Rust digital cognitive runtime with synchronized TUI/Web surfaces.' \
+            --enable-issues --enable-projects --enable-wiki --enable-discussions \
+            --enable-squash-merge \
+            --enable-merge-commit=false \
+            --enable-rebase-merge=false \
+            --delete-branch-on-merge \
+            --template \
+            --add-topic rust \
+            --add-topic ratatui \
+            --add-topic local-first \
+            --add-topic ai-agent \
+            --add-topic cognitive-architecture
+      - name: Synchronize Wiki from canonical docs
+        if: env.GH_TOKEN != ''
+        shell: bash
+        run: |
+          set -euo pipefail
           wiki_dir="$RUNNER_TEMP/rocksoul-wiki"
-          rm -rf "$wiki_dir"
           wiki_url="https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.wiki.git"
-          git clone -q "$wiki_url" "$wiki_dir" 2>/dev/null || { mkdir -p "$wiki_dir"; git -C "$wiki_dir" init -q; git -C "$wiki_dir" remote add origin "$wiki_url"; }
+          rm -rf "$wiki_dir"
+          git clone -q "$wiki_url" "$wiki_dir" 2>/dev/null || {
+            mkdir -p "$wiki_dir"
+            git -C "$wiki_dir" init -q
+            git -C "$wiki_dir" remote add origin "$wiki_url"
+          }
           cp docs/README.md "$wiki_dir/Home.md"
-          for file in ARCHITECTURE ROADMAP DEVELOPMENT GOVERNANCE AUTOMATION PROJECT_MANAGEMENT STORAGE DEPLOYMENT TEMPLATE; do cp "docs/$file.md" "$wiki_dir/$file.md"; done
+          for file in ARCHITECTURE ROADMAP DEVELOPMENT GOVERNANCE AUTOMATION PROJECT_MANAGEMENT STORAGE DEPLOYMENT TEMPLATE; do
+            cp "docs/$file.md" "$wiki_dir/$file.md"
+          done
           cat > "$wiki_dir/_Sidebar.md" <<'EOF'
 ### RockSoul Wiki
 - [Home](Home)
@@ -231,7 +271,7 @@ EOF
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git tag -a "$tag" -m "RockSoul cognitive age $age revision $revision"
           git push origin "$tag"
-          echo "Created $tag. rocksoul-gate will build and publish release binaries."
+          echo "Created $tag. rocksoul-gate will create the GitHub Release and attach binaries." >> "$GITHUB_STEP_SUMMARY"
 
   stale:
     name: stale hygiene
