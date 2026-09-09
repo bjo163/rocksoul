@@ -103,6 +103,42 @@ pub struct CognitiveSmokeReport {
     pub canonical_writes: bool,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct OperatorHealthSnapshot {
+    pub schema_version: u16,
+    pub status: HealthStatus,
+    pub smoke_successful: bool,
+    pub certification_verified: bool,
+    pub resource_budget: ResourceBudget,
+    pub canonical_write_authority: bool,
+}
+
+impl OperatorHealthSnapshot {
+    #[must_use]
+    pub fn from_boundary(
+        boundary: CognitiveBoundary,
+        smoke: &CognitiveSmokeReport,
+        certification_verified: bool,
+    ) -> Self {
+        Self {
+            schema_version: CONTRACT_SCHEMA_VERSION,
+            status: if smoke.is_successful() && certification_verified {
+                HealthStatus::Ready
+            } else {
+                HealthStatus::Degraded
+            },
+            smoke_successful: smoke.is_successful(),
+            certification_verified,
+            resource_budget: ResourceBudget {
+                max_input_bytes: boundary.max_input_bytes,
+                max_output_bytes: boundary.max_output_bytes,
+                ..ResourceBudget::bounded()
+            },
+            canonical_write_authority: false,
+        }
+    }
+}
+
 impl CognitiveSmokeReport {
     #[must_use]
     pub fn complete() -> Self {
@@ -246,5 +282,16 @@ mod tests {
         assert!(budget.allows(100, 100, 2, 3));
         assert!(!budget.allows(100, 100, budget.max_events + 1, 3));
         assert!(!budget.allows(100, 100, 2, budget.max_replay_records + 1));
+    }
+
+    #[test]
+    fn operator_snapshot_is_read_only_and_degrades_on_failed_certification() {
+        let boundary = CognitiveBoundary::default();
+        let smoke = CognitiveSmokeReport::complete();
+        let ready = OperatorHealthSnapshot::from_boundary(boundary, &smoke, true);
+        assert_eq!(ready.status, HealthStatus::Ready);
+        assert!(!ready.canonical_write_authority);
+        let degraded = OperatorHealthSnapshot::from_boundary(boundary, &smoke, false);
+        assert_eq!(degraded.status, HealthStatus::Degraded);
     }
 }

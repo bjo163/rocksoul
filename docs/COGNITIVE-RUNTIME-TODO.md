@@ -395,6 +395,10 @@ Implement the persistent runtime facade and operator surface: restore LifeState,
     - Enforce bounded input, output, event, and replay budgets at the integration boundary.
     - Add rejection tests and document host enforcement requirements.
 
+23. **CR-035 — Operator integration and health surface** (IN PROGRESS)
+    - Expose read-only readiness, smoke, certification, and resource-budget health to the host operator surface.
+    - Degrade safely when verification is incomplete; never grant canonical write authority.
+
 ### Deep insight and design principles
 
 - Cognitive Age is verified capability, not elapsed time or raw XP.
