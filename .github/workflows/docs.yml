@@ -27,5 +27,5 @@ jobs:
       - name: Check Markdown links
         uses: lycheeverse/lychee-action@v2.9.0
         with:
-          args: '--verbose --no-progress --exclude-mail **/*.md'
+          args: '--verbose --no-progress **/*.md'
           fail: true
