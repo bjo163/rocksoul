@@ -102,8 +102,14 @@ jobs:
         run: |
           set -euo pipefail
           owner="$GITHUB_REPOSITORY_OWNER"
-          project=$(gh project list --owner "$owner" --limit 100 --format json | jq -c --arg title "$PROJECT_TITLE" '(.projects // .)[]? | select(.title == $title)' | head -n1)
-          number=$(jq -r '.number // empty' <<<"${project:-{}}")
+          projects=$(gh project list --owner "$owner" --limit 100 --format json)
+          number=$(jq -r --arg title "$PROJECT_TITLE" '
+            (if type == "object" and has("projects") then .projects else . end)
+            | .[]?
+            | select(.title == $title)
+            | .number
+          ' <<<"$projects" | head -n1)
+
           if [[ -z "$number" ]]; then
             number=$(gh project create --owner "$owner" --title "$PROJECT_TITLE" --format json --jq '.number')
           fi
@@ -140,12 +146,14 @@ jobs:
             url=$(jq -r '.url' <<<"$item")
             labels=$(jq -r '[.labels[].name] | join(" ")' <<<"$item")
             gh project item-add "$number" --owner "$owner" --url "$url" >/dev/null 2>&1 || true
+
             for p in 0 1 2 3; do
               if grep -qw "priority:p$p" <<<"$labels"; then
                 gh project item-edit "$number" --owner "$owner" --url "$url" --field Priority --value "P$p" >/dev/null
               fi
             done
-            phase=$(sed -n 's/.*phase:\([a-m]\)-[^ ]*.*/\1/p' <<<"$labels" | head -n1 | tr '[:lower:]' '[:upper:]')
+
+            phase=$(grep -oE 'phase:[a-m]-[^ ]+' <<<"$labels" | head -n1 | cut -d: -f2 | cut -d- -f1 | tr '[:lower:]' '[:upper:]')
             if [[ -n "$phase" ]]; then
               gh project item-edit "$number" --owner "$owner" --url "$url" --field Phase --value "$phase" >/dev/null
             else
@@ -154,7 +162,7 @@ jobs:
           done
 
   repository:
-    name: repository + ruleset + Wiki + Pages activation
+    name: repository + ruleset + Pages activation
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     env:
@@ -218,6 +226,16 @@ jobs:
             gh api --method POST "$endpoint" -f build_type=workflow >/dev/null
             echo 'GitHub Pages created with workflow publishing.' >> "$GITHUB_STEP_SUMMARY"
           fi
+
+  wiki:
+    name: Wiki Archive
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    needs: [repository]
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.ROCKSOUL_GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v7.0.1
       - name: Synchronize Wiki from canonical docs
         if: env.GH_TOKEN != ''
         shell: bash
@@ -226,11 +244,10 @@ jobs:
           wiki_dir="$RUNNER_TEMP/rocksoul-wiki"
           wiki_url="https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.wiki.git"
           rm -rf "$wiki_dir"
-          git clone -q "$wiki_url" "$wiki_dir" 2>/dev/null || {
-            mkdir -p "$wiki_dir"
-            git -C "$wiki_dir" init -q
-            git -C "$wiki_dir" remote add origin "$wiki_url"
-          }
+          git clone -q "$wiki_url" "$wiki_dir"
+          wiki_branch=$(git -C "$wiki_dir" branch --show-current)
+          [[ -n "$wiki_branch" ]] || wiki_branch=master
+
           cp docs/README.md "$wiki_dir/Home.md"
           for file in WORLD ARCHITECTURE ROADMAP DEVELOPMENT GOVERNANCE AUTOMATION PROJECT_MANAGEMENT STORAGE DEPLOYMENT TEMPLATE; do
             cp "docs/$file.md" "$wiki_dir/$file.md"
@@ -248,12 +265,13 @@ jobs:
             '- [Storage](STORAGE)' \
             '- [Deployment](DEPLOYMENT)' \
             '- [Template / Fork](TEMPLATE)' > "$wiki_dir/_Sidebar.md"
+
           git -C "$wiki_dir" config user.name 'rocksoul-sync[bot]'
           git -C "$wiki_dir" config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git -C "$wiki_dir" add -A
           if ! git -C "$wiki_dir" diff --cached --quiet; then
             git -C "$wiki_dir" commit -qm 'docs: sync canonical RockSoul Archive'
-            git -C "$wiki_dir" push -q origin HEAD:master
+            git -C "$wiki_dir" push -q origin "HEAD:$wiki_branch"
           fi
 
   pages:
