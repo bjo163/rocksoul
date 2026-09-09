@@ -1,5 +1,13 @@
-use rocksoul_core::{Identity, RockSoulStatus};
+use rocksoul_core::{
+    Identity, RockSoulStatus, brain::BrainManifest, cognition::CognitiveClaim, memory::MemoryStore,
+    policy::Guardian, workspace::CognitiveWorkspace, world::WorldGraph,
+};
 use serde::{Deserialize, Serialize};
+use std::{
+    fs,
+    path::{Path, PathBuf},
+};
+use thiserror::Error;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct LifeState {
@@ -47,6 +55,116 @@ impl LifeState {
     }
 }
 
+#[derive(Debug, Error)]
+pub enum RuntimeStoreError {
+    #[error("runtime state I/O failed: {0}")]
+    Io(#[from] std::io::Error),
+    #[error("runtime snapshot is invalid: {0}")]
+    InvalidSnapshot(#[from] serde_json::Error),
+    #[error("unsupported runtime snapshot schema {0}")]
+    UnsupportedSchema(u16),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RuntimeSnapshot {
+    pub schema_version: u16,
+    pub life: LifeState,
+    pub world: WorldGraph,
+    pub memory: MemoryStore,
+    pub guardian: Guardian,
+    pub workspace: CognitiveWorkspace,
+    pub model: Option<BrainManifest>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OperatorSnapshot {
+    pub schema_version: u16,
+    pub runtime_id: uuid::Uuid,
+    pub life_status: RockSoulStatus,
+    pub cognitive_age: u16,
+    pub level: u32,
+    pub world_nodes: usize,
+    pub memory_records: usize,
+    pub policy_decisions: usize,
+    pub remaining_steps: u32,
+    pub remaining_tools: u32,
+    pub model_available: bool,
+}
+
+impl RuntimeSnapshot {
+    #[must_use]
+    pub fn born() -> Self {
+        Self {
+            schema_version: 1,
+            life: LifeState::born_now(),
+            world: WorldGraph::default(),
+            memory: MemoryStore::default(),
+            guardian: Guardian::default(),
+            workspace: CognitiveWorkspace::default(),
+            model: None,
+        }
+    }
+
+    #[must_use]
+    pub fn operator_snapshot(&self) -> OperatorSnapshot {
+        OperatorSnapshot {
+            schema_version: self.schema_version,
+            runtime_id: self.life.identity.id,
+            life_status: self.life.status,
+            cognitive_age: self.life.cognitive_age,
+            level: self.life.level,
+            world_nodes: self.world.nodes.len(),
+            memory_records: self.memory.records.len(),
+            policy_decisions: self.guardian.decisions.len(),
+            remaining_steps: self.guardian.budget.steps,
+            remaining_tools: self.guardian.budget.tools,
+            model_available: self.model.is_some(),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct RuntimeStore {
+    path: PathBuf,
+    snapshot: RuntimeSnapshot,
+}
+
+impl RuntimeStore {
+    pub fn open(path: impl AsRef<Path>) -> Result<Self, RuntimeStoreError> {
+        let path = path.as_ref().to_path_buf();
+        let snapshot = if path.exists() {
+            serde_json::from_slice(&fs::read(&path)?)?
+        } else {
+            RuntimeSnapshot::born()
+        };
+        if snapshot.schema_version != 1 {
+            return Err(RuntimeStoreError::UnsupportedSchema(
+                snapshot.schema_version,
+            ));
+        }
+        Ok(Self { path, snapshot })
+    }
+    #[must_use]
+    pub fn snapshot(&self) -> &RuntimeSnapshot {
+        &self.snapshot
+    }
+    pub fn persist(&self) -> Result<(), RuntimeStoreError> {
+        if let Some(parent) = self.path.parent() {
+            fs::create_dir_all(parent)?;
+        }
+        let tmp = self.path.with_extension("tmp");
+        fs::write(&tmp, serde_json::to_vec_pretty(&self.snapshot)?)?;
+        fs::rename(tmp, self.path.clone())?;
+        Ok(())
+    }
+    pub fn update_claim(&mut self, claim: CognitiveClaim) {
+        let _ = self
+            .snapshot
+            .memory
+            .remember(rocksoul_core::memory::MemoryKind::Episodic, claim);
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -78,5 +196,29 @@ mod tests {
         assert!(life.promote_cognitive_age(5, true));
         assert!(!life.promote_cognitive_age(4, true));
         assert_eq!(life.cognitive_age, 5);
+    }
+
+    #[test]
+    fn runtime_store_round_trips_identity_and_cognitive_state() {
+        let path =
+            std::env::temp_dir().join(format!("rocksoul-state-{}.json", uuid::Uuid::new_v4()));
+        let mut store = RuntimeStore::open(&path).unwrap();
+        let id = store.snapshot().life.identity.id;
+        store.snapshot.life.set_status(RockSoulStatus::Listening);
+        store.persist().unwrap();
+        let restored = RuntimeStore::open(&path).unwrap();
+        assert_eq!(restored.snapshot().life.identity.id, id);
+        assert_eq!(restored.snapshot().life.status, RockSoulStatus::Listening);
+        let _ = std::fs::remove_file(path);
+    }
+
+    #[test]
+    fn operator_snapshot_exposes_bounded_observability() {
+        let snapshot = RuntimeSnapshot::born();
+        let operator = snapshot.operator_snapshot();
+        assert_eq!(operator.schema_version, 1);
+        assert_eq!(operator.life_status, RockSoulStatus::Idle);
+        assert_eq!(operator.remaining_steps, 32);
+        assert!(!operator.model_available);
     }
 }

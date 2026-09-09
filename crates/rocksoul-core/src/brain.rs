@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use std::path::Path;
 use thiserror::Error;
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct BrainManifest {
@@ -41,6 +42,14 @@ pub fn validate_manifest(manifest: &BrainManifest) -> Result<(), BrainValidation
         return Err(BrainValidationError::MissingHash);
     }
     Ok(())
+}
+
+pub fn load_manifest(path: impl AsRef<Path>) -> Result<BrainManifest, BrainValidationError> {
+    let bytes = std::fs::read(path).map_err(|_| BrainValidationError::MissingHash)?;
+    let manifest: BrainManifest =
+        serde_json::from_slice(&bytes).map_err(|_| BrainValidationError::MissingHash)?;
+    validate_manifest(&manifest)?;
+    Ok(manifest)
 }
 #[derive(Debug, Clone)]
 pub struct DeterministicBrain {
@@ -104,5 +113,20 @@ mod tests {
             }),
             Err(BrainValidationError::MissingHash)
         );
+    }
+
+    #[test]
+    fn exported_manifest_can_be_loaded_without_training_dependencies() {
+        let path =
+            std::env::temp_dir().join(format!("rocksoul-brain-{}.json", uuid::Uuid::new_v4()));
+        let manifest = BrainManifest {
+            name: "nano-fixture".into(),
+            role: "routing".into(),
+            schema_version: 1,
+            artifact_sha256: "fixture-hash".into(),
+        };
+        std::fs::write(&path, serde_json::to_vec(&manifest).unwrap()).unwrap();
+        assert_eq!(load_manifest(&path).unwrap(), manifest);
+        let _ = std::fs::remove_file(path);
     }
 }

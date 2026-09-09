@@ -38,4 +38,22 @@ mod tests {
             "SIMULATED"
         );
     }
+
+    #[test]
+    fn reversible_skill_requires_authorization() {
+        let m = SkillManifest {
+            name: "reversible".into(),
+            mode: ActionMode::Reversible,
+            side_effects: true,
+            reversible: true,
+        };
+        assert_eq!(
+            execute_skill(&m, &mut Guardian::default(), false),
+            Err(PolicyError::ApprovalRequired)
+        );
+        assert_eq!(
+            execute_skill(&m, &mut Guardian::default(), true).unwrap(),
+            "ALLOWED"
+        );
+    }
 }

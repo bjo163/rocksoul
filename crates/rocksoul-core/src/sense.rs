@@ -1,6 +1,7 @@
 use crate::cognition::{EpistemicStatus, Observation, Provenance};
 use chrono::Utc;
 use serde_json::Value;
+use std::path::{Path, PathBuf};
 use thiserror::Error;
 use uuid::Uuid;
 
@@ -23,6 +24,43 @@ pub struct FixtureSense {
     pub payload: Value,
     pub max_bytes: usize,
     pub online: bool,
+}
+
+#[derive(Debug, Clone)]
+pub struct RepositorySense {
+    pub root: PathBuf,
+}
+
+impl RepositorySense {
+    pub fn new(root: impl AsRef<Path>) -> Self {
+        Self {
+            root: root.as_ref().to_path_buf(),
+        }
+    }
+}
+
+impl SenseConnector for RepositorySense {
+    fn name(&self) -> &str {
+        "local-repository"
+    }
+    fn observe(&self, subject: &str) -> Result<Observation, SenseError> {
+        let head = std::fs::read_to_string(self.root.join(".git").join("HEAD"))
+            .map_err(|_| SenseError::Offline)?;
+        let payload = serde_json::json!({ "repository": subject, "head": head.trim() });
+        Ok(Observation {
+            id: Uuid::new_v4(),
+            connector: self.name().into(),
+            subject: subject.into(),
+            payload,
+            provenance: Provenance {
+                source: self.root.display().to_string(),
+                observed_at: Utc::now(),
+                scope: subject.into(),
+                payload_hash: None,
+            },
+            status: EpistemicStatus::Observed,
+        })
+    }
 }
 
 impl SenseConnector for FixtureSense {
@@ -78,5 +116,19 @@ mod tests {
         assert!(matches!(c.observe("x"), Err(SenseError::Offline)));
         let c = FixtureSense { online: true, ..c };
         assert!(matches!(c.observe("x"), Err(SenseError::PayloadTooLarge)));
+    }
+
+    #[test]
+    fn repository_connector_is_read_only_observation() {
+        let root = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
+        let observation = RepositorySense::new(root)
+            .observe("rocksoul-cognitive-runtime")
+            .unwrap();
+        assert_eq!(observation.status, EpistemicStatus::Observed);
+        assert!(
+            observation.payload["head"]
+                .as_str()
+                .is_some_and(|head| !head.is_empty())
+        );
     }
 }

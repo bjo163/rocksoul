@@ -1,6 +1,6 @@
 # RockSoul Cognitive Runtime TODO
 
-Status: IN_PROGRESS — CR-001..CR-011 implemented as a bounded MVP; CR-012 certification is pending the security-tool gate.  
+Status: COMPLETE for CR-001..CR-018 bounded runtime milestone. CR-019 is the next expansion item.
 Baseline: `main` at `af7d52366fd6beef80963967a562c81aa54b1a6e`  
 Scope: cognitive runtime only; model research remains in `rocksoul-mind` and ecosystem orchestration remains in `runtime`.
 
@@ -326,3 +326,7 @@ Implement the persistent runtime facade and operator surface: restore LifeState,
 6. **CR-018 — Controlled action pilot and release certification** (after CR-017)
    - Add one reversible, explicitly approved skill behind Guardian and simulation-first execution.
    - Run end-to-end replay, policy, security, performance, documentation, and release gates.
+
+7. **CR-019 — External connector hardening and multi-provider contract** (next)
+   - Add bounded HTTP/API adapters with timeout, rate-limit, freshness, retry, and provider-neutral tests.
+   - Keep credentials outside source and preserve observation-only ingestion.
