@@ -10,6 +10,7 @@ use uuid::Uuid;
 
 pub mod brain;
 pub mod cognition;
+pub mod inference;
 pub mod memory;
 pub mod policy;
 pub mod sense;
