@@ -401,16 +401,16 @@ Implement the persistent runtime facade and operator surface: restore LifeState,
 
 ### Phase P6 — Host runtime reliability and cognitive integration
 
-24. **CR-036 — Host runtime baseline and reproducible dependency lock** (NOT STARTED)
-    - Freeze and review the dirty runtime baseline, track `Cargo.lock`, and record reproducible build evidence without overwriting user work.
-25. **CR-037 — Process lock and workspace boundary hardening** (NOT STARTED; depends on CR-036)
-    - Enforce exclusive ownership, PID liveness, ownership tokens, and fail-closed path/symlink boundaries.
-26. **CR-038 — Generation-consistent workspace state** (NOT STARTED; depends on CR-037)
-    - Guarantee coherent snapshots, last-known-good recovery, torn-read resistance, and identity reconciliation.
-27. **CR-039 — Transactional release provenance and rollback** (NOT STARTED; depends on CR-038)
-    - Add artifact provenance, authorization, exactly-once synchronization, transactional publication, and rollback evidence.
-28. **CR-040 — Cognitive host integration and operator certification** (NOT STARTED; depends on CR-039)
-    - Consume the cognitive boundary from the host runtime and certify read-only smoke flow, operator health, and canonical ownership boundaries.
+24. **CR-036 — Host runtime baseline and reproducible dependency lock** (VERIFIED)
+    - Host baseline and dependency evidence recorded in workspace `MASTER-TODO.json`; structured repository evidence compatibility merged in runtime PR #2 (`38ecaeae`).
+25. **CR-037 — Process lock and workspace boundary hardening** (VERIFIED; depends on CR-036)
+    - PID/start-identity ownership, stale recovery, ownership tokens, redacted diagnostics, and fail-closed path/symlink boundaries verified against runtime tests.
+26. **CR-038 — Generation-consistent workspace state** (VERIFIED; depends on CR-037)
+    - Generation safety, last-known-good recovery, torn-read resistance, cache invalidation, dependency validation, and identity reconciliation verified.
+27. **CR-039 — Transactional release provenance and rollback** (VERIFIED; depends on CR-038)
+    - Provider-neutral release ledger with artifact/source identity, fail-closed target authorization, exactly-once idempotency, atomic persistence, and rollback merged in runtime PR #3 (`88e1b731`).
+28. **CR-040 — Cognitive host integration and operator certification** (VERIFIED; depends on CR-039)
+    - Read-only cognitive contract consumer, six-stage smoke validation, canonical-write fail-closed guard, and `cognitive-health --json` operator output merged in runtime PR #4 (`6b2172f8`).
 
 ### Deep insight and design principles
 
