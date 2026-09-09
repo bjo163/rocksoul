@@ -271,6 +271,18 @@ cd rocksoul
 cargo run -p rocksoul-tui
 ```
 
+The same commands are available through the root pnpm shortcuts:
+
+```bash
+pnpm dev              # open the native TUI
+pnpm cognitive:json   # print the persisted operator snapshot
+pnpm test             # run the workspace tests
+pnpm build            # build the release binary
+pnpm verify           # format, clippy, tests, release build, and RustSec audit
+```
+
+The `audit` script expects `cargo-audit` to be installed and available on `PATH`. Runtime state is stored in `data/runtime-state.json`; override it with `ROCKSOUL_STATE_PATH`.
+
 Optional local World Surface:
 
 ```bash

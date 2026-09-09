@@ -1,0 +1,15 @@
+{
+  "name": "@rocksoul/cognitive-runtime",
+  "private": true,
+  "packageManager": "pnpm@10.0.0",
+  "scripts": {
+    "dev": "cargo run -p rocksoul-tui",
+    "start": "cargo run -p rocksoul-tui",
+    "cognitive:json": "cargo run -p rocksoul-tui -- --json",
+    "test": "cargo test --workspace",
+    "lint": "cargo fmt --all -- --check && cargo clippy --workspace --all-targets -- -D warnings",
+    "build": "cargo build --workspace --release",
+    "audit": "cargo-audit audit --file Cargo.lock",
+    "verify": "pnpm lint && pnpm test && pnpm build && pnpm audit"
+  }
+}
