@@ -49,7 +49,7 @@ fn render(frame: &mut Frame, life: &LifeState) {
         ])
         .areas(frame.area());
 
-    let display_name = brand_value("NAME").unwrap_or(&life.identity.name);
+    let display_name = brand_value("NAME").unwrap_or("RockSoul");
     let world = brand_value("WORLD").unwrap_or("Internet");
     let phase = brand_value("PHASE").unwrap_or("Phase A / Birth");
     let tagline = brand_value("TAGLINE").unwrap_or("Local-first digital cognitive runtime");
