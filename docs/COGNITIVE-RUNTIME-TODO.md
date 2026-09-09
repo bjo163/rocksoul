@@ -341,10 +341,10 @@ Implement the persistent runtime facade and operator surface: restore LifeState,
    - Reject stale, incomplete, regressed, or unverified evidence; persist the rubric version and inputs.
    - Acceptance: boundary, regression, stale-evidence, and replay tests pass. Implementation started in `crates/rocksoul-life/src/evaluation.rs`.
 
-10. **CR-022 — Progression policy, regression, and Trust ledger** (after CR-021)
+10. **CR-022 — Progression policy, regression, and Trust ledger** (IN PROGRESS)
     - Make progression transitions append-only, bounded, provenance-aware, and replayable.
     - Prove failed evaluations cannot reward progression and trust changes remain within policy bounds.
-    - Acceptance: migration, replay, negative-path, and policy tests pass.
+    - Acceptance: migration, replay, negative-path, and policy tests pass. Implementation started in `crates/rocksoul-life/src/progression.rs`.
 
 11. **CR-023 — Advisory model inference contract** (after CR-022)
     - Define provider-neutral request/response schemas with model identity, input/output hashes, confidence, expiry, safety status, and provenance.

@@ -10,9 +10,11 @@ use std::{
 use thiserror::Error;
 
 pub mod evaluation;
+pub mod progression;
 pub use evaluation::{
     CapabilityScore, EvaluationError, EvaluationEvidence, EvaluationResult, EvaluationRubric,
 };
+pub use progression::{ProgressionError, ProgressionLedger, ProgressionPolicy, TrustLedgerEntry};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct LifeState {
