@@ -154,7 +154,7 @@ Acceptance:
 
 Evidence: graph schema, transition tests, conflict fixture, rebuild test, and TUI snapshot/manual inspection.
 
-### CR-007 — Local-first memory and recall
+### CR-007 — Local-first memory and recall (VERIFIED)
 
 Dependencies: CR-006  
 Priority: P1  
@@ -174,7 +174,7 @@ Acceptance:
 - Recall never silently becomes canonical domain knowledge.
 - Redaction and retention behavior are tested.
 
-Evidence: persistence tests, recall ranking fixtures, provenance tests, redaction tests, and recovery report.
+Evidence: `MemoryStore` now separates working, episodic, semantic, and procedural records; persists and reloads JSON atomically; preserves provenance; supports freshness expiry, supersession, deterministic confidence/UUID recall ordering, redaction, and retention. Workspace tests (48 core, 13 life, 2 TUI), Clippy with warnings denied, format, and diff checks pass; Issue #8 is tracked for closure through the implementation PR.
 
 ### CR-008 — RockSoul Nano/MiniMind brain adapter
 
