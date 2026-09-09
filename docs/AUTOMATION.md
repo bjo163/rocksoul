@@ -37,6 +37,7 @@ The sync plane owns metadata and public presentation surfaces:
 - canonical Issues from `.github/roadmap-issues.json`;
 - public GitHub Project `rocksoul`;
 - Project Priority/Phase fields and Kanban/Roadmap/Backlog views;
+- active `main` ruleset and repository settings;
 - GitHub Wiki mirror from `/docs`;
 - GitHub Pages **Codex** deployment from `public/`;
 - repository description/topics/template/discussion settings;
@@ -46,7 +47,7 @@ The sync plane owns metadata and public presentation surfaces:
 
 Issue and milestone governance uses the normal repository `GITHUB_TOKEN`.
 
-Project/Wiki/repository-settings/Pages activation uses one optional repository secret:
+Project/Wiki/repository-settings/ruleset/Pages activation uses one optional repository secret:
 
 ```text
 ROCKSOUL_GITHUB_TOKEN
@@ -55,13 +56,19 @@ ROCKSOUL_GITHUB_TOKEN
 It should have the least permissions necessary for:
 
 - user-owned GitHub Project management (`project` scope or equivalent fine-grained access);
-- repository administration needed for metadata/template settings;
+- repository Administration write for metadata and repository rulesets;
 - Wiki write;
 - Pages/Admin write needed to enable Pages with workflow publishing.
 
 If the secret is absent, privileged jobs report a notice instead of claiming activation. Deterministic repository governance and `rocksoul-gate` continue to work.
 
 Pages deployment itself uses the normal job-scoped `GITHUB_TOKEN` with `pages: write` and `id-token: write` **after Pages has actually been enabled**.
+
+### Workflow-definition validation boundary
+
+`rocksoul-sync` must be valid as a GitHub Actions workflow before any token/API capability can be evaluated. Keep YAML block scalars self-contained: do not place raw shell heredoc bodies outside the indentation of `run: |`. Prefer shell strings, `printf`, or generated JSON for embedded Project/Wiki/ruleset payloads.
+
+A sync failure with **zero created jobs** is treated as a workflow-definition failure, not evidence that `ROCKSOUL_GITHUB_TOKEN` is invalid.
 
 ## 3. Dependabot
 
@@ -81,6 +88,7 @@ Renovate is deliberately absent.
 | dependency update PRs | Dependabot |
 | labels/milestones/Issues | `rocksoul-sync` |
 | Project/Wiki/repo metadata | `rocksoul-sync` |
+| main ruleset | `rocksoul-sync` |
 | GitHub Pages Codex | `rocksoul-sync` |
 | release draft + age tag | `rocksoul-sync` |
 | stale hygiene | `rocksoul-sync` |
