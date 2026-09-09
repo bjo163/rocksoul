@@ -3,6 +3,7 @@ use rocksoul_core::{
     policy::Guardian, workspace::CognitiveWorkspace, world::WorldGraph,
 };
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 use std::{
     fs,
     path::{Path, PathBuf},
@@ -115,6 +116,8 @@ pub enum RuntimeStoreError {
     InvalidSnapshot(#[from] serde_json::Error),
     #[error("unsupported runtime snapshot schema {0}")]
     UnsupportedSchema(u16),
+    #[error("runtime snapshot checksum mismatch")]
+    ChecksumMismatch,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -185,7 +188,12 @@ impl RuntimeStore {
     pub fn open(path: impl AsRef<Path>) -> Result<Self, RuntimeStoreError> {
         let path = path.as_ref().to_path_buf();
         let snapshot = if path.exists() {
-            serde_json::from_slice(&fs::read(&path)?)?
+            let bytes = fs::read(&path)?;
+            let envelope: SnapshotEnvelope = serde_json::from_slice(&bytes)?;
+            if envelope.checksum != checksum(&envelope.snapshot)? {
+                return Err(RuntimeStoreError::ChecksumMismatch);
+            }
+            envelope.snapshot
         } else {
             RuntimeSnapshot::born()
         };
@@ -205,9 +213,21 @@ impl RuntimeStore {
             fs::create_dir_all(parent)?;
         }
         let tmp = self.path.with_extension("tmp");
-        fs::write(&tmp, serde_json::to_vec_pretty(&self.snapshot)?)?;
+        let envelope = SnapshotEnvelope {
+            schema_version: 1,
+            checksum: checksum(&self.snapshot)?,
+            snapshot: self.snapshot.clone(),
+        };
+        fs::write(&tmp, serde_json::to_vec_pretty(&envelope)?)?;
         fs::rename(tmp, self.path.clone())?;
         Ok(())
+    }
+    pub fn backup(&self) -> Result<PathBuf, RuntimeStoreError> {
+        let backup = self.path.with_extension("bak");
+        if self.path.exists() {
+            fs::copy(&self.path, &backup)?;
+        }
+        Ok(backup)
     }
     pub fn update_claim(&mut self, claim: CognitiveClaim) {
         let _ = self
@@ -215,6 +235,20 @@ impl RuntimeStore {
             .memory
             .remember(rocksoul_core::memory::MemoryKind::Episodic, claim);
     }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct SnapshotEnvelope {
+    schema_version: u16,
+    checksum: String,
+    snapshot: RuntimeSnapshot,
+}
+
+fn checksum(snapshot: &RuntimeSnapshot) -> Result<String, serde_json::Error> {
+    Ok(format!(
+        "{:x}",
+        Sha256::digest(serde_json::to_vec(snapshot)?)
+    ))
 }
 
 #[cfg(test)]
@@ -261,7 +295,28 @@ mod tests {
         let restored = RuntimeStore::open(&path).unwrap();
         assert_eq!(restored.snapshot().life.identity.id, id);
         assert_eq!(restored.snapshot().life.status, RockSoulStatus::Listening);
+        assert!(std::fs::read_to_string(&path).unwrap().contains("checksum"));
         let _ = std::fs::remove_file(path);
+    }
+
+    #[test]
+    fn snapshot_tampering_is_rejected_and_backup_is_available() {
+        let path =
+            std::env::temp_dir().join(format!("rocksoul-recovery-{}.json", uuid::Uuid::new_v4()));
+        let store = RuntimeStore::open(&path).unwrap();
+        store.persist().unwrap();
+        let backup = store.backup().unwrap();
+        let text = std::fs::read_to_string(&path).unwrap();
+        let mut envelope: SnapshotEnvelope = serde_json::from_str(&text).unwrap();
+        envelope.checksum = "tampered".into();
+        std::fs::write(&path, serde_json::to_vec(&envelope).unwrap()).unwrap();
+        assert!(matches!(
+            RuntimeStore::open(&path),
+            Err(RuntimeStoreError::ChecksumMismatch)
+        ));
+        assert!(backup.exists());
+        let _ = std::fs::remove_file(path);
+        let _ = std::fs::remove_file(backup);
     }
 
     #[test]
