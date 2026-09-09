@@ -411,7 +411,22 @@ Implement the persistent runtime facade and operator surface: restore LifeState,
     - Provider-neutral release ledger with artifact/source identity, fail-closed target authorization, exactly-once idempotency, atomic persistence, and rollback merged in runtime PR #3 (`88e1b731`).
 28. **CR-040 — Cognitive host integration and operator certification** (VERIFIED; depends on CR-039)
     - Read-only cognitive contract consumer, six-stage smoke validation, canonical-write fail-closed guard, and `cognitive-health --json` operator output merged in runtime PR #4 (`6b2172f8`).
+### Phase P8 — Persistent World projection
 
+29. **CR-046 — Persistent World Graph projection** (IN_PROGRESS; PR #57 pending merge)
+    - Add provider-neutral atomic save/load for `WorldGraph`.
+    - Preserve nodes, edges, discovery state, assertions, conflicts, and evidence references across restart.
+    - Prove round-trip persistence with a deterministic unit test; do not make the graph canonical over source observations.
+
+### P8 follow-up lanes
+
+- **CR-047 — World Graph contract and renderable map boundary** (NOT_STARTED; depends on CR-046): finish the provider-neutral read model and Ratatui MAP integration for Issue #7.
+- **CR-048 — Life progression mission and trust contract** (NOT_STARTED; depends on CR-020/021/022): convert Issue #13 into a bounded, replayable implementation contract.
+- **CR-049 — Evidence-selected Cortex benchmark contract** (NOT_STARTED; depends on CR-024/046): define Issue #14 benchmark, artifact, cost, and rejection gates.
+- **CR-050 — Policy-gated autonomous research loop design** (NOT_STARTED; depends on CR-029/031/048/049): design Issue #16 finite, interruptible, auditable loops before implementation.
+- **CR-051 — Authorized CI runner inventory and routing** (BLOCKED): Issue #25 requires authenticated runner inventory access before any workflow routing change.
+
+Execution order: CR-046 merge gate → CR-047 → CR-048 and CR-049 in parallel → CR-050; CR-051 only after authorization.
 ### Deep insight and design principles
 
 - Cognitive Age is verified capability, not elapsed time or raw XP.

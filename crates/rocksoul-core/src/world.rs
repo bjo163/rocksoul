@@ -1,7 +1,7 @@
 use crate::cognition::{EpistemicStatus, Observation};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
-use std::collections::BTreeMap;
+use std::{collections::BTreeMap, fs, io, path::Path};
 use uuid::Uuid;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
@@ -44,6 +44,20 @@ pub struct WorldGraph {
     pub conflicts: Vec<WorldConflict>,
 }
 impl WorldGraph {
+    pub fn save(&self, path: &Path) -> io::Result<()> {
+        let bytes = serde_json::to_vec_pretty(self).map_err(io::Error::other)?;
+        if let Some(parent) = path.parent() {
+            fs::create_dir_all(parent)?;
+        }
+        let temp = path.with_extension("tmp");
+        fs::write(&temp, bytes)?;
+        fs::rename(temp, path)
+    }
+
+    pub fn load(path: &Path) -> io::Result<Self> {
+        serde_json::from_slice(&fs::read(path)?).map_err(io::Error::other)
+    }
+
     pub fn observe(&mut self, observation: &Observation) {
         let assertion = format!(
             "{:x}",
@@ -160,5 +174,40 @@ mod tests {
         assert!(!g.unresolved_conflicts().next().unwrap().resolved);
         assert!(g.resolve_conflict(id, Uuid::new_v4()));
         assert_eq!(g.unresolved_conflicts().count(), 0);
+    }
+
+    #[test]
+    fn graph_persists_nodes_edges_discovery_and_conflicts() {
+        let root = std::env::temp_dir().join(format!("rocksoul-world-{}", Uuid::new_v4()));
+        let path = root.join("world.json");
+        let mut graph = WorldGraph::default();
+        graph.nodes.insert(
+            "repo".into(),
+            WorldNode {
+                id: "repo".into(),
+                label: "Repository".into(),
+                discovery: Discovery::Discovered,
+                evidence: vec![Uuid::new_v4()],
+            },
+        );
+        graph
+            .edges
+            .push(("repo".into(), "runtime".into(), "contains".into()));
+        graph.assertions.insert("repo".into(), vec!["hash".into()]);
+        graph.conflicts.push(WorldConflict {
+            id: Uuid::new_v4(),
+            subject: "repo".into(),
+            assertions: vec!["hash".into(), "other".into()],
+            evidence: vec![],
+            resolved: false,
+        });
+        graph.save(&path).unwrap();
+        let loaded = WorldGraph::load(&path).unwrap();
+        assert_eq!(loaded.nodes, graph.nodes);
+        assert_eq!(loaded.edges, graph.edges);
+        assert_eq!(loaded.assertions, graph.assertions);
+        assert_eq!(loaded.conflicts, graph.conflicts);
+        assert_eq!(loaded.nodes["repo"].discovery, Discovery::Discovered);
+        let _ = fs::remove_dir_all(root);
     }
 }
