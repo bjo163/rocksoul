@@ -370,9 +370,9 @@ Implement the persistent runtime facade and operator surface: restore LifeState,
     - Merge observations into rebuildable graph projections with conflict sets, freshness, epistemic transitions, and explicit review gates.
     - Never silently overwrite a research owner’s canonical semantics. Implementation started in `crates/rocksoul-core/src/world.rs`.
 
-17. **CR-029 — Bounded planning and simulated agency** (after CR-028)
+17. **CR-029 — Bounded planning and simulated agency** (IN PROGRESS)
     - Add plan/intention schemas, dry-run simulation, Guardian budgets, approval, idempotency, cancellation, and failure recovery.
-    - Irreversible actions remain denied by default.
+    - Irreversible actions remain denied by default. Implementation started in `crates/rocksoul-core/src/planning.rs`.
 
 18. **CR-030 — Release certification and operational observability** (after CR-029)
     - Produce repeatable certification covering provenance, policy, dependencies, tests, audit, resource bounds, rollback, binary identity, and operator health.
