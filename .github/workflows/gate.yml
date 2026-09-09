@@ -100,7 +100,7 @@ jobs:
           tool: cargo-audit@0.22.2
           fallback: none
       - name: RustSec audit
-        run: cargo audit --locked
+        run: cargo audit
 
   dependency-review:
     name: dependencies
