@@ -29,7 +29,7 @@ main
   stable releasable source
 
 dev
-  integration branch
+  protected integration/release branch (`main`)
 
 feature/*
   short-lived human work
@@ -40,7 +40,7 @@ dependabot/*
 
 Do not create new `release/*`, `hotfix/*`, `chore/*`, `docs/*`, or long-lived experiment branches. Use `feature/<purpose>` and labels to describe work type.
 
-`rocksoul-gate` rejects pull requests from human branch names outside `dev` and `feature/*`.
+`rocksoul-gate` rejects pull requests from human branch names outside `feature/*`; `main` is the protected target branch.
 
 Legacy `chore/*` refs created before this policy are tracked for explicit cleanup. Do not call the branch policy complete until those refs are removed or proven necessary.
 

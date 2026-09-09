@@ -1,4 +1,5 @@
 use std::time::Duration;
+use std::{env, path::PathBuf};
 
 use anyhow::Result;
 use crossterm::event::{self, Event, KeyCode, KeyEventKind};
@@ -9,7 +10,7 @@ use ratatui::{
     text::{Line, Span},
     widgets::{Block, Borders, Paragraph, Wrap},
 };
-use rocksoul_life::LifeState;
+use rocksoul_life::{LifeState, RuntimeStore};
 use serde_json::Value;
 
 const BRAND: &str = include_str!("../../../public/brand.env");
@@ -69,7 +70,19 @@ fn brand_value(key: &str) -> Option<&'static str> {
 }
 
 fn main() -> Result<()> {
-    let life = LifeState::born_now();
+    let state_path = env::var_os("ROCKSOUL_STATE_PATH")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| PathBuf::from("data/runtime-state.json"));
+    let store = RuntimeStore::open(state_path)?;
+    if env::args().any(|arg| arg == "--json") {
+        println!(
+            "{}",
+            serde_json::to_string_pretty(&store.snapshot().operator_snapshot())?
+        );
+        return Ok(());
+    }
+    store.persist()?;
+    let life = store.snapshot().life.clone();
     ratatui::run(|terminal| run(terminal, life))
 }
 

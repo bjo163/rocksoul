@@ -10,7 +10,7 @@ All three use canonical identity/topology from `public/brand.env` and `public/wo
 
 ## Local state
 
-The repository has **not been cloned locally as part of the current repository-platform work**. GitHub writes plus GitHub-hosted CI are sufficient for this pass.
+The repository is locally cloned at `X:\REPO\2026\rocksoul-cognitive-runtime`. GitHub-hosted CI remains the remote quality gate; local verification must be run before release.
 
 If a future task truly requires a local clone, report that dependency before creating it.
 
@@ -88,7 +88,7 @@ The Vercel project and production deployment were verified through the connected
 
 That verified URL is recorded in `public/brand.env`, and `public/world.json` promotes the Vercel place to `VERIFIED`. A future deployment failure may demote the evidence state; configuration alone never guarantees continued availability.
 
-`dev` is the integration branch and may receive a stable preview environment when useful. `feature/*` branches may receive ordinary Vercel Git previews.
+`main` is the current protected integration and release branch. Short-lived `feature/*` branches may receive ordinary Vercel Git previews; create an integration branch only when a future maintainer explicitly establishes that workflow.
 
 An existing Vercel project linked to another RockSoul repository is **not** a substitute for this canonical deployment.
 
