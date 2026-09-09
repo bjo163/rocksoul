@@ -89,20 +89,18 @@ jobs:
       - name: Format
         run: cargo fmt --all -- --check
       - name: Check
-        run: cargo check --workspace --all-targets
+        run: cargo check --workspace --all-targets --locked
       - name: Clippy
-        run: cargo clippy --workspace --all-targets -- -D warnings
+        run: cargo clippy --workspace --all-targets --locked -- -D warnings
       - name: Test
-        run: cargo test --workspace
-      - name: Generate lockfile for audit
-        run: cargo generate-lockfile
+        run: cargo test --workspace --locked
       - name: Install cargo-audit
         uses: taiki-e/install-action@v2
         with:
           tool: cargo-audit@0.22.2
           fallback: none
       - name: RustSec audit
-        run: cargo audit
+        run: cargo audit --locked
 
   dependency-review:
     name: dependencies
