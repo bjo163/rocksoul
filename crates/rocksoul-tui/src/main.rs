@@ -61,9 +61,17 @@ fn render(frame: &mut Frame, life: &LifeState) {
         Line::from(vec![label("Name"), Span::raw(&life.identity.name)]),
         Line::from(vec![
             label("Born"),
-            Span::raw(life.identity.born_at.format("%Y-%m-%d %H:%M:%S UTC").to_string()),
+            Span::raw(
+                life.identity
+                    .born_at
+                    .format("%Y-%m-%d %H:%M:%S UTC")
+                    .to_string(),
+            ),
         ]),
-        Line::from(vec![label("Cognitive Age"), Span::raw(life.cognitive_age.to_string())]),
+        Line::from(vec![
+            label("Cognitive Age"),
+            Span::raw(life.cognitive_age.to_string()),
+        ]),
         Line::from(vec![label("Level"), Span::raw(life.level.to_string())]),
         Line::from(vec![label("XP"), Span::raw(life.xp.to_string())]),
         Line::from(vec![label("Trust"), Span::raw(life.trust.to_string())]),
@@ -73,11 +81,8 @@ fn render(frame: &mut Frame, life: &LifeState) {
         Line::from("Phase A / Birth — brain not connected yet."),
     ];
 
-    let body = Paragraph::new(body_lines).block(
-        Block::default()
-            .title(" HOME ")
-            .borders(Borders::ALL),
-    );
+    let body =
+        Paragraph::new(body_lines).block(Block::default().title(" HOME ").borders(Borders::ALL));
     frame.render_widget(body, body_area);
 
     let footer = Paragraph::new("q / Esc: exit")
