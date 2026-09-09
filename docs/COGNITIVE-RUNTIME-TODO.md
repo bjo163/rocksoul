@@ -1,6 +1,6 @@
 # RockSoul Cognitive Runtime TODO
 
-Status: COMPLETE for CR-001..CR-018 bounded runtime milestone. CR-019 is the next expansion item.
+Status: COMPLETE for CR-001..CR-020 bounded runtime milestone. CR-021 is the next expansion item.
 Baseline: `main` at `af7d52366fd6beef80963967a562c81aa54b1a6e`  
 Scope: cognitive runtime only; model research remains in `rocksoul-mind` and ecosystem orchestration remains in `runtime`.
 
@@ -327,6 +327,14 @@ Implement the persistent runtime facade and operator surface: restore LifeState,
    - Add one reversible, explicitly approved skill behind Guardian and simulation-first execution.
    - Run end-to-end replay, policy, security, performance, documentation, and release gates.
 
-7. **CR-019 — External connector hardening and multi-provider contract** (next)
+7. **CR-019 — External connector hardening and multi-provider contract** — VERIFIED
+
+   `BoundedConnector` provides provider-neutral read-only boundaries with payload limits, timeout and rate-limit gates, bounded retries, freshness validation, SHA-256 payload hashes, and provenance validation. Deterministic fixture tests cover the safety gates; no provider is promoted to semantic authority.
+
+8. **CR-020 — Life Progression Engine** — VERIFIED
+
+   `LifeProgressionEngine` accepts only verified outcomes, applies XP, derives level thresholds (`1 + XP / 100`), advances cognitive age only after evaluation, and clamps trust to 0–100. Tests prove verified and unverified paths plus persistence compatibility.
+
+9. **CR-021 — Evaluation-driven cognitive age and real model inference** (next)
    - Add bounded HTTP/API adapters with timeout, rate-limit, freshness, retry, and provider-neutral tests.
    - Keep credentials outside source and preserve observation-only ingestion.

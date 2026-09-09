@@ -19,6 +19,51 @@ pub struct LifeState {
     pub status: RockSoulStatus,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct VerifiedOutcome {
+    pub verified: bool,
+    pub xp: u64,
+    pub evaluation_passed: bool,
+    pub cognitive_age: Option<u16>,
+    pub trust_delta: i16,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ProgressionReport {
+    pub xp_awarded: u64,
+    pub old_level: u32,
+    pub new_level: u32,
+    pub old_age: u16,
+    pub new_age: u16,
+    pub old_trust: u8,
+    pub new_trust: u8,
+}
+
+pub struct LifeProgressionEngine;
+
+impl LifeProgressionEngine {
+    pub fn apply(state: &mut LifeState, outcome: VerifiedOutcome) -> ProgressionReport {
+        let before = (state.level, state.cognitive_age, state.trust);
+        if outcome.verified {
+            state.grant_validated_xp(outcome.xp, true);
+            if let Some(age) = outcome.cognitive_age {
+                state.promote_cognitive_age(age, outcome.evaluation_passed);
+            }
+            state.trust = (i16::from(state.trust) + outcome.trust_delta).clamp(0, 100) as u8;
+            state.level = (1 + state.xp / 100).min(u64::from(u32::MAX)) as u32;
+        }
+        ProgressionReport {
+            xp_awarded: if outcome.verified { outcome.xp } else { 0 },
+            old_level: before.0,
+            new_level: state.level,
+            old_age: before.1,
+            new_age: state.cognitive_age,
+            old_trust: before.2,
+            new_trust: state.trust,
+        }
+    }
+}
+
 impl LifeState {
     #[must_use]
     pub fn born_now() -> Self {
@@ -220,5 +265,35 @@ mod tests {
         assert_eq!(operator.life_status, RockSoulStatus::Idle);
         assert_eq!(operator.remaining_steps, 32);
         assert!(!operator.model_available);
+    }
+
+    #[test]
+    fn verified_outcome_drives_xp_level_age_and_trust() {
+        let mut life = LifeState::born_now();
+        let report = LifeProgressionEngine::apply(
+            &mut life,
+            VerifiedOutcome {
+                verified: true,
+                xp: 250,
+                evaluation_passed: true,
+                cognitive_age: Some(2),
+                trust_delta: 10,
+            },
+        );
+        assert_eq!(
+            (report.new_level, report.new_age, report.new_trust),
+            (3, 2, 10)
+        );
+        LifeProgressionEngine::apply(
+            &mut life,
+            VerifiedOutcome {
+                verified: false,
+                xp: 1000,
+                evaluation_passed: true,
+                cognitive_age: Some(9),
+                trust_delta: 50,
+            },
+        );
+        assert_eq!((life.xp, life.cognitive_age, life.trust), (250, 2, 10));
     }
 }
