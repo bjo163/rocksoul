@@ -1,0 +1,29 @@
+name-template: 'v$RESOLVED_VERSION'
+tag-template: 'v$RESOLVED_VERSION'
+change-template: '- $TITLE (#$NUMBER) @$AUTHOR'
+no-changes-template: '- No user-visible changes'
+categories:
+  - title: '🚀 Features'
+    labels: ['type:feature']
+  - title: '🐛 Fixes'
+    labels: ['type:bug']
+  - title: '🔐 Security'
+    labels: ['type:security']
+  - title: '📚 Documentation'
+    labels: ['type:docs']
+  - title: '🧰 Maintenance'
+    labels: ['type:maintenance', 'dependencies']
+version-resolver:
+  major:
+    labels: ['breaking-change']
+  minor:
+    labels: ['type:feature']
+  patch:
+    labels: ['type:bug', 'type:security', 'type:maintenance', 'dependencies', 'type:docs']
+  default: patch
+template: |
+  ## Changes
+  $CHANGES
+
+  ## Verification
+  Release contents are drafted from merged PR metadata. Publishing remains a deliberate maintainer action.

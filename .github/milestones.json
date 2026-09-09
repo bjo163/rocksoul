@@ -1,0 +1,16 @@
+[
+  {"title":"Foundation — Governance","description":"Repository structure, documentation, automation, security and project governance."},
+  {"title":"Phase A — Birth","description":"Restart-safe identity, lifecycle state and event journal."},
+  {"title":"Phase B — World","description":"Explicit Internet/digital world graph, discovery and Ratatui map."},
+  {"title":"Phase C — Memory","description":"Persistent working, episodic, semantic and procedural memory."},
+  {"title":"Phase D — Nano","description":"Rust-native RockSoul Nano artifact integration and routing."},
+  {"title":"Phase E — Skills","description":"Deterministic tools/executor beginning with read-oriented skills."},
+  {"title":"Phase F — Cognition","description":"Structured global cognitive workspace and finite executive loop."},
+  {"title":"Phase G — Guardian","description":"Tabayyun, provenance, contradiction, permissions, risk and audit."},
+  {"title":"Phase H — Life","description":"Missions, validated XP, level, achievements, cognitive age and trust metrics."},
+  {"title":"Phase I — Cortex","description":"Larger reasoning/planning Cortex integration guided by evidence."},
+  {"title":"Phase J — Shura","description":"Dynamic multi-perspective reasoning only for warranted complexity."},
+  {"title":"Phase K — Autonomous Research","description":"Finite goal-to-research/experiment/code/verify/report loops."},
+  {"title":"Phase L — Collective Intelligence","description":"Controlled sharing of verified world knowledge and experience."},
+  {"title":"Phase M — ASI Research Gate","description":"Empirical evaluation gate; ASI is never granted by architecture or branding."}
+]

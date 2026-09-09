@@ -25,7 +25,7 @@ body:
     validations:
       required: true
   - type: textarea
-    id: nong goals
+    id: non_goals
     attributes:
       label: Non-goals
       description: What should explicitly remain out of scope?

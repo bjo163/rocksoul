@@ -1,0 +1,53 @@
+name: project-sync
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: read
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.ROCKSOUL_PROJECT_TOKEN }}
+      PROJECT_TITLE: RockSoul Roadmap
+    steps:
+      - name: Require project-scoped token
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${GH_TOKEN:-}" ]]; then
+            echo '::error::Add repository secret ROCKSOUL_PROJECT_TOKEN with GitHub project scope, then rerun this workflow.'
+            exit 1
+          fi
+
+      - name: Create or locate project
+        id: project
+        shell: bash
+        run: |
+          set -euo pipefail
+          owner="$GITHUB_REPOSITORY_OWNER"
+          number=$(gh project list --owner "$owner" --limit 100 --format json | jq -r --arg title "$PROJECT_TITLE" '(.projects // .)[]? | select(.title == $title) | .number' | head -n1)
+          if [[ -z "$number" ]]; then
+            number=$(gh project create --owner "$owner" --title "$PROJECT_TITLE" --format json --jq '.number')
+          fi
+          echo "number=$number" >> "$GITHUB_OUTPUT"
+
+      - name: Link repository
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh project link "${{ steps.project.outputs.number }}" --owner "$GITHUB_REPOSITORY_OWNER" --repo "${GITHUB_REPOSITORY#*/}"
+
+      - name: Add open issues
+        shell: bash
+        run: |
+          set -euo pipefail
+          project="${{ steps.project.outputs.number }}"
+          gh issue list --repo "$GITHUB_REPOSITORY" --state open --limit 200 --json url --jq '.[].url' | while read -r url; do
+            if ! gh project item-add "$project" --owner "$GITHUB_REPOSITORY_OWNER" --url "$url" >/dev/null 2>&1; then
+              echo "::notice::Issue may already be present in the project: $url"
+            fi
+          done
