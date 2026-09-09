@@ -9,6 +9,7 @@ use thiserror::Error;
 use uuid::Uuid;
 
 pub mod brain;
+pub mod brain_adapter;
 pub mod cognition;
 pub mod inference;
 pub mod memory;
