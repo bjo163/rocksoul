@@ -37,7 +37,7 @@ python -m http.server 3000 -d public
 Only these branch namespaces are intentional:
 
 - `main` — releasable source.
-- `dev` — integration branch.
+- `main` — current protected integration and release branch. Use short-lived `feature/*` branches for changes.
 - `feature/*` — all short-lived human work, regardless of whether the change is feature/fix/docs/refactor/maintenance/security.
 - `dependabot/*` — GitHub-native bot exception.
 

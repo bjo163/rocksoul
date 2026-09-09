@@ -72,7 +72,7 @@ A sync failure with **zero created jobs** is treated as a workflow-definition fa
 
 ## 3. Dependabot
 
-Dependabot is the **only dependency update bot** and owns Cargo + GitHub Actions update PRs. `dependabot/*` is the only non-human branch-prefix exception to the `main`, `dev`, `feature/*` policy.
+Dependabot is the **only dependency update bot** and owns Cargo + GitHub Actions update PRs. `dependabot/*` is the only non-human branch-prefix exception to the `main`, `feature/*` policy.
 
 Renovate is deliberately absent.
 

@@ -14,7 +14,7 @@ Before opening a PR, read:
 
 1. Search existing issues first.
 2. For architecture changes, open an Architecture / RFC issue before a large implementation.
-3. Branch from `dev` for integrated feature work, or the appropriate current base explicitly agreed by maintainers.
+3. Branch from `main` for feature work unless maintainers explicitly document another current base.
 4. Use a short-lived `feature/<purpose>` branch for all human contributions.
 5. Keep the change coherent and avoid unrelated cleanup.
 6. Run the local Rust checks.
