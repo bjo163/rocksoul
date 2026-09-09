@@ -1,0 +1,31 @@
+name: Feature request
+description: Propose an incremental capability
+labels:
+  - type:feature
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: What user/system capability should exist?
+    validations:
+      required: true
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Motivation
+      description: Why is this needed and what measurable problem does it solve?
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Define observable conditions for completion.
+    validations:
+      required: true
+  - type: textarea
+    id: nong goals
+    attributes:
+      label: Non-goals
+      description: What should explicitly remain out of scope?

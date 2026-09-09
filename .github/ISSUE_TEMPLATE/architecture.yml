@@ -1,0 +1,42 @@
+name: Architecture / RFC
+description: Propose a material architecture, security, model, or infrastructure change
+title: "[RFC] "
+labels:
+  - type:architecture
+  - status:needs-design
+body:
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: What current limitation motivates this proposal?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: Describe boundaries, data/control flow, and ownership.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Include the simplest viable option and why it is insufficient.
+    validations:
+      required: true
+  - type: textarea
+    id: risks
+    attributes:
+      label: Risks and failure modes
+      description: Complexity, security, performance, migration, and rollback concerns.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence / evaluation plan
+      description: What would prove this architecture is better?
+    validations:
+      required: true

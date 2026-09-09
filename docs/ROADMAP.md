@@ -1,39 +1,49 @@
 # RockSoul Roadmap
 
+GitHub milestones and canonical roadmap issues are the executable source of truth for phase work. This document defines ordering, intent, and exit criteria.
+
 ## Phase A — Birth
 
-Goal: a minimal, buildable Rust application with an explicit life identity and Ratatui shell.
+Goal: a minimal, buildable Rust application with an explicit, restart-safe life identity and Ratatui shell.
 
-- [x] initialize repository and `dev` branch
-- [x] Rust workspace
-- [x] pin Rust toolchain
+Completed foundation:
+
+- [x] repository and branch baseline
+- [x] Rust workspace and pinned toolchain
 - [x] `rocksoul-core` identity and event primitives
 - [x] `rocksoul-life` age/level/XP/trust state
 - [x] validated-XP gate
 - [x] cognitive-age evaluation gate
 - [x] initial Ratatui HOME screen
-- [ ] persistent birth/life state
-- [ ] event journal
-- [ ] CI green on exact `dev` head
+- [x] exact-head CI green on `main`
+
+Remaining canonical work:
+
+- persistent birth/life state
+- append-only event journal
+- chronological age derived from persisted birth event
+- restart/recovery tests
 
 Exit criteria:
 
-- workspace builds and tests cleanly
-- `cargo run -p rocksoul-tui` opens the Birth/Home interface
-- restart-safe identity is specified and implemented before chronological age becomes authoritative
+- `cargo run -p rocksoul-tui` opens the Home interface;
+- identity survives restart without a new birth;
+- lifecycle mutations are journaled and testable;
+- exact-head CI remains green.
 
 ## Phase B — World
 
-Goal: make the Internet/digital environment an explicit navigable world model.
+Goal: make the Internet and authorized digital environment an explicit navigable world model.
 
 - world/place/entity primitives
 - world graph
-- discovery state / fog of war
-- current location and activity
+- discovery state and fog of war
+- current location/activity
 - Ratatui WORLD view
+- provenance/trust metadata
 - finite exploration budgets
 
-Do not add a 3D renderer in this phase.
+No 3D renderer in this phase.
 
 ## Phase C — Memory
 
@@ -43,11 +53,11 @@ Do not add a 3D renderer in this phase.
 - semantic memory
 - procedural memory
 - provenance, freshness and supersession metadata
-- pgvector only when semantic retrieval requires it
+- pgvector only when semantic retrieval demonstrates a need
 
 ## Phase D — RockSoul Nano
 
-Consume an exported artifact from `bjo163/rocksoul-mind` through a stable Rust brain interface.
+Consume a versioned exported artifact from `bjo163/rocksoul-mind` through a stable Rust brain interface.
 
 Initial capabilities:
 
@@ -58,11 +68,11 @@ Initial capabilities:
 - structured output
 - simple tool selection
 
-Production inference should not require the training repository or a Python service.
+Production inference must not require the training repository or a Python service.
 
 ## Phase E — Skills / Yad
 
-Start with read-oriented skills:
+Begin with read-oriented skills:
 
 - web/search abstraction
 - files
@@ -70,9 +80,11 @@ Start with read-oriented skills:
 - HTTP/API
 - PostgreSQL read
 
-Then introduce privileged/domain tools behind explicit policy.
+Privileged/domain tools arrive only behind explicit authorization and risk policy.
 
 ## Phase F — Cognitive Workspace
+
+Canonical structured task state:
 
 - goals
 - constraints
@@ -82,6 +94,7 @@ Then introduce privileged/domain tools behind explicit policy.
 - hypotheses
 - evidence
 - plans
+- actions
 - observations
 - confidence
 - budgets
@@ -109,7 +122,7 @@ Then introduce privileged/domain tools behind explicit policy.
 
 ## Phase I — Cortex
 
-Target research size: approximately 300–600M parameters, subject to evidence from `rocksoul-mind`.
+Research target: approximately 300–600M parameters, subject to evidence from `rocksoul-mind`.
 
 - reasoning
 - planning
@@ -120,18 +133,18 @@ Target research size: approximately 300–600M parameters, subject to evidence f
 
 ## Phase J — Shura
 
-Add dynamic multi-perspective reasoning only when complexity warrants it. Avoid permanent agent swarms.
+Add dynamic multi-perspective reasoning only when task complexity warrants it. Avoid permanent agent swarms.
 
 ## Phase K — Autonomous Research
 
-Goal -> research -> hypothesis -> experiment/code -> observe -> verify -> report.
+Goal → research → hypothesis → experiment/code → observe → verify → report.
 
-All autonomous loops remain finite, policy-gated and auditable.
+All loops remain finite, policy-gated, observable, and auditable.
 
 ## Phase L — Collective Intelligence
 
-Controlled sharing of verified world knowledge and experience between RockSoul instances.
+Controlled sharing of verified world knowledge and validated experience between RockSoul instances.
 
 ## Phase M — ASI Research Gate
 
-ASI is not unlocked by level, age, architecture, or branding. It remains a research classification requiring broad empirical evidence of capabilities beyond top human performance.
+ASI is not unlocked by level, age, architecture, parameter count, or branding. It remains a research classification requiring broad empirical evidence of capabilities beyond top human performance.
