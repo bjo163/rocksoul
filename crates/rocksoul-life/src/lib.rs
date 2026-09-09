@@ -9,6 +9,11 @@ use std::{
 };
 use thiserror::Error;
 
+pub mod evaluation;
+pub use evaluation::{
+    CapabilityScore, EvaluationError, EvaluationEvidence, EvaluationResult, EvaluationRubric,
+};
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct LifeState {
     pub identity: Identity,
