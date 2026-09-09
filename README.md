@@ -1,26 +1,29 @@
 <div align="center">
 
-# RockSoul
+<img src="https://raw.githubusercontent.com/bjo163/rocksoul-assets/5b035d0d83612f847ccd8b35f2c1b04022500110/moonwitness/brand/rocksoul-lockup.svg" alt="RockSoul ecosystem" width="720">
 
-**Local-first Rust digital cognitive runtime — one life, one state contract, synchronized TUI + Web surfaces.**
+# ROCKSOUL WORLD
 
-[![Gate](https://img.shields.io/github/actions/workflow/status/bjo163/rocksoul/gate.yml?branch=main&label=gate&logo=githubactions)](https://github.com/bjo163/rocksoul/actions/workflows/gate.yml)
-[![Release](https://img.shields.io/github/v/release/bjo163/rocksoul?display_name=tag&sort=semver&label=age%20release)](https://github.com/bjo163/rocksoul/releases)
+**Local-first Rust digital cognitive runtime — a navigable digital world built from real systems, evidence, quests, knowledge and verified experience.**
+
+[![Gate](https://img.shields.io/github/actions/workflow/status/bjo163/rocksoul/gate.yml?branch=main&label=trust%20gate&logo=githubactions)](https://github.com/bjo163/rocksoul/actions/workflows/gate.yml)
+[![Release](https://img.shields.io/github/v/release/bjo163/rocksoul?display_name=tag&sort=semver&label=world%20build)](https://github.com/bjo163/rocksoul/releases)
 [![Downloads](https://img.shields.io/github/downloads/bjo163/rocksoul/total?label=downloads)](https://github.com/bjo163/rocksoul/releases)
-[![Issues](https://img.shields.io/github/issues/bjo163/rocksoul?label=issues)](https://github.com/bjo163/rocksoul/issues)
+[![Issues](https://img.shields.io/github/issues/bjo163/rocksoul?label=quests)](https://github.com/bjo163/rocksoul/issues)
 [![Stars](https://img.shields.io/github/stars/bjo163/rocksoul?style=flat&label=stars)](https://github.com/bjo163/rocksoul/stargazers)
 [![Forks](https://img.shields.io/github/forks/bjo163/rocksoul?style=flat&label=forks)](https://github.com/bjo163/rocksoul/forks)
-[![Last Commit](https://img.shields.io/github/last-commit/bjo163/rocksoul?label=last%20commit)](https://github.com/bjo163/rocksoul/commits/main)
+[![Last Commit](https://img.shields.io/github/last-commit/bjo163/rocksoul?label=last%20observation)](https://github.com/bjo163/rocksoul/commits/main)
 [![Rust](https://img.shields.io/badge/Rust-1.88-000000?logo=rust)](rust-toolchain.toml)
 [![Local First](https://img.shields.io/badge/architecture-local--first-0e8a16)](docs/STORAGE.md)
-[![Template Ready](https://img.shields.io/badge/repository-template--ready-5319e7)](docs/TEMPLATE.md)
+[![Template Ready](https://img.shields.io/badge/world-template--ready-5319e7)](docs/TEMPLATE.md)
 
-[**Wiki**](https://github.com/bjo163/rocksoul/wiki) ·
-[**Issues**](https://github.com/bjo163/rocksoul/issues) ·
-[**Discussions**](https://github.com/bjo163/rocksoul/discussions) ·
-[**Projects**](https://github.com/users/bjo163/projects?query=rocksoul) ·
-[**Actions**](https://github.com/bjo163/rocksoul/actions) ·
-[**Releases / EXE**](https://github.com/bjo163/rocksoul/releases)
+[**ENTER CODEX**](https://bjo163.github.io/rocksoul/) ·
+[**QUESTS**](https://github.com/bjo163/rocksoul/issues) ·
+[**WORLD MAP**](https://github.com/users/bjo163/projects?query=rocksoul) ·
+[**ARCHIVE**](https://github.com/bjo163/rocksoul/wiki) ·
+[**DISCUSSIONS**](https://github.com/bjo163/rocksoul/discussions) ·
+[**WORLD SYSTEMS**](https://github.com/bjo163/rocksoul/actions) ·
+[**WORLD BUILDS / EXE**](https://github.com/bjo163/rocksoul/releases)
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fbjo163%2Frocksoul&project-name=rocksoul)
 
@@ -28,75 +31,154 @@
 
 ---
 
-RockSoul is a **digital life / cognitive runtime**, not a single LLM. Its production runtime is Rust-first and is intended to grow through verified experience: identity, senses, memory, world state, reasoning, verification, tools, missions, XP, cognitive age and trust.
+RockSoul is a **digital life / cognitive runtime**, not a single LLM and not a visual-only metaverse. The Rust runtime is intended to grow through verifiable state: identity, senses, world, memory, knowledge, reasoning, verification, tools, missions, XP, cognitive age and trust.
+
+The RPG/world vocabulary is an interface over real engineering objects. **Issue = Quest** does not create a second task database. **Runner = World Node** does not make an unavailable runner appear online. **Trust = verification policy**, not decoration.
 
 Human cognitive structure and selected Qur'anic principles are used as bounded architectural inspiration. RockSoul is **not** claimed to possess a human soul, `ruh`, `nafs`, consciousness, AGI or ASI.
 
-## Live state
+## ENTER WORLD
+
+The shared Operator / World interface now uses the same core navigation in Ratatui and Web:
 
 ```text
-┌──────────────────────────────────────────────────────────────┐
-│                 ROCKSOUL • GEN 1 • AGE 0 • LV 1            │
-├─ HOME ───────────────────────────────────────────────────────┤
-│ Name             RockSoul                                   │
-│ Cognitive Age    0                                          │
-│ Level            1                                          │
-│ XP               0                                          │
-│ Trust            0                                          │
-│ World            Internet                                   │
-│ State            Born                                       │
+┌─ ROCKSOUL OPERATOR ─────────────────────────────────────────┐
+│ ROCKSOUL • GEN 1 • AGE 0 • LV 1                            │
+├─────────────────────────────────────────────────────────────┤
+│ [1 WORLD] [2 MAP] [3 QUESTS] [4 CODEX] [5 SYSTEM]          │
+├─────────────────────────────────────────────────────────────┤
+│ WORLD: INTERNET                                              │
+│ STATE: BORN                                                  │
 │                                                              │
-│ Phase A / Birth — brain not connected yet.                  │
-├──────────────────────────────────────────────────────────────┤
-│              Local-first digital cognitive runtime          │
-└──────────────────────────────────────────────────────────────┘
+│ WORLD / MAP / QUESTS / KNOWLEDGE / SYSTEMS                  │
+│ all follow the same evidence and topology contract.          │
+├─────────────────────────────────────────────────────────────┤
+│ evidence before trust • q / Esc exit                         │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-The native **Ratatui TUI** and lightweight **Vercel web mirror** share display identity from [`public/brand.env`](public/brand.env). The browser surface intentionally adds no frontend framework in Phase A.
+Shared state contracts:
 
-## Repository control plane
+- [`public/brand.env`](public/brand.env) — identity, Age, Level, XP, Trust, navigation and accepted visual revisions.
+- [`public/world.json`](public/world.json) — topology, evidence vocabulary, discovery progression and World terminology.
+- [`docs/WORLD.md`](docs/WORLD.md) — human-readable World/Codex contract.
 
-| Surface | Role | Source of truth |
-| --- | --- | --- |
-| `main` | releasable state | Git |
-| `dev` | integration | Git |
-| `feature/*` | human feature work | Git |
-| Issues | executable units of work | `.github/roadmap-issues.json` for canonical roadmap issues |
-| Labels | type / area / priority / phase | `.github/labels.json` |
-| Milestones | Foundation + Phase A–M | `.github/milestones.json` |
-| Public Project | Kanban + Roadmap + Backlog visualization | synchronized from Issues |
-| Wiki | long-form browsable documentation | synchronized from `/docs` |
-| Releases | age-aligned binaries and immutable bundles | Git tags + gate |
-| Actions | quality, security, sync, release automation | `gate.yml` + `sync.yml` |
+The Web World Surface can observe public GitHub data for repositories, Issues, Releases and repository events. The native TUI deliberately does **not** pretend to have those live network observations before its Rust Sense/API connector exists.
 
-GitHub Projects supports board/Kanban, table and roadmap views; RockSoul uses all three without making the Project a second database.
+## WORLD STATUS
 
-## Two automation planes only
+Status words are intentionally strict:
 
 ```text
-rocksoul-gate
-├── branch/repository policy
-├── Rust fmt/check/clippy/test
-├── RustSec
-├── dependency review
-├── Markdown + web smoke
-├── CodeQL
-└── tag → Linux / Windows EXE / macOS release binaries
-
-rocksoul-sync
-├── PR path labels
-├── labels + milestones + canonical issues
-├── public Project + fields + views
-├── Wiki mirror
-├── repository metadata/template settings
-├── Release Drafter
-├── age-aligned tag creation
-└── stale hygiene
+VERIFIED  OBSERVED  INFERRED  PENDING  BLOCKED  UNKNOWN
 ```
 
-Dependabot stays GitHub-native and is the **only dependency bot**. No Renovate overlap. AI automation is not required for this control plane.
+Current public topology is designed to report only what can actually be evidenced:
 
-## Mental model
+| World object | Engineering object | Current evidence contract |
+| --- | --- | --- |
+| World Core | `bjo163/rocksoul` | OBSERVED |
+| World Resource | `bjo163/rocksoul-assets` | OBSERVED |
+| UI Grammar | `bjo163/rocksoul-ui` | OBSERVED |
+| Cognition Lab | `bjo163/rocksoul-mind` | OBSERVED |
+| World Map | public GitHub Project `rocksoul` | PENDING privileged sync |
+| Archive | GitHub Wiki mirror | PENDING privileged sync |
+| Codex Portal | GitHub Pages | PENDING until Pages API + deployment prove activation |
+| Live World Portal | canonical Vercel project for `bjo163/rocksoul` | PENDING |
+| World Nodes | self-hosted runner inventory for this repository | UNKNOWN until authenticated evidence exists |
+| Gateway | Cloudflare Tunnel | PENDING / not required without a private service exposure need |
+
+A configuration file is not proof that a deployment is online. These states change only after evidence changes.
+
+## WORLD MAP
+
+```text
+                           ROCKSOUL WORLD
+                                │
+               ┌────────────────┼────────────────┐
+               │                │                │
+           WORLD CORE       WORLD SYSTEMS     WORLD NODES
+             rocksoul        gate / sync       runners
+               │             cognition         services
+               │             memory
+               │             knowledge
+               │             trust
+               │             experience
+       ┌───────┼──────────┬─────────────┐
+       │       │          │             │
+    ASSETS     UI        MIND         PORTALS
+       │       │          │             │
+ resources  grammar    cognition   Pages / Vercel
+                                    Cloudflare only
+                                    when justified
+```
+
+The current map is topology-first. A geographic or richer metaverse map arrives only when actual World Graph place/route data exists. We do not add a 3D engine to simulate maturity.
+
+### Fog of War / discovery
+
+```text
+UNKNOWN
+  ↓
+DISCOVERED
+  ↓
+OBSERVED
+  ↓
+VISITED
+  ↓
+STUDIED
+  ↓
+VERIFIED
+  ↓
+TRUSTED
+```
+
+`TRUSTED` requires an explicit provenance/verification policy. Repeated visits do not automatically create trust.
+
+## QUESTS & CHAPTERS
+
+GitHub remains the engineering and world-building hub:
+
+```text
+GitHub Issue       → QUEST
+Milestone          → CHAPTER / REGION
+GitHub Project     → WORLD MAP
+Pull Request       → CONTRIBUTION
+Release            → WORLD BUILD
+Actions            → WORLD SYSTEMS
+```
+
+Issues are the source of truth. The Project, Web Portal and future TUI Quest feed are views over those Issues—not independent task databases.
+
+Canonical machine-readable governance:
+
+- [`.github/labels.json`](.github/labels.json)
+- [`.github/milestones.json`](.github/milestones.json)
+- [`.github/roadmap-issues.json`](.github/roadmap-issues.json)
+
+Labels encode `type:*`, `area:*`, `priority:*`, `status:*`, `phase:*` and release intent. Milestones represent Foundation and Phase A–M.
+
+## CODEX & ARCHIVE
+
+`/docs` is canonical knowledge. Public surfaces render it differently:
+
+```text
+docs/                 → canonical knowledge
+   ├─ WORLD            → Digital World semantics
+   ├─ ARCHITECTURE     → cognitive/runtime boundaries
+   ├─ ROADMAP          → chapters / progression
+   ├─ PROJECT          → quests / map
+   ├─ STORAGE          → data placement
+   ├─ AUTOMATION       → World Systems
+   └─ DEPLOYMENT       → portals / World Builds
+          │
+          ├──────────→ GitHub Wiki  = ARCHIVE
+          └──────────→ GitHub Pages = CODEX
+```
+
+Pages and Vercel intentionally reuse the same lightweight `public/` artifact. On `github.io`, the app enters **CODEX**; on Vercel/ordinary hosts it enters **WORLD**. That keeps one UI/state contract instead of two websites drifting apart.
+
+## COGNITIVE SYSTEM
 
 ```text
 WORLD
@@ -119,12 +201,145 @@ WORLD
   ↓
 MUHASABAH
   ↓
-EXPERIENCE → XP → LEVEL
+VERIFIED EXPERIENCE → XP → LEVEL
 ```
 
-The Internet and authorized digital systems are modeled as an explicit world of places, entities, observations, provenance, trust and discovery state.
+The Internet and authorized digital systems are modeled as an explicit World of entities, places, relations, observations, provenance, trust and discovery state.
 
-## Quick start
+Architecture details: [Architecture](docs/ARCHITECTURE.md) and [World](docs/WORLD.md).
+
+## EXPERIENCE / AGE / LEVEL
+
+Progression is not click-based gamification:
+
+```text
+ACTION
+  ↓
+OUTCOME
+  ↓
+VALIDATION
+  ↓
+VERIFIED EXPERIENCE
+  ↓
+XP
+  ↓
+LEVEL / CAPABILITY
+```
+
+Only validated outcomes earn success XP. Cognitive Age advances through evaluation gates, not elapsed wall-clock time. Trust never bypasses authorization policy.
+
+## WORLD RESOURCES — ASSETS × UI
+
+RockSoul does not create a third design system.
+
+```text
+bjo163/rocksoul-assets
+          ↓
+     @rocksoul/ui
+          ↓
+ RockSoul World surfaces
+```
+
+- `rocksoul-assets` is the visual source of truth: architecture nodes, geospatial/map primitives, status/badge assets, Kanban, graph, command/keyboard, cinematic and runtime packs.
+- `rocksoul-ui` converts that visual truth into production UI contracts and reusable components.
+- this runtime consumes the accepted visual contract instead of forking it.
+
+The currently accepted asset/UI revisions are pinned in `public/brand.env` and `public/world.json`. A newer asset `main` head is not automatically promoted just because it exists.
+
+## WORLD SYSTEMS — TWO AUTOMATION PLANES
+
+```text
+rocksoul-gate                         rocksoul-sync
+├── branch policy                     ├── PR labels
+├── world/brand contract              ├── labels / milestones / Issues
+├── Rust fmt/check/clippy/test         ├── public Project / World Map
+├── TUI contract tests                ├── Wiki / Archive
+├── RustSec                           ├── Pages / Codex
+├── dependency review                 ├── repo metadata/template
+├── Portal HTTP smoke                 ├── Release Drafter
+├── CodeQL                            ├── age-aligned release request
+└── World Build binaries              └── stale hygiene
+```
+
+Dependabot is the only dependency-update bot. No Renovate overlap. No permanent AI reviewer is installed because the current synchronization/classification work is deterministic.
+
+If a real semantic automation gap appears later, one AI gateway may be added behind `rocksoul-sync`; it should not become a competing third control plane.
+
+See [Automation](docs/AUTOMATION.md).
+
+## PORTALS
+
+### GitHub Pages — CODEX
+
+Expected URL after verified activation:
+
+`https://bjo163.github.io/rocksoul/`
+
+Pages remains **PENDING** until GitHub reports the site configured and the deployment succeeds.
+
+### Vercel — LIVE WORLD PORTAL
+
+The repository has zero-build [`vercel.json`](vercel.json) configuration for `public/`.
+
+Canonical Vercel deployment must be linked to **this repository**, `bjo163/rocksoul`. An existing `rocksoul-*` Vercel project connected to another repository is not treated as the RockSoul World Portal.
+
+### Cloudflare — GATEWAY
+
+No Tunnel is required merely because RockSoul has a World concept. GitHub Pages/Vercel already serve static public surfaces.
+
+A tunnel is introduced only for a justified private service:
+
+```text
+PRIVATE NODE → ROCKSOUL SERVICE → CLOUDFLARE TUNNEL → AUTHORIZED GATEWAY
+```
+
+Default: **PRIVATE FIRST**.
+
+## LOCAL-FIRST STORAGE
+
+RockSoul does not turn every available cloud account into a dependency.
+
+```text
+LOCAL FIRST
+├── local files / SQLite / local Postgres
+│
+├── GitHub
+│   ├── code + configuration + small public manifests
+│   ├── Issues / Milestones / Project metadata
+│   └── Releases → binaries / immutable bundles
+│
+├── Cloudflare R2 → preferred general large-object target when provisioned
+│
+└── optional shared relational profile
+    ├── Supabase → Postgres + integrated Auth/RLS/Realtime/Storage
+    └── Neon     → focused serverless Postgres profile
+```
+
+**Supabase and Neon are alternatives for a shared relational domain, not dual writable masters.** Vercel Blob is reserved for web-adjacent objects. Architecture documentation is not evidence that any remote bucket/database has already been provisioned.
+
+See [Storage and Data Placement](docs/STORAGE.md).
+
+## WORLD BUILDS / DOWNLOADABLE EXE
+
+Distribution versions are aligned to evaluated Cognitive Age:
+
+```text
+v0.<cognitive-age>.<revision>
+```
+
+A release is opt-in: merge a PR labeled `release:ready`, or manually request `publish_age_release` in `rocksoul-sync`.
+
+The exact release tag is revalidated by `rocksoul-gate`, then produces:
+
+- Linux x86_64 archive
+- Windows x86_64 archive containing `rocksoul.exe`
+- macOS arm64 archive
+
+A build is not described as released until the GitHub Release and assets actually exist.
+
+See [Deployment](docs/DEPLOYMENT.md).
+
+## QUICK START
 
 ```bash
 git clone https://github.com/bjo163/rocksoul.git
@@ -132,64 +347,26 @@ cd rocksoul
 cargo run -p rocksoul-tui
 ```
 
-Run the web mirror locally:
+Optional local World Surface:
 
 ```bash
 python -m http.server 3000 -d public
 ```
 
-Then open `http://localhost:3000`.
+Those commands are usage instructions. They are not a claim that the repository-platform work used or prepared a local clone.
 
-## Downloadable releases
+## REPOSITORY BOUNDARIES
 
-Age-aligned versions use:
+| Repository | World role | Responsibility |
+| --- | --- | --- |
+| [`bjo163/rocksoul`](https://github.com/bjo163/rocksoul) | WORLD CORE | runtime, life, World, cognition orchestration, tools, guardian, TUI/Web |
+| [`bjo163/rocksoul-assets`](https://github.com/bjo163/rocksoul-assets) | WORLD RESOURCE | canonical visual assets/design source |
+| [`bjo163/rocksoul-ui`](https://github.com/bjo163/rocksoul-ui) | WORLD SYSTEM / UI GRAMMAR | production visual implementation contract |
+| [`bjo163/rocksoul-mind`](https://github.com/bjo163/rocksoul-mind) | COGNITION LAB | model research, training, distillation, evaluation, export |
 
-```text
-v0.<cognitive-age>.<revision>
-```
+Production model integration must remain behind a stable Rust interface; the runtime should not depend on training-repository Python internals.
 
-For Age `0`, examples are `v0.0.1`, `v0.0.2`, and so on. Public tags trigger verified builds for:
-
-- Linux x86_64
-- Windows x86_64 `.exe`
-- macOS arm64
-
-See [Deployment](docs/DEPLOYMENT.md).
-
-## Local-first storage
-
-RockSoul does not treat every available cloud account as a mandatory dependency.
-
-```text
-LOCAL FIRST
-├── local files / SQLite / local Postgres
-│
-├── GitHub
-│   ├── code + config + small public manifests
-│   ├── Issues / milestones / Project metadata
-│   └── Releases → binaries / immutable bundles
-│
-├── Cloudflare R2 → preferred large public object storage
-│
-└── optional shared relational profile
-    ├── Supabase → Postgres + Auth/RLS/Realtime/Storage when integrated features matter
-    └── Neon     → Postgres when database-only cloud is preferable
-```
-
-**Supabase and Neon are alternatives for the same shared relational domain, not dual writable masters.** Vercel Blob is reserved for web-adjacent objects; R2 remains the general object-store preference.
-
-See [Storage and Data Placement](docs/STORAGE.md).
-
-## Repository boundary
-
-| Repository | Responsibility |
-| --- | --- |
-| [`bjo163/rocksoul`](https://github.com/bjo163/rocksoul) | runtime, life, cognition, world, memory, tools, guardian, API, Ratatui, Web |
-| [`bjo163/rocksoul-mind`](https://github.com/bjo163/rocksoul-mind) | model research, training, distillation, evaluation, checkpoint export |
-
-Production consumes model artifacts behind a stable Rust interface and must not depend on training-repository Python internals.
-
-## Structure
+## REPOSITORY STRUCTURE
 
 ```text
 rocksoul/
@@ -197,10 +374,15 @@ rocksoul/
 │   ├── rocksoul-core/
 │   ├── rocksoul-life/
 │   └── rocksoul-tui/
-├── public/                 TUI/Web shared identity + zero-build web surface
+├── public/
+│   ├── brand.env           shared identity / accepted revisions
+│   ├── world.json          shared World topology / evidence contract
+│   ├── index.html          World / Codex surface
+│   ├── styles.css
+│   └── app.js
 ├── data/public/            small public versioned data only
-├── docs/                   canonical docs; Wiki mirrors these
-├── .github/                machine-readable governance + two automation planes
+├── docs/                   canonical Codex; Wiki mirrors these
+├── .github/                machine governance + gate/sync planes
 ├── vercel.json
 ├── Cargo.toml
 └── rust-toolchain.toml
@@ -208,10 +390,11 @@ rocksoul/
 
 Planned crates are documented but are **not created empty in advance**.
 
-## Documentation
+## CODEX INDEX
 
-Start at [`docs/README.md`](docs/README.md) or browse the [GitHub Wiki](https://github.com/bjo163/rocksoul/wiki).
+Start at [`docs/README.md`](docs/README.md).
 
+- [World](docs/WORLD.md)
 - [Architecture](docs/ARCHITECTURE.md)
 - [Roadmap](docs/ROADMAP.md)
 - [Development](docs/DEVELOPMENT.md)
@@ -224,7 +407,7 @@ Start at [`docs/README.md`](docs/README.md) or browse the [GitHub Wiki](https://
 - [Security](SECURITY.md)
 - [Contributing](CONTRIBUTING.md)
 
-## Engineering invariants
+## ENGINEERING INVARIANTS
 
 1. Sense before thinking.
 2. Observation is not automatically fact.
@@ -234,23 +417,25 @@ Start at [`docs/README.md`](docs/README.md) or browse the [GitHub Wiki](https://
 6. Intelligence never implies authority.
 7. Tool execution is deterministic and policy-gated.
 8. Only validated outcomes earn XP.
-9. Cognitive age advances through evaluation, never time alone.
+9. Cognitive Age advances through evaluation, never time alone.
 10. Live production experience never directly rewrites model weights.
 11. One data domain has one authoritative store.
-12. GitHub/Vercel/Wiki/Project are synchronized surfaces, never competing sources of truth.
+12. GitHub/Pages/Vercel/Wiki/Project are synchronized views, never competing sources of truth.
+13. A visual state never upgrades beyond its evidence state.
+14. A World Node is never shown ONLINE/READY without actual runner evidence.
 
-## Template-ready
+## TEMPLATE-READY WORLDS
 
-The runtime display identity lives in one file:
+Runtime identity is centralized in:
 
 ```text
 public/brand.env
 ```
 
-A template-derived project can change `NAME=RockSoul` to `NAME=StoneSoul` without introducing a parallel UI configuration. See [Template / Fork Guide](docs/TEMPLATE.md).
+A template-derived project can begin as `StoneSoul` or another world by changing the identity contract instead of maintaining separate TUI/Web branding. See [Template / Fork Guide](docs/TEMPLATE.md).
 
-## Roadmap and ASI
+## ROADMAP & ASI
 
 Development proceeds through Birth, World, Memory, Nano, Skills, Cognitive Workspace, Guardian, Life progression, Cortex, Shura, autonomous research and controlled collective intelligence.
 
-**ASI is a research gate, not a branding milestone.** Completing phases, raising age/level or increasing parameter count does not establish ASI.
+**ASI is a research gate, not a branding milestone.** Completing the World, raising Age/Level, adding agents, or increasing parameter count does not establish ASI.
