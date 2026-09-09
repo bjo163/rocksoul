@@ -335,11 +335,11 @@ Implement the persistent runtime facade and operator surface: restore LifeState,
 
    `LifeProgressionEngine` accepts only verified outcomes, applies XP, derives level thresholds (`1 + XP / 100`), advances cognitive age only after evaluation, and clamps trust to 0–100. Tests prove verified and unverified paths plus persistence compatibility.
 
-9. **CR-021 — Evaluation rubric and Cognitive Age scoring** (READY)
+9. **CR-021 — Evaluation rubric and Cognitive Age scoring** (IN PROGRESS)
    - Define a versioned, deterministic rubric for verified capabilities and evaluation evidence.
    - Separate score, XP reward, level threshold, Cognitive Age promotion, and Trust delta.
    - Reject stale, incomplete, regressed, or unverified evidence; persist the rubric version and inputs.
-   - Acceptance: boundary, regression, stale-evidence, and replay tests pass.
+   - Acceptance: boundary, regression, stale-evidence, and replay tests pass. Implementation started in `crates/rocksoul-life/src/evaluation.rs`.
 
 10. **CR-022 — Progression policy, regression, and Trust ledger** (after CR-021)
     - Make progression transitions append-only, bounded, provenance-aware, and replayable.
