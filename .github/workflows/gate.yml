@@ -80,7 +80,21 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v7.0.1
-      - uses: actions/dependency-review-action@v5
+      - name: Detect GitHub Dependency Graph
+        id: graph
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          if gh api "repos/$GITHUB_REPOSITORY/dependency-graph/sbom" >/dev/null 2>&1; then
+            echo 'enabled=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'enabled=false' >> "$GITHUB_OUTPUT"
+            echo '::notice::GitHub Dependency Graph is disabled/unavailable; Dependency Review is skipped. RustSec remains fail-closed in the Rust gate.'
+          fi
+      - name: Review dependency changes
+        if: steps.graph.outputs.enabled == 'true'
+        uses: actions/dependency-review-action@v5
         with:
           fail-on-severity: moderate
 
