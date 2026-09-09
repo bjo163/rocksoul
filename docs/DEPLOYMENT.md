@@ -81,11 +81,16 @@ GitHub repository: bjo163/rocksoul
 Vercel project:    rocksoul
 Production source: main
 Preview source:    feature/*
+Portal URL:        https://rocksoul-bjo163s-projects.vercel.app
 ```
 
-`dev` is the integration branch and may receive a stable preview environment when useful.
+The Vercel project and production deployment were verified through the connected Vercel account on **2026-09-09**: project `rocksoul` is linked directly to GitHub repository `bjo163/rocksoul`, and its production deployment from `main` reports `READY`.
 
-An existing Vercel project linked to another RockSoul repository is **not** a substitute for this canonical deployment. The project is only considered connected after Vercel reports that `bjo163/rocksoul` is its Git source and an actual deployment can be inspected.
+That verified URL is recorded in `public/brand.env`, and `public/world.json` promotes the Vercel place to `VERIFIED`. A future deployment failure may demote the evidence state; configuration alone never guarantees continued availability.
+
+`dev` is the integration branch and may receive a stable preview environment when useful. `feature/*` branches may receive ordinary Vercel Git previews.
+
+An existing Vercel project linked to another RockSoul repository is **not** a substitute for this canonical deployment.
 
 ## World Portal state sources
 
