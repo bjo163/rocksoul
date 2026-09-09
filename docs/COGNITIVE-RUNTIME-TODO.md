@@ -366,9 +366,9 @@ Implement the persistent runtime facade and operator surface: restore LifeState,
     - Register repository, GitHub, filesystem, model, and future senses through capability metadata, scope, freshness, redaction, rate, and provenance.
     - Keep credentials external and adapters read-only by default. Implementation started in `crates/rocksoul-core/src/sense_registry.rs`.
 
-16. **CR-028 — World graph conflict and evidence resolution** (after CR-027)
+16. **CR-028 — World graph conflict and evidence resolution** (IN PROGRESS)
     - Merge observations into rebuildable graph projections with conflict sets, freshness, epistemic transitions, and explicit review gates.
-    - Never silently overwrite a research owner’s canonical semantics.
+    - Never silently overwrite a research owner’s canonical semantics. Implementation started in `crates/rocksoul-core/src/world.rs`.
 
 17. **CR-029 — Bounded planning and simulated agency** (after CR-028)
     - Add plan/intention schemas, dry-run simulation, Guardian budgets, approval, idempotency, cancellation, and failure recovery.
