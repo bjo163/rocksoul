@@ -21,3 +21,7 @@ no canonical writes occurred.
 `ResourceBudget::bounded()` defines default upper bounds for input, output,
 event count, and replay records. Hosts should reject work that exceeds these
 limits before invoking a provider or side-effecting operation.
+
+`OperatorHealthSnapshot` is a read-only operator surface. It reports smoke and
+certification readiness plus active budgets, and becomes `Degraded` when either
+verification input is incomplete. It never grants canonical write authority.
