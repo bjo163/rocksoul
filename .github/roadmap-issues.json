@@ -3,7 +3,7 @@
     "title":"[Foundation] Enable main branch protection and required checks",
     "milestone":"Foundation — Governance",
     "labels":["type:maintenance","area:ci","priority:p0","status:ready"],
-    "body":"## Goal\nProtect `main` from accidental direct/unchecked changes.\n\n## Required settings\n- require pull request before merge\n- require `rocksoul-ci` status check\n- block force pushes and branch deletion\n- keep squash merge as the preferred history style\n\n## Note\nThis is an admin setting and is intentionally not claimed as automated until the repository ruleset is actually enabled.\n\n## Acceptance\n- `main` reports protection/ruleset enabled\n- a PR cannot merge while `rocksoul-ci` is failing"
+    "body":"## Goal\nProtect `main` from accidental direct/unchecked changes.\n\n## Required settings\n- require pull request before merge\n- require the `rocksoul-gate` status checks\n- block force pushes and branch deletion\n- keep squash merge as the preferred history style\n\n## Note\nThis is an admin setting and is intentionally not claimed as automated until GitHub reports the branch/ruleset protected.\n\n## Acceptance\n- `main` reports protection/ruleset enabled\n- a PR cannot merge while required `rocksoul-gate` checks are failing"
   },
   {
     "title":"[Foundation] Choose and add an explicit repository license",
@@ -12,10 +12,28 @@
     "body":"## Goal\nChoose the intended RockSoul source license explicitly rather than implicitly publishing with no license.\n\n## Acceptance\n- license decision is documented\n- root license file exists\n- README reflects the chosen license\n- dependency/license compatibility is reviewed"
   },
   {
-    "title":"[Foundation] Configure RockSoul Roadmap GitHub Project v2",
+    "title":"[Foundation] Activate public Project, Wiki and repository sync",
     "milestone":"Foundation — Governance",
     "labels":["type:maintenance","area:ci","priority:p2","status:blocked"],
-    "body":"## Goal\nCreate/link the user-owned `RockSoul Roadmap` Project v2 and populate it from canonical issues.\n\n## Blocker\nGitHub Project v2 requires a token with `project` scope. Add `ROCKSOUL_PROJECT_TOKEN` as an Actions secret, then manually run `project-sync.yml`.\n\n## Acceptance\n- RockSoul Roadmap project exists\n- repository is linked\n- open canonical issues are present\n- issues/milestones remain source of truth"
+    "body":"## Goal\nActivate the privileged synchronization surfaces that cannot be managed by the default Actions token alone.\n\n## Target\n- user-owned public GitHub Project named `rocksoul`\n- Kanban, Roadmap and Backlog views\n- Priority and Phase fields synchronized from labels\n- repository linked to the Project\n- Wiki synchronized from `/docs`\n- repository description/topics/template/discussions/merge settings synchronized\n\n## Blocker\nAdd one Actions secret named `ROCKSOUL_GITHUB_TOKEN`. The token must have GitHub Projects `project` scope plus sufficient public-repository administration and Wiki access.\n\n`rocksoul-sync` intentionally skips this privileged job with a notice when the secret is absent; labels, milestones and canonical Issues continue to synchronize with `GITHUB_TOKEN`.\n\n## Acceptance\n- Project `rocksoul` exists and is PUBLIC\n- Kanban/Roadmap/Backlog views exist\n- open canonical issues are present\n- Wiki pages mirror `/docs`\n- repository metadata/template/discussion/merge settings match governance\n- Issues + milestones + labels remain canonical sources of truth"
+  },
+  {
+    "title":"[Foundation] Commit Cargo.lock for reproducible application builds",
+    "milestone":"Foundation — Governance",
+    "labels":["type:maintenance","area:ci","priority:p1","status:ready"],
+    "body":"## Goal\nTreat RockSoul as an application workspace and make dependency resolution reproducible across CI, development, audit, and release builds.\n\n## Scope\n- generate and commit the workspace `Cargo.lock`\n- keep it updated through Dependabot/Cargo changes\n- ensure security audit uses the committed lockfile rather than relying on fresh unconstrained resolution\n\n## Acceptance\n- root `Cargo.lock` is tracked\n- CI and RustSec operate against the committed resolution\n- dependency updates modify the lockfile intentionally"
+  },
+  {
+    "title":"[Foundation] Configure GitHub repository metadata and topics",
+    "milestone":"Foundation — Governance",
+    "labels":["type:maintenance","area:ci","priority:p2","status:ready"],
+    "body":"## Goal\nMake the GitHub repository landing metadata consistent with the README and architecture.\n\n## Scope\n- concise repository description\n- focused discovery topics\n- template/discussions/wiki/project settings\n- merge strategy and automatic merged-branch deletion\n\n## Acceptance\n- repository About metadata matches current positioning\n- topics do not overclaim AGI/ASI\n- optional GitHub features have deliberate roles\n- README and repository metadata do not contradict each other"
+  },
+  {
+    "title":"[Foundation] Connect canonical Web mirror to Vercel",
+    "milestone":"Foundation — Governance",
+    "labels":["type:maintenance","area:web","area:ci","priority:p1","status:ready"],
+    "body":"## Goal\nDeploy the zero-build `public/` interface from this canonical repository to Vercel without creating a second frontend source.\n\n## Scope\n- import `bjo163/rocksoul` as its own Vercel project\n- project root is repository root\n- framework preset Other / static output from `public/`\n- production follows `main`\n- feature branches receive preview deployments\n- verify TUI/Web display parity from `public/brand.env`\n\n## Non-goal\nDo not repurpose the existing unrelated `rocksoul-web` Vercel project unless it is explicitly migrated later.\n\n## Acceptance\n- canonical RockSoul Vercel deployment exists\n- production deployment comes from `main`\n- Web surface renders the same identity/state labels as the TUI\n- deployment URL is added to repository homepage metadata"
   },
   {
     "title":"[Phase A] Persist birth identity and append-only lifecycle journal",
