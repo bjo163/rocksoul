@@ -14,6 +14,7 @@ pub mod cognition;
 pub mod event_log;
 pub mod inference;
 pub mod memory;
+pub mod planning;
 pub mod policy;
 pub mod sense;
 pub mod sense_registry;
