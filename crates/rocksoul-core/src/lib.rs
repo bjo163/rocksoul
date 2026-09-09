@@ -14,6 +14,7 @@ pub mod certification;
 pub mod cognition;
 pub mod event_log;
 pub mod inference;
+pub mod integration;
 pub mod memory;
 pub mod planning;
 pub mod policy;

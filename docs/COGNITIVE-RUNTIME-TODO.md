@@ -378,6 +378,11 @@ Implement the persistent runtime facade and operator surface: restore LifeState,
     - Produce repeatable certification covering provenance, policy, dependencies, tests, audit, resource bounds, rollback, binary identity, and operator health.
     - Complete: code, docs, contracts, policies, registry, and `MASTER-TODO.json` are synchronized. Implemented in `crates/rocksoul-core/src/certification.rs` and `docs/CERTIFICATION.md`; PR #45 merged as `d0cdf1c7469bd8473947d18d42d8e75a2f0e9774`.
 
+19. **CR-031 — Runtime integration boundary** (IN PROGRESS)
+    - Expose a versioned, bounded, provider-neutral cognitive contract for the host runtime.
+    - Preserve advisory-only output and deny canonical research writes at the boundary.
+    - Implementation started in `crates/rocksoul-core/src/integration.rs` and `docs/INTEGRATION.md`.
+
 ### Deep insight and design principles
 
 - Cognitive Age is verified capability, not elapsed time or raw XP.
