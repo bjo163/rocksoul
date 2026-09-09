@@ -335,6 +335,64 @@ Implement the persistent runtime facade and operator surface: restore LifeState,
 
    `LifeProgressionEngine` accepts only verified outcomes, applies XP, derives level thresholds (`1 + XP / 100`), advances cognitive age only after evaluation, and clamps trust to 0–100. Tests prove verified and unverified paths plus persistence compatibility.
 
-9. **CR-021 — Evaluation-driven cognitive age and real model inference** (next)
-   - Add bounded HTTP/API adapters with timeout, rate-limit, freshness, retry, and provider-neutral tests.
-   - Keep credentials outside source and preserve observation-only ingestion.
+9. **CR-021 — Evaluation rubric and Cognitive Age scoring** (READY)
+   - Define a versioned, deterministic rubric for verified capabilities and evaluation evidence.
+   - Separate score, XP reward, level threshold, Cognitive Age promotion, and Trust delta.
+   - Reject stale, incomplete, regressed, or unverified evidence; persist the rubric version and inputs.
+   - Acceptance: boundary, regression, stale-evidence, and replay tests pass.
+
+10. **CR-022 — Progression policy, regression, and Trust ledger** (after CR-021)
+    - Make progression transitions append-only, bounded, provenance-aware, and replayable.
+    - Prove failed evaluations cannot reward progression and trust changes remain within policy bounds.
+    - Acceptance: migration, replay, negative-path, and policy tests pass.
+
+11. **CR-023 — Advisory model inference contract** (after CR-022)
+    - Define provider-neutral request/response schemas with model identity, input/output hashes, confidence, expiry, safety status, and provenance.
+    - Keep inference advisory; model output cannot directly promote a claim or write canonical research semantics.
+
+12. **CR-024 — Nano/MiniMind adapter and deterministic fallback** (after CR-023)
+    - Load versioned artifacts through the Brain interface with compatibility and hash checks.
+    - Enforce resource limits, offline fallback, provider substitution, and no-canonical-write tests.
+
+13. **CR-025 — Cognitive event sourcing and replay expansion** (after CR-024)
+    - Persist observation, evaluation, inference, policy, progression, and recovery events under versioned schemas.
+    - Reject sequence gaps, duplicates, tampering, and unsupported versions; prove identical replayed state.
+
+14. **CR-026 — Snapshot migration and recovery certification** (after CR-025)
+    - Add forward-compatible migrations, checksums, atomic recovery, corrupt-snapshot diagnostics, and backup/restore tests.
+    - Do not use destructive cleanup as a migration strategy.
+
+15. **CR-027 — Multi-sense observation registry** (after CR-026)
+    - Register repository, GitHub, filesystem, model, and future senses through capability metadata, scope, freshness, redaction, rate, and provenance.
+    - Keep credentials external and adapters read-only by default.
+
+16. **CR-028 — World graph conflict and evidence resolution** (after CR-027)
+    - Merge observations into rebuildable graph projections with conflict sets, freshness, epistemic transitions, and explicit review gates.
+    - Never silently overwrite a research owner’s canonical semantics.
+
+17. **CR-029 — Bounded planning and simulated agency** (after CR-028)
+    - Add plan/intention schemas, dry-run simulation, Guardian budgets, approval, idempotency, cancellation, and failure recovery.
+    - Irreversible actions remain denied by default.
+
+18. **CR-030 — Release certification and operational observability** (after CR-029)
+    - Produce repeatable certification covering provenance, policy, dependencies, tests, audit, resource bounds, rollback, binary identity, and operator health.
+    - Complete only when code, docs, contracts, policies, registry, and `MASTER-TODO.json` are synchronized.
+
+### Deep insight and design principles
+
+- Cognitive Age is verified capability, not elapsed time or raw XP.
+- The model is an advisory brain; the runtime is the governance, memory, policy, and replay substrate.
+- A stable connector contract matters more than any single provider integration.
+- Trust is a bounded derivative of verified evidence, not a personality variable.
+- World graphs and indexes are rebuildable projections; source observations and lifecycle events are durable evidence.
+- “Human senses” are typed observation channels with uncertainty and scope, not interchangeable facts.
+- ASI/AGI is a long-horizon system property, not a single model feature; autonomy follows evaluation, recovery, and policy.
+- Autonomous repositories and dirty work require canonical ownership, explicit gates, and rollback before cross-repository changes.
+
+### Definition of done for every follow-up
+
+- The implementation has a canonical owner and preserves semantic boundaries.
+- Unit, integration, persistence/replay, failure-mode, and policy tests cover the acceptance criteria.
+- `cargo fmt`, workspace tests, Clippy with warnings denied, release build, RustSec audit, and `git diff --check` pass.
+- Documentation, contracts, policy/registry surfaces, and `MASTER-TODO.json` agree.
+- Changes are committed, pushed through a PR, required checks are green, and the merge commit is verified.
