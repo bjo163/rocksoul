@@ -163,7 +163,7 @@ EOF
           done
 
   repo-and-wiki:
-    name: repository + Wiki + Pages activation
+    name: repository + ruleset + Wiki + Pages activation
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     env:
@@ -174,7 +174,7 @@ EOF
         shell: bash
         run: |
           if [[ -z "${GH_TOKEN:-}" ]]; then
-            echo 'ROCKSOUL_GITHUB_TOKEN is not configured; repository-admin, Wiki and Pages activation are skipped.' >> "$GITHUB_STEP_SUMMARY"
+            echo 'ROCKSOUL_GITHUB_TOKEN is not configured; repository-admin, ruleset, Wiki and Pages activation are skipped.' >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
       - name: Synchronize repository settings
@@ -197,6 +197,66 @@ EOF
             --add-topic ai-agent \
             --add-topic digital-world \
             --add-topic cognitive-architecture
+      - name: Synchronize main ruleset
+        if: env.GH_TOKEN != ''
+        shell: bash
+        run: |
+          set -euo pipefail
+          ruleset_name='rocksoul-main-protection'
+          ruleset_id=$(gh api --paginate "repos/$GITHUB_REPOSITORY/rulesets?includes_parents=false&per_page=100" \
+            --jq ".[] | select(.name == \"$ruleset_name\") | .id" | head -n1)
+          payload=$(mktemp)
+          cat > "$payload" <<'JSON'
+          {
+            "name": "rocksoul-main-protection",
+            "target": "branch",
+            "enforcement": "active",
+            "conditions": {
+              "ref_name": {
+                "include": ["refs/heads/main"],
+                "exclude": []
+              }
+            },
+            "rules": [
+              {"type": "deletion"},
+              {"type": "non_fast_forward"},
+              {
+                "type": "pull_request",
+                "parameters": {
+                  "allowed_merge_methods": ["squash"],
+                  "dismiss_stale_reviews_on_push": false,
+                  "require_code_owner_review": false,
+                  "require_last_push_approval": false,
+                  "required_approving_review_count": 0,
+                  "required_review_thread_resolution": true
+                }
+              },
+              {
+                "type": "required_status_checks",
+                "parameters": {
+                  "do_not_enforce_on_create": false,
+                  "required_status_checks": [
+                    {"context": "policy"},
+                    {"context": "rust"},
+                    {"context": "dependencies"},
+                    {"context": "docs"},
+                    {"context": "codeql"}
+                  ],
+                  "strict_required_status_checks_policy": false
+                }
+              }
+            ]
+          }
+          JSON
+          if [[ -z "$ruleset_id" ]]; then
+            gh api --method POST "repos/$GITHUB_REPOSITORY/rulesets" \
+              -H 'X-GitHub-Api-Version: 2026-03-10' --input "$payload" >/dev/null
+            echo 'Created active main ruleset: rocksoul-main-protection.' >> "$GITHUB_STEP_SUMMARY"
+          else
+            gh api --method PUT "repos/$GITHUB_REPOSITORY/rulesets/$ruleset_id" \
+              -H 'X-GitHub-Api-Version: 2026-03-10' --input "$payload" >/dev/null
+            echo "Updated active main ruleset #$ruleset_id." >> "$GITHUB_STEP_SUMMARY"
+          fi
       - name: Enable GitHub Pages workflow source
         if: env.GH_TOKEN != ''
         shell: bash
