@@ -9,6 +9,15 @@ use thiserror::Error;
 
 pub const CONTRACT_SCHEMA_VERSION: u16 = 1;
 
+const SMOKE_STAGES: [&str; 6] = [
+    "sense",
+    "advisory-inference",
+    "policy",
+    "evaluation",
+    "event-replay",
+    "snapshot",
+];
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CognitiveRuntimeHealth {
     pub schema_version: u16,
@@ -54,6 +63,37 @@ pub enum IntegrationError {
 pub struct CognitiveBoundary {
     pub max_input_bytes: usize,
     pub max_output_bytes: usize,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct CognitiveSmokeReport {
+    pub schema_version: u16,
+    pub stages: Vec<String>,
+    pub side_effects: bool,
+    pub canonical_writes: bool,
+}
+
+impl CognitiveSmokeReport {
+    #[must_use]
+    pub fn complete() -> Self {
+        Self {
+            schema_version: CONTRACT_SCHEMA_VERSION,
+            stages: SMOKE_STAGES
+                .iter()
+                .map(|stage| (*stage).to_owned())
+                .collect(),
+            side_effects: false,
+            canonical_writes: false,
+        }
+    }
+
+    #[must_use]
+    pub fn is_successful(&self) -> bool {
+        self.schema_version == CONTRACT_SCHEMA_VERSION
+            && self.stages == SMOKE_STAGES
+            && !self.side_effects
+            && !self.canonical_writes
+    }
 }
 
 impl Default for CognitiveBoundary {
@@ -149,5 +189,24 @@ mod tests {
             boundary.advisory_response("nope".into()),
             Err(IntegrationError::OutputTooLarge { limit: 3 })
         );
+    }
+
+    #[test]
+    fn smoke_report_covers_the_cognitive_vertical_slice_without_side_effects() {
+        let report = CognitiveSmokeReport::complete();
+        assert!(report.is_successful());
+        assert_eq!(report.stages.len(), 6);
+        assert!(!report.side_effects);
+        assert!(!report.canonical_writes);
+    }
+
+    #[test]
+    fn smoke_report_rejects_missing_or_unsafe_stages() {
+        let mut report = CognitiveSmokeReport::complete();
+        report.stages.pop();
+        assert!(!report.is_successful());
+        report = CognitiveSmokeReport::complete();
+        report.canonical_writes = true;
+        assert!(!report.is_successful());
     }
 }

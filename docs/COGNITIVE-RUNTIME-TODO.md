@@ -383,6 +383,10 @@ Implement the persistent runtime facade and operator surface: restore LifeState,
     - Preserve advisory-only output and deny canonical research writes at the boundary.
     - Implementation started in `crates/rocksoul-core/src/integration.rs` and `docs/INTEGRATION.md`.
 
+20. **CR-032 — End-to-end cognitive smoke flow** (IN PROGRESS)
+    - Verify sense, advisory inference, policy, evaluation, event replay, and snapshot stages in one bounded report.
+    - Reject incomplete reports and any side effect or canonical-write claim.
+
 ### Deep insight and design principles
 
 - Cognitive Age is verified capability, not elapsed time or raw XP.
