@@ -411,14 +411,12 @@ Implement the persistent runtime facade and operator surface: restore LifeState,
     - Provider-neutral release ledger with artifact/source identity, fail-closed target authorization, exactly-once idempotency, atomic persistence, and rollback merged in runtime PR #3 (`88e1b731`).
 28. **CR-040 — Cognitive host integration and operator certification** (VERIFIED; depends on CR-039)
     - Read-only cognitive contract consumer, six-stage smoke validation, canonical-write fail-closed guard, and `cognitive-health --json` operator output merged in runtime PR #4 (`6b2172f8`).
-
 ### Phase P8 — Persistent World projection
 
 29. **CR-046 — Persistent World Graph projection** (VERIFIED)
     - Add provider-neutral atomic save/load for `WorldGraph`.
     - Preserve nodes, edges, discovery state, assertions, conflicts, and evidence references across restart.
     - Prove round-trip persistence with a deterministic unit test; do not make the graph canonical over source observations.
-
 ### Deep insight and design principles
 
 - Cognitive Age is verified capability, not elapsed time or raw XP.
