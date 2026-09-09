@@ -13,3 +13,4 @@ anyhow.workspace = true
 crossterm.workspace = true
 ratatui.workspace = true
 rocksoul-life = { path = "../rocksoul-life" }
+serde_json.workspace = true
