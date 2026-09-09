@@ -4,40 +4,119 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="color-scheme" content="dark">
-  <title>RockSoul</title>
-  <style>
-    :root{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono",monospace;background:#090b0d;color:#e8edf2}*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;background:radial-gradient(circle at top,#131a20 0,#090b0d 55%)}main{width:min(920px,94vw);display:grid;gap:16px}.box{border:1px solid #65717d;border-radius:4px;background:rgba(8,12,15,.92);box-shadow:0 18px 70px rgba(0,0,0,.38)}header,footer{padding:14px 18px;text-align:center;letter-spacing:.06em}.panel{padding:0 20px 22px}.legend{display:inline-block;transform:translateY(-.7em);padding:0 10px;background:#090b0d;font-weight:700}.rows{display:grid;grid-template-columns:180px 1fr;gap:10px 20px}.key{font-weight:700;color:#b8c5d0}.value{overflow-wrap:anywhere}.phase{margin-top:22px;padding-top:18px;border-top:1px dashed #3a4249;color:#b8c5d0}.links{display:flex;justify-content:center;flex-wrap:wrap;gap:10px;margin-top:2px}.links a{color:#dbe7f0;text-decoration:none;border:1px solid #44505a;padding:7px 10px;border-radius:4px}.links a:hover{background:#151c22}@media(max-width:560px){.rows{grid-template-columns:1fr}.key{margin-top:8px}}
-  </style>
+  <meta name="description" content="RockSoul World — local-first Rust digital cognitive runtime, Codex, quests, world map and verified progression.">
+  <title>RockSoul World</title>
+  <link rel="preconnect" href="https://raw.githubusercontent.com">
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-<main>
-  <header class="box" id="header">ROCKSOUL • GEN 1 • AGE 0 • LV 1</header>
-  <section class="box panel">
-    <span class="legend">HOME</span>
-    <div class="rows" id="rows"></div>
-    <div class="phase" id="phase">Phase A / Birth — brain not connected yet.</div>
-  </section>
-  <footer class="box">
-    <div id="tagline">Local-first digital cognitive runtime</div>
-    <div class="links">
-      <a href="https://github.com/bjo163/rocksoul">GitHub</a>
-      <a href="https://github.com/bjo163/rocksoul/wiki">Wiki</a>
-      <a href="https://github.com/bjo163/rocksoul/issues">Issues</a>
-      <a href="https://github.com/bjo163/rocksoul/releases">Releases</a>
-    </div>
-  </footer>
-</main>
-<script>
-const parseEnv=t=>Object.fromEntries(t.split(/\r?\n/).filter(Boolean).filter(x=>!x.trim().startsWith('#')).map(line=>{const i=line.indexOf('=');return [line.slice(0,i),line.slice(i+1)]}));
-fetch('/brand.env',{cache:'no-store'}).then(r=>r.text()).then(t=>{
-  const c=parseEnv(t); document.title=c.NAME||'RockSoul';
-  document.querySelector('#header').textContent=`${(c.NAME||'RockSoul').toUpperCase()} • GEN ${c.GENERATION||1} • AGE ${c.COGNITIVE_AGE||0} • LV ${c.LEVEL||1}`;
-  const born=new Date().toISOString().replace('T',' ').replace(/\.\d{3}Z$/,' UTC');
-  const rows=[['Name',c.NAME],['Born',born],['Cognitive Age',c.COGNITIVE_AGE],['Level',c.LEVEL],['XP',c.XP],['Trust',c.TRUST],['World',c.WORLD],['State',c.STATE]];
-  document.querySelector('#rows').innerHTML=rows.map(([k,v])=>`<div class="key">${k}</div><div class="value">${v??''}</div>`).join('');
-  document.querySelector('#phase').textContent=`${c.PHASE||'Phase A / Birth'} — brain not connected yet.`;
-  document.querySelector('#tagline').textContent=c.TAGLINE||'';
-}).catch(()=>document.querySelector('#rows').innerHTML='<div class="key">State</div><div class="value">brand.env unavailable</div>');
-</script>
+  <div class="shell">
+    <header class="hud topbar">
+      <div class="brand">
+        <img src="https://raw.githubusercontent.com/bjo163/rocksoul-assets/5b035d0d83612f847ccd8b35f2c1b04022500110/moonwitness/brand/rocksoul-lockup.svg" alt="" aria-hidden="true">
+        <div class="brand-copy">
+          <div class="eyebrow">WORLD CORE / OPERATOR</div>
+          <h1 id="brand-name">RockSoul</h1>
+        </div>
+      </div>
+      <nav class="nav" aria-label="World navigation">
+        <button type="button" data-target="WORLD">1 WORLD</button>
+        <button type="button" data-target="MAP">2 MAP</button>
+        <button type="button" data-target="QUESTS">3 QUESTS</button>
+        <button type="button" data-target="CODEX">4 CODEX</button>
+        <button type="button" data-target="SYSTEM">5 SYSTEM</button>
+      </nav>
+      <div class="presence" aria-live="polite"><span class="dot" id="presence-dot"></span><span id="presence-text">OBSERVING WORLD</span></div>
+    </header>
+
+    <main>
+      <section class="screen" data-screen="WORLD">
+        <div class="hero">
+          <article class="panel hero-copy">
+            <div class="eyebrow">ENTER WORLD / <span id="phase">Phase A / Birth</span></div>
+            <h2 id="hero-name">RockSoul</h2>
+            <p id="hero-copy">Local-first digital cognitive runtime</p>
+            <div class="hero-actions">
+              <a class="btn primary" href="#map" data-jump="MAP">EXPLORE WORLD</a>
+              <a class="btn" href="https://github.com/bjo163/rocksoul" target="_blank" rel="noreferrer">WORLD CORE ↗</a>
+              <a class="btn" href="https://github.com/bjo163/rocksoul/releases" target="_blank" rel="noreferrer">WORLD BUILDS ↗</a>
+            </div>
+          </article>
+          <aside class="panel">
+            <div class="panel-title"><span>LIFE STATE</span><span id="world-status">UNKNOWN</span></div>
+            <div class="metrics" id="life-metrics"></div>
+          </aside>
+        </div>
+
+        <section class="section">
+          <div class="section-heading"><h3>WORLD STATUS</h3><p>Observed state, never simulated as production truth.</p></div>
+          <div class="grid">
+            <article class="panel">
+              <div class="panel-title"><span>CONTROL PLANE</span><span class="mono">GITHUB</span></div>
+              <div class="metrics">
+                <div class="metric"><div class="metric-label">DEFAULT BRANCH</div><div class="metric-value" id="repo-branch">unknown</div></div>
+                <div class="metric"><div class="metric-label">OPEN QUESTS OBSERVED</div><div class="metric-value" id="open-quests">0</div></div>
+                <div class="metric"><div class="metric-label">LATEST WORLD BUILD</div><div class="metric-value" id="release-version">none</div></div>
+                <div class="metric"><div class="metric-label">REPOSITORY PUSH</div><div class="metric-value" id="repo-updated">unknown</div></div>
+              </div>
+            </article>
+            <article class="panel">
+              <div class="panel-title"><span>WORLD EVENT LOG</span><span class="mono">EVIDENCE STREAM</span></div>
+              <div class="event-list" id="event-list"><div class="empty">Observing GitHub evidence…</div></div>
+            </article>
+          </div>
+        </section>
+      </section>
+
+      <section class="screen" data-screen="MAP" id="map">
+        <section class="section">
+          <div class="section-heading"><h3>WORLD MAP</h3><p>Actual repositories, control surfaces and pending portals.</p></div>
+          <article class="panel world-map">
+            <div class="map-grid" id="map-grid"></div>
+            <div class="fog" id="fog" aria-label="Discovery progression"></div>
+            <div class="provenance" id="asset-provenance">Loading asset provenance…</div>
+          </article>
+        </section>
+      </section>
+
+      <section class="screen" data-screen="QUESTS">
+        <section class="section">
+          <div class="section-heading"><h3>QUESTS</h3><p>GitHub Issues are the task source of truth.</p></div>
+          <article class="panel">
+            <div class="panel-title"><span>ACTIVE QUEST LOG</span><a href="https://github.com/bjo163/rocksoul/issues" target="_blank" rel="noreferrer">OPEN GITHUB ↗</a></div>
+            <div class="quest-list" id="quest-list"><div class="empty">Observing quests…</div></div>
+          </article>
+        </section>
+      </section>
+
+      <section class="screen" data-screen="CODEX">
+        <section class="section">
+          <div class="section-heading"><h3>CODEX</h3><p>GitHub Pages enters here by default; /docs remains canonical.</p></div>
+          <article class="panel">
+            <div class="panel-title"><span>KNOWLEDGE LAYER</span><span class="mono">CANONICAL DOCS</span></div>
+            <div class="codex-list" id="codex-list"></div>
+          </article>
+        </section>
+      </section>
+
+      <section class="screen" data-screen="SYSTEM">
+        <section class="section">
+          <div class="section-heading"><h3>SYSTEM</h3><p>World systems with explicit evidence state.</p></div>
+          <article class="panel">
+            <div class="panel-title"><span>SYSTEM / NODES / PORTALS</span><span class="mono">PRIVATE FIRST</span></div>
+            <div class="system-list" id="system-list"></div>
+            <div class="provenance" id="system-provenance"></div>
+          </article>
+        </section>
+      </section>
+    </main>
+
+    <footer class="hud footer">
+      <span id="footer-identity">RockSoul • GEN 1 • AGE 0 • LV 1</span>
+      <span id="observed-at">Not observed yet</span>
+      <span><span class="kbd">1–5</span> navigate • evidence before trust</span>
+    </footer>
+  </div>
+  <script type="module" src="app.js"></script>
 </body>
 </html>
