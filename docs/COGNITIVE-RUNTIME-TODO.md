@@ -399,6 +399,19 @@ Implement the persistent runtime facade and operator surface: restore LifeState,
     - Expose read-only readiness, smoke, certification, and resource-budget health to the host operator surface.
     - Degrade safely when verification is incomplete; never grant canonical write authority.
 
+### Phase P6 — Host runtime reliability and cognitive integration
+
+24. **CR-036 — Host runtime baseline and reproducible dependency lock** (NOT STARTED)
+    - Freeze and review the dirty runtime baseline, track `Cargo.lock`, and record reproducible build evidence without overwriting user work.
+25. **CR-037 — Process lock and workspace boundary hardening** (NOT STARTED; depends on CR-036)
+    - Enforce exclusive ownership, PID liveness, ownership tokens, and fail-closed path/symlink boundaries.
+26. **CR-038 — Generation-consistent workspace state** (NOT STARTED; depends on CR-037)
+    - Guarantee coherent snapshots, last-known-good recovery, torn-read resistance, and identity reconciliation.
+27. **CR-039 — Transactional release provenance and rollback** (NOT STARTED; depends on CR-038)
+    - Add artifact provenance, authorization, exactly-once synchronization, transactional publication, and rollback evidence.
+28. **CR-040 — Cognitive host integration and operator certification** (NOT STARTED; depends on CR-039)
+    - Consume the cognitive boundary from the host runtime and certify read-only smoke flow, operator health, and canonical ownership boundaries.
+
 ### Deep insight and design principles
 
 - Cognitive Age is verified capability, not elapsed time or raw XP.
