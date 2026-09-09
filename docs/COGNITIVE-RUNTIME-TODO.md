@@ -293,3 +293,9 @@ Evidence: CI run, local verification transcript, artifact hashes, security scan,
 - Do not train models inside this runtime repository.
 - Do not enable unrestricted internet, filesystem mutation, deployment, or self-modifying model weights.
 - Do not begin GitHub-to-GitLab migration from this roadmap.
+
+## Next work after CR-012
+
+`CR-013` is tracked as [GitHub issue #32](https://github.com/bjo163/rocksoul/issues/32).
+
+Implement the persistent runtime facade and operator surface: restore LifeState, journal, World, Memory, Guardian, and Workspace after restart; expose one versioned JSON snapshot to CLI/TUI; and verify the read-only/simulated vertical slice through the operator interface.
