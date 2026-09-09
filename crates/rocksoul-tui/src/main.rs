@@ -310,6 +310,12 @@ fn render_system(frame: &mut Frame, area: Rect) {
     let assets_repo = brand_value("ASSETS_REPO").unwrap_or("unknown");
     let ui_repo = brand_value("UI_REPO").unwrap_or("unknown");
     let mind_repo = brand_value("MIND_REPO").unwrap_or("unknown");
+    let vercel_url = brand_value("VERCEL_URL").unwrap_or("");
+    let vercel_line = if vercel_url.is_empty() {
+        Line::from("PENDING   Vercel Portal    canonical deployment not verified")
+    } else {
+        Line::from(format!("VERIFIED  Vercel Portal    {vercel_url}"))
+    };
     let lines = vec![
         Line::from("SYSTEM / NODES / PORTALS"),
         Line::from(""),
@@ -318,7 +324,7 @@ fn render_system(frame: &mut Frame, area: Rect) {
         Line::from(format!("OBSERVED  UI Grammar       {ui_repo}")),
         Line::from(format!("OBSERVED  Cognition Lab    {mind_repo}")),
         Line::from("UNKNOWN   World Nodes      authenticated runner inventory not available here"),
-        Line::from("PENDING   Vercel Portal    canonical deployment not verified"),
+        vercel_line,
         Line::from("PENDING   Cloudflare       no justified private-service tunnel target"),
         Line::from(""),
         Line::from(format!(
@@ -343,10 +349,7 @@ mod tests {
     #[test]
     fn shared_brand_contract_has_required_navigation() {
         assert_eq!(brand_value("NAME"), Some("RockSoul"));
-        assert_eq!(
-            brand_value("NAV"),
-            Some("WORLD,MAP,QUESTS,CODEX,SYSTEM")
-        );
+        assert_eq!(brand_value("NAV"), Some("WORLD,MAP,QUESTS,CODEX,SYSTEM"));
         assert_eq!(brand_value("GITHUB_REPO"), Some("bjo163/rocksoul"));
     }
 
