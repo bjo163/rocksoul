@@ -77,6 +77,12 @@ The browser surface uses **brand-neutral** architecture/map primitives from the 
 
 `rocksoul-ui` remains the canonical production implementation grammar. Do not fork a second design system inside the generated repository merely to rename the product.
 
+## License inheritance
+
+The RockSoul repository is distributed under **Apache-2.0** and the Rust workspace declares the same SPDX license identifier.
+
+A repository created from the GitHub template inherits the source files and therefore also inherits the Apache-2.0 license unless the downstream owner has the legal right and deliberate reason to change licensing for their own original work. Do not silently delete third-party license/attribution obligations when reusing dependencies, model artifacts or ecosystem assets.
+
 ## After creating a repository from the template
 
 1. Change `public/brand.env` identity/repository fields.
@@ -84,11 +90,12 @@ The browser surface uses **brand-neutral** architecture/map primitives from the 
 3. Change package/crate names only if the new project needs different Rust package identifiers.
 4. Replace public product prose in README/docs when the derivative becomes a distinct project.
 5. Review `.github/roadmap-issues.json`; keep only phases relevant to the new world.
-6. Add the derivative's own `ROCKSOUL_GITHUB_TOKEN` equivalent if privileged Project/Wiki/Pages/repository sync is desired; rename the secret/workflow only if there is a reason.
-7. Run the synchronization workflow so labels, milestones, Project, Wiki and Pages are rebuilt from canonical repository sources.
-8. Connect the derivative repository to its **own** Vercel project if a Live World Portal is wanted.
-9. Do not copy secrets, cloud credentials, private datasets, runtime databases or runner registration tokens from the source repository.
-10. Verify exact-head `rocksoul-gate` before publishing a World Build.
+6. Review `LICENSE` and third-party provenance; preserve all obligations that apply.
+7. Add the derivative's own `ROCKSOUL_GITHUB_TOKEN` equivalent if privileged Project/Wiki/Pages/repository sync is desired; rename the secret/workflow only if there is a reason.
+8. Run the synchronization workflow so labels, milestones, Project, Wiki and Pages are rebuilt from canonical repository sources.
+9. Connect the derivative repository to its **own** Vercel project if a Live World Portal is wanted, then populate `VERCEL_URL` only after the deployment is observable.
+10. Do not copy secrets, cloud credentials, private datasets, runtime databases or runner registration tokens from the source repository.
+11. Verify exact-head `rocksoul-gate` before publishing a World Build.
 
 ## What remains generic
 
