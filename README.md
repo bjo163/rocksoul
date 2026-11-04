@@ -8,7 +8,6 @@
 <p align="center">
   <a href="https://github.com/bjo163/rocksoul/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/bjo163/rocksoul/actions/workflows/ci.yml/badge.svg?branch=main"></a>
   <a href="https://github.com/bjo163/rocksoul/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/bjo163/rocksoul"></a>
-  <a href="https://github.com/bjo163/rocksoul/blob/main/LICENSE"><img alt="License" src="https://img.shields.io/github/license/bjo163/rocksoul"></a>
 </p>
 
 **Rocksoul is a Rust-first intelligence runtime that begins as one portable native executable and is designed to grow through measured, evidence-backed capabilities.** Its long-term aspiration is increasingly general, transferable, reliable, and accountable intelligence. AGI is a research direction—not a claim about the current system.
