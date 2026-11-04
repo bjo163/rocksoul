@@ -31,7 +31,6 @@ The roadmap is capability-driven. Each stage must deliver a working, tested incr
 - [x] Five-call, 16,000-token, 120-second per-turn budget; per-call token reservations remain bounded even when usage metadata is absent.
 - [x] Deterministic lifecycle, retry, terminal-state and budget tests.
 - [x] Independent evidence verifier contract for XP; failed required checks award no XP and replay is idempotent.
-- [x] Add a narrowly scoped, user-approved create-only workspace text-artifact service with independent read-back verification and idempotent same-content replay (CLI entry point; not yet connected to planner).
 - [x] Allow the bounded planner to return an optional typed workspace-artifact intent; validate it and dispatch only through the exact human-approval CLI boundary.
 - [x] Deliver one approved typed workspace-artifact operation through the bounded planner/CLI approval boundary, with independent read-back evidence and persisted receipt.
 - [ ] Generalize plan acceptance checks across multiple typed services (deferred; do not introduce unrestricted tools).
@@ -41,7 +40,6 @@ The roadmap is capability-driven. Each stage must deliver a working, tested incr
 - [x] Wire Ctrl+C during model-driven turns into the cooperative cancellation token.
 - [x] Wire Ctrl+C through terminal approval and executor; cancellation is honored at safe pre-publication checkpoints and in-flight model HTTP requests.
 - [x] Add deterministic cancellation-at-publication-boundary coverage; cancellation before the irreversible hard-link publish leaves no artifact.
-- [x] Simulate restart after RID XP persistence but before receipt write; replay records no duplicate XP and reconstructs the durable receipt.
 - [x] Test restart/replay around XP and receipt persistence windows; preserve idempotent XP and durable receipt reconstruction.
 - [ ] Add a crash-injection test for recovery after file publication but before XP persistence.
 - [x] Verify the supported workspace-artifact task against observed file metadata/read-back; chat response completion is not task success.
