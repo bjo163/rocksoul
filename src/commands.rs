@@ -55,7 +55,14 @@ ROCKSOUL_API_KEY=
 # ROCKSOUL_API_KEY=your-api-key
 "#;
 
-pub fn run(command: Command) -> Result<()> {
+pub async fn run(command: Command) -> Result<()> {
+    match command {
+        Command::Workspace { command } => run_workspace(command).await,
+        command => run_non_workspace(command),
+    }
+}
+
+fn run_non_workspace(command: Command) -> Result<()> {
     match command {
         Command::Init => init(),
         Command::Status => status(),
@@ -64,7 +71,7 @@ pub fn run(command: Command) -> Result<()> {
         Command::Rid { command } => run_rid(command),
         Command::Eval { command } => run_eval(command),
         Command::Memory { command } => run_memory(command),
-        Command::Workspace { command } => run_workspace(command),
+        Command::Workspace { .. } => unreachable!("workspace commands use the async dispatcher"),
     }
 }
 
@@ -218,7 +225,7 @@ fn persist_workspace_receipt(
     }
 }
 
-fn run_workspace(command: WorkspaceCommand) -> Result<()> {
+async fn run_workspace(command: WorkspaceCommand) -> Result<()> {
     match command {
         WorkspaceCommand::Trace => {
             let paths = AppPaths::discover()?;
@@ -291,8 +298,26 @@ fn run_workspace(command: WorkspaceCommand) -> Result<()> {
             );
             print!("Approval: ");
             std::io::Write::flush(&mut std::io::stdout())?;
+            let cancellation = CancellationToken::default();
             let mut confirmation = String::new();
-            std::io::stdin().read_line(&mut confirmation)?;
+            let mut stdin = tokio::io::BufReader::new(tokio::io::stdin());
+            tokio::select! {
+                result = stdin.read_line(&mut confirmation) => {
+                    result.context("could not read workspace approval")?;
+                }
+                signal = tokio::signal::ctrl_c() => {
+                    cancellation.cancel();
+                    task_trace::append(
+                        &trace_path,
+                        &operation_id,
+                        TaskTraceEvent::Cancelled,
+                        &proposal.filename,
+                        "cancelled while awaiting user approval",
+                    )?;
+                    signal.context("could not receive Ctrl+C during workspace approval")?;
+                    anyhow::bail!("workspace approval cancelled");
+                }
+            }
             let approval = match UserApproval::from_typed_confirmation(&proposal, &confirmation) {
                 Ok(approval) => approval,
                 Err(error) => {
@@ -315,21 +340,42 @@ fn run_workspace(command: WorkspaceCommand) -> Result<()> {
             )?;
 
             let service = WorkspaceArtifactService::new(&paths.workspace_dir);
-            let cancellation = CancellationToken::default();
-            let outcome =
-                match service.execute_approved_with_retry(&proposal, &approval, &cancellation) {
-                    Ok(outcome) => outcome,
-                    Err(error) => {
-                        task_trace::append(
-                            &trace_path,
-                            &operation_id,
-                            TaskTraceEvent::Failed,
-                            &proposal.filename,
-                            "workspace execution failed",
-                        )?;
-                        return Err(error);
-                    }
-                };
+            let executor_proposal = proposal.clone();
+            let executor_approval = approval.clone();
+            let executor_cancellation = cancellation.clone();
+            let mut execution = tokio::task::spawn_blocking(move || {
+                service.execute_approved_with_retry(
+                    &executor_proposal,
+                    &executor_approval,
+                    &executor_cancellation,
+                )
+            });
+            let execution_result = tokio::select! {
+                result = &mut execution => result.context("workspace executor task failed")?,
+                signal = tokio::signal::ctrl_c() => {
+                    cancellation.cancel();
+                    signal.context("could not receive Ctrl+C during workspace execution")?;
+                    execution.await.context("workspace executor task failed")?
+                }
+            };
+            let outcome = match execution_result {
+                Ok(outcome) => outcome,
+                Err(error) => {
+                    let (event, detail) = if cancellation.is_cancelled() {
+                        (TaskTraceEvent::Cancelled, "workspace execution cancelled before publication")
+                    } else {
+                        (TaskTraceEvent::Failed, "workspace execution failed")
+                    };
+                    task_trace::append(
+                        &trace_path,
+                        &operation_id,
+                        event,
+                        &proposal.filename,
+                        detail,
+                    )?;
+                    return Err(error);
+                }
+            };
             task_trace::append(
                 &trace_path,
                 &operation_id,
