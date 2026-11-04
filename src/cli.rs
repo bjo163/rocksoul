@@ -20,4 +20,44 @@ pub enum Command {
     Status,
     /// Check the local setup and model configuration.
     Doctor,
+    /// Open the interactive terminal cockpit.
+    Tui,
+    /// Inspect the local Ruh Information profile.
+    Rid {
+        #[command(subcommand)]
+        command: RidCommand,
+    },
+    /// Run and inspect offline capability evaluations.
+    Eval {
+        #[command(subcommand)]
+        command: EvalCommand,
+    },
+}
+
+#[derive(Debug, Subcommand)]
+pub enum EvalCommand {
+    /// List available evaluation suites.
+    List,
+    /// Run the deterministic offline core integrity suite.
+    Run {
+        #[command(subcommand)]
+        suite: EvalSuite,
+    },
+    /// Show the latest saved evaluation report.
+    Latest,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum EvalSuite {
+    Core,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum RidCommand {
+    /// Display instance age, level, XP, and stat coverage.
+    Status,
+    /// List all 99 capability stat slots and their measurement state.
+    Stats,
+    /// Display the auditable XP progression history.
+    History,
 }

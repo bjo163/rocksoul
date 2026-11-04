@@ -4,71 +4,91 @@ The roadmap is capability-driven. Each stage must deliver a working, tested incr
 
 ## Stage 0 — Seed CLI
 
+**Status:** Implemented; release artifact verified by CI
+
 - [x] One Rust Cargo project and native executable.
 - [x] Interactive CLI with help, status, clear, and exit.
 - [x] OpenAI-compatible chat-completions adapter.
 - [x] Local bootstrap and diagnostics commands.
-- [x] Windows release build in CI.
-- [ ] Generate and commit the dependency lockfile after the first successful CI resolution.
-- [ ] Verify release artifact on a clean Windows machine.
+- [x] Windows x64 release build and CI artifact.
+- [x] RID local identity profile, age, XP ledger and 99 unrated stat slots.
+- [x] Keyboard-first Ratatui Cognitive Cockpit.
+- [ ] Commit the resolved Cargo.lock.
+- [ ] Verify the release artifact on a clean Windows machine.
 
 ## Stage 1 — Reliable cognition loop
 
-- [x] Define explicit request, response, and turn state contracts.
-- [x] Add validated structured planning and reflection contracts.
-- [x] Add model-call and elapsed-time budgets with explicit lifecycle errors.
-- [x] Add provider-reported completion-token accounting when usage is available.
-- [x] Keep model-independent core interfaces.
-- [x] Add deterministic tests around state transitions, budgets, and validation.
-- [ ] Generate plans with a dedicated model planning pass and execute bounded plan steps.
-- [ ] Generate a separate reflection pass and evaluate acceptance checks against runtime evidence.
-- [ ] Wire cancellation to terminal input/signals and implement retry backoff/idempotency.
-- [ ] Enforce output-token budgets for providers that do not return usage metadata (requires a documented estimator or provider-specific tokenizer).
+**Status:** Core contracts implemented; task-level orchestration remains in progress
 
-Current status: the REPL is integrated with a single-action turn (one model call, deterministic non-empty-response verification). This is a foundation, not the complete multi-step cognition loop.
+- [x] Explicit request and turn-state contracts.
+- [x] Structured plan and reflection data contracts.
+- [x] Cooperative cancellation token.
+- [x] Model-call, output-token and wall-clock budget meter.
+- [x] Structured JSON planning with validated unique steps and required acceptance checks.
+- [x] Bounded model-only execution for up to three ordered reasoning steps.
+- [x] Structured reflector review with explicit limitation that it is not independent evidence.
+- [x] Five-call, 16,000-token, 120-second per-turn budget; per-call token reservations remain bounded even when usage metadata is absent.
+- [x] Deterministic lifecycle, retry, terminal-state and budget tests.
+- [x] Independent evidence verifier contract for XP; failed required checks award no XP and replay is idempotent.
+- [ ] Verify plan acceptance checks against independent runtime evidence.
+- [ ] Execute plans through typed application services and approved tools.
+- [ ] Add provider-aware retry classification, backoff and idempotency.
+- [ ] Wire user interruption into cooperative cancellation.
+- [ ] Verify task acceptance against observed effects; chat response completion is not task success.
+- [ ] Persist turn traces and reflection records.
 
 ## Stage 2 — Persistent memory
 
-- Add a local durable store with versioned schemas.
-- Separate session context, user-approved facts, working memory, and derived knowledge.
-- Support inspection, export, deletion, and migrations.
-- Make memory retrieval observable and testable.
+- [ ] Add a local durable store with versioned schemas.
+- [ ] Separate session context, user-approved facts, working memory, and derived knowledge.
+- [ ] Support inspection, export, deletion, and migrations.
+- [ ] Make memory retrieval observable and testable.
+- [ ] Add retention, forgetting and cross-session evaluation.
 
 ## Stage 3 — Skills and tools
 
-- Define a typed tool contract and capability registry.
-- Start with read-only, narrowly scoped tools.
-- Add explicit permission checks, audit events, and timeouts.
-- Keep external runtimes optional rather than core dependencies.
+- [ ] Define a typed tool contract and capability registry.
+- [ ] Start with read-only, narrowly scoped tools.
+- [ ] Add explicit permission checks, audit events, and timeouts.
+- [ ] Add workspace sandboxing and human approval for writes or remote egress.
+- [ ] Keep external runtimes optional rather than core dependencies.
 
 ## Stage 4 — Application builder
 
-- Create projects from explicit templates.
-- Work only inside an explicitly selected workspace.
-- Track generated files and changes.
-- Run formatters, compilers, tests, and project-specific checks.
-- Report what changed and what was not completed.
+- [ ] Create projects from explicit templates.
+- [ ] Work only inside an explicitly selected workspace.
+- [ ] Track generated files and changes.
+- [ ] Run formatters, compilers, tests, and project-specific checks.
+- [ ] Report what changed and what was not completed.
 
-## Stage 5 — Isolated evolution
+## Stage 5 — Evaluation and isolated evolution
 
-- Create candidate branches/worktrees and immutable baselines.
-- Define measurable task suites and regression tests.
-- Compare candidate results with the baseline.
-- Preserve candidate lineage, logs, artifacts, and evaluation results.
-- Require approval before promoting core changes.
-- Support rollback and reproducible rebuilds.
+- [x] Offline deterministic Core Integrity suite and JSON report.
+- [x] Versioned external benchmark candidate manifest; no external suite is claimed as integrated.
+- [ ] Add sandboxed agent trajectory and tool-use task suites.
+- [ ] Add memory retention, forgetting and held-out transfer suites.
+- [ ] Validate benchmark licenses, access, cost, environment and contamination risk before adapter integration.
+- [ ] Create candidate branches/worktrees and immutable baselines.
+- [ ] Compare candidate results with matched baseline conditions.
+- [ ] Preserve candidate lineage, logs, artifacts, and evaluation results.
+- [ ] Require approval before promoting core changes.
+- [ ] Support rollback and reproducible rebuilds.
 
 ## Stage 6 — Multi-agent capabilities
 
-- Add delegation only when single-agent workflows show a measurable need.
-- Give each worker bounded tasks, tools, context, and budgets.
-- Add coordination, shared artifacts, conflict handling, and evaluation.
+- [ ] Add delegation only when single-agent workflows show a measurable need.
+- [ ] Give each worker bounded tasks, tools, context, and budgets.
+- [ ] Add coordination, shared artifacts, conflict handling, and evaluation.
 
 ## Stage 7 — Additional interfaces
 
-- Add desktop, web, API, or automation interfaces as separate presentation/adaptor layers.
-- Keep the same core contracts and identity.
-- Do not duplicate cognition or memory logic per interface.
+- [ ] Add desktop, web, API, or automation interfaces as separate presentation/adaptor layers.
+- [ ] Keep the same core contracts and identity.
+- [ ] Do not duplicate cognition or memory logic per interface.
+
+## Evaluation interpretation
+
+Rocksoul is an AGI-oriented research and engineering project. It has not demonstrated AGI, consciousness, or general intelligence. Do not publish one scalar AGI score. Report versioned capability vectors, evidence, uncertainty, sample counts and safety gates. Safety/privacy/permission failures are vetoes and cannot be averaged away. See [AGI Capability Evaluation](evaluation/AGI-capability-evaluation.md).
 
 ## Release gate
 

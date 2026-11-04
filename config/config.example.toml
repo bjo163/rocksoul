@@ -1,0 +1,15 @@
+[core]
+name = "Rocksoul"
+profile = "seed"
+
+[model]
+# Provider credentials and endpoint are configured in the root .env file.
+provider = "openai-compatible"
+
+[storage]
+# All paths are relative to the Rocksoul installation root.
+root = "."
+
+[evolution]
+enabled = false
+automatic_promotion = false
