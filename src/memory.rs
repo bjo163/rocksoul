@@ -422,25 +422,28 @@ mod tests {
 
     #[test]
     fn rejects_unknown_schema_and_invalid_confidence() {
-        let directory = temp_dir();
-        let mut store = MemoryStore::default();
-        store.schema_version = MEMORY_SCHEMA_VERSION + 1;
-        assert!(store.validate().is_err());
-        store.schema_version = MEMORY_SCHEMA_VERSION;
-        store.records.push(super::MemoryRecord {
-            id: "invalid".into(),
-            kind: MemoryKind::Derived,
-            content: "derived claim".into(),
-            tags: vec![],
-            source: "model".into(),
-            user_approved: false,
-            confidence: Some(1.5),
-            created_at_unix: 1,
-            updated_at_unix: 1,
-            expires_at_unix: None,
-        });
-        assert!(store.validate().is_err());
-        let _ = fs::remove_dir_all(directory);
+        let unsupported = MemoryStore {
+            schema_version: MEMORY_SCHEMA_VERSION + 1,
+            ..MemoryStore::default()
+        };
+        assert!(unsupported.validate().is_err());
+
+        let invalid_confidence = MemoryStore {
+            records: vec![super::MemoryRecord {
+                id: "invalid".into(),
+                kind: MemoryKind::Derived,
+                content: "derived claim".into(),
+                tags: vec![],
+                source: "model".into(),
+                user_approved: false,
+                confidence: Some(1.5),
+                created_at_unix: 1,
+                updated_at_unix: 1,
+                expires_at_unix: None,
+            }],
+            ..MemoryStore::default()
+        };
+        assert!(invalid_confidence.validate().is_err());
     }
 
     #[test]
