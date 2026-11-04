@@ -298,6 +298,8 @@ async fn run_workspace(command: WorkspaceCommand) -> Result<()> {
             );
             print!("Approval: ");
             std::io::Write::flush(&mut std::io::stdout())?;
+            use tokio::io::AsyncBufReadExt as _;
+
             let cancellation = CancellationToken::default();
             let mut confirmation = String::new();
             let mut stdin = tokio::io::BufReader::new(tokio::io::stdin());
