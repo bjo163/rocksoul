@@ -2,8 +2,7 @@ name: Release
 
 on:
   push:
-    tags:
-      - "v*"
+    branches: [main]
 
 permissions:
   contents: write
@@ -13,11 +12,19 @@ env:
 
 jobs:
   windows:
-    name: Build Windows release
+    name: Publish Windows production release
+    if: startsWith(github.event.head_commit.message, 'release:')
     runs-on: windows-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Read package version
+        id: meta
+        shell: pwsh
+        run: |
+          $version = (Select-String -Path Cargo.toml -Pattern '^version = "([^"]+)"').Matches[0].Groups[1].Value
+          "version=$version" >> $env:GITHUB_OUTPUT
 
       - name: Install stable Rust
         uses: dtolnay/rust-toolchain@stable
@@ -42,14 +49,15 @@ jobs:
         shell: powershell
         run: |
           New-Item -ItemType Directory -Force -Path dist | Out-Null
-          $version = "${{ github.ref_name }}".TrimStart("v")
+          $version = "${{ steps.meta.outputs.version }}"
           & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "/DAppVersion=$version" installer\rocksoul.iss
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Assemble portable folder and ZIP
         shell: powershell
         run: |
-          $tag = "${{ github.ref_name }}"
+          $version = "${{ steps.meta.outputs.version }}"
+          $tag = "v$version"
           $root = "dist\Rocksoul-$tag"
           New-Item -ItemType Directory -Force -Path "$root\config", "$root\data", "$root\cache", "$root\workspace", "$root\evolution", "$root\logs" | Out-Null
           Copy-Item target\release\rocksoul.exe $root
@@ -58,12 +66,16 @@ jobs:
           Copy-Item README.md $root
           Compress-Archive -Path "$root\*" -DestinationPath "dist\Rocksoul-$tag-windows-x64-portable.zip" -Force
 
-      - name: Publish GitHub release
+      - name: Publish GitHub Release and create version tag
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: v${{ steps.meta.outputs.version }}
+          target_commitish: ${{ github.sha }}
+          name: Rocksoul v${{ steps.meta.outputs.version }}
           generate_release_notes: true
+          fail_on_unmatched_files: true
           files: |
             target/release/rocksoul.exe
             target/release/rocksoul.exe.sha256
-            dist/Rocksoul-Setup-*-x64.exe
-            dist/Rocksoul-${{ github.ref_name }}-windows-x64-portable.zip
+            dist/Rocksoul-Setup-${{ steps.meta.outputs.version }}-x64.exe
+            dist/Rocksoul-v${{ steps.meta.outputs.version }}-windows-x64-portable.zip
