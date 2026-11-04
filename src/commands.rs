@@ -211,7 +211,7 @@ fn run_workspace(command: WorkspaceCommand) -> Result<()> {
 
             let service = WorkspaceArtifactService::new(&paths.workspace_dir);
             let cancellation = CancellationToken::default();
-            let outcome = match service.execute_approved(&proposal, &approval, &cancellation) {
+            let outcome = match service.execute_approved_with_retry(&proposal, &approval, &cancellation) {
                 Ok(outcome) => outcome,
                 Err(error) => {
                     task_trace::append(
