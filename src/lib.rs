@@ -4,6 +4,7 @@ mod model;
 mod paths;
 mod repl;
 pub mod rid;
+pub mod rid_catalogue;
 mod rid_store;
 
 use anyhow::Result;
