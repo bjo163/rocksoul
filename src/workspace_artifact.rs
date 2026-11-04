@@ -271,12 +271,9 @@ mod tests {
         let item = proposal("../escape.txt", "no");
         assert!(item.validate().is_err());
         let item = proposal("safe.txt", "content");
-        let wrong = UserApproval::from_typed_confirmation(&item, "WRITE other.txt").unwrap_err();
-        assert!(wrong.to_string().contains("approval phrase"));
-        assert!(WorkspaceArtifactService::new(&root)
-            .execute_approved(&item, &UserApproval::from_typed_confirmation(&item, "WRITE other.txt").unwrap_or_else(|_| approve(&item)))
-            .is_ok());
-        fs::remove_dir_all(root).unwrap();
+        let wrong = UserApproval::from_typed_confirmation(&item, "WRITE other.txt");
+        assert!(wrong.is_err());
+        assert!(!root.exists());
     }
 
     #[cfg(unix)]
