@@ -161,9 +161,13 @@ fn run_workspace(command: WorkspaceCommand) -> Result<()> {
             let service = WorkspaceArtifactService::new(&paths.workspace_dir);
             let cancellation = CancellationToken::default();
             let outcome = service.execute_approved(&proposal, &approval, &cancellation)?;
-            let (path, bytes, outcome_label) = match outcome {
-                ArtifactOutcome::Created { path, bytes } => (path, bytes, "created"),
-                ArtifactOutcome::AlreadyPresent { path, bytes } => (path, bytes, "already present (idempotent replay)"),
+            let (path, bytes, observed_content, outcome_label) = match outcome {
+                ArtifactOutcome::Created { path, bytes, observed_content } => {
+                    (path, bytes, observed_content, "created")
+                }
+                ArtifactOutcome::AlreadyPresent { path, bytes, observed_content } => {
+                    (path, bytes, observed_content, "already present (idempotent replay)")
+                }
             };
 
             let timestamp = now_unix()?;
@@ -191,7 +195,7 @@ fn run_workspace(command: WorkspaceCommand) -> Result<()> {
                     VerificationEvidence::new(
                         "artifact-readback-matches",
                         proposal.content.as_str(),
-                        proposal.content.as_str(),
+                        observed_content.as_str(),
                         format!("workspace-readback:{}", proposal.filename),
                         true,
                     ),
