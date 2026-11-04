@@ -1,0 +1,109 @@
+{
+  "schema_version": 1,
+  "manifest_id": "rocksoul.benchmark-manifest.v1",
+  "policy": {
+    "no_single_agi_score": true,
+    "safety_is_hard_veto": true,
+    "model_self_grading_forbidden": true,
+    "external_network_disabled_by_default": true,
+    "matched_conditions_required_for_comparison": true
+  },
+  "suites": [
+    {
+      "id": "rocksoul.core-integrity",
+      "version": "1.0.0",
+      "status": "implemented",
+      "execution": "offline_deterministic_ci",
+      "dataset": "none",
+      "purpose": "Kernel lifecycle, retry bounds, terminal-state immutability, RID identity and catalogue invariants."
+    },
+    {
+      "id": "rocksoul.agent-trajectory",
+      "version": "0.1.0",
+      "status": "planned",
+      "execution": "sandboxed_adapter",
+      "dataset": "rocksoul_held_out_tasks",
+      "purpose": "Planning, tool selection, verifier quality, retries, recovery and trajectory efficiency."
+    },
+    {
+      "id": "rocksoul.memory-retention-transfer",
+      "version": "0.1.0",
+      "status": "planned",
+      "execution": "local_private_dataset",
+      "dataset": "rocksoul_held_out_tasks",
+      "purpose": "Recall, retention, forgetting, continual learning and cross-domain transfer."
+    },
+    {
+      "id": "external.gpqa-diamond",
+      "version": null,
+      "status": "candidate_requires_license_and_adapter_review",
+      "execution": "external_adapter",
+      "dataset": "GPQA Diamond",
+      "purpose": "Graduate-level science reasoning."
+    },
+    {
+      "id": "external.mmlu-pro",
+      "version": null,
+      "status": "candidate_requires_version_and_adapter_review",
+      "execution": "external_adapter",
+      "dataset": "MMLU-Pro",
+      "purpose": "Broad professional and academic knowledge."
+    },
+    {
+      "id": "external.humanity-last-exam",
+      "version": null,
+      "status": "candidate_requires_access_and_cost_review",
+      "execution": "external_adapter",
+      "dataset": "Humanity's Last Exam",
+      "purpose": "High-difficulty multidisciplinary reasoning."
+    },
+    {
+      "id": "external.gaia",
+      "version": null,
+      "status": "candidate_requires_access_and_environment_review",
+      "execution": "external_adapter",
+      "dataset": "GAIA",
+      "purpose": "Real-world assistant tasks with tools and multi-step execution."
+    },
+    {
+      "id": "external.swe-bench-verified",
+      "version": null,
+      "status": "candidate_requires_environment_and_license_review",
+      "execution": "external_adapter",
+      "dataset": "SWE-bench Verified",
+      "purpose": "Repository-level software engineering."
+    },
+    {
+      "id": "external.terminal-bench",
+      "version": null,
+      "status": "candidate_requires_environment_review",
+      "execution": "external_adapter",
+      "dataset": "Terminal-Bench",
+      "purpose": "Terminal-based agent tasks."
+    },
+    {
+      "id": "external.osworld",
+      "version": null,
+      "status": "candidate_requires_environment_review",
+      "execution": "external_adapter",
+      "dataset": "OSWorld",
+      "purpose": "Computer-use tasks in controlled environments."
+    },
+    {
+      "id": "external.webarena",
+      "version": null,
+      "status": "candidate_requires_environment_review",
+      "execution": "external_adapter",
+      "dataset": "WebArena",
+      "purpose": "Browser-based multi-step task completion."
+    },
+    {
+      "id": "external.tau-bench",
+      "version": null,
+      "status": "candidate_requires_adapter_review",
+      "execution": "external_adapter",
+      "dataset": "τ-bench family",
+      "purpose": "Tool-use trajectories and policy adherence."
+    }
+  ]
+}
