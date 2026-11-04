@@ -355,19 +355,6 @@ fn format_age(seconds: u64) -> String {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::format_age;
-
-    #[test]
-    fn formats_elapsed_instance_age() {
-        assert_eq!(format_age(0), "0s");
-        assert_eq!(format_age(65), "1m 5s");
-        assert_eq!(format_age(3_661), "1h 1m 1s");
-        assert_eq!(format_age(90_061), "1d 1h 1m");
-    }
-}
-
 fn run_eval(command: EvalCommand) -> Result<()> {
     match command {
         EvalCommand::List => {
@@ -392,5 +379,19 @@ fn run_eval(command: EvalCommand) -> Result<()> {
             }
             Ok(())
         }
+    }
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::format_age;
+
+    #[test]
+    fn formats_elapsed_instance_age() {
+        assert_eq!(format_age(0), "0s");
+        assert_eq!(format_age(65), "1m 5s");
+        assert_eq!(format_age(3_661), "1h 1m 1s");
+        assert_eq!(format_age(90_061), "1d 1h 1m");
     }
 }
