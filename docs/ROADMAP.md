@@ -4,7 +4,7 @@ The roadmap is capability-driven. Each stage must deliver a working, tested incr
 
 ## Stage 0 — Seed CLI
 
-<badge>Implemented; release artifact verified by CI</badge>
+**Status:** Implemented; release artifact verified by CI
 
 - [x] One Rust Cargo project and native executable.
 - [x] Interactive CLI with help, status, clear, and exit.
@@ -18,7 +18,7 @@ The roadmap is capability-driven. Each stage must deliver a working, tested incr
 
 ## Stage 1 — Reliable cognition loop
 
-<badge>Core contracts implemented; task-level orchestration remains in progress</badge>
+**Status:** Core contracts implemented; task-level orchestration remains in progress
 
 - [x] Explicit request and turn-state contracts.
 - [x] Structured plan and reflection data contracts.
