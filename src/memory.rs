@@ -67,8 +67,9 @@ impl Default for MemoryStore {
 
 impl MemoryStore {
     pub fn initialize(directory: &Path) -> Result<(Self, bool)> {
-        fs::create_dir_all(directory)
-            .with_context(|| format!("could not create memory directory {}", directory.display()))?;
+        fs::create_dir_all(directory).with_context(|| {
+            format!("could not create memory directory {}", directory.display())
+        })?;
         let path = store_path(directory);
         if path.exists() || backup_path(&path).exists() {
             return Ok((Self::load(directory)?, false));
@@ -192,7 +193,10 @@ impl MemoryStore {
             .into_iter()
             .filter(|record| {
                 record.content.to_lowercase().contains(&needle)
-                    || record.tags.iter().any(|tag| tag.to_lowercase().contains(&needle))
+                    || record
+                        .tags
+                        .iter()
+                        .any(|tag| tag.to_lowercase().contains(&needle))
             })
             .collect()
     }
@@ -216,8 +220,9 @@ impl MemoryStore {
 
     pub fn save(&self, directory: &Path) -> Result<()> {
         self.validate()?;
-        fs::create_dir_all(directory)
-            .with_context(|| format!("could not create memory directory {}", directory.display()))?;
+        fs::create_dir_all(directory).with_context(|| {
+            format!("could not create memory directory {}", directory.display())
+        })?;
         let path = store_path(directory);
         write_json_atomic(&path, self)
     }
@@ -225,8 +230,9 @@ impl MemoryStore {
     pub fn export(&self, directory: &Path) -> Result<PathBuf> {
         self.validate()?;
         let export_dir = directory.join("exports");
-        fs::create_dir_all(&export_dir)
-            .with_context(|| format!("could not create export directory {}", export_dir.display()))?;
+        fs::create_dir_all(&export_dir).with_context(|| {
+            format!("could not create export directory {}", export_dir.display())
+        })?;
         let path = export_dir.join("latest.json");
         let export = MemoryExport {
             schema_version: self.schema_version,
@@ -281,8 +287,12 @@ fn write_json_atomic<T: Serialize>(path: &Path, value: &T) -> Result<()> {
     let temporary = path.with_extension("json.tmp");
     let backup = backup_path(path);
     let bytes = serde_json::to_vec_pretty(value).context("could not serialize memory data")?;
-    fs::write(&temporary, bytes)
-        .with_context(|| format!("could not write temporary memory file {}", temporary.display()))?;
+    fs::write(&temporary, bytes).with_context(|| {
+        format!(
+            "could not write temporary memory file {}",
+            temporary.display()
+        )
+    })?;
 
     let moved_previous = if path.exists() {
         if backup.exists() {
@@ -301,7 +311,8 @@ fn write_json_atomic<T: Serialize>(path: &Path, value: &T) -> Result<()> {
             let _ = fs::rename(&backup, path);
         }
         let _ = fs::remove_file(&temporary);
-        return Err(error).with_context(|| format!("could not replace memory file {}", path.display()));
+        return Err(error)
+            .with_context(|| format!("could not replace memory file {}", path.display()));
     }
 
     if moved_previous {
@@ -318,7 +329,7 @@ mod tests {
         time::{SystemTime, UNIX_EPOCH},
     };
 
-    use super::{MemoryKind, MemoryStore, MEMORY_SCHEMA_VERSION};
+    use super::{MEMORY_SCHEMA_VERSION, MemoryKind, MemoryStore};
 
     fn temp_dir() -> PathBuf {
         let nanos = SystemTime::now()
