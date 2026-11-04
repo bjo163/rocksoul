@@ -59,3 +59,12 @@ These rules are mandatory for every human contributor, coding agent, automation,
 - A model response is not proof that an action was performed.
 - Document limitations directly instead of pretending a feature is complete.
 - When documentation conflicts, resolve it in favor of the current implementation on `main` and the approved `blueprint.md`; update the stale document in the same task when appropriate.
+
+
+## 7. Dependency reproducibility
+
+- `Cargo.lock` is committed and is part of the canonical application source on `main`.
+- CI, release, and documented reproducibility checks must use Cargo's `--locked` flag for dependency-resolving commands (`build`, `check`, `test`, `clippy`, and `run`).
+- A dependency update must intentionally update `Cargo.toml` and `Cargo.lock` together in one reviewed PR.
+- Never regenerate or update the lockfile silently during a normal build or release.
+- The lockfile automation may create a short-lived branch from latest `main`; its output must still be reviewed and merged through a PR targeting `main`.
