@@ -146,6 +146,18 @@ pub fn init() -> Result<()> {
 
 fn run_workspace(command: WorkspaceCommand) -> Result<()> {
     match command {
+        WorkspaceCommand::Trace => {
+            let paths = AppPaths::discover()?;
+            let trace_path = paths.logs_dir.join("task-trace.v1.jsonl");
+            let records = task_trace::read(&trace_path)?;
+            if records.is_empty() {
+                println!("No task trace records yet.");
+            } else {
+                for record in records {
+                    println!("{}", serde_json::to_string(&record)?);
+                }
+            }
+        }
         WorkspaceCommand::Write { filename, content } => {
             let proposal = WorkspaceArtifactProposal { filename, content };
             proposal.validate()?;
