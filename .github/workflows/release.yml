@@ -1,0 +1,42 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  windows:
+    name: Build Windows release
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install stable Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Cargo
+        uses: Swatinem/rust-cache@v2
+
+      - name: Build release executable
+        run: cargo build --release
+
+      - name: Generate SHA-256 checksum
+        shell: pwsh
+        run: |
+          $hash = (Get-FileHash target/release/rocksoul.exe -Algorithm SHA256).Hash.ToLower()
+          "$hash  rocksoul.exe" | Out-File -FilePath target/release/rocksoul.exe.sha256 -Encoding ascii
+
+      - name: Publish GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            target/release/rocksoul.exe
+            target/release/rocksoul.exe.sha256
