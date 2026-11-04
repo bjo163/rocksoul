@@ -186,7 +186,10 @@ fn parse_plan(raw: &str) -> Result<TurnPlan> {
             .unwrap_or(rest.trim())
             .trim()
     } else if let Some(rest) = trimmed.strip_prefix("```") {
-        rest.trim().strip_suffix("```").unwrap_or(rest.trim()).trim()
+        rest.trim()
+            .strip_suffix("```")
+            .unwrap_or(rest.trim())
+            .trim()
     } else {
         trimmed
     };
