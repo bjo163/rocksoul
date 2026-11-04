@@ -307,7 +307,9 @@ fn print_help() {
     println!("  :clear   Clear the current conversation");
     println!("  :exit    Exit Rocksoul");
     println!();
-    println!("Each chat turn uses a bounded planner, up to three model-only steps, and a reflector.");
+    println!(
+        "Each chat turn uses a bounded planner, up to three model-only steps, and a reflector."
+    );
 }
 
 #[cfg(test)]
@@ -332,7 +334,8 @@ mod tests {
 
     #[test]
     fn parses_valid_reflection_json() {
-        let raw = r#"{"outcome":"succeeded","summary":"All required checks are supported","issues":[]}"#;
+        let raw =
+            r#"{"outcome":"succeeded","summary":"All required checks are supported","issues":[]}"#;
         let reflection = parse_reflection(raw).unwrap();
         assert!(reflection.validate().is_ok());
     }
