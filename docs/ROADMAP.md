@@ -14,11 +14,18 @@ The roadmap is capability-driven. Each stage must deliver a working, tested incr
 
 ## Stage 1 — Reliable cognition loop
 
-- Define explicit request, response, and turn state.
-- Add structured planning and reflection contracts.
-- Add cancellation, token/time budgets, retry policy, and clear error states.
-- Keep model-independent core interfaces.
-- Add deterministic tests around state transitions.
+- [x] Define explicit request, response, and turn state contracts.
+- [x] Add validated structured planning and reflection contracts.
+- [x] Add model-call and elapsed-time budgets with explicit lifecycle errors.
+- [x] Add provider-reported completion-token accounting when usage is available.
+- [x] Keep model-independent core interfaces.
+- [x] Add deterministic tests around state transitions, budgets, and validation.
+- [ ] Generate plans with a dedicated model planning pass and execute bounded plan steps.
+- [ ] Generate a separate reflection pass and evaluate acceptance checks against runtime evidence.
+- [ ] Wire cancellation to terminal input/signals and implement retry backoff/idempotency.
+- [ ] Enforce output-token budgets for providers that do not return usage metadata (requires a documented estimator or provider-specific tokenizer).
+
+Current status: the REPL is integrated with a single-action turn (one model call, deterministic non-empty-response verification). This is a foundation, not the complete multi-step cognition loop.
 
 ## Stage 2 — Persistent memory
 
