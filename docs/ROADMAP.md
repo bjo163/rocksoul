@@ -44,8 +44,7 @@ The roadmap is capability-driven. Each stage must deliver a working, tested incr
 - [ ] Verify task acceptance against observed effects; chat response completion is not task success.
 - [x] Append content-free JSONL lifecycle events for the workspace CLI (proposal, approval/denial, execution/failure, verification).
 - [x] Persist create-only, versioned verification receipt JSON files and expose them through trace inspection.
-- [x] Serialize JSONL trace appends within the process and validate schema version/required fields.
-- [ ] Add portable cross-process append locking without raising the Rust 1.85 MSRV.
+- [x] Serialize JSONL trace appends across processes with portable OS file locks and validate schema version/required fields (Rust 1.85 MSRV preserved).
 - [x] Extend offline Core Integrity v1.2 with workspace proposal/approval, create/read-back, verified XP, replay idempotency, pre-cancel, trace round-trip, and Unix target-symlink scenarios.
 - [ ] Extend evaluation with denial/failure/retry-exhaustion/cancellation-race/read-back-mismatch and Windows filesystem scenarios.
 - [ ] Persist complete planner/turn/reflection state and support recovery of interrupted operations.
