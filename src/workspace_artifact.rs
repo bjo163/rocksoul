@@ -287,6 +287,18 @@ mod tests {
         assert!(!root.exists());
     }
 
+    #[test]
+    fn cancelled_operation_does_not_publish_artifact() {
+        let root = workspace();
+        let item = proposal("cancelled.txt", "content");
+        let cancellation = CancellationToken::default();
+        cancellation.cancel();
+        assert!(WorkspaceArtifactService::new(&root)
+            .execute_approved(&item, &approve(&item), &cancellation)
+            .is_err());
+        assert!(!root.exists());
+    }
+
     #[cfg(unix)]
     #[test]
     fn rejects_workspace_symlink() {
