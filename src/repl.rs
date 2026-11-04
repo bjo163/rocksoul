@@ -192,11 +192,18 @@ async fn run_turn(
             } else {
                 reflection.issues.join("; ")
             };
-            bail!("reflector did not approve this turn: {} ({issues})", reflection.summary);
+            bail!(
+                "reflector did not approve this turn: {} ({issues})",
+                reflection.summary
+            );
         }
     }
     debug_assert_eq!(state.phase, crate::core::TurnPhase::Completed);
-    Ok(format!("{}\n\nReflection: {}", outputs.join("\n\n"), reflection.summary))
+    Ok(format!(
+        "{}\n\nReflection: {}",
+        outputs.join("\n\n"),
+        reflection.summary
+    ))
 }
 
 fn parse_plan(raw: &str) -> Result<TurnPlan> {
@@ -282,7 +289,8 @@ mod tests {
 
     #[test]
     fn parses_valid_reflection_json() {
-        let raw = r#"{"outcome":"succeeded","summary":"All required checks are supported","issues":[]}"#;
+        let raw =
+            r#"{"outcome":"succeeded","summary":"All required checks are supported","issues":[]}"#;
         let reflection = parse_reflection(raw).unwrap();
         assert!(reflection.validate().is_ok());
     }
