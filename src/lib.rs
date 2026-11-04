@@ -26,7 +26,7 @@ pub async fn run() -> Result<()> {
     let cli = cli::Cli::parse();
 
     match cli.command {
-        Some(command) => commands::run(command),
+        Some(command) => commands::run(command).await,
         None => repl::run().await,
     }
 }
