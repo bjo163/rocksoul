@@ -105,7 +105,11 @@ pub fn init() -> Result<()> {
     println!(
         "Memory store: {} ({})",
         paths.memory_dir.join("store.v1.json").display(),
-        if memory_created { "created" } else { "preserved" }
+        if memory_created {
+            "created"
+        } else {
+            "preserved"
+        }
     );
     println!("Evolution archive: {}", paths.evolution_dir.display());
     println!("Cache: {}", paths.cache_dir.display());
@@ -388,7 +392,10 @@ pub fn memory_status() -> Result<()> {
     let paths = AppPaths::discover()?;
     let store = MemoryStore::load(&paths.memory_dir)?;
     print_memory_records(&store.active_records(now_unix()?), "Rocksoul memory");
-    println!("Store: {}", paths.memory_dir.join("store.v1.json").display());
+    println!(
+        "Store: {}",
+        paths.memory_dir.join("store.v1.json").display()
+    );
     Ok(())
 }
 
@@ -422,7 +429,10 @@ fn run_memory(command: MemoryCommand) -> Result<()> {
             store.save(&paths.memory_dir)?;
             println!("Memory saved with explicit user approval.");
             println!("ID: {id}");
-            println!("Store: {}", paths.memory_dir.join("store.v1.json").display());
+            println!(
+                "Store: {}",
+                paths.memory_dir.join("store.v1.json").display()
+            );
         }
         MemoryCommand::List => {
             print_memory_records(&store.active_records(now_unix()?), "Rocksoul memory");
@@ -463,7 +473,11 @@ fn print_memory_records(records: &[&MemoryRecord], heading: &str) {
         return;
     }
     for record in records {
-        let approval = if record.user_approved { "user-approved" } else { "derived/unapproved" };
+        let approval = if record.user_approved {
+            "user-approved"
+        } else {
+            "derived/unapproved"
+        };
         let tags = if record.tags.is_empty() {
             String::new()
         } else {
@@ -477,7 +491,9 @@ fn print_memory_records(records: &[&MemoryRecord], heading: &str) {
             "    source={} · created={} · expires={}",
             record.source,
             record.created_at_unix,
-            record.expires_at_unix.map_or_else(|| "never".to_owned(), |value| value.to_string())
+            record
+                .expires_at_unix
+                .map_or_else(|| "never".to_owned(), |value| value.to_string())
         );
     }
 }
