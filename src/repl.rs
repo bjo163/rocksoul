@@ -1,22 +1,39 @@
-use std::io::{self, BufRead, Write};
-use std::time::Duration;
+use std::{
+    io::{self, BufRead, Write},
+    time::Duration,
+};
 
-use anyhow::{Context, Result};
+use anyhow::{Context, Result, bail};
 use reqwest::Client;
 
 use crate::{
     commands,
-    core::{CancellationToken, TurnBudget, TurnEvent, TurnMeter, TurnRequest, TurnState},
+    core::{
+        CancellationToken, ReflectionOutcome, TurnBudget, TurnEvent, TurnMeter, TurnPlan,
+        TurnReflection, TurnRequest, TurnState,
+    },
     model::{ChatMessage, ModelConfig},
 };
 
-const SYSTEM_PROMPT: &str = "You are Rocksoul, an experimental CLI intelligence runtime. Be accurate and explicit about uncertainty. In this seed release you have no tools and cannot inspect files, run commands, or modify systems. Never claim that an action was performed unless the runtime actually performed it. You may explain plans and provide code for the user to review.";
+const SYSTEM_PROMPT: &str = "You are Rocksoul, an experimental CLI intelligence runtime. Be accurate and explicit about uncertainty. You have no tools and cannot inspect files, run commands, or modify systems. Never claim that an action was performed unless the runtime actually performed it.";
+const PLANNER_PROMPT: &str = "You are Rocksoul's planner. Return ONLY JSON with this shape: {\"objective\":string,\"steps\":[{\"id\":string,\"description\":string}],\"acceptance_checks\":[{\"id\":string,\"description\":string,\"required\":boolean}]}. Create 1-3 small ordered reasoning steps and at least one required acceptance check. No markdown or extra prose. Plans are proposals, not executable commands.";
+const REFLECTOR_PROMPT: &str = "You are the reflector. Review the plan, required checks, and supplied model outputs. Do not claim external actions or facts were verified. Return ONLY JSON with outcome (succeeded, needs_retry, or failed), summary, and issues (array of strings). Use succeeded only when every required check is supported by the outputs; otherwise list concrete unresolved issues. No markdown.";
 const MAX_HISTORY_MESSAGES: usize = 41;
+const MAX_PLAN_STEPS: usize = 3;
+
+struct TurnResult {
+    answer: String,
+    elapsed_ms: u64,
+    model_calls: u32,
+    reported_output_tokens: u32,
+    usage_complete: bool,
+}
 
 pub async fn run() -> Result<()> {
     let model = ModelConfig::from_env();
+    // One planner + up to three step calls + one reflector.
     let turn_budget = TurnBudget {
-        max_model_calls: 1,
+        max_model_calls: 5,
         max_output_tokens: 16_000,
         timeout_ms: 120_000,
     };
@@ -31,7 +48,6 @@ pub async fn run() -> Result<()> {
 
     println!("Rocksoul v{} — Seed CLI", env!("CARGO_PKG_VERSION"));
     println!("Type :help for commands. Type :exit to leave.");
-
     if model.is_none() {
         println!("No model configured. Set ROCKSOUL_MODEL to enable chat.");
     }
@@ -39,11 +55,9 @@ pub async fn run() -> Result<()> {
     let stdin = io::stdin();
     let mut reader = stdin.lock();
     let mut input = String::new();
-
     loop {
         print!("rocksoul> ");
         io::stdout().flush()?;
-
         input.clear();
         if reader.read_line(&mut input)? == 0 {
             println!();
@@ -54,7 +68,6 @@ pub async fn run() -> Result<()> {
         if prompt.is_empty() {
             continue;
         }
-
         match prompt.to_ascii_lowercase().as_str() {
             ":help" | "help" | "?" => print_help(),
             ":status" | "status" => commands::status()?,
@@ -83,54 +96,199 @@ pub async fn run() -> Result<()> {
                     budget: turn_budget,
                 };
                 request.validate()?;
-
-                let mut turn = TurnState::new(request.id.clone(), 0);
-                turn.apply(TurnEvent::Start)?;
-                turn.apply(TurnEvent::PlanAccepted)?;
-                let cancellation = CancellationToken::default();
-                let mut meter = TurnMeter::new(request.budget)?;
                 messages.push(ChatMessage::new("user", prompt));
 
-                match model
-                    .complete(
-                        &client,
-                        &messages,
-                        request.budget,
-                        &mut meter,
-                        &cancellation,
-                    )
-                    .await
-                {
-                    Ok(answer) => {
-                        // This verifies only that a non-empty response was received.
-                        // It does not prove that the user's underlying task was completed.
-                        turn.apply(TurnEvent::ActionCompleted)?;
-                        turn.apply(TurnEvent::VerificationPassed)?;
-                        println!("\n{}\n", answer.content);
-                        match answer.output_tokens {
-                            Some(tokens) => println!(
-                                "[turn: {} ms · {} output tokens]",
-                                answer.elapsed_ms, tokens
-                            ),
-                            None => println!(
-                                "[turn: {} ms · provider token usage unavailable]",
-                                answer.elapsed_ms
-                            ),
-                        }
-                        messages.push(ChatMessage::new("assistant", answer.content));
+                match run_turn(model, &client, request, &messages).await {
+                    Ok(result) => {
+                        println!("\n{}\n", result.answer);
+                        let token_label = if result.usage_complete {
+                            format!("{} reported output tokens", result.reported_output_tokens)
+                        } else {
+                            format!(
+                                "{} reported output tokens (partial; provider omitted usage)",
+                                result.reported_output_tokens
+                            )
+                        };
+                        println!(
+                            "[turn: {} ms · {} model calls · {}]",
+                            result.elapsed_ms, result.model_calls, token_label
+                        );
+                        messages.push(ChatMessage::new("assistant", result.answer));
                         trim_history(&mut messages);
                     }
                     Err(error) => {
-                        turn.apply(TurnEvent::Fail)?;
                         messages.pop();
-                        eprintln!("Model request failed: {error:#}");
+                        eprintln!("Turn failed: {error:#}");
                     }
                 }
             }
         }
     }
-
     Ok(())
+}
+
+/// One planning call, up to three bounded model-only execution calls, and a reflector call.
+/// No shell, filesystem, plugin, or arbitrary tool execution is available.
+async fn run_turn(
+    model: &ModelConfig,
+    client: &Client,
+    request: TurnRequest,
+    history: &[ChatMessage],
+) -> Result<TurnResult> {
+    request.validate()?;
+    let cancellation = CancellationToken::default();
+    let mut meter = TurnMeter::new(request.budget)?;
+    let mut state = TurnState::new(request.id, 0);
+    state.apply(TurnEvent::Start)?;
+
+    let planning_messages = [
+        ChatMessage::new("system", PLANNER_PROMPT),
+        ChatMessage::new("user", request.input),
+    ];
+    let planning = model
+        .complete(
+            client,
+            &planning_messages,
+            request.budget,
+            &mut meter,
+            &cancellation,
+        )
+        .await?;
+    meter.check_time_budget(&cancellation)?;
+    let mut usage_complete = planning.output_tokens.is_some();
+    let plan = parse_plan(&planning.content)?;
+    plan.validate()?;
+    if plan.steps.len() > MAX_PLAN_STEPS {
+        bail!(
+            "planner returned too many steps: {} (maximum {})",
+            plan.steps.len(),
+            MAX_PLAN_STEPS
+        );
+    }
+    state.apply(TurnEvent::PlanAccepted)?;
+
+    let mut execution = history.to_vec();
+    execution.push(ChatMessage::new(
+        "system",
+        format!(
+            "Accepted objective: {}. Work through the supplied steps in order. You have no tools. Never claim external actions.",
+            plan.objective
+        ),
+    ));
+    let mut outputs = Vec::with_capacity(plan.steps.len());
+
+    for (index, step) in plan.steps.iter().enumerate() {
+        meter.check_time_budget(&cancellation)?;
+        execution.push(ChatMessage::new(
+            "user",
+            format!(
+                "Plan step {}/{} [{}]: {}. Provide the result for this step only.",
+                index + 1,
+                plan.steps.len(),
+                step.id,
+                step.description
+            ),
+        ));
+        let completion = model
+            .complete(
+                client,
+                &execution,
+                request.budget,
+                &mut meter,
+                &cancellation,
+            )
+            .await?;
+        meter.check_time_budget(&cancellation)?;
+        usage_complete &= completion.output_tokens.is_some();
+        execution.push(ChatMessage::new("assistant", completion.content.clone()));
+        outputs.push(format!(
+            "Step {} — {}\n{}",
+            index + 1,
+            step.id,
+            completion.content
+        ));
+    }
+
+    state.apply(TurnEvent::ActionCompleted)?;
+    if outputs.len() != plan.steps.len() || outputs.iter().any(|item| item.trim().is_empty()) {
+        state.apply(TurnEvent::VerificationRejected)?;
+        bail!("one or more execution steps did not produce a usable result");
+    }
+
+    let review_payload = serde_json::json!({
+        "objective": plan.objective,
+        "steps": plan.steps,
+        "acceptance_checks": plan.acceptance_checks,
+        "execution_outputs": outputs,
+    });
+    let reflection_messages = [
+        ChatMessage::new("system", REFLECTOR_PROMPT),
+        ChatMessage::new("user", serde_json::to_string(&review_payload)?),
+    ];
+    let review = model
+        .complete(
+            client,
+            &reflection_messages,
+            request.budget,
+            &mut meter,
+            &cancellation,
+        )
+        .await?;
+    meter.check_time_budget(&cancellation)?;
+    usage_complete &= review.output_tokens.is_some();
+    let reflection = parse_reflection(&review.content)?;
+    reflection.validate()?;
+
+    match reflection.outcome {
+        ReflectionOutcome::Succeeded => state.apply(TurnEvent::VerificationPassed)?,
+        ReflectionOutcome::NeedsRetry | ReflectionOutcome::Failed => {
+            state.apply(TurnEvent::VerificationRejected)?;
+            let issues = if reflection.issues.is_empty() {
+                "no specific issue was supplied".to_owned()
+            } else {
+                reflection.issues.join("; ")
+            };
+            bail!(
+                "reflector did not approve this turn: {} ({issues})",
+                reflection.summary
+            );
+        }
+    }
+
+    debug_assert_eq!(state.phase, crate::core::TurnPhase::Completed);
+    Ok(TurnResult {
+        answer: format!(
+            "Objective: {}\n\n{}\n\nReflection: {}",
+            plan.objective,
+            outputs.join("\n\n"),
+            reflection.summary
+        ),
+        elapsed_ms: meter.elapsed().as_millis().try_into().unwrap_or(u64::MAX),
+        model_calls: meter.model_calls(),
+        reported_output_tokens: meter.output_tokens(),
+        usage_complete,
+    })
+}
+
+fn parse_plan(raw: &str) -> Result<TurnPlan> {
+    let trimmed = raw.trim();
+    let json = strip_json_fence(trimmed);
+    serde_json::from_str(json).context("planner returned invalid structured JSON")
+}
+
+fn parse_reflection(raw: &str) -> Result<TurnReflection> {
+    let trimmed = raw.trim();
+    let json = strip_json_fence(trimmed);
+    serde_json::from_str(json).context("reflector returned invalid structured JSON")
+}
+
+fn strip_json_fence(raw: &str) -> &str {
+    let body = raw
+        .strip_prefix("```json")
+        .or_else(|| raw.strip_prefix("```"))
+        .map(str::trim)
+        .unwrap_or(raw);
+    body.strip_suffix("```").map(str::trim).unwrap_or(body)
 }
 
 fn trim_history(messages: &mut Vec<ChatMessage>) {
@@ -149,5 +307,50 @@ fn print_help() {
     println!("  :clear   Clear the current conversation");
     println!("  :exit    Exit Rocksoul");
     println!();
-    println!("Any other input is sent to the configured chat model.");
+    println!("Each chat turn uses a bounded planner, up to three model-only steps, and a reflector.");
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{parse_plan, parse_reflection};
+
+    #[test]
+    fn parses_valid_plan_json() {
+        let raw = r#"{"objective":"Explain a topic","steps":[{"id":"s1","description":"Define the topic"}],"acceptance_checks":[{"id":"c1","description":"A definition is included","required":true}]}"#;
+        let plan = parse_plan(raw).unwrap();
+        assert!(plan.validate().is_ok());
+        assert_eq!(plan.steps.len(), 1);
+    }
+
+    #[test]
+    fn parses_fenced_plan_json() {
+        let json = r#"{"objective":"Explain","steps":[{"id":"s1","description":"Define"}],"acceptance_checks":[{"id":"c1","description":"A definition is included","required":true}]}"#;
+        let wrapped = format!("\x60\x60\x60json\n{json}\n\x60\x60\x60");
+        let plan = parse_plan(&wrapped).unwrap();
+        assert!(plan.validate().is_ok());
+    }
+
+    #[test]
+    fn parses_valid_reflection_json() {
+        let raw = r#"{"outcome":"succeeded","summary":"All required checks are supported","issues":[]}"#;
+        let reflection = parse_reflection(raw).unwrap();
+        assert!(reflection.validate().is_ok());
+    }
+
+    #[test]
+    fn rejects_malformed_reflection_json() {
+        assert!(parse_reflection("not json").is_err());
+    }
+
+    #[test]
+    fn rejects_successful_reflection_with_issues() {
+        let raw = r#"{"outcome":"succeeded","summary":"Looks good","issues":["Missing evidence"]}"#;
+        let reflection = parse_reflection(raw).unwrap();
+        assert!(reflection.validate().is_err());
+    }
+
+    #[test]
+    fn rejects_malformed_plan_json() {
+        assert!(parse_plan("not json").is_err());
+    }
 }
