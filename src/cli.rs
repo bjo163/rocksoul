@@ -69,7 +69,6 @@ pub enum RidCommand {
     History,
 }
 
-
 #[derive(Debug, Subcommand)]
 pub enum MemoryCommand {
     /// Add an explicitly user-approved memory record.
