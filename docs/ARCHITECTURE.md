@@ -34,6 +34,7 @@ This table describes implemented module responsibilities, not independent proces
 - `rocksoul eval ...`: list/run Core Integrity and inspect its latest report.
 - `rocksoul memory ...`: explicitly list, add, search, export, delete, or clear local records.
 - `rocksoul workspace write <filename> --content <text>`: create one flat `.txt` artifact after typing the exact `WRITE <filename>` approval phrase; the service reopens and compares the published bytes, refuses overwrites, and awards XP only through the existing verifier.
+- `rocksoul workspace trace`: inspect content-free JSONL lifecycle records stored under the portable `logs/` directory.
 - `rocksoul tui`: open the optional full-screen terminal cockpit; it requires an interactive terminal.
 - `rocksoul`: start the interactive REPL. Conversation history is held in process memory for that session.
 
@@ -101,7 +102,7 @@ External agent-trajectory, memory-transfer, and generalization benchmarks are pl
 
 ## Planned architecture—not current capability
 
-The workspace artifact command is a narrow first application service, not general agent tool access. It is currently invoked directly by the user; the planner does not yet propose or dispatch it. Filesystem checks fail closed for detected symlinks but do not claim protection against a hostile local process racing filesystem changes.
+The workspace artifact command is a narrow first application service, not general agent tool access. It is currently invoked directly by the user; the planner does not yet propose or dispatch it. A version-1 JSONL trace records workspace proposal, approval/denial, execution/failure, and verification events without artifact bodies; complete turn/reflection persistence and restart recovery are not yet implemented. Filesystem checks fail closed for detected symlinks but do not claim protection against a hostile local process racing filesystem changes.
 
 The following are future roadmap stages, not available seed-release behavior:
 
