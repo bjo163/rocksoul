@@ -4,7 +4,7 @@ The roadmap is capability-driven. Each stage must deliver a working, tested incr
 
 ## Stage 0 — Seed CLI
 
-**Status:** Implemented; release artifact verified by CI
+**Status:** Seed implementation and CI packaging exist; clean-runner installation/portable smoke coverage is being added. Manual clean-device verification remains required.
 
 - [x] One Rust Cargo project and native executable.
 - [x] Interactive CLI with help, status, clear, and exit.
@@ -13,8 +13,9 @@ The roadmap is capability-driven. Each stage must deliver a working, tested incr
 - [x] Windows x64 release build and CI artifact.
 - [x] RID local identity profile, age, XP ledger and 99 unrated stat slots.
 - [x] Keyboard-first Ratatui Cognitive Cockpit.
-- [ ] Commit the resolved Cargo.lock.
-- [ ] Verify the release artifact on a clean Windows machine.
+- [ ] Commit the resolved Cargo.lock (automated lockfile PR workflow added; merge its generated PR).
+- [ ] Verify installer and portable ZIP on a clean Windows runner (automated smoke test added; awaiting CI result).
+- [ ] Perform one manual clean-device installation and verify upgrade/data preservation.
 
 ## Stage 1 — Reliable cognition loop
 

@@ -1,117 +1,205 @@
 # Rocksoul
 
-**One Core. Infinite Evolution.**
+<p align="center">
+  <strong>One Core. Infinite Evolution.</strong><br/>
+  <em>Start as a seed. Learn through experience. Grow through capability. Evolve through evidence.</em>
+</p>
 
-Rocksoul is an experimental, Rust-first intelligence runtime that starts as one native CLI executable and is designed to grow into a platform for building and operating many kinds of applications.
+<p align="center">
+  <a href="https://github.com/bjo163/rocksoul/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/bjo163/rocksoul/actions/workflows/ci.yml/badge.svg?branch=main"></a>
+  <a href="https://github.com/bjo163/rocksoul/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/bjo163/rocksoul"></a>
+</p>
 
-The first milestone is intentionally small:
+**Rocksoul is a Rust-first intelligence runtime that begins as one portable native executable and is designed to grow through measured, evidence-backed capabilities.** Its long-term aspiration is increasingly general, transferable, reliable, and accountable intelligence. AGI is a research direction—not a claim about the current system.
 
-- One Rust project and one executable: rocksoul.exe on Windows.
-- CLI-first interaction through an interactive REPL.
-- OpenAI-compatible model endpoint support, including local inference servers such as Ollama.
-- A portable root directory: all configuration and runtime state stay beside rocksoul.exe.
-- Local RID identity/progression profile with 99 unrated capability dimensions.
-- A keyboard-first Ratatui Cognitive Cockpit.
-- A deterministic offline Core Integrity evaluation suite.
-- A versioned local memory store with explicit user-approved writes and export/delete controls.
-- A bounded planner, up to three model-only reasoning steps, and a structured reflector per turn.
-- No desktop app, web app, server, plugin marketplace, autonomous tool execution, or multi-agent framework in the seed release.
+> One executable. One persistent identity. One trusted core. An open-ended path to evolve.
 
-Rocksoul is a foundation for agent research and self-evolving software. It is not AGI, and the initial release does not modify or replace its own executable.
+---
 
-## Quick start
+## The story
+
+AI can produce convincing answers without proving that work was completed. Memory can become opaque. Tools can receive excessive authority. A system can report progress without showing evidence.
+
+Rocksoul is being built to close that gap.
+
+It begins small on purpose: one Rust project, one executable, and a CLI that makes the runtime inspectable. From that seed, it grows through explicit cognition, responsible memory, bounded capabilities, project building, evaluation, and controlled evolution.
+
+The ambition is not to look autonomous as early as possible. It is to earn autonomy through reliable foundations.
+
+**Rock** is the foundation: resilience, structure, and a trusted core.  
+**Soul** is continuity: a persistent software identity and developmental history—not a claim of human soul or consciousness.
+
+Read the full narrative: **[The Rocksoul Story](docs/ROCKSOUL-NARRATIVE.md)**.
+
+## What exists today
+
+The current seed runtime includes:
+
+- **Native Rust CLI and REPL** — one Cargo project and one executable.
+- **Model connectivity** — OpenAI-compatible chat completions, including local endpoints such as Ollama.
+- **Portable root** — configuration and runtime state live beside the executable, not scattered through AppData or the user profile.
+- **RID profile** — local instance identity, age, append-only XP events, deterministic level progression, and 99 unrated capability slots.
+- **Cognitive Cockpit** — keyboard-first Ratatui terminal interface.
+- **Bounded cognition loop** — structured planning, up to three model-only reasoning steps, a structured reflector, and explicit per-turn budgets.
+- **Explicit local memory** — versioned local JSON store; model output cannot silently write or delete memories.
+- **Core Integrity evaluation** — deterministic offline checks for runtime invariants.
+
+The current release does **not** provide unrestricted shell execution, autonomous filesystem mutation, automatic code execution, multi-agent orchestration, or automatic self-modification. These are deliberate boundaries, not hidden capabilities.
+
+## Download for Windows
+
+<sub>Latest published release: v0.2.0</sub>
+
+| Package | Download | Best for |
+|---|---|---|
+| Windows installer (x64) | [Rocksoul-Setup-0.2.0-x64.exe](https://github.com/bjo163/rocksoul/releases/download/v0.2.0/Rocksoul-Setup-0.2.0-x64.exe) | Standard installation, Start Menu shortcut |
+| Portable ZIP (x64) | [Rocksoul-v0.2.0-windows-x64-portable.zip](https://github.com/bjo163/rocksoul/releases/download/v0.2.0/Rocksoul-v0.2.0-windows-x64-portable.zip) | Self-managed folder, portable workflow |
+| Standalone executable | [rocksoul.exe](https://github.com/bjo163/rocksoul/releases/download/v0.2.0/rocksoul.exe) | Manual setup and testing |
+| SHA-256 checksum | [rocksoul.exe.sha256](https://github.com/bjo163/rocksoul/releases/download/v0.2.0/rocksoul.exe.sha256) | Executable integrity check |
+
+[See all releases](https://github.com/bjo163/rocksoul/releases).
+
+### First launch
+
+1. Download and install the Windows x64 package, or extract the portable ZIP to a writable folder.
+2. Open the Rocksoul installation folder.
+3. Run `rocksoul.exe init` if initialization has not already run.
+4. Edit `.env` beside `rocksoul.exe`.
+5. Set your model endpoint and model identifier.
+6. Run `rocksoul.exe` or launch Rocksoul from the Start Menu.
+
+Example local Ollama configuration:
+
+```dotenv
+ROCKSOUL_BASE_URL=http://localhost:11434/v1
+ROCKSOUL_MODEL=your-installed-model
+ROCKSOUL_API_KEY=
+```
+
+For a hosted OpenAI-compatible endpoint, set its base URL, model identifier, and API key. Keep real credentials in the local `.env` file; never commit them. Existing process environment variables take precedence over the file.
+
+The installation root must be writable for portable runtime data. The installer grants write access to mutable data/configuration folders while keeping the executable itself protected.
+
+## Quick start from source
 
 ### Requirements
 
-- Rust stable (1.85 or newer).
-- A running OpenAI-compatible chat-completions endpoint and an available model.
+- Rust stable, version 1.85 or newer.
+- An OpenAI-compatible chat-completions endpoint and an available model for live model interaction.
 
 ### Build
 
-    git clone https://github.com/bjo163/rocksoul.git
-    cd rocksoul
-    cargo build --release
-    .\target\release\rocksoul.exe --help
+```powershell
+git clone https://github.com/bjo163/rocksoul.git
+cd rocksoul
+cargo build --release
+.\target\release\rocksoul.exe --help
+```
 
-The Windows executable is written to target/release/rocksoul.exe.
+### Initialize and run
 
-### Configure with .env
+```powershell
+.\target\release\rocksoul.exe init
+# Edit target/release/.env with your model settings
+.\target\release\rocksoul.exe
+```
 
-All mutable state is rooted at the directory containing rocksoul.exe. Rocksoul never writes Rocksoul configuration, identity, memory, cache, workspace, logs, or evaluation data to AppData or the user profile. The .env file lives at the root; config.toml lives in config/.
+## CLI command map
 
-1. Run initialization once:
+```text
+rocksoul
+rocksoul init
+rocksoul status
+rocksoul doctor
+rocksoul tui
 
-    .\target\release\rocksoul.exe init
+rocksoul rid status
+rocksoul rid stats
+rocksoul rid history
 
-2. Edit target/release/.env:
+rocksoul eval list
+rocksoul eval run core
+rocksoul eval latest
 
-    # Local Ollama example
-    ROCKSOUL_BASE_URL=http://localhost:11434/v1
-    ROCKSOUL_MODEL=your-installed-model
-    ROCKSOUL_API_KEY=
+rocksoul memory list
+rocksoul memory add semantic --content "A user-approved fact"
+rocksoul memory search "fact"
+rocksoul memory delete <memory-id>
+rocksoul memory export
 
-    # Hosted OpenAI-compatible endpoint example
-    # ROCKSOUL_BASE_URL=https://provider.example/v1
-    # ROCKSOUL_MODEL=your-model-id
-    # ROCKSOUL_API_KEY=your-api-key
+rocksoul --help
+```
 
-3. Start Rocksoul:
+Inside the interactive REPL:
 
-    .\target\release\rocksoul.exe
+- `:help` — available REPL commands.
+- `:status` — runtime and model configuration.
+- `:rid` — instance age, level, XP, and stat coverage.
+- `:clear` — clear the current conversation.
+- `:exit` — leave the REPL.
 
-For a downloaded executable, place .env beside rocksoul.exe, then run rocksoul.exe init if you need the template.
+## The architecture
 
-Precedence: environment variables already set in Windows/PowerShell take priority over values in .env. The .env file is never overwritten by init. Keep real API keys out of Git; .env is ignored by .gitignore.
+```text
+                    ROCKSOUL
+              One Core. Infinite Evolution.
+                         |
+       +-----------------+-----------------+
+       |                 |                 |
+   IDENTITY           COGNITION          MEMORY
+  RID / XP /          Plan / Budget /    Explicit local
+   Level               Reflect           records
+       |                 |                 |
+       +-----------------+-----------------+
+                         |
+                 CORE INTEGRITY
+               Evaluation / Evidence
+                         |
+              Future capability layer
+            Typed tools / Builder / Sandbox
+                         |
+                Controlled evolution
+           Candidate / Compare / Approve
+                 Promote / Rollback
+                         |
+                 Future interfaces
+              CLI → Desktop / Web / API
+```
 
-The Rocksoul root must be writable for portable ZIP installs. The Windows installer grants write access to mutable data/configuration folders and .env, not to the executable itself.
+The CLI is the first interface, not the owner of intelligence logic. Future interfaces must reuse the same core contracts rather than duplicating cognition, memory, or identity.
 
-### CLI
+## The long-term foundations
 
-    rocksoul
-    rocksoul init
-    rocksoul status
-    rocksoul doctor
-    rocksoul tui
-    rocksoul rid status
-    rocksoul rid stats
-    rocksoul rid history
-    rocksoul eval list
-    rocksoul eval run core
-    rocksoul eval latest
-    rocksoul memory list
-    rocksoul memory add semantic --content "A user-approved fact"
-    rocksoul memory search "fact"
-    rocksoul memory delete <memory-id>
-    rocksoul memory export
-    rocksoul --help
+### AGI as an aspiration
 
-Inside the interactive CLI:
+Rocksoul is an AGI-oriented research and engineering project. It has not demonstrated AGI, consciousness, or general intelligence. We report bounded capability vectors, evidence, uncertainty, sample counts, and safety gates—not one inflated scalar score.
 
-- :help — show available REPL commands.
-- :status — show runtime and model configuration status.
-- :rid — show instance age, level, XP and stat coverage.
-- :clear — clear the current conversation.
-- :exit — leave the REPL.
+### ASMA-99: 99 domains, 99 stats
 
-Chat history is session-only. Each turn uses one planning call, up to three model-only reasoning calls, and one reflector call. The total budget is five calls, 16,000 output tokens, and 120 seconds. Each call receives a conservative token reservation so the sum of request caps stays within the turn ceiling even if a provider omits usage metadata. The reflector is another model call, not independent verification. A successful turn does not prove the user's real-world task was completed; no XP is awarded for ordinary chat. Cross-session memory is separate and only stores entries explicitly added by the user through the memory CLI.
+The target model is exactly **99 individual technical domains with 99 corresponding technical stats**, one-to-one. Each stat requires a trusted evaluator, a defined rubric, confidence, and reproducible evidence. All begin unrated.
 
-### RID and evaluation
+Asmaul Husna is a respectful naming/inspiration layer only. Rocksoul does not possess or measure divine attributes, faith, spiritual rank, or divine approval. Optional navigation families must never replace the 99 distinct domains.
 
-`rocksoul init` creates a local RID profile. Its age is elapsed time since initialization; XP and levels are separate from capability scores. All 99 stat slots start unrated and require trusted, evidence-backed evaluation.
+### Four Kitab knowledge foundation
 
-Run `rocksoul memory list` to inspect saved entries. Add only information you explicitly approve with `rocksoul memory add <kind> --content "..."`. The store supports episodic, semantic, procedural, working, and derived records; working memory can expire. Models cannot write or delete memory. Export writes to `data/memory/exports/latest.json`; delete and clear are permanent local operations, and clear requires `--confirm`.
+The planned source-aware corpus covers Al-Qur'an, Taurat, Zabur, and Injil. Al-Qur'an is the primary reference in Rocksoul's Islamic knowledge framework. Textual witnesses, editions, translations, citations, and interpretations must remain distinct and carry provenance.
 
-Run the offline deterministic suite with `rocksoul eval run core`. It checks kernel lifecycle, bounded retries, terminal-state immutability, verified-XP gating and replay behavior, RID initialization, catalogue integrity, and level progression. Reports are saved inside the Rocksoul root at `data/evaluations/core/latest.json`.
+## RID: progression is not capability
 
-These checks measure bounded software invariants; they do not demonstrate AGI, consciousness, or general intelligence. External benchmark adapters are not yet integrated.
+| Dimension | What it means |
+|---|---|
+| Identity | Stable identity of one Rocksoul instance |
+| Age | Elapsed time since initialization |
+| XP | Append-only, evidence-backed progression events |
+| Level | Deterministic result from cumulative XP and a versioned curve |
+| 99 Stats | Independently evaluated technical capabilities |
+| Confidence | Strength and uncertainty of evaluation evidence |
 
-## Windows installation
+Ordinary chat, token count, uptime, and model self-report do not earn XP. XP and Level are never substitutes for the 99 capability scores.
 
-Download the **Rocksoul-Setup** x64 installer from GitHub Releases, or use the portable ZIP if you prefer to choose and manage the root folder yourself. The installer places the executable in Program Files and keeps all mutable Rocksoul state in subfolders of that same installation root. It preserves `.env`, `config/config.toml`, and runtime data when upgrading or uninstalling.
+## Portable data layout
 
-After installation, edit `.env` in the Rocksoul root, then launch Rocksoul from the Start Menu or run `rocksoul.exe init`.
-
-## Portable root layout
+All mutable state is rooted beside the executable:
 
 ```text
 Rocksoul/
@@ -131,66 +219,58 @@ Rocksoul/
 └── logs/
 ```
 
-No Rocksoul runtime state is written to AppData, Documents, or another user-profile directory.
+Rocksoul does not intentionally store its runtime configuration or data in AppData, Documents, or another user-profile directory. Back up the Rocksoul root to preserve local identity, memory, and configuration. Keep secrets out of source control.
 
-## Configuration
+## Safety and trust boundaries
 
-| Variable | Purpose | Default |
-|---|---|---|
-| ROCKSOUL_BASE_URL | OpenAI-compatible API base URL | http://localhost:11434/v1 |
-| ROCKSOUL_MODEL | Model identifier | Required |
-| ROCKSOUL_API_KEY | Optional bearer token | Unset |
+- Model output and external content are untrusted input.
+- A plan is a proposal; a response saying “done” is not evidence of task completion.
+- The seed release has no unrestricted shell or generated-code execution.
+- Memory writes and deletion require explicit user CLI actions.
+- Future tools must have typed contracts, least-privilege permissions, timeouts, audit events, and sandboxing.
+- Future self-evolution must use isolated candidates, immutable baselines, evaluation, approval, lineage, and rollback.
+- No unvalidated candidate may silently replace the trusted core.
 
-The API base URL should include the version prefix when required by the provider, for example /v1. Rocksoul sends requests to /chat/completions.
-
-## Design principles
-
-1. Single core first. Keep one Cargo project and one executable until a real boundary justifies splitting it.
-2. Model-independent. The core talks to an OpenAI-compatible API; it does not own or train a foundation model.
-3. CLI-first. Other interfaces must be built on top of the same core later.
-4. Capabilities are explicit. A model response is not proof that a command ran or a file changed.
-5. Evolution is evaluated. Future self-modification must create isolated candidates, run tests and evaluations, preserve lineage, and support rollback.
-6. Safe by default. No arbitrary shell execution, silent file mutation, or automatic promotion of modified core code in the seed release.
-7. Portable source, native output. Rust remains the core implementation language; future tools may use other runtimes when justified.
-
-## Repository map
-
-    src/
-      cli.rs          CLI argument definitions
-      commands.rs     command handlers
-      core.rs         cognitive turn, verification, and budget contracts
-      eval.rs         offline capability evaluation harness
-      lib.rs          application entry point and environment bootstrap
-      main.rs         native executable entry point
-      model.rs        bounded OpenAI-compatible chat client
-      paths.rs        platform paths and executable-local .env
-      repl.rs         bounded interactive turn loop
-      rid.rs          RID identity, XP ledger, and 99 stat domain
-      rid_catalogue.rs validated embedded 99-stat catalogue
-      rid_store.rs    local RID persistence
-      tui.rs          Ratatui Cognitive Cockpit
-    docs/
-      ARCHITECTURE.md
-      ROADMAP.md
-    SECURITY.md
-    AGENTS.md
-    .github/workflows/
+See [SECURITY.md](SECURITY.md) and [AGENTS.md](AGENTS.md).
 
 ## Roadmap
 
-See docs/ROADMAP.md for staged development. The intended progression is:
+| Stage | Focus | Direction |
+|---:|---|---|
+| 0 | **Seed** | Portable executable, CLI, identity, diagnostics, release integrity |
+| 1 | **Cognition** | Verified task execution and observed outcomes |
+| 2 | **Memory** | Provenance-aware, recoverable cross-session memory |
+| 3 | **Capabilities** | Typed tools, permissions, audit, sandbox |
+| 4 | **Builder** | Workspace-scoped project creation and validation |
+| 5 | **Evaluation & Evolution** | Benchmarking and controlled self-improvement |
+| 6 | **Workforce** | Bounded delegation and coordination |
+| 7 | **Expansion** | Additional interfaces over one core |
 
-CLI seed → cognition → memory → skills/tools → application builder → isolated evolution → multi-agent capabilities → additional interfaces.
+See [docs/ROADMAP.md](docs/ROADMAP.md) for implementation status and exit criteria, and [blueprint.md](blueprint.md) for the complete master blueprint.
 
-## Development
+## Development and validation
 
-    cargo fmt --all -- --check
-    cargo clippy --all-targets -- -D warnings
-    cargo test --all-targets
-    cargo build --release
+```powershell
+cargo fmt --all -- --check
+cargo clippy --all-targets -- -D warnings
+cargo test --all-targets
+cargo build --release
+cargo run -- eval run core
+```
 
-See AGENTS.md for repository rules and SECURITY.md for the security model.
+CI runs formatting, Clippy, tests, offline core evaluation, and Windows x64 packaging. Windows packaging produces the installer, portable ZIP, and executable as workflow artifacts.
+
+## Repository governance
+
+**The `main` branch is the only canonical source of truth.** Every task starts from the latest `main`, uses a short-lived task branch, and returns through a pull request targeting `main`. Historical branches and closed, unmerged PRs are not accepted implementation. See [AGENTS.md](AGENTS.md).
 
 ## Project status
 
-Seed runtime in active development. The CLI, RID, TUI, cognitive turn contracts, and offline core evaluation are implemented on the current integration branch; merge/release status is tracked by GitHub PRs and CI. Persistent memory, tool adapters, full plan/execute/verify task orchestration, external benchmark adapters, and controlled self-evolution are not implemented yet.
+Rocksoul is an actively developed experimental runtime. The current release is a bounded CLI seed—not an autonomous AGI system. The next engineering priority is release hardening: committed dependency resolution, clean Windows install/portable smoke tests, and reproducible release evidence.
+
+---
+
+<p align="center">
+  <strong>Start small. Prove every step. Evolve without losing the core.</strong><br/>
+  <em>One Core. Infinite Evolution.</em>
+</p>
