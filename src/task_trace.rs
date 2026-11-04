@@ -62,7 +62,7 @@ pub fn append(
         .with_context(|| format!("could not open task trace {}", path.display()))?;
 
     // OS-level exclusive locking serializes writers across threads and processes.
-    file.lock_exclusive()
+    FileExt::lock_exclusive(&file)
         .with_context(|| format!("could not lock task trace {}", path.display()))?;
     let end = file.seek(SeekFrom::End(0))?;
     if end > 0 {
@@ -78,7 +78,7 @@ pub fn append(
         .context("could not append complete task trace record")?;
     file.sync_data()
         .context("could not persist task trace record")?;
-    file.unlock()
+    FileExt::unlock(&file)
         .with_context(|| format!("could not unlock task trace {}", path.display()))?;
     Ok(())
 }
