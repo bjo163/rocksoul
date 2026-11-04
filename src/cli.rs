@@ -76,6 +76,8 @@ pub enum RidCommand {
 
 #[derive(Debug, Subcommand)]
 pub enum WorkspaceCommand {
+    /// Inspect the local append-only task trace.
+    Trace,
     /// Create a UTF-8 .txt artifact after exact interactive confirmation.
     Write {
         filename: String,
