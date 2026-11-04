@@ -9,13 +9,17 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     core::{
-        TurnEvent, TurnPhase, TurnState, VerificationEvidence, VerificationOutcome,
-        VerificationRequest, verify_turn_and_award_xp,
+        CancellationToken, TurnEvent, TurnPhase, TurnState, VerificationEvidence,
+        VerificationOutcome, VerificationRequest, verify_turn_and_award_xp,
     },
     memory::{MEMORY_SCHEMA_VERSION, MemoryKind, MemoryStore},
     paths::AppPaths,
     rid::{RuhIdentity, RuhProfile, XpRecordOutcome, level_for_xp},
     rid_catalogue::RidCatalogue,
+    task_trace::{self, TaskTraceEvent},
+    workspace_artifact::{
+        ArtifactOutcome, UserApproval, WorkspaceArtifactProposal, WorkspaceArtifactService,
+    },
 };
 
 pub const CORE_SUITE_ID: &str = "rocksoul.core-integrity";
@@ -292,6 +296,8 @@ pub fn run_core() -> Result<EvaluationReport> {
         "Memory entries are created through explicit user-approved writes",
     ));
 
+    stage1_workspace_checks(now, &mut checks)?;
+
     let report = EvaluationReport {
         schema_version: 1,
         suite_id: CORE_SUITE_ID.to_owned(),
@@ -306,6 +312,221 @@ pub fn run_core() -> Result<EvaluationReport> {
 
     persist_report(&report)?;
     Ok(report)
+}
+
+fn stage1_workspace_checks(now: u64, checks: &mut Vec<EvaluationCheck>) -> Result<()> {
+    let root = std::env::temp_dir().join(format!(
+        "rocksoul-stage1-eval-{now}-{}",
+        std::process::id()
+    ));
+    let item = WorkspaceArtifactProposal {
+        filename: "stage1-eval.txt".to_owned(),
+        content: "approved and independently observed".to_owned(),
+    };
+    let invalid = WorkspaceArtifactProposal {
+        filename: "../escape.txt".to_owned(),
+        content: "must be rejected".to_owned(),
+    };
+    let approval_gate = invalid.validate().is_err()
+        && UserApproval::from_typed_confirmation(&item, "WRITE different.txt").is_err();
+    checks.push(check(
+        "stage1.proposal_and_approval_boundary",
+        approval_gate,
+        "Traversal and mismatched typed approval are rejected before execution",
+    ));
+
+    let approval = UserApproval::from_typed_confirmation(&item, &item.approval_phrase());
+    let service = WorkspaceArtifactService::new(root.join("workspace"));
+    let executed = approval.as_ref().ok().and_then(|approved| {
+        service
+            .execute_approved_with_retry(&item, approved, &CancellationToken::default())
+            .ok()
+    });
+    let observed = match executed {
+        Some(ArtifactOutcome::Created {
+            path,
+            observed_content,
+            ..
+        }) => Some((path, observed_content)),
+        _ => None,
+    };
+    let readback_ok = observed.as_ref().is_some_and(|(path, content)| {
+        path.is_file() && content == &item.content && fs::read(path).is_ok_and(|bytes| bytes == item.content.as_bytes())
+    });
+    checks.push(check(
+        "stage1.approved_create_and_readback",
+        readback_ok,
+        "Approved create-only execution reopens the actual artifact and matches observed bytes",
+    ));
+
+    let mut profile = RuhProfile::new(RuhIdentity {
+        instance_id: format!("rocksoul-stage1-eval-{now}"),
+        created_at_unix: now.max(1),
+    })?;
+    let operation_id = item.operation_id();
+    let verification_id = format!("stage1-eval:{operation_id}");
+    let verification_ok = if let Some((path, content)) = &observed {
+        let mut turn = TurnState::new("stage1-eval-task", 0);
+        turn.apply(TurnEvent::Start)?;
+        turn.apply(TurnEvent::PlanAccepted)?;
+        turn.apply(TurnEvent::ActionCompleted)?;
+        let request = VerificationRequest::new(
+            operation_id.clone(),
+            verification_id.clone(),
+            now.max(1),
+            1,
+            1,
+            vec![
+                VerificationEvidence::new(
+                    "artifact-is-regular-file",
+                    "true",
+                    if path.is_file() { "true" } else { "false" },
+                    path.display().to_string(),
+                    true,
+                ),
+                VerificationEvidence::new(
+                    "artifact-readback-matches",
+                    item.content.as_str(),
+                    content.as_str(),
+                    format!("workspace-readback:{}", item.filename),
+                    true,
+                ),
+            ],
+        );
+        matches!(
+            verify_turn_and_award_xp(&mut turn, &mut profile, request),
+            Ok(VerificationOutcome::Verified {
+                xp_record: XpRecordOutcome::Recorded,
+                ..
+            })
+        )
+    } else {
+        false
+    };
+    checks.push(check(
+        "stage1.observed_evidence_awards_xp",
+        verification_ok && profile.total_xp() > 0,
+        "Only trusted file/read-back evidence passes verification and records XP",
+    ));
+
+    let replay_ok = if let Some(approved) = approval.as_ref().ok() {
+        matches!(
+            service.execute_approved_with_retry(
+                &item,
+                approved,
+                &CancellationToken::default()
+            ),
+            Ok(ArtifactOutcome::AlreadyPresent { .. })
+        )
+    } else {
+        false
+    };
+    let mut replay_turn = TurnState::new("stage1-eval-replay", 0);
+    replay_turn.apply(TurnEvent::Start)?;
+    replay_turn.apply(TurnEvent::PlanAccepted)?;
+    replay_turn.apply(TurnEvent::ActionCompleted)?;
+    let xp_before_replay = profile.total_xp();
+    let replay_verification = verify_turn_and_award_xp(
+        &mut replay_turn,
+        &mut profile,
+        VerificationRequest::new(
+            operation_id.clone(),
+            verification_id,
+            now.max(1),
+            1,
+            1,
+            vec![VerificationEvidence::new(
+                "artifact-readback-matches",
+                item.content.as_str(),
+                item.content.as_str(),
+                format!("workspace-readback:{}", item.filename),
+                true,
+            )],
+        ),
+    );
+    let replay_xp_ok = matches!(
+        replay_verification,
+        Ok(VerificationOutcome::Verified {
+            xp_record: XpRecordOutcome::Duplicate,
+            ..
+        })
+    ) && profile.total_xp() == xp_before_replay;
+    checks.push(check(
+        "stage1.replay_is_idempotent",
+        replay_ok && replay_xp_ok,
+        "Identical artifact replay and verification do not add a second XP event",
+    ));
+
+    let cancelled_item = WorkspaceArtifactProposal {
+        filename: "cancelled.txt".to_owned(),
+        content: "must not be published".to_owned(),
+    };
+    let cancellation = CancellationToken::default();
+    cancellation.cancel();
+    let cancelled = service
+        .execute_approved(
+            &cancelled_item,
+            &UserApproval::from_typed_confirmation(
+                &cancelled_item,
+                &cancelled_item.approval_phrase(),
+            )?,
+            &cancellation,
+        )
+        .is_err()
+        && !root.join("workspace").join("cancelled.txt").exists();
+    checks.push(check(
+        "stage1.pre_cancel_blocks_publication",
+        cancelled,
+        "A cancelled operation cannot publish an artifact",
+    ));
+
+    let trace_path = root.join("logs/task-trace.v1.jsonl");
+    task_trace::append(
+        &trace_path,
+        &operation_id,
+        TaskTraceEvent::Proposed,
+        &item.filename,
+        "offline stage 1 evaluation",
+    )?;
+    let trace_ok = task_trace::read(&trace_path).is_ok_and(|records| records.len() == 1);
+    checks.push(check(
+        "stage1.trace_schema_roundtrip",
+        trace_ok,
+        "Versioned JSONL task trace can be appended and read back",
+    ));
+
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::symlink;
+        let outside = root.join("outside.txt");
+        fs::write(&outside, "preserve").ok();
+        let link_root = root.join("linked-workspace");
+        fs::create_dir_all(&link_root)?;
+        symlink(&outside, link_root.join("linked.txt"))?;
+        let link_item = WorkspaceArtifactProposal {
+            filename: "linked.txt".to_owned(),
+            content: "must not follow symlink".to_owned(),
+        };
+        let symlink_rejected = WorkspaceArtifactService::new(&link_root)
+            .execute_approved(
+                &link_item,
+                &UserApproval::from_typed_confirmation(
+                    &link_item,
+                    &link_item.approval_phrase(),
+                )?,
+                &CancellationToken::default(),
+            )
+            .is_err()
+            && fs::read_to_string(&outside).is_ok_and(|value| value == "preserve");
+        checks.push(check(
+            "stage1.target_symlink_rejected",
+            symlink_rejected,
+            "A symlink target is rejected without writing through it",
+        ));
+    }
+
+    let _ = fs::remove_dir_all(root);
+    Ok(())
 }
 
 pub fn latest() -> Result<Option<EvaluationReport>> {
