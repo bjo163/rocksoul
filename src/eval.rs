@@ -12,6 +12,7 @@ use crate::{
         TurnEvent, TurnPhase, TurnState, VerificationEvidence, VerificationOutcome,
         VerificationRequest, verify_turn_and_award_xp,
     },
+    memory::{MemoryKind, MemoryStore, MEMORY_SCHEMA_VERSION},
     paths::AppPaths,
     rid::{RuhIdentity, RuhProfile, XpRecordOutcome, level_for_xp},
     rid_catalogue::RidCatalogue,
@@ -258,6 +259,37 @@ pub fn run_core() -> Result<EvaluationReport> {
         "rid.level_curve_v1",
         level_ok,
         "Level thresholds match the deterministic v1 curve",
+    ));
+
+    let memory = MemoryStore::default();
+    let memory_ok = memory.schema_version == MEMORY_SCHEMA_VERSION
+        && memory.validate().is_ok()
+        && memory.records.is_empty();
+    checks.push(check(
+        "memory.versioned_empty_default",
+        memory_ok,
+        "Memory starts empty with a supported schema and no implicit conversation ingestion",
+    ));
+
+    let explicit_memory_ok = {
+        let mut store = MemoryStore::default();
+        store
+            .add_user_entry(
+                MemoryKind::Semantic,
+                "explicit test memory".to_owned(),
+                vec!["evaluation".to_owned()],
+                None,
+                now.max(1),
+            )
+            .is_ok()
+            && store.records.len() == 1
+            && store.records[0].user_approved
+            && store.records[0].source == "user_explicit"
+    };
+    checks.push(check(
+        "memory.explicit_approval_gate",
+        explicit_memory_ok,
+        "Memory entries are created through explicit user-approved writes",
     ));
 
     let report = EvaluationReport {
