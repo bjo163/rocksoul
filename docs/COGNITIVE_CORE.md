@@ -25,7 +25,7 @@ The request's `max_tokens` is conservatively reserved as one fifth of the total 
 
 ## Lifecycle, cancellation, and retries
 
-The core defines deterministic lifecycle phases and validates transitions, retry limits, terminal-state immutability, and budget enforcement. A cooperative cancellation token exists and is unit-tested. User keyboard interruption and terminal-signal wiring are not implemented. The workspace artifact service retries only transient filesystem I/O errors for at most three attempts with 20/40 ms backoff. A stable operation ID binds the exact filename/content pair and is reused for verifier XP idempotency. Provider-aware model retries and automatic re-planning are not implemented in the interactive path.
+The core defines deterministic lifecycle phases and validates transitions, retry limits, terminal-state immutability, and budget enforcement. Ctrl+C cancels model-driven turns, including in-flight HTTP requests, cooperatively. Provider requests retry only connection/timeout failures and HTTP 408/425/429/5xx, at most three attempts; every attempt consumes the shared turn call budget. Workspace execution retries only transient filesystem I/O errors for at most three attempts with 20/40 ms backoff. A stable operation ID binds the exact filename/content pair and is reused for verifier XP idempotency. Terminal interruption during blocking approval/filesystem calls and automatic re-planning remain unimplemented.
 
 ## Independent verification and RID XP
 
