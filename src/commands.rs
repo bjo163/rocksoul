@@ -154,8 +154,12 @@ fn persist_workspace_receipt(
     use std::io::Write as _;
 
     let receipt_dir = logs_dir.join("receipts");
-    fs::create_dir_all(&receipt_dir)
-        .with_context(|| format!("could not create receipt directory {}", receipt_dir.display()))?;
+    fs::create_dir_all(&receipt_dir).with_context(|| {
+        format!(
+            "could not create receipt directory {}",
+            receipt_dir.display()
+        )
+    })?;
     let operation_key = operation_id.rsplit(':').next().unwrap_or("unknown");
     let destination = receipt_dir.join(format!("workspace-{operation_key}.json"));
     let document = serde_json::json!({
@@ -169,14 +173,17 @@ fn persist_workspace_receipt(
         "evidence_refs": receipt.evidence_refs(),
         "xp_awarded": receipt.xp_awarded(),
     });
-    let mut encoded = serde_json::to_vec_pretty(&document)
-        .context("could not serialize verification receipt")?;
+    let mut encoded =
+        serde_json::to_vec_pretty(&document).context("could not serialize verification receipt")?;
     encoded.push(b'\n');
 
     if destination.exists() {
         let existing = fs::read(&destination)
             .with_context(|| format!("could not read receipt {}", destination.display()))?;
-        anyhow::ensure!(existing == encoded, "existing verification receipt conflicts with this operation");
+        anyhow::ensure!(
+            existing == encoded,
+            "existing verification receipt conflicts with this operation"
+        );
         return Ok(destination);
     }
 
@@ -201,7 +208,10 @@ fn persist_workspace_receipt(
         Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => {
             let existing = fs::read(&destination)
                 .with_context(|| format!("could not read receipt {}", destination.display()))?;
-            anyhow::ensure!(existing == encoded, "concurrent verification receipt conflicts with this operation");
+            anyhow::ensure!(
+                existing == encoded,
+                "concurrent verification receipt conflicts with this operation"
+            );
             Ok(destination)
         }
         Err(error) => Err(error).context("could not publish verification receipt"),
@@ -227,7 +237,10 @@ fn run_workspace(command: WorkspaceCommand) -> Result<()> {
                     .with_context(|| format!("could not inspect {}", receipt_dir.display()))?
                     .filter_map(std::result::Result::ok)
                     .map(|entry| entry.path())
-                    .filter(|path| path.extension().is_some_and(|extension| extension == "json"))
+                    .filter(|path| {
+                        path.extension()
+                            .is_some_and(|extension| extension == "json")
+                    })
                     .collect::<Vec<_>>();
                 receipts.sort();
                 for receipt in receipts {
@@ -236,7 +249,10 @@ fn run_workspace(command: WorkspaceCommand) -> Result<()> {
                     let parsed: serde_json::Value = serde_json::from_str(&content)
                         .with_context(|| format!("invalid receipt {}", receipt.display()))?;
                     anyhow::ensure!(
-                        parsed.get("schema_version").and_then(serde_json::Value::as_u64) == Some(1),
+                        parsed
+                            .get("schema_version")
+                            .and_then(serde_json::Value::as_u64)
+                            == Some(1),
                         "unsupported verification receipt schema"
                     );
                     println!("receipt: {}", serde_json::to_string(&parsed)?);
@@ -374,18 +390,20 @@ fn run_workspace(command: WorkspaceCommand) -> Result<()> {
             rid_store::save(&paths.rid_file, &profile)
                 .context("could not persist RID after verification")?;
 
-            if let crate::core::VerificationOutcome::Verified { receipt, xp_record } = &verification {
-                let receipt_path = persist_workspace_receipt(
-                    &paths.logs_dir,
-                    &operation_id,
-                    receipt,
-                )?;
+            if let crate::core::VerificationOutcome::Verified { receipt, xp_record } = &verification
+            {
+                let receipt_path =
+                    persist_workspace_receipt(&paths.logs_dir, &operation_id, receipt)?;
                 let newly_awarded = matches!(xp_record, crate::rid::XpRecordOutcome::Recorded);
                 let receipt_detail = format!(
                     "receipt={} xp={} xp_outcome={} checks={}/{} evidence={} receipt_path={}",
                     receipt.verification_id(),
                     receipt.xp_awarded(),
-                    if newly_awarded { "recorded" } else { "duplicate" },
+                    if newly_awarded {
+                        "recorded"
+                    } else {
+                        "duplicate"
+                    },
                     receipt.required_checks_passed(),
                     receipt.total_checks(),
                     receipt.evidence_refs().join(","),
@@ -410,13 +428,22 @@ fn run_workspace(command: WorkspaceCommand) -> Result<()> {
             println!("Workspace artifact {outcome_label}: {}", path.display());
             println!("Independent read-back verified: {bytes} bytes.");
             println!("RID XP total: {}.", profile.total_xp());
-            if let crate::core::VerificationOutcome::Verified { receipt, xp_record } = verification {
+            if let crate::core::VerificationOutcome::Verified { receipt, xp_record } = verification
+            {
                 let newly_awarded = matches!(xp_record, crate::rid::XpRecordOutcome::Recorded);
                 println!(
                     "Verification receipt: {} · {} XP {}",
                     receipt.verification_id(),
-                    if newly_awarded { receipt.xp_awarded() } else { 0 },
-                    if newly_awarded { "awarded" } else { "(idempotent replay; no new XP)" }
+                    if newly_awarded {
+                        receipt.xp_awarded()
+                    } else {
+                        0
+                    },
+                    if newly_awarded {
+                        "awarded"
+                    } else {
+                        "(idempotent replay; no new XP)"
+                    }
                 );
             }
         }
