@@ -12,7 +12,7 @@ use crate::{
         TurnEvent, TurnPhase, TurnState, VerificationEvidence, VerificationOutcome,
         VerificationRequest, verify_turn_and_award_xp,
     },
-    memory::{MemoryKind, MemoryStore, MEMORY_SCHEMA_VERSION},
+    memory::{MEMORY_SCHEMA_VERSION, MemoryKind, MemoryStore},
     paths::AppPaths,
     rid::{RuhIdentity, RuhProfile, XpRecordOutcome, level_for_xp},
     rid_catalogue::RidCatalogue,
