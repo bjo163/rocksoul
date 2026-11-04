@@ -10,12 +10,16 @@ use crate::{
     memory::{MemoryKind, MemoryRecord, MemoryStore},
     model::ModelConfig,
     paths::AppPaths,
-    rid::{RuhIdentity, RuhProfile},
-    core::{TurnEvent, TurnState, VerificationEvidence, VerificationRequest, verify_turn_and_award_xp},
-    workspace_artifact::{ArtifactOutcome, UserApproval, WorkspaceArtifactProposal, WorkspaceArtifactService},
     core::CancellationToken,
+    core::{
+        TurnEvent, TurnState, VerificationEvidence, VerificationRequest, verify_turn_and_award_xp,
+    },
+    rid::{RuhIdentity, RuhProfile},
     rid_catalogue::RidCatalogue,
     rid_store,
+    workspace_artifact::{
+        ArtifactOutcome, UserApproval, WorkspaceArtifactProposal, WorkspaceArtifactService,
+    },
 };
 
 const INITIAL_CONFIG: &str = r#"[core]
@@ -145,12 +149,18 @@ fn run_workspace(command: WorkspaceCommand) -> Result<()> {
             let proposal = WorkspaceArtifactProposal { filename, content };
             proposal.validate()?;
             println!("Proposed workspace artifact: {}", proposal.filename);
-            println!("Content: {} UTF-8 bytes (maximum 16384)", proposal.content.len());
+            println!(
+                "Content: {} UTF-8 bytes (maximum 16384)",
+                proposal.content.len()
+            );
             println!("Preview:");
             for line in proposal.content.lines() {
                 println!("  {line}");
             }
-            println!("To approve this exact artifact, type: {}", proposal.approval_phrase());
+            println!(
+                "To approve this exact artifact, type: {}",
+                proposal.approval_phrase()
+            );
             print!("Approval: ");
             std::io::Write::flush(&mut std::io::stdout())?;
             let mut confirmation = String::new();
@@ -162,12 +172,21 @@ fn run_workspace(command: WorkspaceCommand) -> Result<()> {
             let cancellation = CancellationToken::default();
             let outcome = service.execute_approved(&proposal, &approval, &cancellation)?;
             let (path, bytes, observed_content, outcome_label) = match outcome {
-                ArtifactOutcome::Created { path, bytes, observed_content } => {
-                    (path, bytes, observed_content, "created")
-                }
-                ArtifactOutcome::AlreadyPresent { path, bytes, observed_content } => {
-                    (path, bytes, observed_content, "already present (idempotent replay)")
-                }
+                ArtifactOutcome::Created {
+                    path,
+                    bytes,
+                    observed_content,
+                } => (path, bytes, observed_content, "created"),
+                ArtifactOutcome::AlreadyPresent {
+                    path,
+                    bytes,
+                    observed_content,
+                } => (
+                    path,
+                    bytes,
+                    observed_content,
+                    "already present (idempotent replay)",
+                ),
             };
 
             let timestamp = now_unix()?;
@@ -207,7 +226,11 @@ fn run_workspace(command: WorkspaceCommand) -> Result<()> {
             println!("Independent read-back verified: {bytes} bytes.");
             println!("RID XP total: {}.", profile.total_xp());
             if let crate::core::VerificationOutcome::Verified { receipt, .. } = verification {
-                println!("Verification receipt: {} · {} XP", receipt.verification_id(), receipt.xp_awarded());
+                println!(
+                    "Verification receipt: {} · {} XP",
+                    receipt.verification_id(),
+                    receipt.xp_awarded()
+                );
             }
         }
     }
