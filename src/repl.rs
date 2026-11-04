@@ -17,7 +17,7 @@ use crate::{
     workspace_artifact::WorkspaceArtifactProposal,
 };
 
-const SYSTEM_PROMPT: &str = "You are Rocksoul, an experimental CLI intelligence runtime. Be accurate and explicit about uncertainty. You have no tools and cannot inspect files, run commands, or modify systems. Never claim that an action was performed unless the runtime actually performed it.";
+const SYSTEM_PROMPT: &str = "You are Rocksoul, an experimental CLI intelligence runtime. Be accurate and explicit about uncertainty. You cannot inspect files or run commands. You may propose one narrow workspace text artifact only when the user explicitly asks; the runtime must show it and obtain exact human approval before writing. Never claim an action was performed unless the runtime actually performed and verified it.";
 const PLANNER_PROMPT: &str = "You are Rocksoul's planner. Return ONLY JSON with this shape: {\"objective\":string,\"steps\":[{\"id\":string,\"description\":string}],\"acceptance_checks\":[{\"id\":string,\"description\":string,\"required\":boolean}],\"workspace_artifact\":null|{\"filename\":string,\"content\":string}}. Create 1-3 small ordered reasoning steps and at least one required acceptance check. Set workspace_artifact only when the user explicitly asks to create a text file in the Rocksoul workspace; otherwise set it to null. Only propose a flat ASCII .txt filename and content. This is a proposal only; the runtime will show it and require exact human approval before writing. No markdown or extra prose.";
 const REFLECTOR_PROMPT: &str = "You are the reflector. Review the plan, required checks, and supplied model outputs. Do not claim external actions or facts were verified. Return ONLY JSON with outcome (succeeded, needs_retry, or failed), summary, and issues (array of strings). Use succeeded only when every required check is supported by the outputs; otherwise list concrete unresolved issues. No markdown.";
 const MAX_HISTORY_MESSAGES: usize = 41;
@@ -155,8 +155,8 @@ pub async fn run() -> Result<()> {
     Ok(())
 }
 
-/// One planning call, up to three bounded model-only execution calls, and a reflector call.
-/// No shell, filesystem, plugin, or arbitrary tool execution is available.
+/// One planning call, up to three bounded model-only reasoning calls, and a reflector call.
+/// The planner may return a narrow artifact proposal; dispatch still requires exact human approval.
 async fn run_turn(
     model: &ModelConfig,
     client: &Client,
