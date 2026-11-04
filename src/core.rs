@@ -105,12 +105,15 @@ pub enum TransitionError {
 impl fmt::Display for TransitionError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::InvalidTransition { phase, event } =>
-                write!(f, "event {event:?} is invalid while turn is {phase:?}"),
-            Self::RetryBudgetExhausted { max_retries } =>
-                write!(f, "turn retry budget exhausted (maximum {max_retries})"),
-            Self::TerminalState(phase) =>
-                write!(f, "terminal turn state {phase:?} cannot transition"),
+            Self::InvalidTransition { phase, event } => {
+                write!(f, "event {event:?} is invalid while turn is {phase:?}")
+            }
+            Self::RetryBudgetExhausted { max_retries } => {
+                write!(f, "turn retry budget exhausted (maximum {max_retries})")
+            }
+            Self::TerminalState(phase) => {
+                write!(f, "terminal turn state {phase:?} cannot transition")
+            }
         }
     }
 }
@@ -348,7 +351,9 @@ impl fmt::Display for CoreError {
         let message = match self {
             Self::InvalidBudget => "turn budget values must be greater than zero",
             Self::InvalidRequest => "turn request requires a non-empty ID and input",
-            Self::InvalidPlan => "plan must contain unique, non-empty steps and required acceptance checks",
+            Self::InvalidPlan => {
+                "plan must contain unique, non-empty steps and required acceptance checks"
+            }
             Self::InvalidReflection => "reflection is incomplete or internally inconsistent",
             Self::Cancelled => "turn was cancelled",
             Self::ModelCallBudgetExceeded => "model-call budget exceeded",
@@ -388,7 +393,10 @@ mod tests {
         state.apply(TurnEvent::ActionCompleted).unwrap();
         state.apply(TurnEvent::VerificationPassed).unwrap();
         assert_eq!(state.phase, TurnPhase::Completed);
-        assert_eq!(state.apply(TurnEvent::Start), Err(TransitionError::TerminalState(TurnPhase::Completed)));
+        assert_eq!(
+            state.apply(TurnEvent::Start),
+            Err(TransitionError::TerminalState(TurnPhase::Completed))
+        );
     }
 
     #[test]
@@ -398,7 +406,10 @@ mod tests {
         state.apply(TurnEvent::PlanAccepted).unwrap();
         state.apply(TurnEvent::ActionCompleted).unwrap();
         let before = state.clone();
-        assert_eq!(state.apply(TurnEvent::RetryRequested), Err(TransitionError::RetryBudgetExhausted { max_retries: 0 }));
+        assert_eq!(
+            state.apply(TurnEvent::RetryRequested),
+            Err(TransitionError::RetryBudgetExhausted { max_retries: 0 })
+        );
         assert_eq!(state, before);
     }
 
@@ -439,9 +450,15 @@ mod tests {
         let token = CancellationToken::default();
         let mut meter = TurnMeter::new(budget).unwrap();
         meter.record_model_call(&token).unwrap();
-        assert_eq!(meter.record_model_call(&token), Err(CoreError::ModelCallBudgetExceeded));
+        assert_eq!(
+            meter.record_model_call(&token),
+            Err(CoreError::ModelCallBudgetExceeded)
+        );
         meter.record_output_tokens(4).unwrap();
-        assert_eq!(meter.record_output_tokens(1), Err(CoreError::OutputTokenBudgetExceeded));
+        assert_eq!(
+            meter.record_output_tokens(1),
+            Err(CoreError::OutputTokenBudgetExceeded)
+        );
     }
 
     #[test]
