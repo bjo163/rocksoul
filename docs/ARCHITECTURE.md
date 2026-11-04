@@ -18,6 +18,7 @@ The long-term aspiration is increasingly general, transferable, reliable, and ac
 | Interactive REPL | Session-local conversation, bounded planner, model-only reasoning steps, reflector | `repl.rs`, `core.rs` |
 | Turn contracts | Lifecycle, retry limits, cancellation token, budgets, evidence-verification and XP gate | `core.rs` |
 | Portable paths | Resolve all mutable runtime paths beside the executable | `paths.rs` |
+| Workspace artifact capability | Create-only, approved UTF-8 `.txt` artifacts with read-back verification; CLI only | `workspace_artifact.rs`, `commands.rs` |
 | RID | Instance identity, age, XP ledger, deterministic level curve, 99 stat slots | `rid.rs`, `rid_store.rs`, `rid_catalogue.rs` |
 | Memory | Explicit user-approved local records, schema v1, search/export/delete and backup recovery | `memory.rs`, `commands.rs` |
 | Evaluation | Offline deterministic Core Integrity checks and latest JSON report | `eval.rs` |
@@ -32,6 +33,7 @@ This table describes implemented module responsibilities, not independent proces
 - `rocksoul rid ...`: inspect identity, progression, and capability-stat data.
 - `rocksoul eval ...`: list/run Core Integrity and inspect its latest report.
 - `rocksoul memory ...`: explicitly list, add, search, export, delete, or clear local records.
+- `rocksoul workspace write <filename> --content <text>`: create one flat `.txt` artifact after typing the exact `WRITE <filename>` approval phrase; the service reopens and compares the published bytes, refuses overwrites, and awards XP only through the existing verifier.
 - `rocksoul tui`: open the optional full-screen terminal cockpit; it requires an interactive terminal.
 - `rocksoul`: start the interactive REPL. Conversation history is held in process memory for that session.
 
@@ -98,6 +100,8 @@ The implemented Core Integrity suite is offline and deterministic apart from rep
 External agent-trajectory, memory-transfer, and generalization benchmarks are planned or candidate integrations; they are not part of the current Core Integrity suite. Passing Core Integrity does not establish AGI.
 
 ## Planned architecture—not current capability
+
+The workspace artifact command is a narrow first application service, not general agent tool access. It is currently invoked directly by the user; the planner does not yet propose or dispatch it. Filesystem checks fail closed for detected symlinks but do not claim protection against a hostile local process racing filesystem changes.
 
 The following are future roadmap stages, not available seed-release behavior:
 
