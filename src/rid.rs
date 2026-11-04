@@ -144,6 +144,7 @@ pub struct StatRecord {
     pub catalogue_entry_id: String,
     pub score: Option<u8>,
     pub confidence: Option<u8>,
+    pub sample_count: Option<u32>,
     pub evidence_refs: Vec<String>,
     pub last_evaluated_at_unix: Option<u64>,
     pub rubric_version: Option<String>,
@@ -156,6 +157,7 @@ impl StatRecord {
             catalogue_entry_id: id.catalogue_entry_id(),
             score: None,
             confidence: None,
+            sample_count: None,
             evidence_refs: Vec::new(),
             last_evaluated_at_unix: None,
             rubric_version: None,
@@ -170,12 +172,19 @@ impl StatRecord {
         &mut self,
         score: u8,
         confidence: u8,
+        sample_count: u32,
+        minimum_samples: u32,
         evidence_refs: Vec<String>,
         evaluated_at_unix: u64,
         rubric_version: String,
     ) -> Result<(), RidError> {
         if score > 100 || confidence > 100 {
             return Err(RidError("score and confidence must be in 0..=100".into()));
+        }
+        if sample_count < minimum_samples {
+            return Err(RidError(format!(
+                "stat requires at least {minimum_samples} evaluation samples, got {sample_count}"
+            )));
         }
         if evidence_refs.is_empty()
             || evidence_refs.iter().any(|value| value.trim().is_empty())
@@ -188,6 +197,7 @@ impl StatRecord {
         }
         self.score = Some(score);
         self.confidence = Some(confidence);
+        self.sample_count = Some(sample_count);
         self.evidence_refs = evidence_refs;
         self.last_evaluated_at_unix = Some(evaluated_at_unix);
         self.rubric_version = Some(rubric_version);
@@ -205,6 +215,7 @@ impl StatRecord {
         }
         match self.score {
             None if self.confidence.is_none()
+                && self.sample_count.is_none()
                 && self.evidence_refs.is_empty()
                 && self.last_evaluated_at_unix.is_none()
                 && self.rubric_version.is_none() =>
@@ -214,6 +225,7 @@ impl StatRecord {
             Some(score)
                 if score <= 100
                     && self.confidence.is_some_and(|value| value <= 100)
+                    && self.sample_count.is_some_and(|value| value > 0)
                     && !self.evidence_refs.is_empty()
                     && self
                         .evidence_refs
@@ -295,10 +307,18 @@ impl RuhProfile {
         id: StatId,
         score: u8,
         confidence: u8,
+        sample_count: u32,
         evidence_refs: Vec<String>,
         evaluated_at_unix: u64,
         rubric_version: String,
     ) -> Result<(), RidError> {
+        let catalogue = crate::rid_catalogue::RidCatalogue::embedded()
+            .map_err(|error| RidError(error.to_string()))?;
+        let minimum_samples = catalogue
+            .by_slot(id.value())
+            .map(|entry| entry.technical_stat.minimum_samples)
+            .ok_or_else(|| RidError(format!("unknown stat ID {}", id.value())))?;
+
         let stat = self
             .stats
             .iter_mut()
@@ -307,6 +327,8 @@ impl RuhProfile {
         stat.record_evaluation(
             score,
             confidence,
+            sample_count,
+            minimum_samples,
             evidence_refs,
             evaluated_at_unix,
             rubric_version,
@@ -324,12 +346,26 @@ impl RuhProfile {
             return Err(RidError("invalid RID identity".into()));
         }
         self.xp_ledger.validate()?;
+        let catalogue = crate::rid_catalogue::RidCatalogue::embedded()
+            .map_err(|error| RidError(error.to_string()))?;
         if self.stats.len() != STAT_COUNT {
             return Err(RidError(format!("RID requires exactly {STAT_COUNT} stats")));
         }
         let mut ids = HashSet::with_capacity(STAT_COUNT);
         for stat in &self.stats {
             stat.validate()?;
+            if let Some(sample_count) = stat.sample_count {
+                let minimum_samples = catalogue
+                    .by_slot(stat.id.value())
+                    .map(|entry| entry.technical_stat.minimum_samples)
+                    .ok_or_else(|| RidError(format!("missing catalogue slot {}", stat.id.value())))?;
+                if sample_count < minimum_samples {
+                    return Err(RidError(format!(
+                        "stat {} requires at least {minimum_samples} evaluation samples, got {sample_count}",
+                        stat.id.value()
+                    )));
+                }
+            }
             if !ids.insert(stat.id) {
                 return Err(RidError(format!("duplicate stat ID {}", stat.id.value())));
             }
@@ -465,12 +501,38 @@ mod tests {
     }
 
     #[test]
-    fn stat_measurements_need_evidence_and_rubric() {
+    fn stat_measurements_require_evidence_rubric_and_minimum_samples() {
         let mut profile = profile();
         let id = StatId::new(1).unwrap();
+        let evidence = (0..20)
+            .map(|index| format!("eval://suite/{index}"))
+            .collect::<Vec<_>>();
+
         assert!(
             profile
-                .record_stat_evaluation(id, 80, 90, Vec::new(), 1_800_000_200, "v1".into(),)
+                .record_stat_evaluation(
+                    id,
+                    80,
+                    90,
+                    20,
+                    Vec::new(),
+                    1_800_000_200,
+                    "v1".into(),
+                )
+                .is_err()
+        );
+
+        assert!(
+            profile
+                .record_stat_evaluation(
+                    id,
+                    80,
+                    90,
+                    19,
+                    evidence.clone(),
+                    1_800_000_200,
+                    "v1".into(),
+                )
                 .is_err()
         );
 
@@ -479,15 +541,18 @@ mod tests {
                 id,
                 80,
                 90,
-                vec!["eval://suite/1".into()],
+                20,
+                evidence,
                 1_800_000_200,
                 "v1".into(),
             )
             .unwrap();
+
         let stat = profile.stat(id).unwrap();
         assert_eq!(stat.score, Some(80));
         assert_eq!(stat.confidence, Some(90));
-        assert_eq!(stat.evidence_count(), 1);
+        assert_eq!(stat.sample_count, Some(20));
+        assert_eq!(stat.evidence_count(), 20);
         profile.validate().unwrap();
     }
 
@@ -495,15 +560,33 @@ mod tests {
     fn stat_score_and_confidence_are_bounded() {
         let mut profile = profile();
         let id = StatId::new(1).unwrap();
-        let evidence = vec!["eval://suite/1".into()];
+        let evidence = (0..20)
+            .map(|index| format!("eval://suite/{index}"))
+            .collect::<Vec<_>>();
         assert!(
             profile
-                .record_stat_evaluation(id, 101, 90, evidence.clone(), 1_800_000_200, "v1".into(),)
+                .record_stat_evaluation(
+                    id,
+                    101,
+                    90,
+                    20,
+                    evidence.clone(),
+                    1_800_000_200,
+                    "v1".into(),
+                )
                 .is_err()
         );
         assert!(
             profile
-                .record_stat_evaluation(id, 80, 101, evidence, 1_800_000_200, "v1".into(),)
+                .record_stat_evaluation(
+                    id,
+                    80,
+                    101,
+                    20,
+                    evidence,
+                    1_800_000_200,
+                    "v1".into(),
+                )
                 .is_err()
         );
     }
