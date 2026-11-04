@@ -1,5 +1,5 @@
 use std::{
-    io::{self, BufRead, Write},
+    io::{self, Write},
     time::Duration,
 };
 
@@ -10,7 +10,7 @@ use crate::{
     commands,
     cli::{Command, WorkspaceCommand},
     core::{
-        AcceptanceCheck, CancellationToken, PlanStep, ReflectionOutcome, TurnBudget, TurnEvent,
+        CancellationToken, ReflectionOutcome, TurnBudget, TurnEvent,
         TurnMeter, TurnPlan, TurnReflection, TurnRequest, TurnState,
     },
     model::{ChatMessage, ModelConfig},
@@ -184,9 +184,7 @@ async fn run_turn(
         .await?;
     meter.check_time_budget(&cancellation)?;
     let mut usage_complete = planning.output_tokens.is_some();
-    let planner_response: PlannerResponse =
-        serde_json::from_str(strip_json_fence(planning.content.trim()))
-            .context("planner returned invalid structured JSON")?;
+    let planner_response = parse_plan(&planning.content)?;
     let plan = planner_response.plan;
     let workspace_artifact = planner_response.workspace_artifact;
     plan.validate()?;
@@ -310,7 +308,7 @@ async fn run_turn(
     })
 }
 
-fn parse_plan(raw: &str) -> Result<TurnPlan> {
+fn parse_plan(raw: &str) -> Result<PlannerResponse> {
     let trimmed = raw.trim();
     let json = strip_json_fence(trimmed);
     serde_json::from_str(json).context("planner returned invalid structured JSON")
@@ -361,8 +359,8 @@ mod tests {
     fn parses_valid_plan_json() {
         let raw = r#"{"objective":"Explain a topic","steps":[{"id":"s1","description":"Define the topic"}],"acceptance_checks":[{"id":"c1","description":"A definition is included","required":true}]}"#;
         let plan = parse_plan(raw).unwrap();
-        assert!(plan.validate().is_ok());
-        assert_eq!(plan.steps.len(), 1);
+        assert!(plan.plan.validate().is_ok());
+        assert_eq!(plan.plan.steps.len(), 1);
     }
 
     #[test]
@@ -370,7 +368,7 @@ mod tests {
         let json = r#"{"objective":"Explain","steps":[{"id":"s1","description":"Define"}],"acceptance_checks":[{"id":"c1","description":"A definition is included","required":true}]}"#;
         let wrapped = format!("\x60\x60\x60json\n{json}\n\x60\x60\x60");
         let plan = parse_plan(&wrapped).unwrap();
-        assert!(plan.validate().is_ok());
+        assert!(plan.plan.validate().is_ok());
     }
 
     #[test]
