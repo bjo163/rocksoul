@@ -421,17 +421,15 @@ fn stage1_workspace_checks(now: u64, checks: &mut Vec<EvaluationCheck>) -> Resul
         filename: "stage1-mismatch.txt".to_owned(),
         content: "approved bytes".to_owned(),
     };
-    let mismatch_result = UserApproval::from_typed_confirmation(
-        &mismatch_item,
-        &mismatch_item.approval_phrase(),
-    )
-    .and_then(|approved| {
-        service.execute_approved_with_retry(
-            &mismatch_item,
-            &approved,
-            &CancellationToken::default(),
-        )
-    });
+    let mismatch_result =
+        UserApproval::from_typed_confirmation(&mismatch_item, &mismatch_item.approval_phrase())
+            .and_then(|approved| {
+                service.execute_approved_with_retry(
+                    &mismatch_item,
+                    &approved,
+                    &CancellationToken::default(),
+                )
+            });
     let mismatch_no_xp = if let Ok(ArtifactOutcome::Created { path, .. }) = mismatch_result {
         fs::write(&path, "tampered bytes")?;
         let actual_readback = fs::read_to_string(&path)?;
@@ -453,16 +451,15 @@ fn stage1_workspace_checks(now: u64, checks: &mut Vec<EvaluationCheck>) -> Resul
                 "artifact-readback-matches",
                 mismatch_item.content.as_str(),
                 actual_readback.as_str(),
-                format!("workspace-readback-mismatch:{}", mismatch_item.operation_id()),
+                format!(
+                    "workspace-readback-mismatch:{}",
+                    mismatch_item.operation_id()
+                ),
                 true,
             )],
         );
         matches!(
-            verify_turn_and_award_xp(
-                &mut mismatch_turn,
-                &mut mismatch_profile,
-                mismatch_request,
-            ),
+            verify_turn_and_award_xp(&mut mismatch_turn, &mut mismatch_profile, mismatch_request,),
             Ok(VerificationOutcome::Rejected { .. })
         ) && mismatch_profile.total_xp() == 0
     } else {
