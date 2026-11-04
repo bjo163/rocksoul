@@ -358,7 +358,9 @@ impl RuhProfile {
                 let minimum_samples = catalogue
                     .by_slot(stat.id.value())
                     .map(|entry| entry.technical_stat.minimum_samples)
-                    .ok_or_else(|| RidError(format!("missing catalogue slot {}", stat.id.value())))?;
+                    .ok_or_else(|| {
+                        RidError(format!("missing catalogue slot {}", stat.id.value()))
+                    })?;
                 if sample_count < minimum_samples {
                     return Err(RidError(format!(
                         "stat {} requires at least {minimum_samples} evaluation samples, got {sample_count}",
@@ -510,15 +512,7 @@ mod tests {
 
         assert!(
             profile
-                .record_stat_evaluation(
-                    id,
-                    80,
-                    90,
-                    20,
-                    Vec::new(),
-                    1_800_000_200,
-                    "v1".into(),
-                )
+                .record_stat_evaluation(id, 80, 90, 20, Vec::new(), 1_800_000_200, "v1".into(),)
                 .is_err()
         );
 
@@ -537,15 +531,7 @@ mod tests {
         );
 
         profile
-            .record_stat_evaluation(
-                id,
-                80,
-                90,
-                20,
-                evidence,
-                1_800_000_200,
-                "v1".into(),
-            )
+            .record_stat_evaluation(id, 80, 90, 20, evidence, 1_800_000_200, "v1".into())
             .unwrap();
 
         let stat = profile.stat(id).unwrap();
@@ -578,15 +564,7 @@ mod tests {
         );
         assert!(
             profile
-                .record_stat_evaluation(
-                    id,
-                    80,
-                    101,
-                    20,
-                    evidence,
-                    1_800_000_200,
-                    "v1".into(),
-                )
+                .record_stat_evaluation(id, 80, 101, 20, evidence, 1_800_000_200, "v1".into(),)
                 .is_err()
         );
     }
