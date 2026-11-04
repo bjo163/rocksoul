@@ -1,4 +1,12 @@
-use std::fmt;
+use std::{
+    collections::HashSet,
+    fmt,
+    sync::{
+        Arc,
+        atomic::{AtomicBool, Ordering},
+    },
+    time::{Duration, Instant},
+};
 
 use serde::{Deserialize, Serialize};
 
@@ -512,5 +520,332 @@ mod tests {
             state.apply(TurnEvent::Start),
             Err(super::TransitionError::TerminalState(TurnPhase::Completed))
         );
+    }
+}
+
+/// Explicit upper bounds for one turn. These are enforced by TurnMeter.
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+pub struct TurnBudget {
+    pub max_model_calls: u32,
+    pub max_output_tokens: u32,
+    pub timeout_ms: u64,
+}
+
+impl Default for TurnBudget {
+    fn default() -> Self {
+        Self {
+            max_model_calls: 8,
+            max_output_tokens: 16_000,
+            timeout_ms: 120_000,
+        }
+    }
+}
+
+impl TurnBudget {
+    pub fn validate(self) -> Result<Self, CoreError> {
+        if self.max_model_calls == 0 || self.max_output_tokens == 0 || self.timeout_ms == 0 {
+            return Err(CoreError::InvalidBudget);
+        }
+        Ok(self)
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+pub struct TurnRequest {
+    pub id: String,
+    pub input: String,
+    pub budget: TurnBudget,
+}
+
+impl TurnRequest {
+    pub fn validate(&self) -> Result<(), CoreError> {
+        if self.id.trim().is_empty() || self.input.trim().is_empty() {
+            return Err(CoreError::InvalidRequest);
+        }
+        self.budget.validate()?;
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+pub struct PlanStep {
+    pub id: String,
+    pub description: String,
+}
+
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+pub struct AcceptanceCheck {
+    pub id: String,
+    pub description: String,
+    pub required: bool,
+}
+
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+pub struct TurnPlan {
+    pub objective: String,
+    pub steps: Vec<PlanStep>,
+    pub acceptance_checks: Vec<AcceptanceCheck>,
+}
+
+impl TurnPlan {
+    pub fn validate(&self) -> Result<(), CoreError> {
+        if self.objective.trim().is_empty() || self.steps.is_empty() {
+            return Err(CoreError::InvalidPlan);
+        }
+        let mut ids = HashSet::new();
+        for step in &self.steps {
+            if step.id.trim().is_empty()
+                || step.description.trim().is_empty()
+                || !ids.insert(step.id.as_str())
+            {
+                return Err(CoreError::InvalidPlan);
+            }
+        }
+        let mut check_ids = HashSet::new();
+        let mut has_required_check = false;
+        for check in &self.acceptance_checks {
+            if check.id.trim().is_empty()
+                || check.description.trim().is_empty()
+                || !check_ids.insert(check.id.as_str())
+            {
+                return Err(CoreError::InvalidPlan);
+            }
+            has_required_check |= check.required;
+        }
+        if self.acceptance_checks.is_empty() || !has_required_check {
+            return Err(CoreError::InvalidPlan);
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ReflectionOutcome {
+    Succeeded,
+    NeedsRetry,
+    Failed,
+}
+
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+pub struct TurnReflection {
+    pub outcome: ReflectionOutcome,
+    pub summary: String,
+    pub issues: Vec<String>,
+}
+
+impl TurnReflection {
+    pub fn validate(&self) -> Result<(), CoreError> {
+        if self.summary.trim().is_empty() {
+            return Err(CoreError::InvalidReflection);
+        }
+        if self.issues.iter().any(|issue| issue.trim().is_empty()) {
+            return Err(CoreError::InvalidReflection);
+        }
+        if self.outcome == ReflectionOutcome::Succeeded && !self.issues.is_empty() {
+            return Err(CoreError::InvalidReflection);
+        }
+        Ok(())
+    }
+}
+
+/// Cloneable cooperative cancellation signal. Executors must check it between
+/// model calls and before performing any side effect.
+#[derive(Clone, Debug, Default)]
+pub struct CancellationToken(Arc<AtomicBool>);
+
+impl CancellationToken {
+    pub fn cancel(&self) {
+        self.0.store(true, Ordering::Release);
+    }
+
+    pub fn is_cancelled(&self) -> bool {
+        self.0.load(Ordering::Acquire)
+    }
+
+    pub fn check(&self) -> Result<(), CoreError> {
+        if self.is_cancelled() {
+            Err(CoreError::Cancelled)
+        } else {
+            Ok(())
+        }
+    }
+}
+
+/// Per-turn accounting for model calls, generated tokens, and wall-clock time.
+#[derive(Debug)]
+pub struct TurnMeter {
+    budget: TurnBudget,
+    model_calls: u32,
+    output_tokens: u32,
+    started_at: Instant,
+}
+
+impl TurnMeter {
+    pub fn new(budget: TurnBudget) -> Result<Self, CoreError> {
+        Ok(Self {
+            budget: budget.validate()?,
+            model_calls: 0,
+            output_tokens: 0,
+            started_at: Instant::now(),
+        })
+    }
+
+    pub fn before_model_call(&self, cancellation: &CancellationToken) -> Result<(), CoreError> {
+        self.check_time_budget(cancellation)?;
+        if self.model_calls >= self.budget.max_model_calls {
+            return Err(CoreError::ModelCallBudgetExceeded);
+        }
+        Ok(())
+    }
+
+    /// Check cancellation and elapsed time without consuming a model-call slot.
+    pub fn check_time_budget(
+        &self,
+        cancellation: &CancellationToken,
+    ) -> Result<(), CoreError> {
+        cancellation.check()?;
+        self.check_deadline()
+    }
+
+    pub fn record_model_call(&mut self, cancellation: &CancellationToken) -> Result<(), CoreError> {
+        self.before_model_call(cancellation)?;
+        self.model_calls += 1;
+        Ok(())
+    }
+
+    pub fn record_output_tokens(&mut self, tokens: u32) -> Result<(), CoreError> {
+        self.check_deadline()?;
+        let total = self.output_tokens.saturating_add(tokens);
+        if total > self.budget.max_output_tokens {
+            return Err(CoreError::OutputTokenBudgetExceeded);
+        }
+        self.output_tokens = total;
+        Ok(())
+    }
+
+    pub fn model_calls(&self) -> u32 {
+        self.model_calls
+    }
+
+    pub fn output_tokens(&self) -> u32 {
+        self.output_tokens
+    }
+
+    pub fn elapsed(&self) -> Duration {
+        self.started_at.elapsed()
+    }
+
+    fn check_deadline(&self) -> Result<(), CoreError> {
+        if self.started_at.elapsed() > Duration::from_millis(self.budget.timeout_ms) {
+            Err(CoreError::TimeBudgetExceeded)
+        } else {
+            Ok(())
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum CoreError {
+    InvalidBudget,
+    InvalidRequest,
+    InvalidPlan,
+    InvalidReflection,
+    Cancelled,
+    ModelCallBudgetExceeded,
+    OutputTokenBudgetExceeded,
+    TimeBudgetExceeded,
+}
+
+impl fmt::Display for CoreError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let message = match self {
+            Self::InvalidBudget => "turn budget values must be greater than zero",
+            Self::InvalidRequest => "turn request requires a non-empty ID and input",
+            Self::InvalidPlan => {
+                "plan must contain unique, non-empty steps and required acceptance checks"
+            }
+            Self::InvalidReflection => "reflection is incomplete or internally inconsistent",
+            Self::Cancelled => "turn was cancelled",
+            Self::ModelCallBudgetExceeded => "model-call budget exceeded",
+            Self::OutputTokenBudgetExceeded => "output-token budget exceeded",
+            Self::TimeBudgetExceeded => "turn time budget exceeded",
+        };
+        f.write_str(message)
+    }
+}
+
+impl std::error::Error for CoreError {}
+
+#[cfg(test)]
+mod bounded_contract_tests {
+    use super::*;
+
+    #[test]
+    fn turn_request_requires_non_empty_input_and_positive_budgets() {
+        let request = TurnRequest {
+            id: "turn-1".into(),
+            input: "hello".into(),
+            budget: TurnBudget::default(),
+        };
+        assert!(request.validate().is_ok());
+        let invalid = TurnRequest {
+            input: " ".into(),
+            ..request
+        };
+        assert_eq!(invalid.validate(), Err(CoreError::InvalidRequest));
+    }
+
+    #[test]
+    fn plans_require_unique_steps_and_required_acceptance_checks() {
+        let valid = TurnPlan {
+            objective: "Complete bounded work".into(),
+            steps: vec![PlanStep {
+                id: "step-1".into(),
+                description: "Inspect".into(),
+            }],
+            acceptance_checks: vec![AcceptanceCheck {
+                id: "check-1".into(),
+                description: "Output exists".into(),
+                required: true,
+            }],
+        };
+        assert!(valid.validate().is_ok());
+        let mut invalid = valid;
+        invalid.steps.push(invalid.steps[0].clone());
+        assert_eq!(invalid.validate(), Err(CoreError::InvalidPlan));
+    }
+
+    #[test]
+    fn cancellation_and_meter_enforce_turn_limits() {
+        let cancellation = CancellationToken::default();
+        let mut meter = TurnMeter::new(TurnBudget {
+            max_model_calls: 1,
+            max_output_tokens: 4,
+            timeout_ms: 10_000,
+        })
+        .unwrap();
+        meter.record_model_call(&cancellation).unwrap();
+        assert_eq!(
+            meter.record_model_call(&cancellation),
+            Err(CoreError::ModelCallBudgetExceeded)
+        );
+        meter.record_output_tokens(4).unwrap();
+        assert_eq!(
+            meter.record_output_tokens(1),
+            Err(CoreError::OutputTokenBudgetExceeded)
+        );
+        cancellation.cancel();
+        assert_eq!(cancellation.check(), Err(CoreError::Cancelled));
+    }
+
+    #[test]
+    fn successful_reflection_cannot_contain_unresolved_issues() {
+        let reflection = TurnReflection {
+            outcome: ReflectionOutcome::Succeeded,
+            summary: "Completed".into(),
+            issues: vec!["A required check failed".into()],
+        };
+        assert_eq!(reflection.validate(), Err(CoreError::InvalidReflection));
     }
 }
