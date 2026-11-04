@@ -106,14 +106,19 @@ mod tests {
                 .unwrap()
                 .as_nanos()
         ));
-        append(&path, "op-1", TaskTraceEvent::Proposed, "note.txt", "proposal").unwrap();
+        append(
+            &path,
+            "op-1",
+            TaskTraceEvent::Proposed,
+            "note.txt",
+            "proposal",
+        )
+        .unwrap();
         use std::io::Write as _;
         let mut file = fs::OpenOptions::new().append(true).open(&path).unwrap();
         file.write_all(b"{\"partial\":").unwrap();
         assert_eq!(read(&path).unwrap().len(), 1);
-        assert!(
-            append(&path, "op-2", TaskTraceEvent::Failed, "other.txt", "failed").is_err()
-        );
+        assert!(append(&path, "op-2", TaskTraceEvent::Failed, "other.txt", "failed").is_err());
         fs::remove_file(path).unwrap();
     }
 
