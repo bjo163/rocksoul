@@ -297,10 +297,7 @@ impl TurnMeter {
     }
 
     /// Check cancellation and elapsed time without consuming a model-call slot.
-    pub fn check_time_budget(
-        &self,
-        cancellation: &CancellationToken,
-    ) -> Result<(), CoreError> {
+    pub fn check_time_budget(&self, cancellation: &CancellationToken) -> Result<(), CoreError> {
         cancellation.check()?;
         self.check_deadline()
     }
