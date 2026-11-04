@@ -172,7 +172,10 @@ fn run_workspace(command: WorkspaceCommand) -> Result<()> {
                 "validated proposal; content omitted",
             )?;
             println!("Proposed workspace artifact: {}", proposal.filename);
-            println!("Exact target: {}", paths.workspace_dir.join(&proposal.filename).display());
+            println!(
+                "Exact target: {}",
+                paths.workspace_dir.join(&proposal.filename).display()
+            );
             println!(
                 "Content: {} UTF-8 bytes (maximum 16384)",
                 proposal.content.len()
