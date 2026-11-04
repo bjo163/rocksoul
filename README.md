@@ -268,7 +268,7 @@ CI runs formatting, locked dependency resolution, Clippy, tests, offline core ev
 
 ## Project status
 
-Rocksoul is an actively developed experimental runtime. The current release is a bounded CLI seed—not an autonomous AGI system. The portable runtime, committed dependency lockfile, and automated clean Windows-runner installer/portable smoke tests are in place. Manual clean-device verification remains outstanding. Stage 1 is in progress: a user-approved workspace artifact command now records a content-free JSONL lifecycle trace, the REPL planner can now propose a bounded workspace artifact for explicit user approval; durable receipt recovery, complete cancellation/retry policy, and end-to-end plan acceptance verification remain unfinished.
+Rocksoul is an actively developed experimental runtime. The current release is a bounded CLI seed—not an autonomous AGI system. The portable runtime, committed dependency lockfile, and automated clean Windows-runner installer/portable smoke tests are in place. Manual clean-device verification remains outstanding. Stage 1 is in progress: a user-approved workspace artifact command now records a content-free JSONL lifecycle trace, the REPL planner can now propose a bounded workspace artifact for explicit user approval; durable receipt recovery, provider-aware model retries, cancellation throughout filesystem execution, and end-to-end plan acceptance verification remain unfinished.
 
 ---
 
