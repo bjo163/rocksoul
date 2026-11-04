@@ -190,7 +190,10 @@ mod tests {
     fn rejects_unknown_schema_versions() {
         let path = std::env::temp_dir().join(format!(
             "rocksoul-trace-schema-{}.jsonl",
-            SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos()
+            SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
         ));
         fs::write(
             &path,
