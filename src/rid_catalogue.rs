@@ -84,14 +84,21 @@ impl RidCatalogue {
             self.catalogue_id == "rocksoul.rid.asmaul_husna_inspired.v1",
             "unexpected RID catalogue identifier"
         );
-        ensure!(self.entries.len() == 99, "RID catalogue must contain exactly 99 entries");
+        ensure!(
+            self.entries.len() == 99,
+            "RID catalogue must contain exactly 99 entries"
+        );
         ensure!(
             !self.catalogue_version.trim().is_empty(),
             "RID catalogue version must not be empty"
         );
         ensure!(
             !self.enumeration.primary_reference_url.trim().is_empty()
-                && !self.enumeration.corroborating_count_report_url.trim().is_empty()
+                && !self
+                    .enumeration
+                    .corroborating_count_report_url
+                    .trim()
+                    .is_empty()
                 && !self.enumeration.review_status.trim().is_empty(),
             "RID catalogue source metadata is incomplete"
         );
@@ -142,8 +149,14 @@ mod tests {
         let catalogue = RidCatalogue::embedded().unwrap();
 
         assert_eq!(catalogue.entries.len(), 99);
-        assert_eq!(catalogue.by_slot(1).unwrap().technical_stat.key, "input_modality_detection");
-        assert_eq!(catalogue.by_slot(99).unwrap().technical_stat.key, "long_horizon_trustworthiness");
+        assert_eq!(
+            catalogue.by_slot(1).unwrap().technical_stat.key,
+            "input_modality_detection"
+        );
+        assert_eq!(
+            catalogue.by_slot(99).unwrap().technical_stat.key,
+            "long_horizon_trustworthiness"
+        );
         assert!(catalogue.by_slot(0).is_none());
         assert!(catalogue.by_slot(100).is_none());
     }
@@ -157,7 +170,9 @@ mod tests {
             "Da'if (Darussalam)"
         );
         assert_eq!(
-            catalogue.enumeration.corroborating_report_grade_as_displayed,
+            catalogue
+                .enumeration
+                .corroborating_report_grade_as_displayed,
             "Sahih (Darussalam)"
         );
         assert_eq!(
