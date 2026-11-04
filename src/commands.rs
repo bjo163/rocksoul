@@ -281,16 +281,21 @@ fn run_workspace(command: WorkspaceCommand) -> Result<()> {
                 ],
             );
             let verification = verify_turn_and_award_xp(&mut turn, &mut profile, request)?;
-            if matches!(
-                &verification,
-                crate::core::VerificationOutcome::Verified { .. }
-            ) {
+            if let crate::core::VerificationOutcome::Verified { receipt, .. } = &verification {
+                let receipt_detail = format!(
+                    "receipt={} xp={} checks={}/{} evidence={}",
+                    receipt.verification_id(),
+                    receipt.xp_awarded(),
+                    receipt.required_checks_passed(),
+                    receipt.total_checks(),
+                    receipt.evidence_refs().join(","),
+                );
                 task_trace::append(
                     &trace_path,
                     &operation_id,
                     TaskTraceEvent::Verified,
                     &proposal.filename,
-                    "independent read-back checks passed",
+                    &receipt_detail,
                 )?;
             } else {
                 task_trace::append(
