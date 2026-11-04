@@ -194,7 +194,10 @@ mod tests {
                     .arg("task_trace::tests::append_helper_process")
                     .arg("--nocapture")
                     .env("ROCKSOUL_TRACE_HELPER_PATH", &path)
-                    .env("ROCKSOUL_TRACE_HELPER_OPERATION", format!("process-{index}"))
+                    .env(
+                        "ROCKSOUL_TRACE_HELPER_OPERATION",
+                        format!("process-{index}"),
+                    )
                     .spawn()
                     .unwrap(),
             );
