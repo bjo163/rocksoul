@@ -1,4 +1,4 @@
-use std::{env, net::IpAddr};
+use std::{env, net::IpAddr, time::Duration};
 
 use crate::core::{CancellationToken, TurnBudget, TurnMeter};
 
@@ -48,14 +48,15 @@ impl ModelConfig {
         meter: &mut TurnMeter,
         cancellation: &CancellationToken,
     ) -> Result<ModelCompletion> {
+        const MAX_ATTEMPTS: u32 = 3;
+        const BASE_BACKOFF_MS: u64 = 150;
+
         budget.validate()?;
-        meter.record_model_call(cancellation)?;
         let base_url = validate_base_url(&self.base_url)?;
         let endpoint = format!(
             "{}/chat/completions",
             base_url.as_str().trim_end_matches('/')
         );
-
         let payload = ChatCompletionRequest {
             model: &self.model,
             messages,
@@ -63,44 +64,68 @@ impl ModelConfig {
             stream: false,
         };
 
-        let mut request = client.post(endpoint).json(&payload);
-        if let Some(api_key) = &self.api_key {
-            request = request.bearer_auth(api_key);
+        for attempt in 1..=MAX_ATTEMPTS {
+            // Every network attempt consumes the shared turn call budget.
+            meter.record_model_call(cancellation)?;
+            let mut request = client.post(&endpoint).json(&payload);
+            if let Some(api_key) = &self.api_key {
+                request = request.bearer_auth(api_key);
+            }
+
+            let response = match request.send().await {
+                Ok(response) => response,
+                Err(error) if is_retryable_transport(&error) && attempt < MAX_ATTEMPTS => {
+                    cancellation.check()?;
+                    tokio::time::sleep(Duration::from_millis(
+                        BASE_BACKOFF_MS * u64::from(attempt),
+                    ))
+                    .await;
+                    meter.check_time_budget(cancellation)?;
+                    continue;
+                }
+                Err(error) => {
+                    return Err(error).context("could not reach the configured model endpoint");
+                }
+            };
+
+            let status = response.status();
+            if !status.is_success() {
+                if is_retryable_status(status) && attempt < MAX_ATTEMPTS {
+                    // Do not include provider response bodies: they may contain secrets.
+                    drop(response);
+                    cancellation.check()?;
+                    tokio::time::sleep(Duration::from_millis(
+                        BASE_BACKOFF_MS * u64::from(attempt),
+                    ))
+                    .await;
+                    meter.check_time_budget(cancellation)?;
+                    continue;
+                }
+                bail!("model endpoint returned HTTP {status}");
+            }
+
+            let response: ChatCompletionResponse = response
+                .json()
+                .await
+                .context("model endpoint returned an invalid chat-completions response")?;
+            let content = response
+                .choices
+                .into_iter()
+                .next()
+                .map(|choice| choice.message.content)
+                .filter(|content| !content.trim().is_empty())
+                .context("model endpoint returned no assistant message")?;
+            let output_tokens = response.usage.and_then(|usage| usage.completion_tokens);
+            if let Some(tokens) = output_tokens {
+                meter.record_output_tokens(tokens)?;
+            }
+            return Ok(ModelCompletion {
+                content,
+                output_tokens,
+            });
         }
 
-        let response = request
-            .send()
-            .await
-            .context("could not reach the configured model endpoint")?;
-
-        let status = response.status();
-        if !status.is_success() {
-            let body = response.text().await.unwrap_or_default();
-            let summary = body.chars().take(1_200).collect::<String>();
-            bail!("model endpoint returned {status}: {summary}");
-        }
-
-        let response: ChatCompletionResponse = response
-            .json()
-            .await
-            .context("model endpoint returned an invalid chat-completions response")?;
-
-        let content = response
-            .choices
-            .into_iter()
-            .next()
-            .map(|choice| choice.message.content)
-            .filter(|content| !content.trim().is_empty())
-            .context("model endpoint returned no assistant message")?;
-        let output_tokens = response.usage.and_then(|usage| usage.completion_tokens);
-        if let Some(tokens) = output_tokens {
-            meter.record_output_tokens(tokens)?;
-        }
-
-        Ok(ModelCompletion {
-            content,
-            output_tokens,
-        })
+        unreachable!("bounded retry loop returns or exits with an error")
     }
 }
 
@@ -154,6 +179,17 @@ struct ChatResponseMessage {
     content: String,
 }
 
+fn is_retryable_status(status: reqwest::StatusCode) -> bool {
+    matches!(
+        status.as_u16(),
+        408 | 425 | 429 | 500..=599
+    )
+}
+
+fn is_retryable_transport(error: &reqwest::Error) -> bool {
+    error.is_timeout() || error.is_connect()
+}
+
 fn validate_base_url(raw: &str) -> Result<Url> {
     let url = Url::parse(raw).context("ROCKSOUL_BASE_URL must be a valid absolute URL")?;
     let host = url
@@ -198,6 +234,18 @@ fn is_loopback_host(host: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::validate_base_url;
+
+    #[test]
+    fn retries_only_transient_http_statuses() {
+        use reqwest::StatusCode;
+        assert!(super::is_retryable_status(StatusCode::REQUEST_TIMEOUT));
+        assert!(super::is_retryable_status(StatusCode::TOO_MANY_REQUESTS));
+        assert!(super::is_retryable_status(StatusCode::BAD_GATEWAY));
+        assert!(super::is_retryable_status(StatusCode::SERVICE_UNAVAILABLE));
+        assert!(!super::is_retryable_status(StatusCode::BAD_REQUEST));
+        assert!(!super::is_retryable_status(StatusCode::UNAUTHORIZED));
+        assert!(!super::is_retryable_status(StatusCode::NOT_FOUND));
+    }
 
     #[test]
     fn accepts_https_remote_endpoints() {
