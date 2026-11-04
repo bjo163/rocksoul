@@ -67,10 +67,46 @@ jobs:
       - name: Build release executable
         run: cargo build --release
 
+      - name: Install Inno Setup
+        shell: powershell
+        run: choco install innosetup --yes --no-progress
+
+      - name: Build installer and portable ZIP
+        shell: powershell
+        run: |
+          $version = (Select-String -Path Cargo.toml -Pattern '^version = "([^"]+)"').Matches[0].Groups[1].Value
+          "ROCKSOUL_VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          New-Item -ItemType Directory -Force -Path dist | Out-Null
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "/DAppVersion=$version" installer\rocksoul.iss
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $root = "dist\Rocksoul-$version"
+          New-Item -ItemType Directory -Force -Path "$root\config", "$root\data", "$root\cache", "$root\workspace", "$root\evolution", "$root\logs" | Out-Null
+          Copy-Item target\release\rocksoul.exe $root
+          Copy-Item .env.example "$root\.env.example"
+          Copy-Item config\config.example.toml "$root\config\config.example.toml"
+          Copy-Item README.md $root
+          Compress-Archive -Path "$root\*" -DestinationPath "dist\Rocksoul-$version-windows-x64-portable.zip" -Force
+
       - name: Upload rocksoul.exe
         uses: actions/upload-artifact@v4
         with:
           name: rocksoul-windows-x64
           path: target/release/rocksoul.exe
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload Windows installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: rocksoul-windows-installer
+          path: dist/Rocksoul-Setup-${{ env.ROCKSOUL_VERSION }}-x64.exe
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload portable ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: rocksoul-windows-portable
+          path: dist/Rocksoul-${{ env.ROCKSOUL_VERSION }}-windows-x64-portable.zip
           if-no-files-found: error
           retention-days: 14
