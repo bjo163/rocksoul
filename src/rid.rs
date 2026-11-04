@@ -106,7 +106,7 @@ impl XpLedger {
             .fold(0, u64::saturating_add)
     }
 
-    pub fn record(&mut self, event: XpEvent) -> Result<XpRecordOutcome, RidError> {
+    pub(crate) fn record(&mut self, event: XpEvent) -> Result<XpRecordOutcome, RidError> {
         event.validate()?;
         if let Some(existing) = self
             .events
@@ -285,12 +285,12 @@ impl RuhProfile {
     }
 
     /// Call only after a trusted kernel verifier authorizes the event and evidence.
-    pub fn record_verified_xp(&mut self, event: XpEvent) -> Result<XpRecordOutcome, RidError> {
+    pub(crate) fn record_verified_xp(&mut self, event: XpEvent) -> Result<XpRecordOutcome, RidError> {
         self.xp_ledger.record(event)
     }
 
     /// The caller must be a trusted evaluator; models must not self-authorize scores.
-    pub fn record_stat_evaluation(
+    pub(crate) fn record_stat_evaluation(
         &mut self,
         id: StatId,
         score: u8,
