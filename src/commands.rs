@@ -211,19 +211,20 @@ fn run_workspace(command: WorkspaceCommand) -> Result<()> {
 
             let service = WorkspaceArtifactService::new(&paths.workspace_dir);
             let cancellation = CancellationToken::default();
-            let outcome = match service.execute_approved_with_retry(&proposal, &approval, &cancellation) {
-                Ok(outcome) => outcome,
-                Err(error) => {
-                    task_trace::append(
-                        &trace_path,
-                        &operation_id,
-                        TaskTraceEvent::Failed,
-                        &proposal.filename,
-                        "workspace execution failed",
-                    )?;
-                    return Err(error);
-                }
-            };
+            let outcome =
+                match service.execute_approved_with_retry(&proposal, &approval, &cancellation) {
+                    Ok(outcome) => outcome,
+                    Err(error) => {
+                        task_trace::append(
+                            &trace_path,
+                            &operation_id,
+                            TaskTraceEvent::Failed,
+                            &proposal.filename,
+                            "workspace execution failed",
+                        )?;
+                        return Err(error);
+                    }
+                };
             task_trace::append(
                 &trace_path,
                 &operation_id,
