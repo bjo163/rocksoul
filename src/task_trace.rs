@@ -7,6 +7,7 @@ use std::{
 };
 
 use anyhow::{Context, Result};
+use fs2::FileExt;
 use serde::Serialize;
 
 #[derive(Clone, Copy, Debug, Serialize)]
