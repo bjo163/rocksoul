@@ -116,7 +116,8 @@ pub async fn run() -> Result<()> {
                 messages.push(ChatMessage::new("user", prompt));
 
                 let cancellation = CancellationToken::default();
-                let turn = run_turn(model, &client, request, &messages, cancellation.clone());
+                let history_snapshot = messages.clone();
+                let turn = run_turn(model, &client, request, &history_snapshot, cancellation.clone());
                 tokio::pin!(turn);
                 let result = tokio::select! {
                     result = &mut turn => result,
