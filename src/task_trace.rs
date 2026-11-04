@@ -93,16 +93,28 @@ pub fn read(path: &Path) -> Result<Vec<serde_json::Value>> {
         .lines()
         .filter(|line| !line.trim().is_empty())
         .map(|line| {
-            let record: serde_json::Value =
-                serde_json::from_str(line).context("task trace contains an invalid JSONL record")?;
+            let record: serde_json::Value = serde_json::from_str(line)
+                .context("task trace contains an invalid JSONL record")?;
             anyhow::ensure!(
-                record.get("schema_version").and_then(serde_json::Value::as_u64) == Some(1),
+                record
+                    .get("schema_version")
+                    .and_then(serde_json::Value::as_u64)
+                    == Some(1),
                 "task trace contains an unsupported schema version"
             );
             anyhow::ensure!(
-                record.get("operation_id").and_then(serde_json::Value::as_str).is_some()
-                    && record.get("event").and_then(serde_json::Value::as_str).is_some()
-                    && record.get("target").and_then(serde_json::Value::as_str).is_some(),
+                record
+                    .get("operation_id")
+                    .and_then(serde_json::Value::as_str)
+                    .is_some()
+                    && record
+                        .get("event")
+                        .and_then(serde_json::Value::as_str)
+                        .is_some()
+                    && record
+                        .get("target")
+                        .and_then(serde_json::Value::as_str)
+                        .is_some(),
                 "task trace record is missing required fields"
             );
             Ok(record)
@@ -148,16 +160,28 @@ mod tests {
     fn concurrent_appends_are_serialized_and_remain_parseable() {
         let path = std::env::temp_dir().join(format!(
             "rocksoul-trace-concurrent-{}.jsonl",
-            SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos()
+            SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
         ));
         let mut workers = Vec::new();
         for index in 0..8 {
             let path = path.clone();
             workers.push(std::thread::spawn(move || {
-                append(&path, &format!("op-{index}"), TaskTraceEvent::Proposed, "note.txt", "proposal").unwrap();
+                append(
+                    &path,
+                    &format!("op-{index}"),
+                    TaskTraceEvent::Proposed,
+                    "note.txt",
+                    "proposal",
+                )
+                .unwrap();
             }));
         }
-        for worker in workers { worker.join().unwrap(); }
+        for worker in workers {
+            worker.join().unwrap();
+        }
         assert_eq!(read(&path).unwrap().len(), 8);
         fs::remove_file(path).unwrap();
     }
