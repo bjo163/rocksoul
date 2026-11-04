@@ -1,6 +1,6 @@
 //! Append-only, content-free lifecycle records for approved workspace tasks.
 use std::{
-    fs::OpenOptions,
+    fs::{self, OpenOptions},
     io::Write,
     path::Path,
     time::{SystemTime, UNIX_EPOCH},
@@ -59,6 +59,21 @@ pub fn append(
     file.write_all(b"\n").context("could not finish task trace record")?;
     file.sync_data().context("could not persist task trace record")?;
     Ok(())
+}
+
+
+/// Read the append-only JSONL trace for local inspection.
+pub fn read(path: &Path) -> Result<Vec<serde_json::Value>> {
+    if !path.exists() {
+        return Ok(Vec::new());
+    }
+    let content = fs::read_to_string(path)
+        .with_context(|| format!("could not read task trace {}", path.display()))?;
+    content
+        .lines()
+        .filter(|line| !line.trim().is_empty())
+        .map(|line| serde_json::from_str(line).context("task trace contains an invalid JSONL record"))
+        .collect()
 }
 
 #[cfg(test)]
