@@ -48,6 +48,21 @@ impl WorkspaceArtifactProposal {
     pub fn approval_phrase(&self) -> String {
         format!("WRITE {}", self.filename)
     }
+
+    /// Stable idempotency identity for this exact target/content pair.
+    pub fn operation_id(&self) -> String {
+        let mut hash = 0xcbf2_9ce4_8422_2325_u64;
+        for byte in self
+            .filename
+            .bytes()
+            .chain(std::iter::once(0))
+            .chain(self.content.bytes())
+        {
+            hash ^= u64::from(byte);
+            hash = hash.wrapping_mul(0x0000_0100_0000_01b3);
+        }
+        format!("workspace:{}:{hash:016x}", self.filename)
+    }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -367,6 +382,17 @@ mod tests {
         );
         assert_eq!(fs::read(root.join("note.txt")).unwrap(), b"first");
         fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn operation_identity_is_stable_for_exact_target_and_content() {
+        let first = proposal("note.txt", "same content");
+        let replay = proposal("note.txt", "same content");
+        let changed = proposal("note.txt", "different content");
+        let other_target = proposal("other.txt", "same content");
+        assert_eq!(first.operation_id(), replay.operation_id());
+        assert_ne!(first.operation_id(), changed.operation_id());
+        assert_ne!(first.operation_id(), other_target.operation_id());
     }
 
     #[test]
