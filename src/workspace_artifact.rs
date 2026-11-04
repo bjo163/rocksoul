@@ -241,7 +241,13 @@ mod tests {
         time::{SystemTime, UNIX_EPOCH},
     };
 
-    use crate::core::CancellationToken;
+    use crate::{
+        core::{
+            CancellationToken, TurnEvent, TurnState, VerificationEvidence, VerificationOutcome,
+            VerificationRequest, verify_turn_and_award_xp,
+        },
+        rid::{RuhIdentity, RuhProfile, XpRecordOutcome},
+    };
 
     use super::{
         ArtifactOutcome, UserApproval, WorkspaceArtifactProposal, WorkspaceArtifactService,
@@ -335,6 +341,75 @@ mod tests {
                 .is_err()
         );
         assert!(!root.exists());
+    }
+
+    #[test]
+    fn approved_artifact_readback_gates_xp_end_to_end() {
+        let root = workspace();
+        let item = proposal("verified.txt", "observed artifact content");
+        let outcome = WorkspaceArtifactService::new(&root)
+            .execute_approved(&item, &approve(&item), &CancellationToken::default())
+            .unwrap();
+        let (path, observed_content) = match outcome {
+            ArtifactOutcome::Created {
+                path,
+                observed_content,
+                ..
+            }
+            | ArtifactOutcome::AlreadyPresent {
+                path,
+                observed_content,
+                ..
+            } => (path, observed_content),
+        };
+        let is_regular_file = path.is_file();
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs()
+            .max(1);
+        let mut profile = RuhProfile::new(RuhIdentity {
+            instance_id: format!("rocksoul-workspace-e2e-{now}-{}", std::process::id()),
+            created_at_unix: now,
+        })
+        .unwrap();
+        let mut turn = TurnState::new("workspace-e2e", 0);
+        turn.apply(TurnEvent::Start).unwrap();
+        turn.apply(TurnEvent::PlanAccepted).unwrap();
+        turn.apply(TurnEvent::ActionCompleted).unwrap();
+        let request = VerificationRequest::new(
+            "workspace-e2e",
+            "workspace-e2e-verification",
+            now,
+            1,
+            1,
+            vec![
+                VerificationEvidence::new(
+                    "artifact-is-regular-file",
+                    "true",
+                    if is_regular_file { "true" } else { "false" },
+                    path.display().to_string(),
+                    true,
+                ),
+                VerificationEvidence::new(
+                    "artifact-readback-matches",
+                    item.content.as_str(),
+                    observed_content.as_str(),
+                    format!("workspace-readback:{}", item.filename),
+                    true,
+                ),
+            ],
+        );
+        let verification = verify_turn_and_award_xp(&mut turn, &mut profile, request).unwrap();
+        assert!(matches!(
+            verification,
+            VerificationOutcome::Verified {
+                xp_record: XpRecordOutcome::Recorded,
+                ..
+            }
+        ));
+        assert!(profile.total_xp() > 0);
+        fs::remove_dir_all(root).unwrap();
     }
 
     #[cfg(unix)]
