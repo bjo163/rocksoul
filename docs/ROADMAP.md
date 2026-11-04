@@ -36,6 +36,7 @@ The roadmap is capability-driven. Each stage must deliver a working, tested incr
 - [ ] Verify all plan acceptance checks against independent runtime evidence and persist the linked task outcome.
 - [ ] Execute plans through typed application services and approved tools.
 - [x] Add a three-attempt, bounded-backoff retry wrapper for transient workspace filesystem errors; create-only replay remains idempotent.
+- [x] Derive a stable operation/XP idempotency key from the exact filename and content pair.
 - [ ] Add provider-aware model retry classification and link retry budgets to complete task budgets.
 - [x] Wire Ctrl+C during model-driven turns into the cooperative cancellation token.
 - [ ] Extend cancellation through every executor and blocking operation, including terminal workspace approval/execution.
