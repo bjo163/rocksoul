@@ -112,9 +112,7 @@ impl WorkspaceArtifactService {
             match self.execute_approved(proposal, approval, cancellation) {
                 Ok(outcome) => return Ok(outcome),
                 Err(error) if is_retryable_io_error(&error) && attempt < MAX_ATTEMPTS => {
-                    std::thread::sleep(Duration::from_millis(
-                        BASE_BACKOFF_MS * u64::from(attempt),
-                    ));
+                    std::thread::sleep(Duration::from_millis(BASE_BACKOFF_MS * u64::from(attempt)));
                 }
                 Err(error) => return Err(error),
             }
@@ -316,15 +314,10 @@ mod tests {
 
     #[test]
     fn classifies_only_transient_filesystem_errors_for_retry() {
-        let transient = anyhow::Error::new(std::io::Error::from(
-            std::io::ErrorKind::WouldBlock,
-        ));
-        let timeout = anyhow::Error::new(std::io::Error::from(
-            std::io::ErrorKind::TimedOut,
-        ));
-        let permanent = anyhow::Error::new(std::io::Error::from(
-            std::io::ErrorKind::PermissionDenied,
-        ));
+        let transient = anyhow::Error::new(std::io::Error::from(std::io::ErrorKind::WouldBlock));
+        let timeout = anyhow::Error::new(std::io::Error::from(std::io::ErrorKind::TimedOut));
+        let permanent =
+            anyhow::Error::new(std::io::Error::from(std::io::ErrorKind::PermissionDenied));
         assert!(is_retryable_io_error(&transient));
         assert!(is_retryable_io_error(&timeout));
         assert!(!is_retryable_io_error(&permanent));
