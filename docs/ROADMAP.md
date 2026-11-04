@@ -19,7 +19,7 @@ The roadmap is capability-driven. Each stage must deliver a working, tested incr
 
 ## Stage 1 — Reliable cognition loop
 
-**Status:** The Stage 1A–1E bounded workspace-artifact vertical slice is merged to `main` via PR #34 (`0f5ca4bc4d1c65322cb02963fcc23c53fa990f5d`). Linux/Windows CI #248 passed. The delivered slice includes exact human approval, create-only execution, observed read-back verification, bounded retries/cancellation, versioned traces, persisted receipts, and XP replay idempotency. This does not mean the broader autonomous plan/act/observe loop is complete; residual planner recovery and broader acceptance-check orchestration are explicitly deferred to a separately scoped follow-up.
+**Status:** The Stage 1A–1E bounded workspace-artifact vertical slice is merged to `main` via PR #34 (`0f5ca4bc4d1c65322cb02963fcc23c53fa990f5d`). Linux/Windows CI #248 passed. The delivered slice includes exact human approval, create-only execution, observed read-back verification, bounded retries/cancellation, versioned traces, persisted receipts, and XP replay idempotency. This does not mean the broader autonomous plan/act/observe loop is complete; residual planner recovery and broader acceptance-check orchestration are explicitly deferred to [#35](https://github.com/bjo163/rocksoul/issues/35).
 
 - [x] Explicit request and turn-state contracts.
 - [x] Structured plan and reflection data contracts.
@@ -54,7 +54,7 @@ The roadmap is capability-driven. Each stage must deliver a working, tested incr
 
 ## Stage 2 — Persistent memory
 
-**Status:** First explicit, local-only memory store implemented; automated cognition-to-memory remains disabled.
+**Status:** Existing explicit local-only memory store is implemented. Hardening and evaluated retrieval are planned under [umbrella issue #36](https://github.com/bjo163/rocksoul/issues/36); automatic context injection remains disabled.
 
 - [x] Add a root-local JSON store with schema versioning and atomic replacement/backup recovery.
 - [x] Separate episodic, semantic, procedural, working, and derived record kinds.
@@ -62,10 +62,11 @@ The roadmap is capability-driven. Each stage must deliver a working, tested incr
 - [x] Support list, text/tag search, permanent deletion, confirmed clear, and root-local export.
 - [x] Support expiry for working-memory records.
 - [x] Show real store counts and provenance in the Cognitive Cockpit.
-- [ ] Add explicit schema migrations and backup restore diagnostics.
-- [ ] Add memory locking for multiple concurrent Rocksoul processes.
-- [ ] Add retention policies, forgetting workflows, and cross-session evaluation.
-- [ ] Add retrieval ranking and memory context injection only after provenance and relevance tests.
+- [ ] Add explicit schema migrations and backup restore diagnostics ([#37](https://github.com/bjo163/rocksoul/issues/37)).
+- [ ] Add memory locking for multiple concurrent Rocksoul processes ([#38](https://github.com/bjo163/rocksoul/issues/38)).
+- [ ] Add retention policies, forgetting workflows, and cross-session evaluation ([#39](https://github.com/bjo163/rocksoul/issues/39)).
+- [ ] Add retrieval ranking and offline evaluation ([#40](https://github.com/bjo163/rocksoul/issues/40)); keep context injection disabled until the evaluation gate passes.
+- [ ] Add human-reviewed model memory proposals without silent writes ([#41](https://github.com/bjo163/rocksoul/issues/41)).
 - [ ] Add model-proposed memory with human approval; never enable silent model writes.
 
 ## Stage 3 — Skills and tools
