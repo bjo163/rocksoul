@@ -19,7 +19,7 @@ The roadmap is capability-driven. Each stage must deliver a working, tested incr
 
 ## Stage 1 — Reliable cognition loop
 
-**Status:** Core contracts and a narrow approved workspace operation are implemented; planner-to-action orchestration and complete task receipts remain in progress
+**Status:** The Stage 1A–1E bounded workspace-artifact vertical slice is merged to `main` via PR #34 (`0f5ca4bc4d1c65322cb02963fcc23c53fa990f5d`). Linux/Windows CI #248 passed. The delivered slice includes exact human approval, create-only execution, observed read-back verification, bounded retries/cancellation, versioned traces, persisted receipts, and XP replay idempotency. This does not mean the broader autonomous plan/act/observe loop is complete; residual planner recovery and broader acceptance-check orchestration are explicitly deferred to a separately scoped follow-up.
 
 - [x] Explicit request and turn-state contracts.
 - [x] Structured plan and reflection data contracts.
@@ -33,8 +33,8 @@ The roadmap is capability-driven. Each stage must deliver a working, tested incr
 - [x] Independent evidence verifier contract for XP; failed required checks award no XP and replay is idempotent.
 - [x] Add a narrowly scoped, user-approved create-only workspace text-artifact service with independent read-back verification and idempotent same-content replay (CLI entry point; not yet connected to planner).
 - [x] Allow the bounded planner to return an optional typed workspace-artifact intent; validate it and dispatch only through the exact human-approval CLI boundary.
-- [ ] Verify all plan acceptance checks against independent runtime evidence and persist the linked task outcome.
-- [ ] Execute plans through typed application services and approved tools.
+- [x] Deliver one approved typed workspace-artifact operation through the bounded planner/CLI approval boundary, with independent read-back evidence and persisted receipt.
+- [ ] Generalize plan acceptance checks across multiple typed services (deferred; do not introduce unrestricted tools).
 - [x] Add a three-attempt, bounded-backoff retry wrapper for transient workspace filesystem errors; create-only replay remains idempotent.
 - [x] Derive a stable operation/XP idempotency key from the exact filename and content pair.
 - [x] Add provider-aware model retry classification for connection/timeout and HTTP 408/425/429/5xx failures; every attempt consumes the shared turn call budget.
@@ -42,14 +42,17 @@ The roadmap is capability-driven. Each stage must deliver a working, tested incr
 - [x] Wire Ctrl+C through terminal approval and executor; cancellation is honored at safe pre-publication checkpoints and in-flight model HTTP requests.
 - [x] Add deterministic cancellation-at-publication-boundary coverage; cancellation before the irreversible hard-link publish leaves no artifact.
 - [x] Simulate restart after RID XP persistence but before receipt write; replay records no duplicate XP and reconstructs the durable receipt.
+- [x] Test restart/replay around XP and receipt persistence windows; preserve idempotent XP and durable receipt reconstruction.
 - [ ] Add a crash-injection test for recovery after file publication but before XP persistence.
-- [ ] Verify task acceptance against observed effects; chat response completion is not task success.
+- [x] Verify the supported workspace-artifact task against observed file metadata/read-back; chat response completion is not task success.
+- [ ] Extend independent acceptance verification to future typed services as each is introduced.
 - [x] Append content-free JSONL lifecycle events for the workspace CLI (proposal, approval/denial, execution/failure, verification).
 - [x] Persist create-only, versioned verification receipt JSON files and expose them through trace inspection.
 - [x] Serialize JSONL trace appends across processes with portable OS file locks and validate schema version/required fields (Rust 1.85 MSRV preserved).
 - [x] Extend offline Core Integrity v1.2 with workspace proposal/approval, create/read-back, verified XP, replay idempotency, pre-cancel, trace round-trip, and Unix target-symlink scenarios.
-- [ ] Extend evaluation with denial/failure/retry-exhaustion/cancellation-race/read-back-mismatch and Windows filesystem scenarios.
-- [ ] Persist complete planner/turn/reflection state and support recovery of interrupted operations.
+- [x] Cover supported artifact approval, read-back, mismatch, replay, cancellation boundary, trace, and platform symlink cases in deterministic tests/CI.
+- [ ] Expand the evaluation matrix for future typed services and additional crash-injection points.
+- [ ] Persist complete planner/turn/reflection conversation state and resume interrupted model reasoning (deferred; current recovery replays the bounded operation and durable receipt, not model conversation history).
 
 ## Stage 2 — Persistent memory
 
