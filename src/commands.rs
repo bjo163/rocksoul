@@ -10,7 +10,7 @@ use crate::{
     memory::{MemoryKind, MemoryRecord, MemoryStore},
     model::ModelConfig,
     paths::AppPaths,
-    rid::{RuhIdentity, RuhProfile, XpSource},
+    rid::{RuhIdentity, RuhProfile},
     core::{TurnEvent, TurnState, VerificationEvidence, VerificationRequest, verify_turn_and_award_xp},
     workspace_artifact::{ArtifactOutcome, UserApproval, WorkspaceArtifactProposal, WorkspaceArtifactService},
     rid_catalogue::RidCatalogue,
@@ -146,7 +146,7 @@ fn run_workspace(command: WorkspaceCommand) -> Result<()> {
             println!("Proposed workspace artifact: {}", proposal.filename);
             println!("Content: {} UTF-8 bytes (maximum 16384)", proposal.content.len());
             println!("Preview:");
-            for line in proposal.content.lines().take(8) {
+            for line in proposal.content.lines() {
                 println!("  {line}");
             }
             println!("To approve this exact artifact, type: {}", proposal.approval_phrase());
@@ -199,7 +199,7 @@ fn run_workspace(command: WorkspaceCommand) -> Result<()> {
             rid_store::save(&paths.rid_file, &profile)?;
             println!("Workspace artifact {outcome_label}: {}", path.display());
             println!("Independent read-back verified: {bytes} bytes.");
-            println!("Verified XP: {} (RID total: {}).", profile.total_xp(), profile.total_xp());
+            println!("RID XP total: {}.", profile.total_xp());
             if let crate::core::VerificationOutcome::Verified { receipt, .. } = verification {
                 println!("Verification receipt: {} · {} XP", receipt.verification_id(), receipt.xp_awarded());
             }
