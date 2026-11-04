@@ -22,7 +22,7 @@ The domain model and persistence layer are local-first. HTTP API exposure will b
 
 ## 99 Asmaul Husna-inspired stat slots
 
-The domain model creates exactly 99 stable slots, linked by IDs `asmaul_husna:01` through `asmaul_husna:99`. The versioned display catalogue now lives at data/rid/asmaul_husna.v1.json. It contains 99 Arabic labels, transliterations, Indonesian/English draft glosses, and 99 unique technical dimensions grouped into nine domains. Each dimension has an operational definition, an evaluation protocol, a minimum sample requirement, and a scoring-rubric ID. Glosses and technical pairings remain editorial drafts pending independent review. A slot remains unrated until a trusted evaluator produces reproducible evidence.
+The domain model creates exactly 99 stable slots, linked by IDs `asmaul_husna:01` through `asmaul_husna:99`. The versioned display catalogue now lives at data/rid/asmaul_husna.v1.json. It contains 99 Arabic labels, transliterations, Indonesian/English draft glosses, and 99 unique technical dimensions grouped into nine domains. Each dimension has an operational definition, an evaluation protocol, a minimum sample requirement (20 by default; 30 for safety/governance), and a scoring-rubric ID. The Rust domain refuses a score below the catalogue's sample threshold. Glosses and technical pairings remain editorial drafts pending independent review. A slot remains unrated until a trusted evaluator produces reproducible evidence.
 
 Asmaul Husna is an inspirational naming layer only. Rocksoul does not possess, embody, or measure divine attributes. A stat is an engineering metric with an operational definition, evidence, confidence, and rubric version.
 
