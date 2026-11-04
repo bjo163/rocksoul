@@ -138,6 +138,17 @@ impl XpLedger {
     }
 }
 
+/// Verified evaluator output for one RID capability measurement.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct StatEvaluation {
+    pub score: u8,
+    pub confidence: u8,
+    pub sample_count: u32,
+    pub evidence_refs: Vec<String>,
+    pub evaluated_at_unix: u64,
+    pub rubric_version: String,
+}
+
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct StatRecord {
     pub id: StatId,
@@ -170,37 +181,37 @@ impl StatRecord {
 
     pub fn record_evaluation(
         &mut self,
-        score: u8,
-        confidence: u8,
-        sample_count: u32,
+        evaluation: StatEvaluation,
         minimum_samples: u32,
-        evidence_refs: Vec<String>,
-        evaluated_at_unix: u64,
-        rubric_version: String,
     ) -> Result<(), RidError> {
-        if score > 100 || confidence > 100 {
+        if evaluation.score > 100 || evaluation.confidence > 100 {
             return Err(RidError("score and confidence must be in 0..=100".into()));
         }
-        if sample_count < minimum_samples {
+        if evaluation.sample_count < minimum_samples {
             return Err(RidError(format!(
-                "stat requires at least {minimum_samples} evaluation samples, got {sample_count}"
+                "stat requires at least {minimum_samples} evaluation samples, got {}",
+                evaluation.sample_count
             )));
         }
-        if evidence_refs.is_empty()
-            || evidence_refs.iter().any(|value| value.trim().is_empty())
-            || evaluated_at_unix == 0
-            || rubric_version.trim().is_empty()
+        if evaluation.evidence_refs.is_empty()
+            || evaluation
+                .evidence_refs
+                .iter()
+                .any(|value| value.trim().is_empty())
+            || evaluation.evaluated_at_unix == 0
+            || evaluation.rubric_version.trim().is_empty()
         {
             return Err(RidError(
                 "stat evaluation requires evidence, time, and rubric".into(),
             ));
         }
-        self.score = Some(score);
-        self.confidence = Some(confidence);
-        self.sample_count = Some(sample_count);
-        self.evidence_refs = evidence_refs;
-        self.last_evaluated_at_unix = Some(evaluated_at_unix);
-        self.rubric_version = Some(rubric_version);
+
+        self.score = Some(evaluation.score);
+        self.confidence = Some(evaluation.confidence);
+        self.sample_count = Some(evaluation.sample_count);
+        self.evidence_refs = evaluation.evidence_refs;
+        self.last_evaluated_at_unix = Some(evaluation.evaluated_at_unix);
+        self.rubric_version = Some(evaluation.rubric_version);
         Ok(())
     }
 
@@ -305,12 +316,7 @@ impl RuhProfile {
     pub fn record_stat_evaluation(
         &mut self,
         id: StatId,
-        score: u8,
-        confidence: u8,
-        sample_count: u32,
-        evidence_refs: Vec<String>,
-        evaluated_at_unix: u64,
-        rubric_version: String,
+        evaluation: StatEvaluation,
     ) -> Result<(), RidError> {
         let catalogue = crate::rid_catalogue::RidCatalogue::embedded()
             .map_err(|error| RidError(error.to_string()))?;
@@ -324,15 +330,7 @@ impl RuhProfile {
             .iter_mut()
             .find(|record| record.id == id)
             .ok_or_else(|| RidError(format!("unknown stat ID {}", id.value())))?;
-        stat.record_evaluation(
-            score,
-            confidence,
-            sample_count,
-            minimum_samples,
-            evidence_refs,
-            evaluated_at_unix,
-            rubric_version,
-        )
+        stat.record_evaluation(evaluation, minimum_samples)
     }
 
     pub fn validate(&self) -> Result<(), RidError> {
@@ -410,8 +408,8 @@ impl std::error::Error for RidError {}
 #[cfg(test)]
 mod tests {
     use super::{
-        MAX_XP_PER_EVENT, RidError, RuhIdentity, RuhProfile, STAT_COUNT, StatId, XpEvent,
-        XpRecordOutcome, XpSource, level_for_xp,
+        MAX_XP_PER_EVENT, RidError, RuhIdentity, RuhProfile, STAT_COUNT, StatEvaluation,
+        StatId, XpEvent, XpRecordOutcome, XpSource, level_for_xp,
     };
 
     fn profile() -> RuhProfile {
@@ -510,28 +508,40 @@ mod tests {
             .map(|index| format!("eval://suite/{index}"))
             .collect::<Vec<_>>();
 
+        let missing_evidence = StatEvaluation {
+            score: 80,
+            confidence: 90,
+            sample_count: 20,
+            evidence_refs: Vec::new(),
+            evaluated_at_unix: 1_800_000_200,
+            rubric_version: "v1".into(),
+        };
+        assert!(profile.record_stat_evaluation(id, missing_evidence).is_err());
+
+        let too_few_samples = StatEvaluation {
+            score: 80,
+            confidence: 90,
+            sample_count: 19,
+            evidence_refs: evidence.clone(),
+            evaluated_at_unix: 1_800_000_200,
+            rubric_version: "v1".into(),
+        };
         assert!(
             profile
-                .record_stat_evaluation(id, 80, 90, 20, Vec::new(), 1_800_000_200, "v1".into(),)
+                .record_stat_evaluation(id, too_few_samples)
                 .is_err()
         );
 
-        assert!(
-            profile
-                .record_stat_evaluation(
-                    id,
-                    80,
-                    90,
-                    19,
-                    evidence.clone(),
-                    1_800_000_200,
-                    "v1".into(),
-                )
-                .is_err()
-        );
-
+        let valid_evaluation = StatEvaluation {
+            score: 80,
+            confidence: 90,
+            sample_count: 20,
+            evidence_refs: evidence,
+            evaluated_at_unix: 1_800_000_200,
+            rubric_version: "v1".into(),
+        };
         profile
-            .record_stat_evaluation(id, 80, 90, 20, evidence, 1_800_000_200, "v1".into())
+            .record_stat_evaluation(id, valid_evaluation)
             .unwrap();
 
         let stat = profile.stat(id).unwrap();
@@ -549,24 +559,26 @@ mod tests {
         let evidence = (0..20)
             .map(|index| format!("eval://suite/{index}"))
             .collect::<Vec<_>>();
-        assert!(
-            profile
-                .record_stat_evaluation(
-                    id,
-                    101,
-                    90,
-                    20,
-                    evidence.clone(),
-                    1_800_000_200,
-                    "v1".into(),
-                )
-                .is_err()
-        );
-        assert!(
-            profile
-                .record_stat_evaluation(id, 80, 101, 20, evidence, 1_800_000_200, "v1".into(),)
-                .is_err()
-        );
+
+        let invalid_score = StatEvaluation {
+            score: 101,
+            confidence: 90,
+            sample_count: 20,
+            evidence_refs: evidence.clone(),
+            evaluated_at_unix: 1_800_000_200,
+            rubric_version: "v1".into(),
+        };
+        assert!(profile.record_stat_evaluation(id, invalid_score).is_err());
+
+        let invalid_confidence = StatEvaluation {
+            score: 80,
+            confidence: 101,
+            sample_count: 20,
+            evidence_refs: evidence,
+            evaluated_at_unix: 1_800_000_200,
+            rubric_version: "v1".into(),
+        };
+        assert!(profile.record_stat_evaluation(id, invalid_confidence).is_err());
     }
 
     #[test]
