@@ -132,8 +132,11 @@ pub fn run_core() -> Result<EvaluationReport> {
             )],
         )
     };
-    let first_verification =
-        verify_turn_and_award_xp(&mut verified_turn, &mut verified_profile, verified_request());
+    let first_verification = verify_turn_and_award_xp(
+        &mut verified_turn,
+        &mut verified_profile,
+        verified_request(),
+    );
     let first_ok = matches!(
         first_verification,
         Ok(VerificationOutcome::Verified {
@@ -153,11 +156,8 @@ pub fn run_core() -> Result<EvaluationReport> {
     replay_turn.apply(TurnEvent::PlanAccepted)?;
     replay_turn.apply(TurnEvent::ActionCompleted)?;
     let xp_before_replay = verified_profile.total_xp();
-    let replay = verify_turn_and_award_xp(
-        &mut replay_turn,
-        &mut verified_profile,
-        verified_request(),
-    );
+    let replay =
+        verify_turn_and_award_xp(&mut replay_turn, &mut verified_profile, verified_request());
     let replay_ok = matches!(
         replay,
         Ok(VerificationOutcome::Verified {
@@ -193,11 +193,8 @@ pub fn run_core() -> Result<EvaluationReport> {
             true,
         )],
     );
-    let rejected = verify_turn_and_award_xp(
-        &mut rejected_turn,
-        &mut rejected_profile,
-        rejected_request,
-    );
+    let rejected =
+        verify_turn_and_award_xp(&mut rejected_turn, &mut rejected_profile, rejected_request);
     let rejection_ok = matches!(rejected, Ok(VerificationOutcome::Rejected { .. }))
         && rejected_profile.total_xp() == 0
         && rejected_turn.phase == TurnPhase::Failed;
