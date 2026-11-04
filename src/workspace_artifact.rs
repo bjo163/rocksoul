@@ -12,6 +12,8 @@ use std::{
 
 use anyhow::{Context, Result, anyhow, bail};
 
+use crate::core::CancellationToken;
+
 pub const MAX_ARTIFACT_BYTES: usize = 16 * 1024;
 pub const MAX_FILENAME_BYTES: usize = 64;
 
@@ -94,7 +96,9 @@ impl WorkspaceArtifactService {
         &self,
         proposal: &WorkspaceArtifactProposal,
         approval: &UserApproval,
+        cancellation: &CancellationToken,
     ) -> Result<ArtifactOutcome> {
+        cancellation.check()?;
         proposal.validate()?;
         if approval.filename != proposal.filename {
             bail!("approval does not authorize this artifact");
@@ -120,7 +124,7 @@ impl WorkspaceArtifactService {
                 })
             }
             Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
-                self.create_and_verify(&root, &target, proposal)
+                self.create_and_verify(&root, &target, proposal, cancellation)
             }
             Err(error) => Err(error).context("could not inspect artifact target"),
         }
@@ -147,6 +151,7 @@ impl WorkspaceArtifactService {
         root: &Path,
         target: &Path,
         proposal: &WorkspaceArtifactProposal,
+        cancellation: &CancellationToken,
     ) -> Result<ArtifactOutcome> {
         let nonce = SystemTime::now()
             .duration_since(UNIX_EPOCH)
@@ -162,6 +167,12 @@ impl WorkspaceArtifactService {
             .context("could not write temporary artifact")?;
         file.sync_all().context("could not sync temporary artifact")?;
         drop(file);
+
+        // Cancellation is checked before the irreversible publication step.
+        if let Err(error) = cancellation.check() {
+            let _ = fs::remove_file(&temporary);
+            return Err(error.into());
+        }
 
         // Hard-link publication is create-only: it never replaces a target.
         let published = match fs::hard_link(&temporary, target) {
@@ -239,7 +250,7 @@ mod tests {
         let root = workspace();
         let item = proposal("note.txt", "verified output");
         let outcome = WorkspaceArtifactService::new(&root)
-            .execute_approved(&item, &approve(&item))
+            .execute_approved(&item, &approve(&item), &CancellationToken::default())
             .unwrap();
         assert!(matches!(outcome, ArtifactOutcome::Created { bytes: 15, .. }));
         assert_eq!(fs::read(root.join("note.txt")).unwrap(), b"verified output");
@@ -252,15 +263,15 @@ mod tests {
         let service = WorkspaceArtifactService::new(&root);
         let item = proposal("note.txt", "first");
         assert!(matches!(
-            service.execute_approved(&item, &approve(&item)).unwrap(),
+            service.execute_approved(&item, &approve(&item), &CancellationToken::default()).unwrap(),
             ArtifactOutcome::Created { .. }
         ));
         assert!(matches!(
-            service.execute_approved(&item, &approve(&item)).unwrap(),
+            service.execute_approved(&item, &approve(&item), &CancellationToken::default()).unwrap(),
             ArtifactOutcome::AlreadyPresent { .. }
         ));
         let conflict = proposal("note.txt", "second");
-        assert!(service.execute_approved(&conflict, &approve(&conflict)).is_err());
+        assert!(service.execute_approved(&conflict, &approve(&conflict), &CancellationToken::default()).is_err());
         assert_eq!(fs::read(root.join("note.txt")).unwrap(), b"first");
         fs::remove_dir_all(root).unwrap();
     }
@@ -288,7 +299,7 @@ mod tests {
         symlink(&outside, &link).unwrap();
         let item = proposal("note.txt", "content");
         assert!(WorkspaceArtifactService::new(&link)
-            .execute_approved(&item, &approve(&item))
+            .execute_approved(&item, &approve(&item), &CancellationToken::default())
             .is_err());
         fs::remove_dir_all(parent).unwrap();
     }
