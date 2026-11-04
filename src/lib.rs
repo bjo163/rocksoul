@@ -1,6 +1,5 @@
 mod cli;
 mod commands;
-pub mod core;
 mod model;
 mod paths;
 mod repl;
