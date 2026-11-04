@@ -408,8 +408,8 @@ impl std::error::Error for RidError {}
 #[cfg(test)]
 mod tests {
     use super::{
-        MAX_XP_PER_EVENT, RidError, RuhIdentity, RuhProfile, STAT_COUNT, StatEvaluation,
-        StatId, XpEvent, XpRecordOutcome, XpSource, level_for_xp,
+        MAX_XP_PER_EVENT, RidError, RuhIdentity, RuhProfile, STAT_COUNT, StatEvaluation, StatId,
+        XpEvent, XpRecordOutcome, XpSource, level_for_xp,
     };
 
     fn profile() -> RuhProfile {
@@ -516,7 +516,11 @@ mod tests {
             evaluated_at_unix: 1_800_000_200,
             rubric_version: "v1".into(),
         };
-        assert!(profile.record_stat_evaluation(id, missing_evidence).is_err());
+        assert!(
+            profile
+                .record_stat_evaluation(id, missing_evidence)
+                .is_err()
+        );
 
         let too_few_samples = StatEvaluation {
             score: 80,
@@ -526,11 +530,7 @@ mod tests {
             evaluated_at_unix: 1_800_000_200,
             rubric_version: "v1".into(),
         };
-        assert!(
-            profile
-                .record_stat_evaluation(id, too_few_samples)
-                .is_err()
-        );
+        assert!(profile.record_stat_evaluation(id, too_few_samples).is_err());
 
         let valid_evaluation = StatEvaluation {
             score: 80,
@@ -578,7 +578,11 @@ mod tests {
             evaluated_at_unix: 1_800_000_200,
             rubric_version: "v1".into(),
         };
-        assert!(profile.record_stat_evaluation(id, invalid_confidence).is_err());
+        assert!(
+            profile
+                .record_stat_evaluation(id, invalid_confidence)
+                .is_err()
+        );
     }
 
     #[test]
