@@ -39,7 +39,8 @@ The roadmap is capability-driven. Each stage must deliver a working, tested incr
 - [x] Derive a stable operation/XP idempotency key from the exact filename and content pair.
 - [x] Add provider-aware model retry classification for connection/timeout and HTTP 408/425/429/5xx failures; every attempt consumes the shared turn call budget.
 - [x] Wire Ctrl+C during model-driven turns into the cooperative cancellation token.
-- [ ] Extend cancellation through terminal workspace approval and blocking filesystem operations; model HTTP requests now cancel cooperatively in flight.
+- [x] Wire Ctrl+C through terminal approval and executor; cancellation is honored at safe pre-publication checkpoints and in-flight model HTTP requests.
+- [ ] Add deterministic cancellation-race tests around publication and verify post-publication receipt recovery.
 - [ ] Verify task acceptance against observed effects; chat response completion is not task success.
 - [x] Append content-free JSONL lifecycle events for the workspace CLI (proposal, approval/denial, execution/failure, verification).
 - [x] Persist create-only, versioned verification receipt JSON files and expose them through trace inspection.
