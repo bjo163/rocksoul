@@ -13,6 +13,7 @@ The first milestone is intentionally small:
 - Local RID identity/progression profile with 99 unrated capability dimensions.
 - A keyboard-first Ratatui Cognitive Cockpit.
 - A deterministic offline Core Integrity evaluation suite.
+- A versioned local memory store with explicit user-approved writes and export/delete controls.
 - A bounded planner, up to three model-only reasoning steps, and a structured reflector per turn.
 - No desktop app, web app, server, plugin marketplace, autonomous tool execution, or multi-agent framework in the seed release.
 
@@ -77,6 +78,11 @@ The Rocksoul root must be writable for portable ZIP installs. The Windows instal
     rocksoul eval list
     rocksoul eval run core
     rocksoul eval latest
+    rocksoul memory list
+    rocksoul memory add semantic --content "A user-approved fact"
+    rocksoul memory search "fact"
+    rocksoul memory delete <memory-id>
+    rocksoul memory export
     rocksoul --help
 
 Inside the interactive CLI:
@@ -87,11 +93,13 @@ Inside the interactive CLI:
 - :clear — clear the current conversation.
 - :exit — leave the REPL.
 
-Chat history is session-only. Each turn uses one planning call, up to three model-only reasoning calls, and one reflector call. The total budget is five calls, 16,000 output tokens, and 120 seconds. Each call receives a conservative token reservation so the sum of request caps stays within the turn ceiling even if a provider omits usage metadata. The reflector is another model call, not independent verification. A successful turn does not prove the user's real-world task was completed; no XP is awarded for ordinary chat. Persistent memory and external tool execution remain future milestones.
+Chat history is session-only. Each turn uses one planning call, up to three model-only reasoning calls, and one reflector call. The total budget is five calls, 16,000 output tokens, and 120 seconds. Each call receives a conservative token reservation so the sum of request caps stays within the turn ceiling even if a provider omits usage metadata. The reflector is another model call, not independent verification. A successful turn does not prove the user's real-world task was completed; no XP is awarded for ordinary chat. Cross-session memory is separate and only stores entries explicitly added by the user through the memory CLI.
 
 ### RID and evaluation
 
 `rocksoul init` creates a local RID profile. Its age is elapsed time since initialization; XP and levels are separate from capability scores. All 99 stat slots start unrated and require trusted, evidence-backed evaluation.
+
+Run `rocksoul memory list` to inspect saved entries. Add only information you explicitly approve with `rocksoul memory add <kind> --content "..."`. The store supports episodic, semantic, procedural, working, and derived records; working memory can expire. Models cannot write or delete memory. Export writes to `data/memory/exports/latest.json`; delete and clear are permanent local operations, and clear requires `--confirm`.
 
 Run the offline deterministic suite with `rocksoul eval run core`. It checks kernel lifecycle, bounded retries, terminal-state immutability, verified-XP gating and replay behavior, RID initialization, catalogue integrity, and level progression. Reports are saved inside the Rocksoul root at `data/evaluations/core/latest.json`.
 
@@ -114,6 +122,8 @@ Rocksoul/
 ├── data/
 │   ├── identity/rid.json
 │   ├── memory/
+│   │   ├── store.v1.json
+│   │   └── exports/
 │   └── evaluations/
 ├── cache/
 ├── workspace/

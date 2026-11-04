@@ -2,6 +2,7 @@ mod cli;
 mod commands;
 pub mod core;
 mod eval;
+mod memory;
 mod model;
 mod paths;
 mod repl;

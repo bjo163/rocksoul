@@ -5,3 +5,13 @@
 *.log
 .DS_Store
 Thumbs.db
+
+# Portable runtime state (kept under the Rocksoul installation root)
+/config/config.toml
+/cache/
+/workspace/
+/evolution/
+/logs/
+/data/identity/
+/data/memory/
+/data/evaluations/

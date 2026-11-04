@@ -39,11 +39,19 @@ The roadmap is capability-driven. Each stage must deliver a working, tested incr
 
 ## Stage 2 — Persistent memory
 
-- [ ] Add a local durable store with versioned schemas.
-- [ ] Separate session context, user-approved facts, working memory, and derived knowledge.
-- [ ] Support inspection, export, deletion, and migrations.
-- [ ] Make memory retrieval observable and testable.
-- [ ] Add retention, forgetting and cross-session evaluation.
+**Status:** First explicit, local-only memory store implemented; automated cognition-to-memory remains disabled.
+
+- [x] Add a root-local JSON store with schema versioning and atomic replacement/backup recovery.
+- [x] Separate episodic, semantic, procedural, working, and derived record kinds.
+- [x] Require explicit user CLI action for every write; model output cannot save or delete memory.
+- [x] Support list, text/tag search, permanent deletion, confirmed clear, and root-local export.
+- [x] Support expiry for working-memory records.
+- [x] Show real store counts and provenance in the Cognitive Cockpit.
+- [ ] Add explicit schema migrations and backup restore diagnostics.
+- [ ] Add memory locking for multiple concurrent Rocksoul processes.
+- [ ] Add retention policies, forgetting workflows, and cross-session evaluation.
+- [ ] Add retrieval ranking and memory context injection only after provenance and relevance tests.
+- [ ] Add model-proposed memory with human approval; never enable silent model writes.
 
 ## Stage 3 — Skills and tools
 

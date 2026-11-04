@@ -1,5 +1,7 @@
 use clap::{Parser, Subcommand};
 
+use crate::memory::MemoryKind;
+
 #[derive(Debug, Parser)]
 #[command(
     name = "rocksoul",
@@ -32,6 +34,11 @@ pub enum Command {
         #[command(subcommand)]
         command: EvalCommand,
     },
+    /// Manage explicit, user-approved local memories.
+    Memory {
+        #[command(subcommand)]
+        command: MemoryCommand,
+    },
 }
 
 #[derive(Debug, Subcommand)]
@@ -60,4 +67,33 @@ pub enum RidCommand {
     Stats,
     /// Display the auditable XP progression history.
     History,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum MemoryCommand {
+    /// Add an explicitly user-approved memory record.
+    Add {
+        #[arg(value_enum)]
+        kind: MemoryKind,
+        #[arg(long)]
+        content: String,
+        #[arg(long = "tag")]
+        tags: Vec<String>,
+        /// Expire a working-memory entry after this many hours.
+        #[arg(long)]
+        expires_in_hours: Option<u64>,
+    },
+    /// List active memory records.
+    List,
+    /// Search active memory content and tags.
+    Search { query: String },
+    /// Permanently delete one memory record by ID.
+    Delete { id: String },
+    /// Permanently delete all memory records (requires --confirm).
+    Clear {
+        #[arg(long)]
+        confirm: bool,
+    },
+    /// Export memory to data/memory/exports/latest.json.
+    Export,
 }
