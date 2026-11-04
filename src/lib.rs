@@ -9,7 +9,7 @@ mod repl;
 pub mod rid;
 pub mod rid_catalogue;
 mod rid_store;
-pub mod task_trace;
+pub(crate) mod task_trace;
 mod tui;
 pub mod workspace_artifact;
 
