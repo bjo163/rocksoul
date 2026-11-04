@@ -8,9 +8,21 @@ RID is the persistent developmental profile for one Rocksoul instance.
 - **XP and level** represent verified progression events. The current level curve is version 1: level N is reached at 50 × (N - 1) × N cumulative XP (100 XP for level 2, 300 for level 3, 600 for level 4).
 - **99 stats** represent measured technical capabilities. They are independent from XP and level.
 
+## Local profile
+
+The profile is stored as JSON at the application data directory under `identity/rid.json`. `rocksoul init` creates it once and preserves the existing instance ID and creation timestamp on subsequent runs. A temporary-file and backup replacement strategy is used for writes. Invalid profiles are reported, never silently reset.
+
+CLI:
+- `rocksoul rid status` — age, level, XP, number of rated stats.
+- `rocksoul rid stats` — all 99 slots and current measurement state.
+- `rocksoul rid history` — auditable XP event list.
+- REPL shortcut `:rid` — RID status.
+
+The domain model and persistence layer are local-first. HTTP API exposure will be added through the same core contracts later.
+
 ## 99 Asmaul Husna-inspired stat slots
 
-The domain model creates exactly 99 stable slots, linked by IDs asmaul_husna:01 through asmaul_husna:99. The display catalogue (Arabic text, transliteration, gloss, source, variants, and technical rubric) must be curated separately and versioned. A slot is unrated until reproducible evaluation evidence exists.
+The domain model creates exactly 99 stable slots, linked by IDs `asmaul_husna:01` through `asmaul_husna:99`. The display catalogue (Arabic text, transliteration, gloss, source, variants, and technical rubric) must be curated separately and versioned. A slot is unrated until reproducible evaluation evidence exists.
 
 Asmaul Husna is an inspirational naming layer only. Rocksoul does not possess, embody, or measure divine attributes. A stat is an engineering metric with an operational definition, evidence, confidence, and rubric version.
 
@@ -27,4 +39,15 @@ Only a trusted kernel verifier may authorize XP awards or stat evaluations. A mo
 
 ## Current implementation boundary
 
-The Rust domain contracts and validation rules exist. Persistent storage, instance birth initialization, CLI commands, API read endpoints, and the reviewed 99-entry display catalogue are subsequent implementation work; do not describe them as shipped yet.
+Implemented now:
+- RID schema and validation.
+- 99 stable, initially unrated stat slots.
+- Instance age calculation, XP ledger, and deterministic level curve.
+- Local JSON profile initialization, read, validation, and recoverable file replacement.
+- CLI status/stats/history and REPL status shortcut.
+
+Still pending:
+- Complete reviewed 99-entry name/transliteration/gloss catalogue and capability rubric mapping.
+- Evaluator integration that can produce trusted evidence.
+- Kernel-mediated XP awards tied to verified task and evaluation events.
+- Native API read endpoints and richer memory/evolution integration.
