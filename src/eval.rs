@@ -8,9 +8,12 @@ use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    core::{TurnEvent, TurnPhase, TurnState},
+    core::{
+        TurnEvent, TurnPhase, TurnState, VerificationEvidence, VerificationOutcome,
+        VerificationRequest, verify_turn_and_award_xp,
+    },
     paths::AppPaths,
-    rid::{RuhIdentity, RuhProfile, level_for_xp},
+    rid::{RuhIdentity, RuhProfile, XpRecordOutcome, level_for_xp},
     rid_catalogue::RidCatalogue,
 };
 
@@ -103,6 +106,105 @@ pub fn run_core() -> Result<EvaluationReport> {
         "kernel.terminal_immutable",
         terminal_ok,
         "Cancelled turns reject further transitions",
+    ));
+
+    let mut verified_turn = TurnState::new("eval-verified", 0);
+    let mut verified_profile = RuhProfile::new(RuhIdentity {
+        instance_id: "rocksoul-eval-verifier".to_owned(),
+        created_at_unix: now.max(1),
+    })?;
+    verified_turn.apply(TurnEvent::Start)?;
+    verified_turn.apply(TurnEvent::PlanAccepted)?;
+    verified_turn.apply(TurnEvent::ActionCompleted)?;
+    let verified_request = || {
+        VerificationRequest::new(
+            "eval-task",
+            "eval-verification-idempotency",
+            now.max(1),
+            1,
+            1,
+            vec![VerificationEvidence::new(
+                "expected-output",
+                "observed",
+                "observed",
+                "eval://core/verified-output",
+                true,
+            )],
+        )
+    };
+    let first_verification =
+        verify_turn_and_award_xp(&mut verified_turn, &mut verified_profile, verified_request());
+    let first_ok = matches!(
+        first_verification,
+        Ok(VerificationOutcome::Verified {
+            xp_record: XpRecordOutcome::Recorded,
+            ..
+        })
+    ) && verified_profile.total_xp() > 0
+        && verified_turn.phase == TurnPhase::Completed;
+    checks.push(check(
+        "kernel.verified_xp_gate",
+        first_ok,
+        "XP is awarded only after a required evidence check passes",
+    ));
+
+    let mut replay_turn = TurnState::new("eval-replay", 0);
+    replay_turn.apply(TurnEvent::Start)?;
+    replay_turn.apply(TurnEvent::PlanAccepted)?;
+    replay_turn.apply(TurnEvent::ActionCompleted)?;
+    let xp_before_replay = verified_profile.total_xp();
+    let replay = verify_turn_and_award_xp(
+        &mut replay_turn,
+        &mut verified_profile,
+        verified_request(),
+    );
+    let replay_ok = matches!(
+        replay,
+        Ok(VerificationOutcome::Verified {
+            xp_record: XpRecordOutcome::Duplicate,
+            ..
+        })
+    ) && verified_profile.total_xp() == xp_before_replay;
+    checks.push(check(
+        "kernel.xp_replay_idempotency",
+        replay_ok,
+        "Replaying the same verified event does not duplicate XP",
+    ));
+
+    let mut rejected_turn = TurnState::new("eval-rejected", 0);
+    let mut rejected_profile = RuhProfile::new(RuhIdentity {
+        instance_id: "rocksoul-eval-rejected".to_owned(),
+        created_at_unix: now.max(1),
+    })?;
+    rejected_turn.apply(TurnEvent::Start)?;
+    rejected_turn.apply(TurnEvent::PlanAccepted)?;
+    rejected_turn.apply(TurnEvent::ActionCompleted)?;
+    let rejected_request = VerificationRequest::new(
+        "eval-task-rejected",
+        "eval-verification-rejected",
+        now.max(1),
+        1,
+        1,
+        vec![VerificationEvidence::new(
+            "expected-output",
+            "expected",
+            "different",
+            "eval://core/rejected-output",
+            true,
+        )],
+    );
+    let rejected = verify_turn_and_award_xp(
+        &mut rejected_turn,
+        &mut rejected_profile,
+        rejected_request,
+    );
+    let rejection_ok = matches!(rejected, Ok(VerificationOutcome::Rejected { .. }))
+        && rejected_profile.total_xp() == 0
+        && rejected_turn.phase == TurnPhase::Failed;
+    checks.push(check(
+        "kernel.rejected_verification_no_xp",
+        rejection_ok,
+        "A failed required evidence check awards no XP",
     ));
 
     let profile = RuhProfile::new(RuhIdentity {
