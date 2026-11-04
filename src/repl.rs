@@ -373,6 +373,8 @@ fn print_help() {
 
 #[cfg(test)]
 mod tests {
+    use crate::workspace_artifact::WorkspaceArtifactProposal;
+
     use super::{parse_plan, parse_reflection};
 
     #[test]
