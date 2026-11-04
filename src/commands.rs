@@ -900,7 +900,20 @@ fn run_eval(command: EvalCommand) -> Result<()> {
 
 #[cfg(test)]
 mod tests {
-    use super::format_age;
+    use std::{
+        fs,
+        time::{SystemTime, UNIX_EPOCH},
+    };
+
+    use crate::{
+        core::{
+            TurnEvent, TurnState, VerificationEvidence, VerificationOutcome, VerificationRequest,
+            verify_turn_and_award_xp,
+        },
+        rid::{RuhIdentity, RuhProfile},
+    };
+
+    use super::{format_age, persist_workspace_receipt};
 
     #[test]
     fn formats_elapsed_instance_age() {
@@ -908,5 +921,59 @@ mod tests {
         assert_eq!(format_age(65), "1m 5s");
         assert_eq!(format_age(3_661), "1h 1m 1s");
         assert_eq!(format_age(90_061), "1d 1h 1m");
+    }
+
+    #[test]
+    fn verification_receipt_is_durable_idempotent_and_provenance_bound() {
+        let nonce = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let root = std::env::temp_dir().join(format!("rocksoul-receipt-test-{nonce}"));
+        let logs = root.join("logs");
+        let mut profile = RuhProfile::new(RuhIdentity {
+            instance_id: "receipt-test".to_owned(),
+            created_at_unix: 1_700_000_000,
+        })
+        .unwrap();
+        let mut turn = TurnState::new("receipt-task", 0);
+        turn.apply(TurnEvent::Start).unwrap();
+        turn.apply(TurnEvent::PlanAccepted).unwrap();
+        turn.apply(TurnEvent::ActionCompleted).unwrap();
+        let request = VerificationRequest::new(
+            "workspace:note.txt:abc123",
+            "workspace-verification:abc123",
+            1_700_000_001,
+            1,
+            1,
+            vec![VerificationEvidence::new(
+                "artifact-readback-matches",
+                "expected",
+                "expected",
+                "workspace-readback:abc123",
+                true,
+            )],
+        );
+        let verification = verify_turn_and_award_xp(&mut turn, &mut profile, request).unwrap();
+        let receipt = match verification {
+            VerificationOutcome::Verified { receipt, .. } => receipt,
+            other => panic!("expected verified receipt, got {other:?}"),
+        };
+
+        let path = persist_workspace_receipt(&logs, "workspace:note.txt:abc123", &receipt).unwrap();
+        let document: serde_json::Value =
+            serde_json::from_slice(&fs::read(&path).unwrap()).unwrap();
+        assert_eq!(document["schema_version"], 1);
+        assert_eq!(document["operation_id"], "workspace:note.txt:abc123");
+        assert_eq!(document["verification_id"], "workspace-verification:abc123");
+        assert_eq!(document["evidence_refs"][0], "workspace-readback:abc123");
+        assert_eq!(
+            persist_workspace_receipt(&logs, "workspace:note.txt:abc123", &receipt).unwrap(),
+            path
+        );
+
+        fs::write(&path, "{}").unwrap();
+        assert!(persist_workspace_receipt(&logs, "workspace:note.txt:abc123", &receipt).is_err());
+        fs::remove_dir_all(root).unwrap();
     }
 }
