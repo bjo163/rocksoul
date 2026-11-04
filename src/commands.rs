@@ -10,6 +10,7 @@ use crate::{
     model::ModelConfig,
     paths::AppPaths,
     rid::{RuhIdentity, RuhProfile},
+    rid_catalogue::RidCatalogue,
     rid_store,
 };
 
@@ -254,22 +255,39 @@ fn run_rid(command: RidCommand) -> Result<()> {
 
 fn rid_stats() -> Result<()> {
     let (_, profile) = load_rid_profile()?;
-    println!("RID capability stats — {} slots", profile.stats().len());
+    let catalogue = RidCatalogue::embedded()?;
+
+    println!(
+        "RID capability stats — {} slots · catalogue {}",
+        profile.stats().len(),
+        catalogue.catalogue_version
+    );
+    println!("Name labels are inspirational only; technical scores measure software capability.");
+
     for stat in profile.stats() {
+        let entry = catalogue
+            .by_slot(stat.id.value())
+            .context("RID profile references a slot missing from the embedded catalogue")?;
         let score = stat
             .score
             .map(|value| format!("{value}/100"))
             .unwrap_or_else(|| "unrated".to_owned());
+        let confidence = stat
+            .confidence
+            .map(|value| format!("{value}%"))
+            .unwrap_or_else(|| "—".to_owned());
+
         println!(
-            "{:02}  {:<18}  {}  (confidence: {})",
+            "{:02}  {:<20}  {:<30}  {}  (confidence: {})",
             stat.id.value(),
-            stat.catalogue_entry_id,
+            entry.name.transliteration,
+            entry.technical_stat.label,
             score,
-            stat.confidence
-                .map(|value| format!("{value}%"))
-                .unwrap_or_else(|| "—".to_owned())
+            confidence
         );
+        println!("    {} · {}", entry.name.arabic, entry.technical_stat.key);
     }
+
     Ok(())
 }
 
