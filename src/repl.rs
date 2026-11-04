@@ -6,6 +6,7 @@ use reqwest::Client;
 
 use crate::{
     commands,
+    core::{CancellationToken, TurnBudget, TurnEvent, TurnMeter, TurnRequest, TurnState},
     model::{ChatMessage, ModelConfig},
 };
 
@@ -21,6 +22,12 @@ pub async fn run() -> Result<()> {
         .context("could not initialize the HTTP client")?;
 
     let mut messages = vec![ChatMessage::new("system", SYSTEM_PROMPT)];
+    let mut turn_sequence = 0_u64;
+    let turn_budget = TurnBudget {
+        max_model_calls: 1,
+        max_output_tokens: 16_000,
+        timeout_ms: 120_000,
+    };
 
     println!("Rocksoul v{} — Seed CLI", env!("CARGO_PKG_VERSION"));
     println!("Type :help for commands. Type :exit to leave.");
@@ -71,10 +78,51 @@ pub async fn run() -> Result<()> {
 
                 messages.push(ChatMessage::new("user", prompt));
 
-                match model.complete(&client, &messages).await {
+                turn_sequence = turn_sequence.saturating_add(1);
+                let request = TurnRequest {
+                    id: format!("turn-{turn_sequence}"),
+                    input: prompt.to_owned(),
+                    budget: turn_budget,
+                };
+                request.validate()?;
+                let mut turn = TurnState::new(request.id, 0);
+                turn.apply(TurnEvent::Start)?;
+                turn.apply(TurnEvent::PlanAccepted)?;
+                let cancellation = CancellationToken::default();
+                let mut meter = TurnMeter::new(request.budget)?;
+
+                match model
+                    .complete(&client, &messages, request.budget, &mut meter, &cancellation)
+                    .await
+                {
                     Ok(answer) => {
-                        println!("\n{answer}\n");
-                        messages.push(ChatMessage::new("assistant", answer));
+                        // This check validates a non-empty model response only; it does not
+                        // establish that the user's underlying task was completed or verified.
+                        turn.apply(TurnEvent::ActionCompleted)?;
+                        turn.apply(TurnEvent::VerificationPassed)?;
+                        println!("\n{}\n", answer.content);
+                        if let Some(tokens) = answer.output_tokens {
+                            println!("[turn: {} ms · {} output tokens]", answer.elapsed_ms, tokens);
+                        } else {
+                            println!("[turn: {} ms · provider token usage unavailable]", answer.elapsed_ms);
+                        }
+                        messages.push(ChatMessage::new("assistant", answer.content));
+                        trim_history(&mut messages);
+                    }
+                    Err(error) => {
+                        turn.apply(TurnEvent::Fail)?;
+                        messages.pop();
+                        eprintln!("Model request failed: {error:#}");
+                    }
+                }
+                    Ok(answer) => {
+                        println!("\n{}\n", answer.content);
+                        if let Some(tokens) = answer.output_tokens {
+                            println!("[turn: {} ms · {} output tokens]", answer.elapsed_ms, tokens);
+                        } else {
+                            println!("[turn: {} ms · provider token usage unavailable]", answer.elapsed_ms);
+                        }
+                        messages.push(ChatMessage::new("assistant", answer.content));
                         trim_history(&mut messages);
                     }
                     Err(error) => {
