@@ -392,6 +392,30 @@ mod tests {
     }
 
     #[test]
+    fn parses_optional_workspace_artifact_intent() {
+        let raw = r#"{"objective":"Create a note","steps":[{"id":"s1","description":"Prepare the note"}],"acceptance_checks":[{"id":"c1","description":"The note is ready","required":true}],"workspace_artifact":{"filename":"note.txt","content":"hello"}}"#;
+        let response = parse_plan(raw).unwrap();
+        let artifact = response.workspace_artifact.unwrap();
+        assert_eq!(artifact.filename, "note.txt");
+        assert_eq!(artifact.content, "hello");
+    }
+
+    #[test]
+    fn rejects_unsafe_planner_workspace_artifact_intent() {
+        let raw = r#"{"objective":"Create a note","steps":[{"id":"s1","description":"Prepare the note"}],"acceptance_checks":[{"id":"c1","description":"The note is ready","required":true}],"workspace_artifact":{"filename":"../escape.txt","content":"hello"}}"#;
+        let response = parse_plan(raw).unwrap();
+        let artifact = response.workspace_artifact.unwrap();
+        assert!(
+            WorkspaceArtifactProposal {
+                filename: artifact.filename,
+                content: artifact.content,
+            }
+            .validate()
+            .is_err()
+        );
+    }
+
+    #[test]
     fn parses_valid_reflection_json() {
         let raw =
             r#"{"outcome":"succeeded","summary":"All required checks are supported","issues":[]}"#;
