@@ -266,7 +266,7 @@ CI runs formatting, locked dependency resolution, Clippy, tests, offline core ev
 
 ## Project status
 
-Rocksoul is an actively developed experimental runtime. The current release is a bounded CLI seed—not an autonomous AGI system. The next engineering priority is release hardening: committed dependency resolution, clean Windows install/portable smoke tests, and reproducible release evidence.
+Rocksoul is an actively developed experimental runtime. The current release is a bounded CLI seed—not an autonomous AGI system. The portable runtime, committed dependency lockfile, and automated clean Windows-runner installer/portable smoke tests are in place. Manual clean-device verification remains outstanding. The next engineering priority is Stage 1: connect bounded cognition to independently observed task outcomes without weakening the existing permission and evidence boundaries.
 
 ---
 
