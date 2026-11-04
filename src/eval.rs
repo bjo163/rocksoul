@@ -417,6 +417,63 @@ fn stage1_workspace_checks(now: u64, checks: &mut Vec<EvaluationCheck>) -> Resul
         "Only trusted file/read-back evidence passes verification and records XP",
     ));
 
+    let mismatch_item = WorkspaceArtifactProposal {
+        filename: "stage1-mismatch.txt".to_owned(),
+        content: "approved bytes".to_owned(),
+    };
+    let mismatch_result = UserApproval::from_typed_confirmation(
+        &mismatch_item,
+        &mismatch_item.approval_phrase(),
+    )
+    .and_then(|approved| {
+        service.execute_approved_with_retry(
+            &mismatch_item,
+            &approved,
+            &CancellationToken::default(),
+        )
+    });
+    let mismatch_no_xp = if let Ok(ArtifactOutcome::Created { path, .. }) = mismatch_result {
+        fs::write(&path, "tampered bytes")?;
+        let actual_readback = fs::read_to_string(&path)?;
+        let mut mismatch_profile = RuhProfile::new(RuhIdentity {
+            instance_id: format!("rocksoul-stage1-mismatch-{now}"),
+            created_at_unix: now.max(1),
+        })?;
+        let mut mismatch_turn = TurnState::new("stage1-mismatch-task", 0);
+        mismatch_turn.apply(TurnEvent::Start)?;
+        mismatch_turn.apply(TurnEvent::PlanAccepted)?;
+        mismatch_turn.apply(TurnEvent::ActionCompleted)?;
+        let mismatch_request = VerificationRequest::new(
+            format!("{}:mismatch", mismatch_item.operation_id()),
+            format!("stage1-mismatch:{}", mismatch_item.operation_id()),
+            now.max(1),
+            1,
+            1,
+            vec![VerificationEvidence::new(
+                "artifact-readback-matches",
+                mismatch_item.content.as_str(),
+                actual_readback.as_str(),
+                format!("workspace-readback-mismatch:{}", mismatch_item.operation_id()),
+                true,
+            )],
+        );
+        matches!(
+            verify_turn_and_award_xp(
+                &mut mismatch_turn,
+                &mut mismatch_profile,
+                mismatch_request,
+            ),
+            Ok(VerificationOutcome::Rejected { .. })
+        ) && mismatch_profile.total_xp() == 0
+    } else {
+        false
+    };
+    checks.push(check(
+        "stage1.readback_mismatch_no_xp",
+        mismatch_no_xp,
+        "A real post-write byte mismatch is rejected and awards no XP",
+    ));
+
     let replay_ok = verification_ok
         && if let Ok(approved) = approval.as_ref() {
             matches!(
