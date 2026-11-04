@@ -67,6 +67,9 @@ jobs:
       - name: Build release executable
         run: cargo build --locked --release
 
+      - name: Run Windows tests
+        run: cargo test --locked --all-targets --all-features
+
       - name: Install Inno Setup
         shell: powershell
         run: choco install innosetup --yes --no-progress
