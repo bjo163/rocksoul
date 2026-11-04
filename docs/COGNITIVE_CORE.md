@@ -25,7 +25,7 @@ The request's `max_tokens` is conservatively reserved as one fifth of the total 
 
 ## Lifecycle, cancellation, and retries
 
-The core defines deterministic lifecycle phases and validates transitions, retry limits, terminal-state immutability, and budget enforcement. Ctrl+C cancels model-driven turns, including in-flight HTTP requests, cooperatively. Provider requests retry only connection/timeout failures and HTTP 408/425/429/5xx, at most three attempts; every attempt consumes the shared turn call budget. Workspace execution retries only transient filesystem I/O errors for at most three attempts with 20/40 ms backoff. A stable operation ID binds the exact filename/content pair and is reused for verifier XP idempotency. Terminal interruption during blocking approval/filesystem calls and automatic re-planning remain unimplemented.
+The core defines deterministic lifecycle phases and validates transitions, retry limits, terminal-state immutability, and budget enforcement. Ctrl+C cancels model-driven turns, including in-flight HTTP requests, cooperatively. Provider requests retry only connection/timeout failures and HTTP 408/425/429/5xx, at most three attempts; every attempt consumes the shared turn call budget. Workspace execution retries only transient filesystem I/O errors for at most three attempts with 20/40 ms backoff. A stable operation ID binds the exact filename/content pair and is reused for verifier XP idempotency. Ctrl+C interrupts async terminal approval and signals the blocking executor; filesystem syscalls are not forcibly interrupted, and cancellation is honored at safe pre-publication checkpoints. Automatic re-planning remains unimplemented.
 
 ## Independent verification and RID XP
 
