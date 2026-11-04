@@ -10,10 +10,10 @@ use std::{
 use anyhow::{Context, Result};
 use serde::Serialize;
 
-#[derive(Clone, Copy, Debug, Serialize)]
-#[serde(rename_all = "snake_case")]
 static TRACE_APPEND_LOCK: OnceLock<Mutex<()>> = OnceLock::new();
 
+#[derive(Clone, Copy, Debug, Serialize)]
+#[serde(rename_all = "snake_case")]
 pub enum TaskTraceEvent {
     Proposed,
     Approved,
