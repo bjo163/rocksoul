@@ -62,10 +62,10 @@ pub fn init() -> Result<()> {
         &paths.memory_dir,
         &paths.evolution_dir,
         &paths.logs_dir,
-        paths.rid_file.parent().context("RID path has no parent")?,
     ] {
         fs::create_dir_all(directory)?;
     }
+    fs::create_dir_all(paths.rid_file.parent().context("RID path has no parent")?)?;
 
     let config_created = if paths.config_file.exists() {
         false
