@@ -317,6 +317,7 @@ pub fn run_core() -> Result<EvaluationReport> {
 fn stage1_workspace_checks(now: u64, checks: &mut Vec<EvaluationCheck>) -> Result<()> {
     let root =
         std::env::temp_dir().join(format!("rocksoul-stage1-eval-{now}-{}", std::process::id()));
+    fs::create_dir_all(&root)?;
     let item = WorkspaceArtifactProposal {
         filename: "stage1-eval.txt".to_owned(),
         content: "approved and independently observed".to_owned(),
