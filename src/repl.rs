@@ -4,22 +4,22 @@ use std::{
     time::Duration,
 };
 
-use anyhow::{Context, Result};
+use anyhow::{Context, Result, bail};
 use reqwest::Client;
 
 use crate::{
     commands,
-    core::{
-        AcceptanceCheck, CancellationToken, PlanStep, ReflectionOutcome, TurnBudget, TurnEvent,
-        TurnMeter, TurnPlan, TurnReflection, TurnRequest, TurnState,
-    },
+    core::{CancellationToken, ReflectionOutcome, TurnBudget, TurnEvent, TurnMeter, TurnPlan,
+        TurnReflection, TurnRequest, TurnState},
     model::{ChatMessage, ModelConfig},
 };
 
 static TURN_SEQUENCE: AtomicU64 = AtomicU64::new(1);
 
-const SYSTEM_PROMPT: &str = "You are Rocksoul, an experimental CLI intelligence runtime. Be accurate and explicit about uncertainty. In this seed release you have no tools and cannot inspect files, run commands, or modify systems. Never claim that an action was performed unless the runtime actually performed it. You may explain plans and provide code for the user to review.";
+const SYSTEM_PROMPT: &str = "You are Rocksoul, an experimental CLI intelligence runtime. Be accurate and explicit about uncertainty. You have no tools and cannot inspect files, run commands, or modify systems. Never claim that an action was performed unless the runtime actually performed it.";
+const PLANNER_PROMPT: &str = "You are Rocksoul's planner. Return ONLY JSON with this shape: {\"objective\":string,\"steps\":[{\"id\":string,\"description\":string}],\"acceptance_checks\":[{\"id\":string,\"description\":string,\"required\":boolean}]}. Create 1-3 small ordered reasoning steps and at least one required acceptance check. No markdown or extra prose. Plans are proposals, not executable commands.";
 const MAX_HISTORY_MESSAGES: usize = 41;
+const MAX_PLAN_STEPS: usize = 3;
 
 pub async fn run() -> Result<()> {
     let model = ModelConfig::from_env();
@@ -28,12 +28,10 @@ pub async fn run() -> Result<()> {
         .timeout(Duration::from_secs(120))
         .build()
         .context("could not initialize the HTTP client")?;
-
     let mut messages = vec![ChatMessage::new("system", SYSTEM_PROMPT)];
 
     println!("Rocksoul v{} — Seed CLI", env!("CARGO_PKG_VERSION"));
     println!("Type :help for commands. Type :exit to leave.");
-
     if model.is_none() {
         println!("No model configured. Set ROCKSOUL_MODEL to enable chat.");
     }
@@ -41,22 +39,18 @@ pub async fn run() -> Result<()> {
     let stdin = io::stdin();
     let mut reader = stdin.lock();
     let mut input = String::new();
-
     loop {
         print!("rocksoul> ");
         io::stdout().flush()?;
-
         input.clear();
         if reader.read_line(&mut input)? == 0 {
             println!();
             break;
         }
-
         let prompt = input.trim();
         if prompt.is_empty() {
             continue;
         }
-
         match prompt.to_ascii_lowercase().as_str() {
             ":help" | "help" | "?" => print_help(),
             ":status" | "status" => commands::status()?,
@@ -76,9 +70,7 @@ pub async fn run() -> Result<()> {
                     println!("See README.md for local and hosted endpoint examples.");
                     continue;
                 };
-
                 messages.push(ChatMessage::new("user", prompt));
-
                 match run_turn(model, &client, prompt, &messages).await {
                     Ok(answer) => {
                         println!("\n{answer}\n");
@@ -93,17 +85,15 @@ pub async fn run() -> Result<()> {
             }
         }
     }
-
     Ok(())
 }
 
-/// Run one bounded interactive turn. The current seed adapter performs one
-/// model action and verifies the response contract; it does not execute tools.
+/// One planning call followed by at most three bounded model-only execution calls.
 async fn run_turn(
     model: &ModelConfig,
     client: &Client,
     input: &str,
-    messages: &[ChatMessage],
+    history: &[ChatMessage],
 ) -> Result<String> {
     let request = TurnRequest {
         id: format!("turn-{}", TURN_SEQUENCE.fetch_add(1, Ordering::Relaxed)),
@@ -111,54 +101,80 @@ async fn run_turn(
         budget: TurnBudget::default(),
     };
     request.validate()?;
-
-    let plan = TurnPlan {
-        objective: "Produce a useful response to the user's input".to_owned(),
-        steps: vec![PlanStep {
-            id: "generate-response".to_owned(),
-            description: "Request one response from the configured model".to_owned(),
-        }],
-        acceptance_checks: vec![AcceptanceCheck {
-            id: "non-empty-response".to_owned(),
-            description: "The model returns a non-empty assistant response".to_owned(),
-            required: true,
-        }],
-    };
-    plan.validate()?;
-
     let cancellation = CancellationToken::default();
     let mut meter = TurnMeter::new(request.budget)?;
     let mut state = TurnState::new(request.id, 0);
-
     state.apply(TurnEvent::Start)?;
-    state.apply(TurnEvent::PlanAccepted)?;
+
     meter.record_model_call(&cancellation)?;
-
-    let completion = match model.complete(client, messages).await {
-        Ok(completion) => completion,
-        Err(error) => {
-            let _ = state.apply(TurnEvent::Fail);
-            return Err(error);
-        }
-    };
-
-    // Check elapsed time without incorrectly consuming another model-call slot.
+    let planning_messages = [
+        ChatMessage::new("system", PLANNER_PROMPT),
+        ChatMessage::new("user", input),
+    ];
+    let planning = model.complete(client, &planning_messages).await?;
     meter.check_time_budget(&cancellation)?;
-    if let Some(output_tokens) = completion.output_tokens {
-        meter.record_output_tokens(output_tokens)?;
+    record_usage(&mut meter, planning.output_tokens)?;
+    let plan = parse_plan(&planning.content)?;
+    plan.validate()?;
+    if plan.steps.len() > MAX_PLAN_STEPS {
+        bail!("planner returned too many steps: {} (maximum {})", plan.steps.len(), MAX_PLAN_STEPS);
     }
-    state.apply(TurnEvent::ActionCompleted)?;
+    state.apply(TurnEvent::PlanAccepted)?;
 
+    let mut execution = history.to_vec();
+    execution.push(ChatMessage::new(
+        "system",
+        format!("Accepted objective: {}. Work through the supplied steps in order. You have no tools. Never claim external actions.", plan.objective),
+    ));
+    let mut outputs = Vec::with_capacity(plan.steps.len());
+
+    for (index, step) in plan.steps.iter().enumerate() {
+        meter.record_model_call(&cancellation)?;
+        execution.push(ChatMessage::new(
+            "user",
+            format!("Plan step {}/{} [{}]: {}. Provide the result for this step only.", index + 1, plan.steps.len(), step.id, step.description),
+        ));
+        let completion = model.complete(client, &execution).await?;
+        meter.check_time_budget(&cancellation)?;
+        record_usage(&mut meter, completion.output_tokens)?;
+        execution.push(ChatMessage::new("assistant", completion.content.clone()));
+        outputs.push(format!("Step {} — {}\n{}", index + 1, step.id, completion.content));
+    }
+
+    state.apply(TurnEvent::ActionCompleted)?;
+    // Verification is intentionally limited to evidence observable by this runtime.
+    if outputs.len() != plan.steps.len() || outputs.iter().any(|item| item.trim().is_empty()) {
+        state.apply(TurnEvent::VerificationRejected)?;
+        bail!("one or more execution steps did not produce a usable result");
+    }
     let reflection = TurnReflection {
         outcome: ReflectionOutcome::Succeeded,
-        summary: "The response passed the non-empty output acceptance check".to_owned(),
+        summary: format!("{} bounded model steps returned non-empty output", outputs.len()),
         issues: Vec::new(),
     };
     reflection.validate()?;
     state.apply(TurnEvent::VerificationPassed)?;
-
     debug_assert_eq!(state.phase, crate::core::TurnPhase::Completed);
-    Ok(completion.content)
+    Ok(outputs.join("\n\n"))
+}
+
+fn parse_plan(raw: &str) -> Result<TurnPlan> {
+    let trimmed = raw.trim();
+    let json = if let Some(rest) = trimmed.strip_prefix("```json") {
+        rest.trim().strip_suffix("```").unwrap_or(rest.trim()).trim()
+    } else if let Some(rest) = trimmed.strip_prefix("```") {
+        rest.trim().strip_suffix("```").unwrap_or(rest.trim()).trim()
+    } else {
+        trimmed
+    };
+    serde_json::from_str(json).context("planner returned invalid structured JSON")
+}
+
+fn record_usage(meter: &mut TurnMeter, tokens: Option<u32>) -> Result<()> {
+    if let Some(tokens) = tokens {
+        meter.record_output_tokens(tokens)?;
+    }
+    Ok(())
 }
 
 fn trim_history(messages: &mut Vec<ChatMessage>) {
@@ -177,4 +193,29 @@ fn print_help() {
     println!("  :exit    Exit Rocksoul");
     println!();
     println!("Any other input is sent to the configured chat model.");
+}
+
+#[cfg(test)]
+mod tests {
+    use super::parse_plan;
+
+    #[test]
+    fn parses_valid_plan_json() {
+        let raw = r#"{"objective":"Explain a topic","steps":[{"id":"s1","description":"Define the topic"}],"acceptance_checks":[{"id":"c1","description":"A definition is included","required":true}]}"#;
+        let plan = parse_plan(raw).unwrap();
+        assert!(plan.validate().is_ok());
+        assert_eq!(plan.steps.len(), 1);
+    }
+
+    #[test]
+    fn parses_fenced_plan_json() {
+        let raw = "json";
+        let plan = parse_plan(raw);
+        assert!(plan.is_err());
+    }
+
+    #[test]
+    fn rejects_malformed_plan_json() {
+        assert!(parse_plan("not json").is_err());
+    }
 }
