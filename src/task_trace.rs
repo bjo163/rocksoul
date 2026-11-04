@@ -63,7 +63,6 @@ pub fn append(
     Ok(())
 }
 
-
 /// Read the append-only JSONL trace for local inspection.
 pub fn read(path: &Path) -> Result<Vec<serde_json::Value>> {
     if !path.exists() {
