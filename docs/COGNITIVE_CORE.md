@@ -1,43 +1,30 @@
-# Cognitive Core Contracts
+# Cognitive Core
 
-This document describes the first implementation layer for Stage 1 of the Rocksoul roadmap.
+Rocksoul's cognitive core provides deterministic turn contracts and a bounded model planner/executor.
 
-## Scope
+## Current turn flow
 
-The cognitive core currently provides deterministic, model-independent contracts:
+1. Validate the turn request and initialize its state, cancellation token, and budget meter.
+2. Make one dedicated model call requesting a JSON plan.
+3. Parse and validate the plan, including unique step IDs and required acceptance checks.
+4. Reject plans with more than three steps.
+5. Execute each step through a separate model call, preserving the ordered conversation context.
+6. Verify the observable output contract and complete the turn.
 
-- A turn lifecycle state machine with terminal states and bounded retries.
-- A validated turn request and explicit per-turn budgets.
-- Structured plan steps and required acceptance checks.
-- A structured reflection outcome.
-- A cloneable cooperative cancellation signal.
-- A turn meter for model-call, output-token, and wall-clock limits.
+## Budgets
 
-The REPL now routes each chat request through these contracts as a bounded single-action turn: validate the request and plan, make one model call, then verify that a non-empty assistant response was returned. This is a minimal integration, not multi-step autonomous planning or tool execution.
+The default turn budget allows at most eight model calls, 16,000 provider-reported output tokens, and 120 seconds elapsed time. The planner plus three executor steps consume four calls. Providers that omit usage metadata cannot be fully token-accounted. The HTTP client also has a 120-second request timeout.
 
-## Execution contract
+## Safety boundaries
 
-A future runtime adapter should:
+- Plans are untrusted structured proposals, not executable commands.
+- The runtime exposes no shell, filesystem mutation, plugins, or arbitrary function tools.
+- Verification confirms each planned step produced non-empty model output. It does not independently prove plan-specific acceptance checks.
+- Reflection is currently deterministic and based on observed call outputs; there is no separate model reflection pass.
+- Cancellation is cooperative but is not yet wired to terminal signals or interactive input.
+- Retry backoff and idempotency are not implemented.
+- No persistent memory or self-modification is enabled.
 
-1. Validate a `TurnRequest` before starting work.
-2. Create a `TurnState`, `TurnMeter`, and `CancellationToken` for the turn.
-3. Check cancellation and the time/model-call budget before every model request.
-4. Record actual model calls and provider-reported output token usage.
-5. Parse model-produced plans and reflections into the typed structures, then validate them.
-6. Treat model claims as untrusted proposals. Acceptance checks must be evaluated against independently observed runtime evidence.
-7. End in exactly one terminal state: completed, failed, or cancelled.
+## Tests
 
-The current REPL integration implements only a subset: one model call per turn and a non-empty-response acceptance check. It does not ask the model for a separate model-generated plan or reflection. Provider-reported completion-token usage is recorded when available.
-
-## Important limitations
-
-- Cancellation is cooperative. An adapter must check the token; it does not forcibly stop an in-flight HTTP request.
-- Token accounting depends on actual usage reported by the model provider. The core does not estimate hidden token usage.
-- The meter must be called by the adapter. It cannot independently observe network requests. The current REPL records model calls, checks elapsed time after the response, and enforces the output-token limit when the provider returns `usage.completion_tokens`. Providers that omit usage cannot be accounted for and therefore do not receive live output-token enforcement.
-- The current CLI has no interactive cancellation command. The cancellation token is available to adapters but is not yet wired to terminal signals or user input.
-- Retry policy is currently represented by the turn state's bounded retry counter. Backoff, provider-specific retry classification, and idempotency are not yet implemented.
-- No shell, filesystem mutation, tool execution, persistent memory, or self-modification is enabled.
-
-## Validation
-
-The module includes deterministic unit tests for state transitions, invalid plans/reflections, cancellation, and budget enforcement. The repository CI must pass before this increment is considered merged or released.
+Unit tests cover structured plan parsing, malformed JSON rejection, and the core lifecycle, validation, cancellation, and budget contracts.
