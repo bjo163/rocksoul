@@ -171,7 +171,7 @@ fn persist_workspace_receipt(
     });
     let mut encoded = serde_json::to_vec_pretty(&document)
         .context("could not serialize verification receipt")?;
-    encoded.push(b'\\n');
+    encoded.push(b'\n');
 
     if destination.exists() {
         let existing = fs::read(&destination)
