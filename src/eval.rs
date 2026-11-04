@@ -350,9 +350,9 @@ fn stage1_workspace_checks(now: u64, checks: &mut Vec<EvaluationCheck>) -> Resul
         _ => None,
     };
     let readback_ok = observed.as_ref().is_some_and(|(path, content)| {
-        fs::symlink_metadata(path).is_ok_and(|metadata| {
-            metadata.is_file() && !metadata.file_type().is_symlink()
-        }) && content == &item.content
+        fs::symlink_metadata(path)
+            .is_ok_and(|metadata| metadata.is_file() && !metadata.file_type().is_symlink())
+            && content == &item.content
             && fs::read(path).is_ok_and(|bytes| bytes == item.content.as_bytes())
     });
     checks.push(check(
