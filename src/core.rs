@@ -289,12 +289,20 @@ impl TurnMeter {
     }
 
     pub fn before_model_call(&self, cancellation: &CancellationToken) -> Result<(), CoreError> {
-        cancellation.check()?;
-        self.check_deadline()?;
+        self.check_time_budget(cancellation)?;
         if self.model_calls >= self.budget.max_model_calls {
             return Err(CoreError::ModelCallBudgetExceeded);
         }
         Ok(())
+    }
+
+    /// Check cancellation and elapsed time without consuming a model-call slot.
+    pub fn check_time_budget(
+        &self,
+        cancellation: &CancellationToken,
+    ) -> Result<(), CoreError> {
+        cancellation.check()?;
+        self.check_deadline()
     }
 
     pub fn record_model_call(&mut self, cancellation: &CancellationToken) -> Result<(), CoreError> {
@@ -459,6 +467,20 @@ mod tests {
             meter.record_output_tokens(1),
             Err(CoreError::OutputTokenBudgetExceeded)
         );
+    }
+
+    #[test]
+    fn elapsed_time_check_does_not_consume_a_model_call_slot() {
+        let budget = TurnBudget {
+            max_model_calls: 1,
+            max_output_tokens: 10,
+            timeout_ms: 10_000,
+        };
+        let token = CancellationToken::default();
+        let mut meter = TurnMeter::new(budget).unwrap();
+        meter.record_model_call(&token).unwrap();
+        assert!(meter.check_time_budget(&token).is_ok());
+        assert_eq!(meter.model_calls(), 1);
     }
 
     #[test]
