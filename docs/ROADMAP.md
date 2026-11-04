@@ -32,10 +32,12 @@ The roadmap is capability-driven. Each stage must deliver a working, tested incr
 - [x] Deterministic lifecycle, retry, terminal-state and budget tests.
 - [x] Independent evidence verifier contract for XP; failed required checks award no XP and replay is idempotent.
 - [x] Add a narrowly scoped, user-approved create-only workspace text-artifact service with independent read-back verification and idempotent same-content replay (CLI entry point; not yet connected to planner).
-- [ ] Connect planner proposals to typed application services and verify plan acceptance checks against independent runtime evidence.
+- [x] Allow the bounded planner to return an optional typed workspace-artifact intent; validate it and dispatch only through the exact human-approval CLI boundary.
+- [ ] Verify all plan acceptance checks against independent runtime evidence and persist the linked task outcome.
 - [ ] Execute plans through typed application services and approved tools.
 - [ ] Add provider-aware retry classification, backoff and idempotency.
-- [ ] Wire user interruption into cooperative cancellation.
+- [x] Wire Ctrl+C during model-driven turns into the cooperative cancellation token.
+- [ ] Extend cancellation through every executor and blocking operation, including terminal workspace approval/execution.
 - [ ] Verify task acceptance against observed effects; chat response completion is not task success.
 - [x] Append content-free JSONL lifecycle events for the workspace CLI (proposal, approval/denial, execution/failure, verification).
 - [ ] Persist complete turn traces, model reflections, recoverable operation state, and durable verification receipts.
