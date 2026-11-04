@@ -29,8 +29,9 @@ impl WorkspaceArtifactProposal {
         if name.is_empty()
             || name.len() > MAX_FILENAME_BYTES
             || !name.ends_with(".txt")
-            || !name.bytes().all(|byte| byte.is_ascii_alphanumeric()
-                || matches!(byte, b'-' | b'_' | b'.'))
+            || !name
+                .bytes()
+                .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'_' | b'.'))
             || name == ".txt"
             || name.starts_with('.')
             || name.contains("..")
@@ -71,8 +72,16 @@ impl UserApproval {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum ArtifactOutcome {
-    Created { path: PathBuf, bytes: usize, observed_content: String },
-    AlreadyPresent { path: PathBuf, bytes: usize, observed_content: String },
+    Created {
+        path: PathBuf,
+        bytes: usize,
+        observed_content: String,
+    },
+    AlreadyPresent {
+        path: PathBuf,
+        bytes: usize,
+        observed_content: String,
+    },
 }
 
 #[derive(Clone, Debug)]
@@ -167,7 +176,8 @@ impl WorkspaceArtifactService {
             .context("could not create temporary artifact")?;
         file.write_all(proposal.content.as_bytes())
             .context("could not write temporary artifact")?;
-        file.sync_all().context("could not sync temporary artifact")?;
+        file.sync_all()
+            .context("could not sync temporary artifact")?;
         drop(file);
 
         // Cancellation is checked before the irreversible publication step.
@@ -187,7 +197,8 @@ impl WorkspaceArtifactService {
         };
         let _ = fs::remove_file(&temporary);
 
-        let metadata = fs::symlink_metadata(target).context("could not inspect published artifact")?;
+        let metadata =
+            fs::symlink_metadata(target).context("could not inspect published artifact")?;
         if metadata.file_type().is_symlink() || !metadata.is_file() {
             bail!("published artifact is not a regular file");
         }
@@ -214,7 +225,9 @@ impl WorkspaceArtifactService {
                         .context("concurrent artifact is not valid UTF-8")?,
                 })
             } else {
-                Err(anyhow!("artifact target was concurrently created with different content"))
+                Err(anyhow!(
+                    "artifact target was concurrently created with different content"
+                ))
             }
         }
     }
@@ -258,7 +271,10 @@ mod tests {
         let outcome = WorkspaceArtifactService::new(&root)
             .execute_approved(&item, &approve(&item), &CancellationToken::default())
             .unwrap();
-        assert!(matches!(outcome, ArtifactOutcome::Created { bytes: 15, .. }));
+        assert!(matches!(
+            outcome,
+            ArtifactOutcome::Created { bytes: 15, .. }
+        ));
         assert_eq!(fs::read(root.join("note.txt")).unwrap(), b"verified output");
         fs::remove_dir_all(root).unwrap();
     }
@@ -269,7 +285,9 @@ mod tests {
         let service = WorkspaceArtifactService::new(&root);
         let item = proposal("note.txt", "first");
         assert!(matches!(
-            service.execute_approved(&item, &approve(&item), &CancellationToken::default()).unwrap(),
+            service
+                .execute_approved(&item, &approve(&item), &CancellationToken::default())
+                .unwrap(),
             ArtifactOutcome::Created { .. }
         ));
         assert!(matches!(
@@ -277,7 +295,15 @@ mod tests {
             ArtifactOutcome::AlreadyPresent { .. }
         ));
         let conflict = proposal("note.txt", "second");
-        assert!(service.execute_approved(&conflict, &approve(&conflict), &CancellationToken::default()).is_err());
+        assert!(
+            service
+                .execute_approved(
+                    &conflict,
+                    &approve(&conflict),
+                    &CancellationToken::default()
+                )
+                .is_err()
+        );
         assert_eq!(fs::read(root.join("note.txt")).unwrap(), b"first");
         fs::remove_dir_all(root).unwrap();
     }
@@ -299,9 +325,11 @@ mod tests {
         let item = proposal("cancelled.txt", "content");
         let cancellation = CancellationToken::default();
         cancellation.cancel();
-        assert!(WorkspaceArtifactService::new(&root)
-            .execute_approved(&item, &approve(&item), &cancellation)
-            .is_err());
+        assert!(
+            WorkspaceArtifactService::new(&root)
+                .execute_approved(&item, &approve(&item), &cancellation)
+                .is_err()
+        );
         assert!(!root.exists());
     }
 
@@ -316,9 +344,11 @@ mod tests {
         let link = parent.join("workspace-link");
         symlink(&outside, &link).unwrap();
         let item = proposal("note.txt", "content");
-        assert!(WorkspaceArtifactService::new(&link)
-            .execute_approved(&item, &approve(&item), &CancellationToken::default())
-            .is_err());
+        assert!(
+            WorkspaceArtifactService::new(&link)
+                .execute_approved(&item, &approve(&item), &CancellationToken::default())
+                .is_err()
+        );
         fs::remove_dir_all(parent).unwrap();
     }
 }
