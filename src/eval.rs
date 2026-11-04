@@ -158,8 +158,34 @@ fn persist_report(report: &EvaluationReport) -> Result<()> {
     fs::create_dir_all(parent).with_context(|| format!("could not create {}", parent.display()))?;
     let bytes = serde_json::to_vec_pretty(report)?;
     let temporary = path.with_extension("json.tmp");
-    fs::write(&temporary, bytes).with_context(|| format!("could not write {}", temporary.display()))?;
-    fs::rename(&temporary, &path).with_context(|| format!("could not replace {}", path.display()))?;
+    fs::write(&temporary, bytes)
+        .with_context(|| format!("could not write {}", temporary.display()))?;
+
+    // Windows rename does not replace an existing destination. Preserve the
+    // previous report until the new file is in place, then remove the backup.
+    let backup = path.with_extension("json.bak");
+    let moved_previous = if path.exists() {
+        if backup.exists() {
+            fs::remove_file(&backup)
+                .with_context(|| format!("could not remove {}", backup.display()))?;
+        }
+        fs::rename(&path, &backup)
+            .with_context(|| format!("could not back up {}", path.display()))?;
+        true
+    } else {
+        false
+    };
+
+    if let Err(error) = fs::rename(&temporary, &path) {
+        if moved_previous {
+            let _ = fs::rename(&backup, &path);
+        }
+        return Err(error).with_context(|| format!("could not replace {}", path.display()));
+    }
+    if moved_previous {
+        fs::remove_file(&backup)
+            .with_context(|| format!("could not remove {}", backup.display()))?;
+    }
     Ok(())
 }
 
@@ -177,5 +203,35 @@ pub fn print_report(report: &EvaluationReport) {
     println!("Result: {} ({}/{} passed)", if report.passed { "PASS" } else { "FAIL" }, report.passed_count(), report.checks.len());
     for item in &report.checks {
         println!("  [{}] {} — {}", if item.passed { "PASS" } else { "FAIL" }, item.id, item.detail);
+    }
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::EvaluationReport;
+
+    #[test]
+    fn evaluation_report_counts_failed_checks_without_averaging_them_away() {
+        let report = EvaluationReport {
+            schema_version: 1,
+            suite_id: "test".into(),
+            suite_version: "1".into(),
+            rocksoul_version: "0.1.0".into(),
+            platform: "test".into(),
+            architecture: "test".into(),
+            evaluated_at_unix: 1,
+            passed: false,
+            checks: vec![
+                super::check("safe", true, "ok"),
+                super::check("unsafe", false, "veto"),
+            ],
+        };
+        assert_eq!(report.passed_count(), 1);
+        assert_eq!(report.failed_count(), 1);
+        assert!(!report.passed);
+        let encoded = serde_json::to_vec(&report).unwrap();
+        let decoded: EvaluationReport = serde_json::from_slice(&encoded).unwrap();
+        assert_eq!(decoded.failed_count(), 1);
     }
 }
