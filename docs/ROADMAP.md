@@ -19,7 +19,7 @@ The roadmap is capability-driven. Each stage must deliver a working, tested incr
 
 ## Stage 1 — Reliable cognition loop
 
-**Status:** Core contracts implemented; task-level orchestration remains in progress
+**Status:** Core contracts and a narrow approved workspace operation are implemented; planner-to-action orchestration and complete task receipts remain in progress
 
 - [x] Explicit request and turn-state contracts.
 - [x] Structured plan and reflection data contracts.
@@ -37,7 +37,8 @@ The roadmap is capability-driven. Each stage must deliver a working, tested incr
 - [ ] Add provider-aware retry classification, backoff and idempotency.
 - [ ] Wire user interruption into cooperative cancellation.
 - [ ] Verify task acceptance against observed effects; chat response completion is not task success.
-- [ ] Persist complete turn traces and reflection records (workspace CLI currently has no durable lifecycle trace).
+- [x] Append content-free JSONL lifecycle events for the workspace CLI (proposal, approval/denial, execution/failure, verification).
+- [ ] Persist complete turn traces, model reflections, recoverable operation state, and durable verification receipts.
 
 ## Stage 2 — Persistent memory
 
