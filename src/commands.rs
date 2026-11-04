@@ -17,6 +17,7 @@ use crate::{
     rid::{RuhIdentity, RuhProfile},
     rid_catalogue::RidCatalogue,
     rid_store,
+    task_trace::{self, TaskTraceEvent},
     workspace_artifact::{
         ArtifactOutcome, UserApproval, WorkspaceArtifactProposal, WorkspaceArtifactService,
     },
@@ -148,6 +149,16 @@ fn run_workspace(command: WorkspaceCommand) -> Result<()> {
         WorkspaceCommand::Write { filename, content } => {
             let proposal = WorkspaceArtifactProposal { filename, content };
             proposal.validate()?;
+            let paths = AppPaths::discover()?;
+            let operation_id = format!("workspace:{}", proposal.filename);
+            let trace_path = paths.logs_dir.join("task-trace.v1.jsonl");
+            task_trace::append(
+                &trace_path,
+                &operation_id,
+                TaskTraceEvent::Proposed,
+                &proposal.filename,
+                "validated proposal; content omitted",
+            )?;
             println!("Proposed workspace artifact: {}", proposal.filename);
             println!(
                 "Content: {} UTF-8 bytes (maximum 16384)",
@@ -165,12 +176,49 @@ fn run_workspace(command: WorkspaceCommand) -> Result<()> {
             std::io::Write::flush(&mut std::io::stdout())?;
             let mut confirmation = String::new();
             std::io::stdin().read_line(&mut confirmation)?;
-            let approval = UserApproval::from_typed_confirmation(&proposal, &confirmation)?;
+            let approval = match UserApproval::from_typed_confirmation(&proposal, &confirmation) {
+                Ok(approval) => approval,
+                Err(error) => {
+                    task_trace::append(
+                        &trace_path,
+                        &operation_id,
+                        TaskTraceEvent::Denied,
+                        &proposal.filename,
+                        "approval phrase rejected",
+                    )?;
+                    return Err(error);
+                }
+            };
+            task_trace::append(
+                &trace_path,
+                &operation_id,
+                TaskTraceEvent::Approved,
+                &proposal.filename,
+                "exact typed approval accepted",
+            )?;
 
-            let paths = AppPaths::discover()?;
             let service = WorkspaceArtifactService::new(&paths.workspace_dir);
             let cancellation = CancellationToken::default();
-            let outcome = service.execute_approved(&proposal, &approval, &cancellation)?;
+            let outcome = match service.execute_approved(&proposal, &approval, &cancellation) {
+                Ok(outcome) => outcome,
+                Err(error) => {
+                    task_trace::append(
+                        &trace_path,
+                        &operation_id,
+                        TaskTraceEvent::Failed,
+                        &proposal.filename,
+                        "workspace execution failed",
+                    )?;
+                    return Err(error);
+                }
+            };
+            task_trace::append(
+                &trace_path,
+                &operation_id,
+                TaskTraceEvent::Executed,
+                &proposal.filename,
+                "artifact published or identical replay observed",
+            )?;
             let (path, bytes, observed_content, outcome_label) = match outcome {
                 ArtifactOutcome::Created {
                     path,
@@ -221,6 +269,23 @@ fn run_workspace(command: WorkspaceCommand) -> Result<()> {
                 ],
             );
             let verification = verify_turn_and_award_xp(&mut turn, &mut profile, request)?;
+            if matches!(verification, crate::core::VerificationOutcome::Verified { .. }) {
+                task_trace::append(
+                    &trace_path,
+                    &operation_id,
+                    TaskTraceEvent::Verified,
+                    &proposal.filename,
+                    "independent read-back checks passed",
+                )?;
+            } else {
+                task_trace::append(
+                    &trace_path,
+                    &operation_id,
+                    TaskTraceEvent::Failed,
+                    &proposal.filename,
+                    "independent verification failed",
+                )?;
+            }
             rid_store::save(&paths.rid_file, &profile)?;
             println!("Workspace artifact {outcome_label}: {}", path.display());
             println!("Independent read-back verified: {bytes} bytes.");
