@@ -71,8 +71,8 @@ impl UserApproval {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum ArtifactOutcome {
-    Created { path: PathBuf, bytes: usize },
-    AlreadyPresent { path: PathBuf, bytes: usize },
+    Created { path: PathBuf, bytes: usize, observed_content: String },
+    AlreadyPresent { path: PathBuf, bytes: usize, observed_content: String },
 }
 
 #[derive(Clone, Debug)]
@@ -121,6 +121,8 @@ impl WorkspaceArtifactService {
                 Ok(ArtifactOutcome::AlreadyPresent {
                     path: target,
                     bytes: observed.len(),
+                    observed_content: String::from_utf8(observed)
+                        .context("existing artifact is not valid UTF-8")?,
                 })
             }
             Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
@@ -198,6 +200,8 @@ impl WorkspaceArtifactService {
             Ok(ArtifactOutcome::Created {
                 path: target.to_path_buf(),
                 bytes: observed.len(),
+                observed_content: String::from_utf8(observed.clone())
+                    .context("published artifact is not valid UTF-8")?,
             })
         } else {
             // A concurrent identical create is a safe replay; conflicting
@@ -206,6 +210,8 @@ impl WorkspaceArtifactService {
                 Ok(ArtifactOutcome::AlreadyPresent {
                     path: target.to_path_buf(),
                     bytes: observed.len(),
+                    observed_content: String::from_utf8(observed.clone())
+                        .context("concurrent artifact is not valid UTF-8")?,
                 })
             } else {
                 Err(anyhow!("artifact target was concurrently created with different content"))
