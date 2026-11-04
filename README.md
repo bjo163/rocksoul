@@ -10,8 +10,11 @@ The first milestone is intentionally small:
 - CLI-first interaction through an interactive REPL.
 - OpenAI-compatible model endpoint support, including local inference servers such as Ollama.
 - A .env file loaded from the same directory as rocksoul.exe.
-- Minimal local bootstrap, status, and diagnostics commands.
-- No desktop app, web app, server, plugin marketplace, or multi-agent framework in the initial release.
+- Local RID identity/progression profile with 99 unrated capability dimensions.
+- A keyboard-first Ratatui Cognitive Cockpit.
+- A deterministic offline Core Integrity evaluation suite.
+- A bounded one-request-per-turn model-call budget.
+- No desktop app, web app, server, plugin marketplace, autonomous tool execution, or multi-agent framework in the seed release.
 
 Rocksoul is a foundation for agent research and self-evolving software. It is not AGI, and the initial release does not modify or replace its own executable.
 
@@ -67,16 +70,32 @@ The executable directory must be writable when running init, because that comman
     rocksoul init
     rocksoul status
     rocksoul doctor
+    rocksoul tui
+    rocksoul rid status
+    rocksoul rid stats
+    rocksoul rid history
+    rocksoul eval list
+    rocksoul eval run core
+    rocksoul eval latest
     rocksoul --help
 
 Inside the interactive CLI:
 
 - :help — show available REPL commands.
 - :status — show runtime and model configuration status.
+- :rid — show instance age, level, XP and stat coverage.
 - :clear — clear the current conversation.
 - :exit — leave the REPL.
 
-The initial chat history is session-only. Persistent memory and tool execution are future milestones.
+Chat history is session-only. Each model turn has a bounded request count, 16,000-token output ceiling (sent as `max_tokens`), and 120-second HTTP timeout. Provider-reported output usage is shown when available; providers that omit usage are marked unavailable. A successful model response is not proof that the user's task was completed. No XP is awarded for ordinary chat. Persistent memory and tool execution remain future milestones.
+
+### RID and evaluation
+
+`rocksoul init` creates a local RID profile. Its age is elapsed time since initialization; XP and levels are separate from capability scores. All 99 stat slots start unrated and require trusted, evidence-backed evaluation.
+
+Run the offline deterministic suite with `rocksoul eval run core`. It checks kernel lifecycle, bounded retries, terminal-state immutability, verified-XP gating and replay behavior, RID initialization, catalogue integrity, and level progression. Reports are saved under the operating system's local application data directory in `evaluations/core/latest.json`.
+
+These checks measure bounded software invariants; they do not demonstrate AGI, consciousness, or general intelligence. External benchmark adapters are not yet integrated.
 
 ## Configuration
 
@@ -101,13 +120,19 @@ The API base URL should include the version prefix when required by the provider
 ## Repository map
 
     src/
-      cli.rs       CLI argument definitions
-      commands.rs  init, status, and doctor commands
-      lib.rs       application entry point and environment bootstrap
-      main.rs      native executable entry point
-      model.rs     OpenAI-compatible chat client
-      paths.rs     platform paths and executable-local .env
-      repl.rs      interactive terminal loop
+      cli.rs          CLI argument definitions
+      commands.rs     command handlers
+      core.rs         cognitive turn, verification, and budget contracts
+      eval.rs         offline capability evaluation harness
+      lib.rs          application entry point and environment bootstrap
+      main.rs         native executable entry point
+      model.rs        bounded OpenAI-compatible chat client
+      paths.rs        platform paths and executable-local .env
+      repl.rs         bounded interactive turn loop
+      rid.rs          RID identity, XP ledger, and 99 stat domain
+      rid_catalogue.rs validated embedded 99-stat catalogue
+      rid_store.rs    local RID persistence
+      tui.rs          Ratatui Cognitive Cockpit
     docs/
       ARCHITECTURE.md
       ROADMAP.md
@@ -132,4 +157,4 @@ See AGENTS.md for repository rules and SECURITY.md for the security model.
 
 ## Project status
 
-Early bootstrap. APIs, configuration, and internal modules may change before a stable release.
+Seed runtime in active development. The CLI, RID, TUI, cognitive turn contracts, and offline core evaluation are implemented on the current integration branch; merge/release status is tracked by GitHub PRs and CI. Persistent memory, tool adapters, full plan/execute/verify task orchestration, external benchmark adapters, and controlled self-evolution are not implemented yet.
