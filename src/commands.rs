@@ -9,13 +9,28 @@ name = "Rocksoul"
 profile = "seed"
 
 [model]
-# Configure the model through environment variables:
+# Model settings are read from the dotenv file beside rocksoul.exe:
 # ROCKSOUL_BASE_URL, ROCKSOUL_MODEL, ROCKSOUL_API_KEY.
 provider = "openai-compatible"
 
 [evolution]
 enabled = false
 automatic_promotion = false
+"#;
+
+const INITIAL_ENV: &str = r#"# Rocksoul model configuration
+# This file must stay beside rocksoul.exe.
+# Existing Windows process environment variables take precedence.
+
+# Local Ollama example:
+ROCKSOUL_BASE_URL=http://localhost:11434/v1
+ROCKSOUL_MODEL=your-local-model
+ROCKSOUL_API_KEY=
+
+# Hosted OpenAI-compatible endpoint example:
+# ROCKSOUL_BASE_URL=https://provider.example/v1
+# ROCKSOUL_MODEL=your-model-id
+# ROCKSOUL_API_KEY=your-api-key
 "#;
 
 pub fn run(command: Command) -> Result<()> {
@@ -48,8 +63,16 @@ pub fn init() -> Result<()> {
         true
     };
 
+    let env_created = if paths.env_file.exists() {
+        false
+    } else {
+        fs::write(&paths.env_file, INITIAL_ENV)?;
+        true
+    };
+
     println!("Rocksoul initialized.");
     println!("Config: {}", paths.config_file.display());
+    println!("Environment: {}", paths.env_file.display());
     println!("Workspace: {}", paths.workspace_dir.display());
     println!("Memory: {}", paths.memory_dir.display());
     println!("Evolution archive: {}", paths.evolution_dir.display());
@@ -58,6 +81,12 @@ pub fn init() -> Result<()> {
         println!("Created initial config.toml.");
     } else {
         println!("Existing config.toml preserved.");
+    }
+
+    if env_created {
+        println!("Created .env beside rocksoul.exe. Edit it and restart Rocksoul.");
+    } else {
+        println!("Existing .env preserved.");
     }
 
     Ok(())
@@ -77,11 +106,19 @@ pub fn status() -> Result<()> {
         }
     );
     println!(
+        "Environment file: {}",
+        if paths.env_file.is_file() {
+            "found beside executable"
+        } else {
+            "not found (run rocksoul init)"
+        }
+    );
+    println!(
         "Model: {}",
         model
             .as_ref()
             .map(|config| config.model.as_str())
-            .unwrap_or("not configured (set ROCKSOUL_MODEL)")
+            .unwrap_or("not configured (edit .env beside rocksoul.exe)")
     );
     if model.is_some() {
         println!("Model endpoint: configured (URL withheld from diagnostics)");
@@ -117,6 +154,14 @@ pub fn doctor() -> Result<()> {
         },
         paths.data_dir.display()
     );
+    println!(
+        "[{}] .env beside executable",
+        if paths.env_file.is_file() {
+            "ok"
+        } else {
+            "warn"
+        }
+    );
 
     match ModelConfig::from_env() {
         Some(config) => {
@@ -124,7 +169,7 @@ pub fn doctor() -> Result<()> {
             println!("[info] model endpoint configured (URL withheld)");
         }
         None => {
-            println!("[warn] model not configured; set ROCKSOUL_MODEL to enable chat");
+            println!("[warn] model not configured; edit .env beside rocksoul.exe");
         }
     }
 

@@ -8,11 +8,12 @@ The long-term goal is to let one core acquire capabilities and expose them throu
 
 ## Seed architecture
 
-- **Executable entry point:** parses process arguments and starts the application.
-- **CLI:** exposes init, status, doctor, and an interactive REPL.
-- **Model adapter:** sends chat-completion requests to an OpenAI-compatible endpoint.
-- **Conversation state:** keeps the system prompt and current conversation in memory for one process session.
-- **Platform paths:** resolves Rocksoul configuration, data, cache, and workspace directories using OS conventions.
+- Executable entry point: parses process arguments and starts the application.
+- CLI: exposes init, status, doctor, and an interactive REPL.
+- Model adapter: sends chat-completion requests to an OpenAI-compatible endpoint.
+- Conversation state: keeps the system prompt and current conversation in memory for one process session.
+- Platform paths: resolves Rocksoul configuration, data, cache, and workspace directories using OS conventions.
+- Environment bootstrap: loads .env only from the directory containing the running executable, before the async runtime starts.
 
 The first release has no persistent memory, tool registry, shell executor, autonomous planner, agent workforce, or self-modification engine.
 
@@ -25,7 +26,7 @@ Configuration is supplied through:
 - ROCKSOUL_MODEL
 - ROCKSOUL_API_KEY
 
-The default endpoint points to a local Ollama-compatible URL. A remote endpoint must use HTTPS. Plain HTTP is permitted only for loopback model servers.
+All three can be placed in .env beside rocksoul.exe. The process environment takes precedence over the .env file. The initializer creates a starter .env only when one does not already exist. The default endpoint points to a local Ollama-compatible URL. A remote endpoint must use HTTPS. Plain HTTP is permitted only for loopback model servers.
 
 The model adapter is isolated from terminal rendering so additional providers and interfaces can be added without rewriting the core loop.
 
@@ -34,9 +35,8 @@ The model adapter is isolated from terminal rendering so additional providers an
 The application uses the operating system's standard per-user application directories:
 - Configuration: config.toml
 - Local data: workspace, memory, evolution, and logs
-- Cache: transient runtime data
 
-The initializer never overwrites an existing configuration file.
+The portable model configuration .env is the exception: it lives beside the executable so a copied Rocksoul folder can carry its model endpoint settings. The initializer never overwrites an existing config or .env.
 
 ## Evolution boundary
 

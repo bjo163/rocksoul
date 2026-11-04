@@ -4,7 +4,9 @@ Rocksoul is an early-stage agent runtime. The seed release intentionally has a s
 
 ## Current safeguards
 
-- Model credentials are read from environment variables and are never written by the initializer.
+- Model credentials can be loaded from a .env file beside the executable or from the process environment.
+- Existing process environment variables take precedence over .env values.
+- .env is ignored by Git and is never overwritten by the initializer.
 - API keys are sent as bearer credentials only to HTTPS endpoints. Plain HTTP is accepted only for loopback hosts used by local model servers.
 - The model client uses bounded request timeouts.
 - The seed release has no shell tool, arbitrary code execution, automatic file editing, or self-replacement mechanism.
@@ -15,7 +17,7 @@ Rocksoul is an early-stage agent runtime. The seed release intentionally has a s
 - Chat history is held in process memory for the current session only.
 - The model adapter supports non-streaming OpenAI-compatible chat completions.
 - This release does not provide a general-purpose sandbox because it does not execute generated code.
-- Environment variables may be visible to other processes or diagnostic tools running under the same user account. Use an appropriate OS-level secret management strategy for sensitive deployments.
+- A .env file is plain text. Restrict access to the executable directory and do not share it or commit real credentials.
 
 ## Requirements for future execution and evolution features
 

@@ -7,6 +7,12 @@ mod repl;
 use anyhow::Result;
 use clap::Parser;
 
+/// Load the dotenv file beside the current executable before starting async workers.
+/// Existing process environment variables intentionally take precedence.
+pub fn load_environment() -> Result<bool> {
+    paths::load_executable_dotenv()
+}
+
 pub async fn run() -> Result<()> {
     let cli = cli::Cli::parse();
 
