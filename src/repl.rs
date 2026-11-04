@@ -209,10 +209,9 @@ mod tests {
 
     #[test]
     fn parses_fenced_plan_json() {
-        let wrapped = r#" + String.raw`"\`\`\`json
-{"objective":"Explain","steps":[{"id":"s1","description":"Define"}],"acceptance_checks":[{"id":"c1","description":"A definition is included","required":true}]}
-\`\`\`"` + String.raw`#`;
-        let plan = parse_plan(wrapped).unwrap();
+        let json = r#"{"objective":"Explain","steps":[{"id":"s1","description":"Define"}],"acceptance_checks":[{"id":"c1","description":"A definition is included","required":true}]}"#;
+        let wrapped = format!("{}\n{}\n{}", "\x60\x60\x60json", json, "\x60\x60\x60");
+        let plan = parse_plan(&wrapped).unwrap();
         assert!(plan.validate().is_ok());
     }
 
