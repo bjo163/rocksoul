@@ -22,9 +22,9 @@ const INITIAL_ENV: &str = r#"# Rocksoul model configuration
 # This file must stay beside rocksoul.exe.
 # Existing Windows process environment variables take precedence.
 
-# Local Ollama example:
+# Local Ollama example: uncomment and set the model you installed.
 ROCKSOUL_BASE_URL=http://localhost:11434/v1
-ROCKSOUL_MODEL=your-local-model
+ROCKSOUL_MODEL=
 ROCKSOUL_API_KEY=
 
 # Hosted OpenAI-compatible endpoint example:
