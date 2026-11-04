@@ -1,5 +1,7 @@
 use std::{env, net::IpAddr};
 
+use crate::core::{CancellationToken, TurnBudget, TurnMeter};
+
 use anyhow::{Context, Result, bail};
 use reqwest::{Client, Url};
 use serde::{Deserialize, Serialize};
@@ -38,7 +40,16 @@ impl ModelConfig {
         })
     }
 
-    pub async fn complete(&self, client: &Client, messages: &[ChatMessage]) -> Result<String> {
+    pub async fn complete(
+        &self,
+        client: &Client,
+        messages: &[ChatMessage],
+        budget: TurnBudget,
+        meter: &mut TurnMeter,
+        cancellation: &CancellationToken,
+    ) -> Result<ModelCompletion> {
+        budget.validate()?;
+        meter.record_model_call(cancellation)?;
         let base_url = validate_base_url(&self.base_url)?;
         let endpoint = format!(
             "{}/chat/completions",
@@ -48,6 +59,7 @@ impl ModelConfig {
         let payload = ChatCompletionRequest {
             model: &self.model,
             messages,
+            max_tokens: budget.max_output_tokens,
             stream: false,
         };
 
@@ -73,14 +85,31 @@ impl ModelConfig {
             .await
             .context("model endpoint returned an invalid chat-completions response")?;
 
-        response
+        let content = response
             .choices
             .into_iter()
             .next()
             .map(|choice| choice.message.content)
             .filter(|content| !content.trim().is_empty())
-            .context("model endpoint returned no assistant message")
+            .context("model endpoint returned no assistant message")?;
+        let output_tokens = response.usage.and_then(|usage| usage.completion_tokens);
+        if let Some(tokens) = output_tokens {
+            meter.record_output_tokens(tokens)?;
+        }
+
+        Ok(ModelCompletion {
+            content,
+            output_tokens,
+            elapsed_ms: meter.elapsed().as_millis().try_into().unwrap_or(u64::MAX),
+        })
     }
+}
+
+#[derive(Clone, Debug)]
+pub struct ModelCompletion {
+    pub content: String,
+    pub output_tokens: Option<u32>,
+    pub elapsed_ms: u64,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -102,12 +131,19 @@ impl ChatMessage {
 struct ChatCompletionRequest<'a> {
     model: &'a str,
     messages: &'a [ChatMessage],
+    max_tokens: u32,
     stream: bool,
 }
 
 #[derive(Deserialize)]
 struct ChatCompletionResponse {
     choices: Vec<ChatChoice>,
+    usage: Option<ChatCompletionUsage>,
+}
+
+#[derive(Deserialize)]
+struct ChatCompletionUsage {
+    completion_tokens: Option<u32>,
 }
 
 #[derive(Deserialize)]
