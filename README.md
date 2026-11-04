@@ -123,6 +123,7 @@ rocksoul eval latest
 
 rocksoul memory list
 rocksoul workspace write note.txt --content "A verified workspace artifact"
+rocksoul workspace trace
 rocksoul memory add semantic --content "A user-approved fact"
 rocksoul memory search "fact"
 rocksoul memory delete <memory-id>
@@ -267,7 +268,7 @@ CI runs formatting, locked dependency resolution, Clippy, tests, offline core ev
 
 ## Project status
 
-Rocksoul is an actively developed experimental runtime. The current release is a bounded CLI seed—not an autonomous AGI system. The portable runtime, committed dependency lockfile, and automated clean Windows-runner installer/portable smoke tests are in place. Manual clean-device verification remains outstanding. The next engineering priority is Stage 1: connect bounded cognition to independently observed task outcomes without weakening the existing permission and evidence boundaries.
+Rocksoul is an actively developed experimental runtime. The current release is a bounded CLI seed—not an autonomous AGI system. The portable runtime, committed dependency lockfile, and automated clean Windows-runner installer/portable smoke tests are in place. Manual clean-device verification remains outstanding. Stage 1 is in progress: a user-approved workspace artifact command now records a content-free JSONL lifecycle trace, but planner dispatch, durable receipt recovery, complete cancellation, and end-to-end task verification remain unfinished.
 
 ---
 
