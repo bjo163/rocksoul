@@ -10,6 +10,7 @@ pub mod rid;
 pub mod rid_catalogue;
 mod rid_store;
 mod tui;
+pub mod workspace_artifact;
 
 use anyhow::Result;
 use clap::Parser;
