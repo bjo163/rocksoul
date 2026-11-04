@@ -14,7 +14,7 @@ use ratatui::{
 };
 
 use crate::{
-    memory::{MemoryKind, MemoryStore, now_unix},
+    memory::{MemoryKind, MemoryStore},
     model::ModelConfig,
     paths::AppPaths,
     rid::{RuhProfile, StatId},
@@ -490,7 +490,7 @@ fn render_tasks(frame: &mut Frame<'_>, area: Rect) {
 fn render_memory(frame: &mut Frame<'_>, area: Rect) {
     let lines = match AppPaths::discover().and_then(|paths| {
         let store = MemoryStore::load(&paths.memory_dir)?;
-        let now = now_unix()?;
+        let now = now_unix();
         let active = store.active_records(now);
         let count = |kind| active.iter().filter(|record| record.kind == kind).count();
         let approved = active.iter().filter(|record| record.user_approved).count();
