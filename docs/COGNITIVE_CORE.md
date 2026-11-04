@@ -50,7 +50,7 @@ All configuration and runtime data paths resolve beneath the executable director
 
 Unit tests cover plan/reflection JSON parsing, fenced JSON, malformed output rejection, unique plan-step validation, lifecycle transitions, retry bounds, cancellation contracts, and budget enforcement. The offline Core Integrity suite additionally covers verifier gating, XP replay idempotency, RID catalogue invariants, level thresholds, and explicit-memory baseline.
 
-Core Integrity suite v1.2 additionally exercises the Stage 1 workspace path offline: unsafe/mismatched approval rejection, approved create/read-back, verifier-gated XP, duplicate replay idempotency, pre-cancel, retry exhaustion/cancellation during backoff, real read-back mismatch rejection, versioned trace round-trip/corruption checks, and Unix target-symlink rejection. Failure-injection for read-back mismatch, retry exhaustion, cancellation races, and Windows symlink behavior remains outstanding.
+Core Integrity suite v1.2 additionally exercises the Stage 1 workspace path offline: unsafe/mismatched approval rejection, approved create/read-back, verifier-gated XP, duplicate replay idempotency, pre-cancel, retry exhaustion/cancellation during backoff, real read-back mismatch rejection, versioned trace round-trip/corruption checks, and Unix target-symlink rejection. Failure-injection now covers real read-back mismatch, retry exhaustion, cancellation during retry backoff and at the pre-publication boundary, plus Windows target-symlink rejection when supported. Crash injection after publication but before receipt persistence remains outstanding.
 
 CI runs formatting, locked dependency resolution, Clippy, tests, offline Core Integrity evaluation, and Windows release packaging.
 
