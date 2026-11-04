@@ -51,7 +51,7 @@ pub fn append(
         detail,
     };
     let mut encoded = serde_json::to_vec(&record).context("could not serialize task trace")?;
-    encoded.push(b'\\n');
+    encoded.push(b'\n');
     let mut file = OpenOptions::new()
         .create(true)
         .read(true)
@@ -67,7 +67,7 @@ pub fn append(
         file.seek(SeekFrom::End(-1))?;
         let mut last = [0_u8; 1];
         file.read_exact(&mut last)?;
-        if last[0] != b'\\n' {
+        if last[0] != b'\n' {
             anyhow::bail!("task trace ends with an incomplete record; refusing to append");
         }
         file.seek(SeekFrom::End(0))?;
