@@ -983,12 +983,8 @@ mod tests {
         replay_turn.apply(TurnEvent::Start).unwrap();
         replay_turn.apply(TurnEvent::PlanAccepted).unwrap();
         replay_turn.apply(TurnEvent::ActionCompleted).unwrap();
-        let replay = verify_turn_and_award_xp(
-            &mut replay_turn,
-            &mut recovered_profile,
-            request(),
-        )
-        .unwrap();
+        let replay =
+            verify_turn_and_award_xp(&mut replay_turn, &mut recovered_profile, request()).unwrap();
         let receipt = match replay {
             VerificationOutcome::Verified {
                 receipt,
@@ -998,8 +994,7 @@ mod tests {
         };
         assert_eq!(recovered_profile.total_xp(), xp_before_replay);
 
-        let path =
-            persist_workspace_receipt(&logs, "workspace:note.txt:abc123", &receipt).unwrap();
+        let path = persist_workspace_receipt(&logs, "workspace:note.txt:abc123", &receipt).unwrap();
         let document: serde_json::Value =
             serde_json::from_slice(&fs::read(&path).unwrap()).unwrap();
         assert_eq!(document["schema_version"], 1);
