@@ -219,7 +219,7 @@ mod tests {
                 .unwrap()
                 .as_nanos()
         ));
-        fs::write(&path, b"{not-json}\\n").unwrap();
+        fs::write(&path, b"{not-json}\n").unwrap();
         assert!(read(&path).is_err());
         fs::remove_file(path).unwrap();
     }
