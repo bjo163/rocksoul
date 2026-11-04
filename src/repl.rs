@@ -25,7 +25,7 @@ pub async fn run() -> Result<()> {
     let model = ModelConfig::from_env();
     let client = Client::builder()
         .connect_timeout(Duration::from_secs(10))
-        .timeout(Duration::from_secs(180))
+        .timeout(Duration::from_secs(120))
         .build()
         .context("could not initialize the HTTP client")?;
 
