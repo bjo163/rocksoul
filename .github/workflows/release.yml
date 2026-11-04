@@ -34,9 +34,36 @@ jobs:
           $hash = (Get-FileHash target/release/rocksoul.exe -Algorithm SHA256).Hash.ToLower()
           "$hash  rocksoul.exe" | Out-File -FilePath target/release/rocksoul.exe.sha256 -Encoding ascii
 
+      - name: Install Inno Setup
+        shell: powershell
+        run: choco install innosetup --yes --no-progress
+
+      - name: Build Windows installer
+        shell: powershell
+        run: |
+          New-Item -ItemType Directory -Force -Path dist | Out-Null
+          $version = "${{ github.ref_name }}".TrimStart("v")
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "/DAppVersion=$version" installer\rocksoul.iss
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Assemble portable folder and ZIP
+        shell: powershell
+        run: |
+          $tag = "${{ github.ref_name }}"
+          $root = "dist\Rocksoul-$tag"
+          New-Item -ItemType Directory -Force -Path "$root\config", "$root\data", "$root\cache", "$root\workspace", "$root\evolution", "$root\logs" | Out-Null
+          Copy-Item target\release\rocksoul.exe $root
+          Copy-Item .env.example "$root\.env.example"
+          Copy-Item config\config.example.toml "$root\config\config.example.toml"
+          Copy-Item README.md $root
+          Compress-Archive -Path "$root\*" -DestinationPath "dist\Rocksoul-$tag-windows-x64-portable.zip" -Force
+
       - name: Publish GitHub release
         uses: softprops/action-gh-release@v2
         with:
+          generate_release_notes: true
           files: |
             target/release/rocksoul.exe
             target/release/rocksoul.exe.sha256
+            dist/Rocksoul-Setup-*-x64.exe
+            dist/Rocksoul-${{ github.ref_name }}-windows-x64-portable.zip

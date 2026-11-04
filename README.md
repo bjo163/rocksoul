@@ -9,9 +9,12 @@ The first milestone is intentionally small:
 - One Rust project and one executable: rocksoul.exe on Windows.
 - CLI-first interaction through an interactive REPL.
 - OpenAI-compatible model endpoint support, including local inference servers such as Ollama.
-- A .env file loaded from the same directory as rocksoul.exe.
-- Minimal local bootstrap, status, and diagnostics commands.
-- No desktop app, web app, server, plugin marketplace, or multi-agent framework in the initial release.
+- A portable root directory: all configuration and runtime state stay beside rocksoul.exe.
+- Local RID identity/progression profile with 99 unrated capability dimensions.
+- A keyboard-first Ratatui Cognitive Cockpit.
+- A deterministic offline Core Integrity evaluation suite.
+- A bounded planner, up to three model-only reasoning steps, and a structured reflector per turn.
+- No desktop app, web app, server, plugin marketplace, autonomous tool execution, or multi-agent framework in the seed release.
 
 Rocksoul is a foundation for agent research and self-evolving software. It is not AGI, and the initial release does not modify or replace its own executable.
 
@@ -33,7 +36,7 @@ The Windows executable is written to target/release/rocksoul.exe.
 
 ### Configure with .env
 
-The .env file must be in the same directory as rocksoul.exe. Rocksoul resolves it from the executable path, not PowerShell's current working directory.
+All mutable state is rooted at the directory containing rocksoul.exe. Rocksoul never writes Rocksoul configuration, identity, memory, cache, workspace, logs, or evaluation data to AppData or the user profile. The .env file lives at the root; config.toml lives in config/.
 
 1. Run initialization once:
 
@@ -59,7 +62,7 @@ For a downloaded executable, place .env beside rocksoul.exe, then run rocksoul.e
 
 Precedence: environment variables already set in Windows/PowerShell take priority over values in .env. The .env file is never overwritten by init. Keep real API keys out of Git; .env is ignored by .gitignore.
 
-The executable directory must be writable when running init, because that command creates .env beside the binary.
+The Rocksoul root must be writable for portable ZIP installs. The Windows installer grants write access to mutable data/configuration folders and .env, not to the executable itself.
 
 ### CLI
 
@@ -67,16 +70,58 @@ The executable directory must be writable when running init, because that comman
     rocksoul init
     rocksoul status
     rocksoul doctor
+    rocksoul tui
+    rocksoul rid status
+    rocksoul rid stats
+    rocksoul rid history
+    rocksoul eval list
+    rocksoul eval run core
+    rocksoul eval latest
     rocksoul --help
 
 Inside the interactive CLI:
 
 - :help — show available REPL commands.
 - :status — show runtime and model configuration status.
+- :rid — show instance age, level, XP and stat coverage.
 - :clear — clear the current conversation.
 - :exit — leave the REPL.
 
-The initial chat history is session-only. Persistent memory and tool execution are future milestones.
+Chat history is session-only. Each turn uses one planning call, up to three model-only reasoning calls, and one reflector call. The total budget is five calls, 16,000 output tokens, and 120 seconds. Each call receives a conservative token reservation so the sum of request caps stays within the turn ceiling even if a provider omits usage metadata. The reflector is another model call, not independent verification. A successful turn does not prove the user's real-world task was completed; no XP is awarded for ordinary chat. Persistent memory and external tool execution remain future milestones.
+
+### RID and evaluation
+
+`rocksoul init` creates a local RID profile. Its age is elapsed time since initialization; XP and levels are separate from capability scores. All 99 stat slots start unrated and require trusted, evidence-backed evaluation.
+
+Run the offline deterministic suite with `rocksoul eval run core`. It checks kernel lifecycle, bounded retries, terminal-state immutability, verified-XP gating and replay behavior, RID initialization, catalogue integrity, and level progression. Reports are saved inside the Rocksoul root at `data/evaluations/core/latest.json`.
+
+These checks measure bounded software invariants; they do not demonstrate AGI, consciousness, or general intelligence. External benchmark adapters are not yet integrated.
+
+## Windows installation
+
+Download the **Rocksoul-Setup** x64 installer from GitHub Releases, or use the portable ZIP if you prefer to choose and manage the root folder yourself. The installer places the executable in Program Files and keeps all mutable Rocksoul state in subfolders of that same installation root. It preserves `.env`, `config/config.toml`, and runtime data when upgrading or uninstalling.
+
+After installation, edit `.env` in the Rocksoul root, then launch Rocksoul from the Start Menu or run `rocksoul.exe init`.
+
+## Portable root layout
+
+```text
+Rocksoul/
+├── rocksoul.exe
+├── .env
+├── config/
+│   └── config.toml
+├── data/
+│   ├── identity/rid.json
+│   ├── memory/
+│   └── evaluations/
+├── cache/
+├── workspace/
+├── evolution/
+└── logs/
+```
+
+No Rocksoul runtime state is written to AppData, Documents, or another user-profile directory.
 
 ## Configuration
 
@@ -101,13 +146,19 @@ The API base URL should include the version prefix when required by the provider
 ## Repository map
 
     src/
-      cli.rs       CLI argument definitions
-      commands.rs  init, status, and doctor commands
-      lib.rs       application entry point and environment bootstrap
-      main.rs      native executable entry point
-      model.rs     OpenAI-compatible chat client
-      paths.rs     platform paths and executable-local .env
-      repl.rs      interactive terminal loop
+      cli.rs          CLI argument definitions
+      commands.rs     command handlers
+      core.rs         cognitive turn, verification, and budget contracts
+      eval.rs         offline capability evaluation harness
+      lib.rs          application entry point and environment bootstrap
+      main.rs         native executable entry point
+      model.rs        bounded OpenAI-compatible chat client
+      paths.rs        platform paths and executable-local .env
+      repl.rs         bounded interactive turn loop
+      rid.rs          RID identity, XP ledger, and 99 stat domain
+      rid_catalogue.rs validated embedded 99-stat catalogue
+      rid_store.rs    local RID persistence
+      tui.rs          Ratatui Cognitive Cockpit
     docs/
       ARCHITECTURE.md
       ROADMAP.md
@@ -132,4 +183,4 @@ See AGENTS.md for repository rules and SECURITY.md for the security model.
 
 ## Project status
 
-Early bootstrap. APIs, configuration, and internal modules may change before a stable release.
+Seed runtime in active development. The CLI, RID, TUI, cognitive turn contracts, and offline core evaluation are implemented on the current integration branch; merge/release status is tracked by GitHub PRs and CI. Persistent memory, tool adapters, full plan/execute/verify task orchestration, external benchmark adapters, and controlled self-evolution are not implemented yet.
