@@ -382,7 +382,6 @@ fn run_eval(command: EvalCommand) -> Result<()> {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::format_age;
