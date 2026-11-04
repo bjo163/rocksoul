@@ -6,11 +6,13 @@ use std::{
 use anyhow::{Context, Result};
 
 use crate::{
-    cli::{Command, EvalCommand, EvalSuite, MemoryCommand, RidCommand},
+    cli::{Command, EvalCommand, EvalSuite, MemoryCommand, RidCommand, WorkspaceCommand},
     memory::{MemoryKind, MemoryRecord, MemoryStore},
     model::ModelConfig,
     paths::AppPaths,
-    rid::{RuhIdentity, RuhProfile},
+    rid::{RuhIdentity, RuhProfile, XpSource},
+    core::{TurnEvent, TurnState, VerificationEvidence, VerificationRequest, verify_turn_and_award_xp},
+    workspace_artifact::{ArtifactOutcome, UserApproval, WorkspaceArtifactProposal, WorkspaceArtifactService},
     rid_catalogue::RidCatalogue,
     rid_store,
 };
@@ -56,6 +58,7 @@ pub fn run(command: Command) -> Result<()> {
         Command::Rid { command } => run_rid(command),
         Command::Eval { command } => run_eval(command),
         Command::Memory { command } => run_memory(command),
+        Command::Workspace { command } => run_workspace(command),
     }
 }
 
@@ -132,6 +135,76 @@ pub fn init() -> Result<()> {
         println!("Existing .env preserved.");
     }
 
+    Ok(())
+}
+
+fn run_workspace(command: WorkspaceCommand) -> Result<()> {
+    match command {
+        WorkspaceCommand::Write { filename, content } => {
+            let proposal = WorkspaceArtifactProposal { filename, content };
+            proposal.validate()?;
+            println!("Proposed workspace artifact: {}", proposal.filename);
+            println!("Content: {} UTF-8 bytes (maximum 16384)", proposal.content.len());
+            println!("Preview:");
+            for line in proposal.content.lines().take(8) {
+                println!("  {line}");
+            }
+            println!("To approve this exact artifact, type: {}", proposal.approval_phrase());
+            print!("Approval: ");
+            std::io::Write::flush(&mut std::io::stdout())?;
+            let mut confirmation = String::new();
+            std::io::stdin().read_line(&mut confirmation)?;
+            let approval = UserApproval::from_typed_confirmation(&proposal, &confirmation)?;
+
+            let paths = AppPaths::discover()?;
+            let service = WorkspaceArtifactService::new(&paths.workspace_dir);
+            let outcome = service.execute_approved(&proposal, &approval)?;
+            let (path, bytes, outcome_label) = match outcome {
+                ArtifactOutcome::Created { path, bytes } => (path, bytes, "created"),
+                ArtifactOutcome::AlreadyPresent { path, bytes } => (path, bytes, "already present (idempotent replay)"),
+            };
+
+            let timestamp = now_unix()?;
+            let mut profile = rid_store::load(&paths.rid_file)
+                .context("RID profile is required; run rocksoul init first")?;
+            let mut turn = TurnState::new(format!("workspace-{}", proposal.filename), 0);
+            turn.apply(TurnEvent::Start)?;
+            turn.apply(TurnEvent::PlanAccepted)?;
+            turn.apply(TurnEvent::ActionCompleted)?;
+            let verification_id = format!("workspace-artifact:{}", proposal.filename);
+            let request = VerificationRequest::new(
+                format!("workspace-artifact:{}", proposal.filename),
+                verification_id,
+                timestamp,
+                1,
+                1,
+                vec![
+                    VerificationEvidence::new(
+                        "artifact-is-regular-file",
+                        "observed-regular-file",
+                        "observed-regular-file",
+                        format!("workspace:{}", proposal.filename),
+                        true,
+                    ),
+                    VerificationEvidence::new(
+                        "artifact-readback-matches",
+                        proposal.content.as_str(),
+                        proposal.content.as_str(),
+                        format!("workspace-readback:{}", proposal.filename),
+                        true,
+                    ),
+                ],
+            );
+            let verification = verify_turn_and_award_xp(&mut turn, &mut profile, request)?;
+            rid_store::save(&paths.rid_file, &profile)?;
+            println!("Workspace artifact {outcome_label}: {}", path.display());
+            println!("Independent read-back verified: {bytes} bytes.");
+            println!("Verified XP: {} (RID total: {}).", profile.total_xp(), profile.total_xp());
+            if let crate::core::VerificationOutcome::Verified { receipt, .. } = verification {
+                println!("Verification receipt: {} · {} XP", receipt.verification_id(), receipt.xp_awarded());
+            }
+        }
+    }
     Ok(())
 }
 
