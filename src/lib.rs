@@ -4,6 +4,7 @@ pub mod core;
 mod model;
 mod paths;
 mod repl;
+mod tui;
 pub mod rid;
 pub mod rid_catalogue;
 mod rid_store;
