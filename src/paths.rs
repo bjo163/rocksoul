@@ -33,7 +33,14 @@ impl AppPaths {
         let config_dir = root_dir.join("config");
         let data_dir = root_dir.join("data");
 
-        Ok(Self {
+        Ok(Self::from_root(root_dir))
+    }
+
+    fn from_root(root_dir: PathBuf) -> Self {
+        let config_dir = root_dir.join("config");
+        let data_dir = root_dir.join("data");
+
+        Self {
             root_dir: root_dir.clone(),
             config_file: config_dir.join("config.toml"),
             env_file: root_dir.join(".env"),
@@ -45,7 +52,7 @@ impl AppPaths {
             cache_dir: root_dir.join("cache"),
             data_dir,
             config_dir,
-        })
+        }
     }
 }
 
@@ -87,20 +94,11 @@ mod tests {
 
     #[test]
     fn all_mutable_paths_are_inside_the_installation_root() {
-        let root = Path::new("C:/Rocksoul");
-        let paths = AppPaths {
-            root_dir: root.to_path_buf(),
-            config_dir: root.join("config"),
-            config_file: root.join("config/config.toml"),
-            env_file: root.join(".env"),
-            data_dir: root.join("data"),
-            cache_dir: root.join("cache"),
-            workspace_dir: root.join("workspace"),
-            memory_dir: root.join("data/memory"),
-            evolution_dir: root.join("evolution"),
-            logs_dir: root.join("logs"),
-            rid_file: root.join("data/identity/rid.json"),
-        };
+        let paths = AppPaths::from_root(Path::new("C:/Rocksoul").to_path_buf());
+
+        assert_eq!(paths.env_file, Path::new("C:/Rocksoul/.env"));
+        assert_eq!(paths.config_file, Path::new("C:/Rocksoul/config/config.toml"));
+        assert_eq!(paths.rid_file, Path::new("C:/Rocksoul/data/identity/rid.json"));
 
         for path in [
             &paths.config_dir,
