@@ -34,7 +34,7 @@ rocksoul eval run core
 rocksoul eval latest
 ```
 
-The suite is offline and deterministic apart from report timestamp/platform metadata. It checks kernel lifecycle, retry budget, terminal-state immutability, verified-XP evidence gating, rejection without XP, XP replay idempotency, RID's 99 unrated slots, catalogue uniqueness and level-curve thresholds. Reports are saved under the operating system's local application data directory at `evaluations/core/latest.json`.
+The suite is offline and deterministic apart from report timestamp/platform metadata. It checks kernel lifecycle, retry budget, terminal-state immutability, verified-XP evidence gating, rejection without XP, XP replay idempotency, RID's 99 unrated slots, catalogue uniqueness, level-curve thresholds, and the explicit-approval memory baseline. Reports are saved under the operating system's local application data directory at `evaluations/core/latest.json`.
 
 CI continues to run the Rust unit tests and Windows release build. The evaluation command is intended to be run manually or by a later CI step; no external benchmark is silently run.
 
