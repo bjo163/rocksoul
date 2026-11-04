@@ -9,7 +9,9 @@ mod repl;
 pub mod rid;
 pub mod rid_catalogue;
 mod rid_store;
+pub(crate) mod task_trace;
 mod tui;
+pub mod workspace_artifact;
 
 use anyhow::Result;
 use clap::Parser;
@@ -24,7 +26,7 @@ pub async fn run() -> Result<()> {
     let cli = cli::Cli::parse();
 
     match cli.command {
-        Some(command) => commands::run(command),
+        Some(command) => commands::run(command).await,
         None => repl::run().await,
     }
 }

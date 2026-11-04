@@ -9,17 +9,21 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     core::{
-        TurnEvent, TurnPhase, TurnState, VerificationEvidence, VerificationOutcome,
-        VerificationRequest, verify_turn_and_award_xp,
+        CancellationToken, TurnEvent, TurnPhase, TurnState, VerificationEvidence,
+        VerificationOutcome, VerificationRequest, verify_turn_and_award_xp,
     },
     memory::{MEMORY_SCHEMA_VERSION, MemoryKind, MemoryStore},
     paths::AppPaths,
     rid::{RuhIdentity, RuhProfile, XpRecordOutcome, level_for_xp},
     rid_catalogue::RidCatalogue,
+    task_trace::{self, TaskTraceEvent},
+    workspace_artifact::{
+        ArtifactOutcome, UserApproval, WorkspaceArtifactProposal, WorkspaceArtifactService,
+    },
 };
 
 pub const CORE_SUITE_ID: &str = "rocksoul.core-integrity";
-pub const CORE_SUITE_VERSION: &str = "1.0.0";
+pub const CORE_SUITE_VERSION: &str = "1.2.0";
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct EvaluationCheck {
@@ -54,7 +58,7 @@ impl EvaluationReport {
 pub fn list() {
     println!("{CORE_SUITE_ID}  v{CORE_SUITE_VERSION}  offline / deterministic");
     println!(
-        "  Validates lifecycle, retry bounds, terminal immutability, RID and catalogue invariants."
+        "  Validates lifecycle, retry bounds, verified XP, workspace approval/read-back mismatch/replay, retry/cancellation boundaries, task trace, RID and catalogue invariants."
     );
     println!("  External benchmark adapters: planned; no external datasets are downloaded.");
 }
@@ -292,6 +296,8 @@ pub fn run_core() -> Result<EvaluationReport> {
         "Memory entries are created through explicit user-approved writes",
     ));
 
+    stage1_workspace_checks(now, &mut checks)?;
+
     let report = EvaluationReport {
         schema_version: 1,
         suite_id: CORE_SUITE_ID.to_owned(),
@@ -306,6 +312,303 @@ pub fn run_core() -> Result<EvaluationReport> {
 
     persist_report(&report)?;
     Ok(report)
+}
+
+fn stage1_workspace_checks(now: u64, checks: &mut Vec<EvaluationCheck>) -> Result<()> {
+    let nonce = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)?
+        .as_nanos();
+    let root = std::env::temp_dir().join(format!(
+        "rocksoul-stage1-eval-{now}-{nonce}-{}",
+        std::process::id()
+    ));
+    fs::create_dir_all(&root)?;
+    let item = WorkspaceArtifactProposal {
+        filename: "stage1-eval.txt".to_owned(),
+        content: "approved and independently observed".to_owned(),
+    };
+    let invalid = WorkspaceArtifactProposal {
+        filename: "../escape.txt".to_owned(),
+        content: "must be rejected".to_owned(),
+    };
+    let approval_gate = invalid.validate().is_err()
+        && UserApproval::from_typed_confirmation(&item, "WRITE different.txt").is_err();
+    checks.push(check(
+        "stage1.proposal_and_approval_boundary",
+        approval_gate,
+        "Traversal and mismatched typed approval are rejected before execution",
+    ));
+
+    let approval = UserApproval::from_typed_confirmation(&item, &item.approval_phrase());
+    let service = WorkspaceArtifactService::new(root.join("workspace"));
+    let executed = approval.as_ref().ok().and_then(|approved| {
+        service
+            .execute_approved_with_retry(&item, approved, &CancellationToken::default())
+            .ok()
+    });
+    let observed = match executed {
+        Some(ArtifactOutcome::Created {
+            path,
+            observed_content,
+            ..
+        }) => Some((path, observed_content)),
+        _ => None,
+    };
+    let readback_ok = observed.as_ref().is_some_and(|(path, content)| {
+        fs::symlink_metadata(path)
+            .is_ok_and(|metadata| metadata.is_file() && !metadata.file_type().is_symlink())
+            && content == &item.content
+            && fs::read(path).is_ok_and(|bytes| bytes == item.content.as_bytes())
+    });
+    checks.push(check(
+        "stage1.approved_create_and_readback",
+        readback_ok,
+        "Approved create-only execution reopens the actual artifact and matches observed bytes",
+    ));
+
+    let mut profile = RuhProfile::new(RuhIdentity {
+        instance_id: format!("rocksoul-stage1-eval-{now}"),
+        created_at_unix: now.max(1),
+    })?;
+    let operation_id = item.operation_id();
+    let verification_id = format!("stage1-eval:{operation_id}");
+    let verification_ok = if let Some((path, content)) = &observed {
+        let mut turn = TurnState::new("stage1-eval-task", 0);
+        turn.apply(TurnEvent::Start)?;
+        turn.apply(TurnEvent::PlanAccepted)?;
+        turn.apply(TurnEvent::ActionCompleted)?;
+        let request = VerificationRequest::new(
+            operation_id.clone(),
+            verification_id.clone(),
+            now.max(1),
+            1,
+            1,
+            vec![
+                VerificationEvidence::new(
+                    "artifact-is-regular-file",
+                    "true",
+                    if fs::symlink_metadata(path).is_ok_and(|metadata| {
+                        metadata.is_file() && !metadata.file_type().is_symlink()
+                    }) {
+                        "true"
+                    } else {
+                        "false"
+                    },
+                    format!("workspace-artifact:{operation_id}"),
+                    true,
+                ),
+                VerificationEvidence::new(
+                    "artifact-readback-matches",
+                    item.content.as_str(),
+                    content.as_str(),
+                    format!("workspace-readback:{operation_id}"),
+                    true,
+                ),
+            ],
+        );
+        matches!(
+            verify_turn_and_award_xp(&mut turn, &mut profile, request),
+            Ok(VerificationOutcome::Verified {
+                xp_record: XpRecordOutcome::Recorded,
+                ..
+            })
+        )
+    } else {
+        false
+    };
+    checks.push(check(
+        "stage1.observed_evidence_awards_xp",
+        verification_ok && profile.total_xp() > 0,
+        "Only trusted file/read-back evidence passes verification and records XP",
+    ));
+
+    let mismatch_item = WorkspaceArtifactProposal {
+        filename: "stage1-mismatch.txt".to_owned(),
+        content: "approved bytes".to_owned(),
+    };
+    let mismatch_result =
+        UserApproval::from_typed_confirmation(&mismatch_item, &mismatch_item.approval_phrase())
+            .and_then(|approved| {
+                service.execute_approved_with_retry(
+                    &mismatch_item,
+                    &approved,
+                    &CancellationToken::default(),
+                )
+            });
+    let mismatch_no_xp = if let Ok(ArtifactOutcome::Created { path, .. }) = mismatch_result {
+        fs::write(&path, "tampered bytes")?;
+        let actual_readback = fs::read_to_string(&path)?;
+        let mut mismatch_profile = RuhProfile::new(RuhIdentity {
+            instance_id: format!("rocksoul-stage1-mismatch-{now}"),
+            created_at_unix: now.max(1),
+        })?;
+        let mut mismatch_turn = TurnState::new("stage1-mismatch-task", 0);
+        mismatch_turn.apply(TurnEvent::Start)?;
+        mismatch_turn.apply(TurnEvent::PlanAccepted)?;
+        mismatch_turn.apply(TurnEvent::ActionCompleted)?;
+        let mismatch_request = VerificationRequest::new(
+            format!("{}:mismatch", mismatch_item.operation_id()),
+            format!("stage1-mismatch:{}", mismatch_item.operation_id()),
+            now.max(1),
+            1,
+            1,
+            vec![VerificationEvidence::new(
+                "artifact-readback-matches",
+                mismatch_item.content.as_str(),
+                actual_readback.as_str(),
+                format!(
+                    "workspace-readback-mismatch:{}",
+                    mismatch_item.operation_id()
+                ),
+                true,
+            )],
+        );
+        matches!(
+            verify_turn_and_award_xp(&mut mismatch_turn, &mut mismatch_profile, mismatch_request,),
+            Ok(VerificationOutcome::Rejected { .. })
+        ) && mismatch_profile.total_xp() == 0
+    } else {
+        false
+    };
+    checks.push(check(
+        "stage1.readback_mismatch_no_xp",
+        mismatch_no_xp,
+        "A real post-write byte mismatch is rejected and awards no XP",
+    ));
+
+    let replay_ok = verification_ok
+        && if let Ok(approved) = approval.as_ref() {
+            matches!(
+                service.execute_approved_with_retry(&item, approved, &CancellationToken::default()),
+                Ok(ArtifactOutcome::AlreadyPresent { .. })
+            )
+        } else {
+            false
+        };
+    let xp_before_replay = profile.total_xp();
+    let replay_verification = if replay_ok {
+        observed.as_ref().and_then(|(path, _)| {
+            fs::read_to_string(path).ok().map(|readback| {
+                let mut replay_turn = TurnState::new("stage1-eval-replay", 0);
+                let _ = replay_turn.apply(TurnEvent::Start);
+                let _ = replay_turn.apply(TurnEvent::PlanAccepted);
+                let _ = replay_turn.apply(TurnEvent::ActionCompleted);
+                let request = VerificationRequest::new(
+                    operation_id.clone(),
+                    verification_id.clone(),
+                    now.max(1),
+                    1,
+                    1,
+                    vec![
+                        VerificationEvidence::new(
+                            "artifact-is-regular-file",
+                            "true",
+                            if fs::symlink_metadata(path).is_ok_and(|metadata| {
+                                metadata.is_file() && !metadata.file_type().is_symlink()
+                            }) {
+                                "true"
+                            } else {
+                                "false"
+                            },
+                            format!("workspace-artifact:{operation_id}"),
+                            true,
+                        ),
+                        VerificationEvidence::new(
+                            "artifact-readback-matches",
+                            item.content.as_str(),
+                            readback.as_str(),
+                            format!("workspace-readback:{}", item.filename),
+                            true,
+                        ),
+                    ],
+                );
+                verify_turn_and_award_xp(&mut replay_turn, &mut profile, request)
+            })
+        })
+    } else {
+        None
+    };
+    let replay_xp_ok = matches!(
+        replay_verification,
+        Some(Ok(VerificationOutcome::Verified {
+            xp_record: XpRecordOutcome::Duplicate,
+            ..
+        }))
+    ) && profile.total_xp() == xp_before_replay;
+    checks.push(check(
+        "stage1.replay_is_idempotent",
+        replay_ok && replay_xp_ok,
+        "Identical artifact replay and verification do not add a second XP event",
+    ));
+
+    let cancelled_item = WorkspaceArtifactProposal {
+        filename: "cancelled.txt".to_owned(),
+        content: "must not be published".to_owned(),
+    };
+    let cancellation = CancellationToken::default();
+    cancellation.cancel();
+    let cancelled = service
+        .execute_approved(
+            &cancelled_item,
+            &UserApproval::from_typed_confirmation(
+                &cancelled_item,
+                &cancelled_item.approval_phrase(),
+            )?,
+            &cancellation,
+        )
+        .is_err()
+        && !root.join("workspace").join("cancelled.txt").exists();
+    checks.push(check(
+        "stage1.pre_cancel_blocks_publication",
+        cancelled,
+        "A cancelled operation cannot publish an artifact",
+    ));
+
+    fs::create_dir_all(root.join("logs"))?;
+    let trace_path = root.join("logs/task-trace.v1.jsonl");
+    task_trace::append(
+        &trace_path,
+        &operation_id,
+        TaskTraceEvent::Proposed,
+        &item.filename,
+        "offline stage 1 evaluation",
+    )?;
+    let trace_ok = task_trace::read(&trace_path).is_ok_and(|records| records.len() == 1);
+    checks.push(check(
+        "stage1.trace_schema_roundtrip",
+        trace_ok,
+        "Versioned JSONL task trace can be appended and read back",
+    ));
+
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::symlink;
+        let outside = root.join("outside.txt");
+        fs::write(&outside, "preserve")?;
+        let link_root = root.join("linked-workspace");
+        fs::create_dir_all(&link_root)?;
+        symlink(&outside, link_root.join("linked.txt"))?;
+        let link_item = WorkspaceArtifactProposal {
+            filename: "linked.txt".to_owned(),
+            content: "must not follow symlink".to_owned(),
+        };
+        let symlink_rejected = WorkspaceArtifactService::new(&link_root)
+            .execute_approved(
+                &link_item,
+                &UserApproval::from_typed_confirmation(&link_item, &link_item.approval_phrase())?,
+                &CancellationToken::default(),
+            )
+            .is_err()
+            && fs::read_to_string(&outside).is_ok_and(|value| value == "preserve");
+        checks.push(check(
+            "stage1.target_symlink_rejected",
+            symlink_rejected,
+            "A symlink target is rejected without writing through it",
+        ));
+    }
+
+    let _ = fs::remove_dir_all(root);
+    Ok(())
 }
 
 pub fn latest() -> Result<Option<EvaluationReport>> {

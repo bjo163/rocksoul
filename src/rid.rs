@@ -113,7 +113,14 @@ impl XpLedger {
             .iter()
             .find(|item| item.event_id == event.event_id)
         {
-            return if existing == &event {
+            // A retry may observe a later wall-clock time. Event identity is
+            // bound to the verified operation; preserve the first timestamp
+            // while requiring every semantic XP field to match.
+            return if existing.amount == event.amount
+                && existing.source == event.source
+                && existing.evidence_ref == event.evidence_ref
+                && existing.policy_version == event.policy_version
+            {
                 Ok(XpRecordOutcome::Duplicate)
             } else {
                 Err(RidError(format!(
@@ -475,6 +482,24 @@ mod tests {
         );
         assert_eq!(profile.total_xp(), 100);
         assert_eq!(profile.level(), 2);
+    }
+
+    #[test]
+    fn duplicate_xp_event_replay_ignores_new_observation_timestamp() {
+        let mut profile = profile();
+        let original = event("event-replay", 25);
+        assert_eq!(
+            profile.record_verified_xp(original.clone()).unwrap(),
+            XpRecordOutcome::Recorded
+        );
+        let mut replay = original;
+        replay.occurred_at_unix += 60;
+        assert_eq!(
+            profile.record_verified_xp(replay).unwrap(),
+            XpRecordOutcome::Duplicate
+        );
+        assert_eq!(profile.total_xp(), 25);
+        assert_eq!(profile.xp_events()[0].occurred_at_unix, 1_800_000_100);
     }
 
     #[test]

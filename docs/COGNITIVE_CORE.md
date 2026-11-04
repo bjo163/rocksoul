@@ -25,7 +25,7 @@ The request's `max_tokens` is conservatively reserved as one fifth of the total 
 
 ## Lifecycle, cancellation, and retries
 
-The core defines deterministic lifecycle phases and validates transitions, retry limits, terminal-state immutability, and budget enforcement. A cooperative cancellation token exists and is unit-tested. User keyboard interruption and terminal-signal wiring are not implemented. Provider-aware retry classification, backoff, and automatic re-planning are not implemented in the interactive path.
+The core defines deterministic lifecycle phases and validates transitions, retry limits, terminal-state immutability, and budget enforcement. Ctrl+C cancels model-driven turns, including in-flight HTTP requests, cooperatively. Provider requests retry only connection/timeout failures and HTTP 408/425/429/5xx, at most three attempts; every attempt consumes the shared turn call budget. Workspace execution retries only transient filesystem I/O errors for at most three attempts with 20/40 ms backoff. A stable operation ID binds the exact filename/content pair and is reused for verifier XP idempotency. Ctrl+C interrupts async terminal approval and signals the blocking executor; filesystem syscalls are not forcibly interrupted, and cancellation is honored at safe pre-publication checkpoints. Automatic re-planning remains unimplemented.
 
 ## Independent verification and RID XP
 
@@ -50,4 +50,20 @@ All configuration and runtime data paths resolve beneath the executable director
 
 Unit tests cover plan/reflection JSON parsing, fenced JSON, malformed output rejection, unique plan-step validation, lifecycle transitions, retry bounds, cancellation contracts, and budget enforcement. The offline Core Integrity suite additionally covers verifier gating, XP replay idempotency, RID catalogue invariants, level thresholds, and explicit-memory baseline.
 
+Core Integrity suite v1.2 additionally exercises the Stage 1 workspace path offline: unsafe/mismatched approval rejection, approved create/read-back, verifier-gated XP, duplicate replay idempotency, pre-cancel, retry exhaustion/cancellation during backoff, real read-back mismatch rejection, versioned trace round-trip/corruption checks, and Unix target-symlink rejection. Failure-injection now covers real read-back mismatch, retry exhaustion, cancellation during retry backoff and at the pre-publication boundary, plus Windows target-symlink rejection when supported. Recovery is tested for the crash window after RID XP persistence but before receipt write: replay is idempotent and reconstructs the receipt without new XP. Crash injection immediately after file publication but before XP persistence remains outstanding.
+
 CI runs formatting, locked dependency resolution, Clippy, tests, offline Core Integrity evaluation, and Windows release packaging.
+
+
+## First approved workspace capability
+
+The CLI exposes one narrow create-only workspace artifact operation:
+- Only a flat ASCII `.txt` filename is accepted; content is limited to 16 KiB.
+- The user sees the proposed filename and full content, then must type the exact `WRITE <filename>` phrase.
+- The service rejects detected workspace/target symlinks, refuses overwrites, stages content in the workspace, publishes without replacing an existing target, and independently reopens the final file to compare bytes.
+- Identical same-name/same-content replay is idempotent. Conflicting content is rejected.
+- The trusted command path submits observed read-back checks to the RID verifier; only a verified receipt can add XP.
+- Cooperative cancellation is checked before execution and immediately before publication. Ctrl+C cancels model-driven REPL turns between model calls; terminal workspace execution and blocking filesystem cancellation are not yet signal-wired.
+- The REPL planner may now return an optional typed artifact intent, which is validated and passed to the same interactive approval command. The planner cannot approve or execute it. Model reflection remains non-evidence for the filesystem effect.
+- The CLI appends content-free version-1 JSONL lifecycle events under `logs/task-trace.v1.jsonl`; `rocksoul workspace trace` displays them.
+- Complete turn/reflection persistence and end-to-end planner orchestration remain unfinished. Verification receipts are persisted and inspectable; cross-process trace locking and bounded retry/backoff are implemented. Adversarial filesystem TOCTOU protection is not claimed.

@@ -6,13 +6,21 @@ use std::{
 use anyhow::{Context, Result};
 
 use crate::{
-    cli::{Command, EvalCommand, EvalSuite, MemoryCommand, RidCommand},
+    cli::{Command, EvalCommand, EvalSuite, MemoryCommand, RidCommand, WorkspaceCommand},
+    core::CancellationToken,
+    core::{
+        TurnEvent, TurnState, VerificationEvidence, VerificationRequest, verify_turn_and_award_xp,
+    },
     memory::{MemoryKind, MemoryRecord, MemoryStore},
     model::ModelConfig,
     paths::AppPaths,
     rid::{RuhIdentity, RuhProfile},
     rid_catalogue::RidCatalogue,
     rid_store,
+    task_trace::{self, TaskTraceEvent},
+    workspace_artifact::{
+        ArtifactOutcome, UserApproval, WorkspaceArtifactProposal, WorkspaceArtifactService,
+    },
 };
 
 const INITIAL_CONFIG: &str = r#"[core]
@@ -47,7 +55,14 @@ ROCKSOUL_API_KEY=
 # ROCKSOUL_API_KEY=your-api-key
 "#;
 
-pub fn run(command: Command) -> Result<()> {
+pub async fn run(command: Command) -> Result<()> {
+    match command {
+        Command::Workspace { command } => run_workspace(command).await,
+        command => run_non_workspace(command),
+    }
+}
+
+fn run_non_workspace(command: Command) -> Result<()> {
     match command {
         Command::Init => init(),
         Command::Status => status(),
@@ -56,6 +71,7 @@ pub fn run(command: Command) -> Result<()> {
         Command::Rid { command } => run_rid(command),
         Command::Eval { command } => run_eval(command),
         Command::Memory { command } => run_memory(command),
+        Command::Workspace { .. } => unreachable!("workspace commands use the async dispatcher"),
     }
 }
 
@@ -132,6 +148,385 @@ pub fn init() -> Result<()> {
         println!("Existing .env preserved.");
     }
 
+    Ok(())
+}
+
+fn receipt_matches_ignoring_verification_time(existing: &[u8], expected: &[u8]) -> Result<bool> {
+    let mut existing: serde_json::Value = serde_json::from_slice(existing)
+        .context("existing verification receipt is invalid JSON")?;
+    let mut expected: serde_json::Value =
+        serde_json::from_slice(expected).context("new verification receipt is invalid JSON")?;
+    let timestamps_present = [&existing, &expected].iter().all(|document| {
+        document
+            .get("verified_at_unix")
+            .and_then(serde_json::Value::as_u64)
+            .is_some()
+    });
+    if !timestamps_present {
+        return Ok(false);
+    }
+    for document in [&mut existing, &mut expected] {
+        if let Some(object) = document.as_object_mut() {
+            object.remove("verified_at_unix");
+        }
+    }
+    Ok(existing == expected)
+}
+
+/// Persist a complete, content-free verification receipt beside the task trace.
+/// The create-only publish makes retries safe; replay must match every immutable field.
+fn persist_workspace_receipt(
+    logs_dir: &std::path::Path,
+    operation_id: &str,
+    receipt: &crate::core::VerificationReceipt,
+) -> Result<std::path::PathBuf> {
+    use std::io::Write as _;
+
+    let receipt_dir = logs_dir.join("receipts");
+    fs::create_dir_all(&receipt_dir).with_context(|| {
+        format!(
+            "could not create receipt directory {}",
+            receipt_dir.display()
+        )
+    })?;
+    let operation_key = operation_id.rsplit(':').next().unwrap_or("unknown");
+    let destination = receipt_dir.join(format!("workspace-{operation_key}.json"));
+    let document = serde_json::json!({
+        "schema_version": 1,
+        "operation_id": operation_id,
+        "task_id": receipt.task_id(),
+        "verification_id": receipt.verification_id(),
+        "verified_at_unix": receipt.verified_at_unix(),
+        "required_checks_passed": receipt.required_checks_passed(),
+        "total_checks": receipt.total_checks(),
+        "evidence_refs": receipt.evidence_refs(),
+        "xp_awarded": receipt.xp_awarded(),
+    });
+    let mut encoded =
+        serde_json::to_vec_pretty(&document).context("could not serialize verification receipt")?;
+    encoded.push(b'\n');
+
+    if destination.exists() {
+        let existing = fs::read(&destination)
+            .with_context(|| format!("could not read receipt {}", destination.display()))?;
+        anyhow::ensure!(
+            receipt_matches_ignoring_verification_time(&existing, &encoded)?,
+            "existing verification receipt conflicts with this operation"
+        );
+        return Ok(destination);
+    }
+
+    let temporary = receipt_dir.join(format!(
+        ".workspace-{operation_key}-{}-{}.tmp",
+        std::process::id(),
+        now_unix()?
+    ));
+    let mut file = fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(&temporary)
+        .context("could not create temporary verification receipt")?;
+    file.write_all(&encoded)?;
+    file.sync_all()?;
+    drop(file);
+
+    let publish = fs::hard_link(&temporary, &destination);
+    let _ = fs::remove_file(&temporary);
+    match publish {
+        Ok(()) => Ok(destination),
+        Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => {
+            let existing = fs::read(&destination)
+                .with_context(|| format!("could not read receipt {}", destination.display()))?;
+            anyhow::ensure!(
+                receipt_matches_ignoring_verification_time(&existing, &encoded)?,
+                "concurrent verification receipt conflicts with this operation"
+            );
+            Ok(destination)
+        }
+        Err(error) => Err(error).context("could not publish verification receipt"),
+    }
+}
+
+async fn run_workspace(command: WorkspaceCommand) -> Result<()> {
+    match command {
+        WorkspaceCommand::Trace => {
+            let paths = AppPaths::discover()?;
+            let trace_path = paths.logs_dir.join("task-trace.v1.jsonl");
+            let records = task_trace::read(&trace_path)?;
+            if records.is_empty() {
+                println!("No task trace records yet.");
+            } else {
+                for record in records {
+                    println!("{}", serde_json::to_string(&record)?);
+                }
+            }
+            let receipt_dir = paths.logs_dir.join("receipts");
+            if receipt_dir.is_dir() {
+                let mut receipts = fs::read_dir(&receipt_dir)
+                    .with_context(|| format!("could not inspect {}", receipt_dir.display()))?
+                    .filter_map(std::result::Result::ok)
+                    .map(|entry| entry.path())
+                    .filter(|path| {
+                        path.extension()
+                            .is_some_and(|extension| extension == "json")
+                    })
+                    .collect::<Vec<_>>();
+                receipts.sort();
+                for receipt in receipts {
+                    let content = fs::read_to_string(&receipt)
+                        .with_context(|| format!("could not read receipt {}", receipt.display()))?;
+                    let parsed: serde_json::Value = serde_json::from_str(&content)
+                        .with_context(|| format!("invalid receipt {}", receipt.display()))?;
+                    anyhow::ensure!(
+                        parsed
+                            .get("schema_version")
+                            .and_then(serde_json::Value::as_u64)
+                            == Some(1),
+                        "unsupported verification receipt schema"
+                    );
+                    println!("receipt: {}", serde_json::to_string(&parsed)?);
+                }
+            }
+        }
+        WorkspaceCommand::Write { filename, content } => {
+            let proposal = WorkspaceArtifactProposal { filename, content };
+            proposal.validate()?;
+            let paths = AppPaths::discover()?;
+            let operation_id = proposal.operation_id();
+            let trace_path = paths.logs_dir.join("task-trace.v1.jsonl");
+            task_trace::append(
+                &trace_path,
+                &operation_id,
+                TaskTraceEvent::Proposed,
+                &proposal.filename,
+                "validated proposal; content omitted",
+            )?;
+            println!("Proposed workspace artifact: {}", proposal.filename);
+            println!(
+                "Exact target: {}",
+                paths.workspace_dir.join(&proposal.filename).display()
+            );
+            println!(
+                "Content: {} UTF-8 bytes (maximum 16384)",
+                proposal.content.len()
+            );
+            println!("Preview:");
+            for line in proposal.content.lines() {
+                println!("  {line}");
+            }
+            println!(
+                "To approve this exact artifact, type: {}",
+                proposal.approval_phrase()
+            );
+            print!("Approval: ");
+            std::io::Write::flush(&mut std::io::stdout())?;
+            use tokio::io::AsyncBufReadExt as _;
+
+            let cancellation = CancellationToken::default();
+            let mut confirmation = String::new();
+            let mut stdin = tokio::io::BufReader::new(tokio::io::stdin());
+            tokio::select! {
+                result = stdin.read_line(&mut confirmation) => {
+                    result.context("could not read workspace approval")?;
+                }
+                signal = tokio::signal::ctrl_c() => {
+                    cancellation.cancel();
+                    task_trace::append(
+                        &trace_path,
+                        &operation_id,
+                        TaskTraceEvent::Cancelled,
+                        &proposal.filename,
+                        "cancelled while awaiting user approval",
+                    )?;
+                    signal.context("could not receive Ctrl+C during workspace approval")?;
+                    anyhow::bail!("workspace approval cancelled");
+                }
+            }
+            let approval = match UserApproval::from_typed_confirmation(&proposal, &confirmation) {
+                Ok(approval) => approval,
+                Err(error) => {
+                    task_trace::append(
+                        &trace_path,
+                        &operation_id,
+                        TaskTraceEvent::Denied,
+                        &proposal.filename,
+                        "approval phrase rejected",
+                    )?;
+                    return Err(error);
+                }
+            };
+            task_trace::append(
+                &trace_path,
+                &operation_id,
+                TaskTraceEvent::Approved,
+                &proposal.filename,
+                "exact typed approval accepted",
+            )?;
+
+            let service = WorkspaceArtifactService::new(&paths.workspace_dir);
+            let executor_proposal = proposal.clone();
+            let executor_approval = approval.clone();
+            let executor_cancellation = cancellation.clone();
+            let mut execution = tokio::task::spawn_blocking(move || {
+                service.execute_approved_with_retry(
+                    &executor_proposal,
+                    &executor_approval,
+                    &executor_cancellation,
+                )
+            });
+            let execution_result = tokio::select! {
+                result = &mut execution => result.context("workspace executor task failed")?,
+                signal = tokio::signal::ctrl_c() => {
+                    cancellation.cancel();
+                    signal.context("could not receive Ctrl+C during workspace execution")?;
+                    execution.await.context("workspace executor task failed")?
+                }
+            };
+            let outcome = match execution_result {
+                Ok(outcome) => outcome,
+                Err(error) => {
+                    let (event, detail) = if cancellation.is_cancelled() {
+                        (
+                            TaskTraceEvent::Cancelled,
+                            "workspace execution cancelled before publication",
+                        )
+                    } else {
+                        (TaskTraceEvent::Failed, "workspace execution failed")
+                    };
+                    task_trace::append(
+                        &trace_path,
+                        &operation_id,
+                        event,
+                        &proposal.filename,
+                        detail,
+                    )?;
+                    return Err(error);
+                }
+            };
+            task_trace::append(
+                &trace_path,
+                &operation_id,
+                TaskTraceEvent::Executed,
+                &proposal.filename,
+                "artifact published or identical replay observed",
+            )?;
+            let (path, bytes, observed_content, outcome_label) = match outcome {
+                ArtifactOutcome::Created {
+                    path,
+                    bytes,
+                    observed_content,
+                } => (path, bytes, observed_content, "created"),
+                ArtifactOutcome::AlreadyPresent {
+                    path,
+                    bytes,
+                    observed_content,
+                } => (
+                    path,
+                    bytes,
+                    observed_content,
+                    "already present (idempotent replay)",
+                ),
+            };
+
+            let observed_regular_file = fs::symlink_metadata(&path)
+                .is_ok_and(|metadata| metadata.is_file() && !metadata.file_type().is_symlink());
+            let timestamp = now_unix()?;
+            let mut profile = rid_store::load(&paths.rid_file)
+                .context("RID profile is required; run rocksoul init first")?;
+            let mut turn = TurnState::new(format!("workspace-{}", proposal.filename), 0);
+            turn.apply(TurnEvent::Start)?;
+            turn.apply(TurnEvent::PlanAccepted)?;
+            turn.apply(TurnEvent::ActionCompleted)?;
+            let verification_id = format!("workspace-artifact:{operation_id}");
+            let request = VerificationRequest::new(
+                operation_id.clone(),
+                verification_id,
+                timestamp,
+                1,
+                1,
+                vec![
+                    VerificationEvidence::new(
+                        "artifact-is-regular-file",
+                        "true",
+                        if observed_regular_file {
+                            "true"
+                        } else {
+                            "false"
+                        },
+                        format!("workspace-artifact:{operation_id}"),
+                        true,
+                    ),
+                    VerificationEvidence::new(
+                        "artifact-readback-matches",
+                        proposal.content.as_str(),
+                        observed_content.as_str(),
+                        format!("workspace-readback:{operation_id}"),
+                        true,
+                    ),
+                ],
+            );
+            let verification = verify_turn_and_award_xp(&mut turn, &mut profile, request)?;
+            rid_store::save(&paths.rid_file, &profile)
+                .context("could not persist RID after verification")?;
+
+            if let crate::core::VerificationOutcome::Verified { receipt, xp_record } = &verification
+            {
+                let receipt_path =
+                    persist_workspace_receipt(&paths.logs_dir, &operation_id, receipt)?;
+                let newly_awarded = matches!(xp_record, crate::rid::XpRecordOutcome::Recorded);
+                let receipt_detail = format!(
+                    "receipt={} xp={} xp_outcome={} checks={}/{} evidence={} receipt_path={}",
+                    receipt.verification_id(),
+                    receipt.xp_awarded(),
+                    if newly_awarded {
+                        "recorded"
+                    } else {
+                        "duplicate"
+                    },
+                    receipt.required_checks_passed(),
+                    receipt.total_checks(),
+                    receipt.evidence_refs().join(","),
+                    receipt_path.display(),
+                );
+                task_trace::append(
+                    &trace_path,
+                    &operation_id,
+                    TaskTraceEvent::Verified,
+                    &proposal.filename,
+                    &receipt_detail,
+                )?;
+            } else {
+                task_trace::append(
+                    &trace_path,
+                    &operation_id,
+                    TaskTraceEvent::Failed,
+                    &proposal.filename,
+                    "independent verification failed; no XP receipt",
+                )?;
+            }
+            println!("Workspace artifact {outcome_label}: {}", path.display());
+            println!("Independent read-back verified: {bytes} bytes.");
+            println!("RID XP total: {}.", profile.total_xp());
+            if let crate::core::VerificationOutcome::Verified { receipt, xp_record } = verification
+            {
+                let newly_awarded = matches!(xp_record, crate::rid::XpRecordOutcome::Recorded);
+                println!(
+                    "Verification receipt: {} · {} XP {}",
+                    receipt.verification_id(),
+                    if newly_awarded {
+                        receipt.xp_awarded()
+                    } else {
+                        0
+                    },
+                    if newly_awarded {
+                        "awarded"
+                    } else {
+                        "(idempotent replay; no new XP)"
+                    }
+                );
+            }
+        }
+    }
     Ok(())
 }
 
@@ -527,7 +922,21 @@ fn run_eval(command: EvalCommand) -> Result<()> {
 
 #[cfg(test)]
 mod tests {
-    use super::format_age;
+    use std::{
+        fs,
+        time::{SystemTime, UNIX_EPOCH},
+    };
+
+    use crate::{
+        core::{
+            TurnEvent, TurnState, VerificationEvidence, VerificationOutcome, VerificationRequest,
+            verify_turn_and_award_xp,
+        },
+        rid::{RuhIdentity, RuhProfile, XpRecordOutcome},
+        rid_store,
+    };
+
+    use super::{format_age, persist_workspace_receipt};
 
     #[test]
     fn formats_elapsed_instance_age() {
@@ -535,5 +944,126 @@ mod tests {
         assert_eq!(format_age(65), "1m 5s");
         assert_eq!(format_age(3_661), "1h 1m 1s");
         assert_eq!(format_age(90_061), "1d 1h 1m");
+    }
+
+    #[test]
+    fn verification_receipt_recovers_after_profile_persist_before_receipt_write() {
+        let nonce = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let root = std::env::temp_dir().join(format!("rocksoul-receipt-recovery-test-{nonce}"));
+        fs::create_dir_all(&root).unwrap();
+        let logs = root.join("logs");
+        let rid_path = root.join("rid.json");
+        let artifact_path = root.join("workspace").join("note.txt");
+        fs::create_dir_all(artifact_path.parent().unwrap()).unwrap();
+        fs::write(&artifact_path, "expected").unwrap();
+        let actual_readback = fs::read_to_string(&artifact_path).unwrap();
+
+        let mut profile = RuhProfile::new(RuhIdentity {
+            instance_id: "receipt-recovery-test".to_owned(),
+            created_at_unix: 1_700_000_000,
+        })
+        .unwrap();
+        let request = |verified_at_unix| {
+            VerificationRequest::new(
+                "workspace:note.txt:abc123",
+                "workspace-verification:abc123",
+                verified_at_unix,
+                1,
+                1,
+                vec![VerificationEvidence::new(
+                    "artifact-readback-matches",
+                    "expected",
+                    actual_readback.as_str(),
+                    "workspace-readback:abc123",
+                    true,
+                )],
+            )
+        };
+        let mut turn = TurnState::new("receipt-task", 0);
+        turn.apply(TurnEvent::Start).unwrap();
+        turn.apply(TurnEvent::PlanAccepted).unwrap();
+        turn.apply(TurnEvent::ActionCompleted).unwrap();
+        let first =
+            verify_turn_and_award_xp(&mut turn, &mut profile, request(1_700_000_001)).unwrap();
+        assert!(matches!(
+            first,
+            VerificationOutcome::Verified {
+                xp_record: XpRecordOutcome::Recorded,
+                ..
+            }
+        ));
+        rid_store::save(&rid_path, &profile).unwrap();
+
+        // Simulate a process restart after XP persistence but before receipt persistence.
+        drop(profile);
+        drop(turn);
+        let mut recovered_profile = rid_store::load(&rid_path).unwrap();
+        let xp_before_replay = recovered_profile.total_xp();
+        let mut replay_turn = TurnState::new("receipt-task-replay", 0);
+        replay_turn.apply(TurnEvent::Start).unwrap();
+        replay_turn.apply(TurnEvent::PlanAccepted).unwrap();
+        replay_turn.apply(TurnEvent::ActionCompleted).unwrap();
+        let replay = verify_turn_and_award_xp(
+            &mut replay_turn,
+            &mut recovered_profile,
+            request(1_700_000_002),
+        )
+        .unwrap();
+        let receipt = match replay {
+            VerificationOutcome::Verified {
+                receipt,
+                xp_record: XpRecordOutcome::Duplicate,
+            } => receipt,
+            other => panic!("expected idempotent replay receipt, got {other:?}"),
+        };
+        assert_eq!(recovered_profile.total_xp(), xp_before_replay);
+
+        let path = persist_workspace_receipt(&logs, "workspace:note.txt:abc123", &receipt).unwrap();
+
+        // Simulate another restart after receipt publication but before the
+        // corresponding Verified trace event. Replay must preserve the first
+        // durable receipt even though its observation timestamp is newer.
+        let mut second_replay_turn = TurnState::new("receipt-task-replay", 0);
+        second_replay_turn.apply(TurnEvent::Start).unwrap();
+        second_replay_turn.apply(TurnEvent::PlanAccepted).unwrap();
+        second_replay_turn
+            .apply(TurnEvent::ActionCompleted)
+            .unwrap();
+        let second_replay = verify_turn_and_award_xp(
+            &mut second_replay_turn,
+            &mut recovered_profile,
+            request(1_700_000_003),
+        )
+        .unwrap();
+        let second_receipt = match second_replay {
+            VerificationOutcome::Verified {
+                receipt,
+                xp_record: XpRecordOutcome::Duplicate,
+            } => receipt,
+            other => panic!("expected a second idempotent replay receipt, got {other:?}"),
+        };
+        assert_eq!(
+            persist_workspace_receipt(&logs, "workspace:note.txt:abc123", &second_receipt,)
+                .unwrap(),
+            path
+        );
+        assert_eq!(recovered_profile.total_xp(), xp_before_replay);
+        let document: serde_json::Value =
+            serde_json::from_slice(&fs::read(&path).unwrap()).unwrap();
+        assert_eq!(document["schema_version"], 1);
+        assert_eq!(document["operation_id"], "workspace:note.txt:abc123");
+        assert_eq!(document["verification_id"], "workspace-verification:abc123");
+        assert_eq!(document["evidence_refs"][0], "workspace-readback:abc123");
+        assert_eq!(
+            persist_workspace_receipt(&logs, "workspace:note.txt:abc123", &receipt).unwrap(),
+            path
+        );
+
+        fs::write(&path, "{}").unwrap();
+        assert!(persist_workspace_receipt(&logs, "workspace:note.txt:abc123", &receipt).is_err());
+        fs::remove_dir_all(root).unwrap();
     }
 }

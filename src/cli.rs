@@ -34,6 +34,11 @@ pub enum Command {
         #[command(subcommand)]
         command: EvalCommand,
     },
+    /// Create a user-approved text artifact in the portable workspace.
+    Workspace {
+        #[command(subcommand)]
+        command: WorkspaceCommand,
+    },
     /// Manage explicit, user-approved local memories.
     Memory {
         #[command(subcommand)]
@@ -67,6 +72,18 @@ pub enum RidCommand {
     Stats,
     /// Display the auditable XP progression history.
     History,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum WorkspaceCommand {
+    /// Inspect the local append-only task trace.
+    Trace,
+    /// Create a UTF-8 .txt artifact after exact interactive confirmation.
+    Write {
+        filename: String,
+        #[arg(long)]
+        content: String,
+    },
 }
 
 #[derive(Debug, Subcommand)]
