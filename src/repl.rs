@@ -20,6 +20,7 @@ static TURN_SEQUENCE: AtomicU64 = AtomicU64::new(1);
 
 const SYSTEM_PROMPT: &str = "You are Rocksoul, an experimental CLI intelligence runtime. Be accurate and explicit about uncertainty. You have no tools and cannot inspect files, run commands, or modify systems. Never claim that an action was performed unless the runtime actually performed it.";
 const PLANNER_PROMPT: &str = "You are Rocksoul's planner. Return ONLY JSON with this shape: {\"objective\":string,\"steps\":[{\"id\":string,\"description\":string}],\"acceptance_checks\":[{\"id\":string,\"description\":string,\"required\":boolean}]}. Create 1-3 small ordered reasoning steps and at least one required acceptance check. No markdown or extra prose. Plans are proposals, not executable commands.";
+const REFLECTOR_PROMPT: &str = "You are the reflector. Review the plan, required checks, and supplied model outputs. Do not claim external actions or facts were verified. Return ONLY JSON with outcome (succeeded, needs_retry, or failed), summary, and issues (array of strings). Use succeeded only when every required check is supported by the outputs; otherwise list concrete unresolved issues. No markdown.";
 const MAX_HISTORY_MESSAGES: usize = 41;
 const MAX_PLAN_STEPS: usize = 3;
 
@@ -159,23 +160,43 @@ async fn run_turn(
     }
 
     state.apply(TurnEvent::ActionCompleted)?;
-    // Verification is intentionally limited to evidence observable by this runtime.
+    // Reject missing outputs deterministically before model-based review.
     if outputs.len() != plan.steps.len() || outputs.iter().any(|item| item.trim().is_empty()) {
         state.apply(TurnEvent::VerificationRejected)?;
         bail!("one or more execution steps did not produce a usable result");
     }
-    let reflection = TurnReflection {
-        outcome: ReflectionOutcome::Succeeded,
-        summary: format!(
-            "{} bounded model steps returned non-empty output",
-            outputs.len()
-        ),
-        issues: Vec::new(),
-    };
+
+    meter.record_model_call(&cancellation)?;
+    let review_payload = serde_json::json!({
+        "objective": plan.objective,
+        "steps": plan.steps,
+        "acceptance_checks": plan.acceptance_checks,
+        "execution_outputs": outputs,
+    });
+    let reflection_messages = [
+        ChatMessage::new("system", REFLECTOR_PROMPT),
+        ChatMessage::new("user", serde_json::to_string(&review_payload)?),
+    ];
+    let review = model.complete(client, &reflection_messages).await?;
+    meter.check_time_budget(&cancellation)?;
+    record_usage(&mut meter, review.output_tokens)?;
+    let reflection = parse_reflection(&review.content)?;
     reflection.validate()?;
-    state.apply(TurnEvent::VerificationPassed)?;
+
+    match reflection.outcome {
+        ReflectionOutcome::Succeeded => state.apply(TurnEvent::VerificationPassed)?,
+        ReflectionOutcome::NeedsRetry | ReflectionOutcome::Failed => {
+            state.apply(TurnEvent::VerificationRejected)?;
+            let issues = if reflection.issues.is_empty() {
+                "no specific issue was supplied".to_owned()
+            } else {
+                reflection.issues.join("; ")
+            };
+            bail!("reflector did not approve this turn: {} ({issues})", reflection.summary);
+        }
+    }
     debug_assert_eq!(state.phase, crate::core::TurnPhase::Completed);
-    Ok(outputs.join("\n\n"))
+    Ok(format!("{}\n\nReflection: {}", outputs.join("\n\n"), reflection.summary))
 }
 
 fn parse_plan(raw: &str) -> Result<TurnPlan> {
@@ -194,6 +215,24 @@ fn parse_plan(raw: &str) -> Result<TurnPlan> {
         trimmed
     };
     serde_json::from_str(json).context("planner returned invalid structured JSON")
+}
+
+fn parse_reflection(raw: &str) -> Result<TurnReflection> {
+    let trimmed = raw.trim();
+    let json = if let Some(rest) = trimmed.strip_prefix("\`\`\`json") {
+        rest.trim()
+            .strip_suffix("\`\`\`")
+            .unwrap_or(rest.trim())
+            .trim()
+    } else if let Some(rest) = trimmed.strip_prefix("\`\`\`") {
+        rest.trim()
+            .strip_suffix("\`\`\`")
+            .unwrap_or(rest.trim())
+            .trim()
+    } else {
+        trimmed
+    };
+    serde_json::from_str(json).context("reflector returned invalid structured JSON")
 }
 
 fn record_usage(meter: &mut TurnMeter, tokens: Option<u32>) -> Result<()> {
@@ -223,7 +262,7 @@ fn print_help() {
 
 #[cfg(test)]
 mod tests {
-    use super::parse_plan;
+    use super::{parse_plan, parse_reflection};
 
     #[test]
     fn parses_valid_plan_json() {
@@ -239,6 +278,25 @@ mod tests {
         let wrapped = format!("{}\n{}\n{}", "\x60\x60\x60json", json, "\x60\x60\x60");
         let plan = parse_plan(&wrapped).unwrap();
         assert!(plan.validate().is_ok());
+    }
+
+    #[test]
+    fn parses_valid_reflection_json() {
+        let raw = r#"{"outcome":"succeeded","summary":"All required checks are supported","issues":[]}"#;
+        let reflection = parse_reflection(raw).unwrap();
+        assert!(reflection.validate().is_ok());
+    }
+
+    #[test]
+    fn rejects_malformed_reflection_json() {
+        assert!(parse_reflection("not json").is_err());
+    }
+
+    #[test]
+    fn rejects_successful_reflection_with_issues() {
+        let raw = r#"{"outcome":"succeeded","summary":"Looks good","issues":["Missing evidence"]}"#;
+        let reflection = parse_reflection(raw).unwrap();
+        assert!(reflection.validate().is_err());
     }
 
     #[test]
