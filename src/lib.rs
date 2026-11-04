@@ -3,8 +3,8 @@ mod commands;
 mod model;
 mod paths;
 mod repl;
-mod rid_store;
 pub mod rid;
+mod rid_store;
 
 use anyhow::Result;
 use clap::Parser;
