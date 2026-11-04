@@ -253,10 +253,11 @@ pub fn print_report(report: &EvaluationReport) {
         report.platform, report.architecture, report.rocksoul_version
     );
     println!(
-        "Result: {} ({}/{} passed)",
+        "Result: {} ({}/{} passed, {} failed)",
         if report.passed { "PASS" } else { "FAIL" },
         report.passed_count(),
-        report.checks.len()
+        report.checks.len(),
+        report.failed_count()
     );
     for item in &report.checks {
         println!(
