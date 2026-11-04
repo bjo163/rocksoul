@@ -543,7 +543,10 @@ impl Default for TurnBudget {
 
 impl TurnBudget {
     pub fn validate(self) -> Result<Self, CoreError> {
-        if self.max_model_calls == 0 || self.max_output_tokens == 0 || self.timeout_ms == 0 {
+        if self.max_model_calls == 0
+            || self.max_output_tokens < self.max_model_calls
+            || self.timeout_ms == 0
+        {
             return Err(CoreError::InvalidBudget);
         }
         Ok(self)
@@ -727,6 +730,12 @@ impl TurnMeter {
 
     pub fn output_tokens(&self) -> u32 {
         self.output_tokens
+    }
+
+    /// A conservative per-request cap that keeps the sum of all allowed
+    /// requests within the turn budget even when a provider omits usage data.
+    pub fn max_tokens_per_call(&self) -> u32 {
+        self.budget.max_output_tokens / self.budget.max_model_calls
     }
 
     pub fn elapsed(&self) -> Duration {
