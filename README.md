@@ -9,7 +9,7 @@ The first milestone is intentionally small:
 - One Rust project and one executable: rocksoul.exe on Windows.
 - CLI-first interaction through an interactive REPL.
 - OpenAI-compatible model endpoint support, including local inference servers such as Ollama.
-- A .env file loaded from the same directory as rocksoul.exe.
+- A portable root directory: all configuration and runtime state stay beside rocksoul.exe.
 - Local RID identity/progression profile with 99 unrated capability dimensions.
 - A keyboard-first Ratatui Cognitive Cockpit.
 - A deterministic offline Core Integrity evaluation suite.
@@ -36,7 +36,7 @@ The Windows executable is written to target/release/rocksoul.exe.
 
 ### Configure with .env
 
-The .env file must be in the same directory as rocksoul.exe. Rocksoul resolves it from the executable path, not PowerShell's current working directory.
+All mutable state is rooted at the directory containing rocksoul.exe. Rocksoul never writes Rocksoul configuration, identity, memory, cache, workspace, logs, or evaluation data to AppData or the user profile. The .env file lives at the root; config.toml lives in config/.
 
 1. Run initialization once:
 
@@ -62,7 +62,7 @@ For a downloaded executable, place .env beside rocksoul.exe, then run rocksoul.e
 
 Precedence: environment variables already set in Windows/PowerShell take priority over values in .env. The .env file is never overwritten by init. Keep real API keys out of Git; .env is ignored by .gitignore.
 
-The executable directory must be writable when running init, because that command creates .env beside the binary.
+The Rocksoul root must be writable for init and runtime data. The Windows installer grants write access only to mutable folders and .env, not to the executable itself.
 
 ### CLI
 
@@ -93,7 +93,7 @@ Chat history is session-only. Each model turn has a bounded request count, 16,00
 
 `rocksoul init` creates a local RID profile. Its age is elapsed time since initialization; XP and levels are separate from capability scores. All 99 stat slots start unrated and require trusted, evidence-backed evaluation.
 
-Run the offline deterministic suite with `rocksoul eval run core`. It checks kernel lifecycle, bounded retries, terminal-state immutability, verified-XP gating and replay behavior, RID initialization, catalogue integrity, and level progression. Reports are saved under the operating system's local application data directory in `evaluations/core/latest.json`.
+Run the offline deterministic suite with `rocksoul eval run core`. It checks kernel lifecycle, bounded retries, terminal-state immutability, verified-XP gating and replay behavior, RID initialization, catalogue integrity, and level progression. Reports are saved inside the Rocksoul root at `data/evaluations/core/latest.json`.
 
 These checks measure bounded software invariants; they do not demonstrate AGI, consciousness, or general intelligence. External benchmark adapters are not yet integrated.
 
