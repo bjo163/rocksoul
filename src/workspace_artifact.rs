@@ -353,13 +353,14 @@ mod tests {
         use std::io;
 
         let attempts = Cell::new(0_u8);
-        let result: anyhow::Result<()> = super::execute_with_bounded_retry(&CancellationToken::default(), || {
-            attempts.set(attempts.get() + 1);
-            Err(anyhow!(io::Error::new(
-                io::ErrorKind::WouldBlock,
-                "transient test failure",
-            )))
-        });
+        let result: anyhow::Result<()> =
+            super::execute_with_bounded_retry(&CancellationToken::default(), || {
+                attempts.set(attempts.get() + 1);
+                Err(anyhow!(io::Error::new(
+                    io::ErrorKind::WouldBlock,
+                    "transient test failure",
+                )))
+            });
         assert!(result.is_err());
         assert_eq!(attempts.get(), 3);
     }
