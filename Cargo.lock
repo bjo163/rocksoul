@@ -2204,6 +2204,7 @@ dependencies = [
  "mio",
  "pin-project-lite",
  "socket2",
+ "signal-hook-registry",
  "tokio-macros",
  "windows-sys 0.61.2",
 ]
