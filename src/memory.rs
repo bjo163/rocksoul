@@ -100,6 +100,7 @@ impl MemoryStore {
                             format!("primary memory store failed and backup {} is also invalid", backup.display())
                         })?;
                         restore_backup(&backup, &path)?;
+                        eprintln!("Recovered memory store from validated backup: {}", backup.display());
                         return Ok(recovered);
                     }
                     return Err(primary_error).context("no valid memory backup is available");
@@ -110,6 +111,7 @@ impl MemoryStore {
         if backup.is_file() {
             let recovered = read_current_store(&backup)?;
             restore_backup(&backup, &path)?;
+            eprintln!("Recovered missing memory store from validated backup: {}", backup.display());
             return Ok(recovered);
         }
 
@@ -127,6 +129,7 @@ impl MemoryStore {
             store.schema_version = MEMORY_SCHEMA_VERSION;
             store.validate()?;
             store.save(directory)?;
+            eprintln!("Migrated memory store schema v1 to v{}; original retained at {}", MEMORY_SCHEMA_VERSION, legacy.display());
             return Ok(store);
         }
 
@@ -312,7 +315,9 @@ fn read_current_store(path: &Path) -> Result<MemoryStore> {
 
 fn is_unsupported_future_version(path: &Path) -> Result<bool> {
     let bytes = fs::read(path)?;
-    let value: serde_json::Value = serde_json::from_slice(&bytes)?;
+    let Ok(value) = serde_json::from_slice::<serde_json::Value>(&bytes) else {
+        return Ok(false);
+    };
     Ok(value.get("schema_version").and_then(serde_json::Value::as_u64)
         .is_some_and(|version| version > u64::from(MEMORY_SCHEMA_VERSION)))
 }
