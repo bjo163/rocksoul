@@ -353,7 +353,7 @@ mod tests {
         use std::io;
 
         let attempts = Cell::new(0_u8);
-        let result = super::execute_with_bounded_retry(&CancellationToken::default(), || {
+        let result: anyhow::Result<()> = super::execute_with_bounded_retry(&CancellationToken::default(), || {
             attempts.set(attempts.get() + 1);
             Err(anyhow!(io::Error::new(
                 io::ErrorKind::WouldBlock,
@@ -372,7 +372,7 @@ mod tests {
         let attempts = Cell::new(0_u8);
         let cancellation = CancellationToken::default();
         let token = cancellation.clone();
-        let result = super::execute_with_bounded_retry(&cancellation, || {
+        let result: anyhow::Result<()> = super::execute_with_bounded_retry(&cancellation, || {
             attempts.set(attempts.get() + 1);
             token.cancel();
             Err(anyhow!(io::Error::new(
