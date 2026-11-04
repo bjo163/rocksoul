@@ -10,8 +10,8 @@ use crate::{
     cli::{Command, WorkspaceCommand},
     commands,
     core::{
-        CancellationToken, ReflectionOutcome, TurnBudget, TurnEvent, TurnMeter, TurnPlan,
-        TurnReflection, TurnRequest, TurnState,
+        CancellationToken, ReflectionOutcome, TurnBudget, TurnMeter, TurnPlan, TurnReflection,
+        TurnRequest,
     },
     model::{ChatMessage, ModelConfig},
     workspace_artifact::WorkspaceArtifactProposal,
@@ -186,8 +186,6 @@ async fn run_turn(
 ) -> Result<TurnResult> {
     request.validate()?;
     let mut meter = TurnMeter::new(request.budget)?;
-    let mut state = TurnState::new(request.id, 0);
-    state.apply(TurnEvent::Start)?;
 
     let planning_messages = [
         ChatMessage::new("system", PLANNER_PROMPT),
@@ -222,7 +220,6 @@ async fn run_turn(
             MAX_PLAN_STEPS
         );
     }
-    state.apply(TurnEvent::PlanAccepted)?;
 
     let mut execution = history.to_vec();
     execution.push(ChatMessage::new(
@@ -266,9 +263,7 @@ async fn run_turn(
         ));
     }
 
-    state.apply(TurnEvent::ActionCompleted)?;
     if outputs.len() != plan.steps.len() || outputs.iter().any(|item| item.trim().is_empty()) {
-        state.apply(TurnEvent::VerificationRejected)?;
         bail!("one or more execution steps did not produce a usable result");
     }
 
@@ -296,23 +291,17 @@ async fn run_turn(
     let reflection = parse_reflection(&review.content)?;
     reflection.validate()?;
 
-    match reflection.outcome {
-        ReflectionOutcome::Succeeded => state.apply(TurnEvent::VerificationPassed)?,
-        ReflectionOutcome::NeedsRetry | ReflectionOutcome::Failed => {
-            state.apply(TurnEvent::VerificationRejected)?;
-            let issues = if reflection.issues.is_empty() {
-                "no specific issue was supplied".to_owned()
-            } else {
-                reflection.issues.join("; ")
-            };
-            bail!(
-                "reflector did not approve this turn: {} ({issues})",
-                reflection.summary
-            );
-        }
+    if reflection.outcome != ReflectionOutcome::Succeeded {
+        let issues = if reflection.issues.is_empty() {
+            "no specific issue was supplied".to_owned()
+        } else {
+            reflection.issues.join("; ")
+        };
+        bail!(
+            "reflector did not approve this response: {} ({issues})",
+            reflection.summary
+        );
     }
-
-    debug_assert_eq!(state.phase, crate::core::TurnPhase::Completed);
     Ok(TurnResult {
         answer: format!(
             "Objective: {}\n\n{}\n\nReflection: {}",
