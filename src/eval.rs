@@ -421,44 +421,49 @@ fn stage1_workspace_checks(now: u64, checks: &mut Vec<EvaluationCheck>) -> Resul
     } else {
         false
     };
-    let mut replay_turn = TurnState::new("stage1-eval-replay", 0);
-    replay_turn.apply(TurnEvent::Start)?;
-    replay_turn.apply(TurnEvent::PlanAccepted)?;
-    replay_turn.apply(TurnEvent::ActionCompleted)?;
     let xp_before_replay = profile.total_xp();
-    let replay_verification = verify_turn_and_award_xp(
-        &mut replay_turn,
-        &mut profile,
-        VerificationRequest::new(
-            operation_id.clone(),
-            verification_id,
-            now.max(1),
-            1,
-            1,
-            vec![
-                VerificationEvidence::new(
-                    "artifact-is-regular-file",
-                    "true",
-                    "true",
-                    observed.as_ref().map(|(path, _)| path.display().to_string()).unwrap_or_default(),
-                    true,
-                ),
-                VerificationEvidence::new(
-                    "artifact-readback-matches",
-                    item.content.as_str(),
-                    item.content.as_str(),
-                    format!("workspace-readback:{}", item.filename),
-                    true,
-                ),
-            ],
-        ),
-    );
+    let replay_verification = if replay_ok {
+        observed.as_ref().and_then(|(path, _)| {
+            fs::read_to_string(path).ok().map(|readback| {
+                let mut replay_turn = TurnState::new("stage1-eval-replay", 0);
+                let _ = replay_turn.apply(TurnEvent::Start);
+                let _ = replay_turn.apply(TurnEvent::PlanAccepted);
+                let _ = replay_turn.apply(TurnEvent::ActionCompleted);
+                let request = VerificationRequest::new(
+                    operation_id.clone(),
+                    verification_id.clone(),
+                    now.max(1),
+                    1,
+                    1,
+                    vec![
+                        VerificationEvidence::new(
+                            "artifact-is-regular-file",
+                            "true",
+                            if path.is_file() { "true" } else { "false" },
+                            path.display().to_string(),
+                            true,
+                        ),
+                        VerificationEvidence::new(
+                            "artifact-readback-matches",
+                            item.content.as_str(),
+                            readback.as_str(),
+                            format!("workspace-readback:{}", item.filename),
+                            true,
+                        ),
+                    ],
+                );
+                verify_turn_and_award_xp(&mut replay_turn, &mut profile, request)
+            })
+        })
+    } else {
+        None
+    };
     let replay_xp_ok = matches!(
         replay_verification,
-        Ok(VerificationOutcome::Verified {
+        Some(Ok(VerificationOutcome::Verified {
             xp_record: XpRecordOutcome::Duplicate,
             ..
-        })
+        }))
     ) && profile.total_xp() == xp_before_replay;
     checks.push(check(
         "stage1.replay_is_idempotent",
