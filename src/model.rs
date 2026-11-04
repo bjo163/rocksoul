@@ -72,7 +72,15 @@ impl ModelConfig {
                 request = request.bearer_auth(api_key);
             }
 
-            let response = match request.send().await {
+            let send = request.send();
+            tokio::pin!(send);
+            let response_result = loop {
+                tokio::select! {
+                    result = &mut send => break result,
+                    _ = tokio::time::sleep(Duration::from_millis(50)) => cancellation.check()?,
+                }
+            };
+            let response = match response_result {
                 Ok(response) => response,
                 Err(error) if is_retryable_transport(&error) && attempt < MAX_ATTEMPTS => {
                     cancellation.check()?;
