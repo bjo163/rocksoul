@@ -435,13 +435,22 @@ fn stage1_workspace_checks(now: u64, checks: &mut Vec<EvaluationCheck>) -> Resul
             now.max(1),
             1,
             1,
-            vec![VerificationEvidence::new(
-                "artifact-readback-matches",
-                item.content.as_str(),
-                item.content.as_str(),
-                format!("workspace-readback:{}", item.filename),
-                true,
-            )],
+            vec![
+                VerificationEvidence::new(
+                    "artifact-is-regular-file",
+                    "true",
+                    "true",
+                    observed.as_ref().map(|(path, _)| path.display().to_string()).unwrap_or_default(),
+                    true,
+                ),
+                VerificationEvidence::new(
+                    "artifact-readback-matches",
+                    item.content.as_str(),
+                    item.content.as_str(),
+                    format!("workspace-readback:{}", item.filename),
+                    true,
+                ),
+            ],
         ),
     );
     let replay_xp_ok = matches!(
@@ -480,6 +489,7 @@ fn stage1_workspace_checks(now: u64, checks: &mut Vec<EvaluationCheck>) -> Resul
         "A cancelled operation cannot publish an artifact",
     ));
 
+    fs::create_dir_all(root.join("logs"))?;
     let trace_path = root.join("logs/task-trace.v1.jsonl");
     task_trace::append(
         &trace_path,
