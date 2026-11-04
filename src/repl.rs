@@ -97,7 +97,6 @@ pub async fn run() -> Result<()> {
     Ok(())
 }
 
-
 /// Run one bounded interactive turn. The current seed adapter performs one
 /// model action and verifies the response contract; it does not execute tools.
 async fn run_turn(
