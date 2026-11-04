@@ -94,8 +94,14 @@ mod tests {
         let paths = AppPaths::from_root(Path::new("C:/Rocksoul").to_path_buf());
 
         assert_eq!(paths.env_file, Path::new("C:/Rocksoul/.env"));
-        assert_eq!(paths.config_file, Path::new("C:/Rocksoul/config/config.toml"));
-        assert_eq!(paths.rid_file, Path::new("C:/Rocksoul/data/identity/rid.json"));
+        assert_eq!(
+            paths.config_file,
+            Path::new("C:/Rocksoul/config/config.toml")
+        );
+        assert_eq!(
+            paths.rid_file,
+            Path::new("C:/Rocksoul/data/identity/rid.json")
+        );
 
         for path in [
             &paths.config_dir,
