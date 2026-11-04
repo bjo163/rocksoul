@@ -20,6 +20,8 @@ pub enum Command {
     Status,
     /// Check the local setup and model configuration.
     Doctor,
+    /// Open the interactive terminal cockpit.
+    Tui,
     /// Inspect the local Ruh Information profile.
     Rid {
         #[command(subcommand)]
