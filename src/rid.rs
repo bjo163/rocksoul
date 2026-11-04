@@ -346,13 +346,10 @@ impl RuhProfile {
 /// Level N is reached at 50 * (N - 1) * N cumulative XP.
 pub fn level_for_xp(total_xp: u64) -> u32 {
     let mut level = 1_u32;
-    loop {
-        let Some(threshold) = 50_u64
-            .checked_mul(u64::from(level))
-            .and_then(|value| value.checked_mul(u64::from(level) + 1))
-        else {
-            break;
-        };
+    while let Some(threshold) = 50_u64
+        .checked_mul(u64::from(level))
+        .and_then(|value| value.checked_mul(u64::from(level) + 1))
+    {
         if total_xp < threshold || level == u32::MAX {
             break;
         }
