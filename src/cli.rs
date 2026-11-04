@@ -27,6 +27,29 @@ pub enum Command {
         #[command(subcommand)]
         command: RidCommand,
     },
+    /// Run and inspect offline capability evaluations.
+    Eval {
+        #[command(subcommand)]
+        command: EvalCommand,
+    },
+}
+
+#[derive(Debug, Subcommand)]
+pub enum EvalCommand {
+    /// List available evaluation suites.
+    List,
+    /// Run the deterministic offline core integrity suite.
+    Run {
+        #[command(subcommand)]
+        suite: EvalSuite,
+    },
+    /// Show the latest saved evaluation report.
+    Latest,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum EvalSuite {
+    Core,
 }
 
 #[derive(Debug, Subcommand)]
