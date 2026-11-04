@@ -152,8 +152,8 @@ pub fn init() -> Result<()> {
 }
 
 fn receipt_matches_ignoring_verification_time(existing: &[u8], expected: &[u8]) -> Result<bool> {
-    let mut existing: serde_json::Value =
-        serde_json::from_slice(existing).context("existing verification receipt is invalid JSON")?;
+    let mut existing: serde_json::Value = serde_json::from_slice(existing)
+        .context("existing verification receipt is invalid JSON")?;
     let mut expected: serde_json::Value =
         serde_json::from_slice(expected).context("new verification receipt is invalid JSON")?;
     let timestamps_present = [&existing, &expected].iter().all(|document| {
@@ -986,12 +986,8 @@ mod tests {
         turn.apply(TurnEvent::Start).unwrap();
         turn.apply(TurnEvent::PlanAccepted).unwrap();
         turn.apply(TurnEvent::ActionCompleted).unwrap();
-        let first = verify_turn_and_award_xp(
-            &mut turn,
-            &mut profile,
-            request(1_700_000_001),
-        )
-        .unwrap();
+        let first =
+            verify_turn_and_award_xp(&mut turn, &mut profile, request(1_700_000_001)).unwrap();
         assert!(matches!(
             first,
             VerificationOutcome::Verified {
@@ -1033,7 +1029,9 @@ mod tests {
         let mut second_replay_turn = TurnState::new("receipt-task-replay", 0);
         second_replay_turn.apply(TurnEvent::Start).unwrap();
         second_replay_turn.apply(TurnEvent::PlanAccepted).unwrap();
-        second_replay_turn.apply(TurnEvent::ActionCompleted).unwrap();
+        second_replay_turn
+            .apply(TurnEvent::ActionCompleted)
+            .unwrap();
         let second_replay = verify_turn_and_award_xp(
             &mut second_replay_turn,
             &mut recovered_profile,
@@ -1048,12 +1046,8 @@ mod tests {
             other => panic!("expected a second idempotent replay receipt, got {other:?}"),
         };
         assert_eq!(
-            persist_workspace_receipt(
-                &logs,
-                "workspace:note.txt:abc123",
-                &second_receipt,
-            )
-            .unwrap(),
+            persist_workspace_receipt(&logs, "workspace:note.txt:abc123", &second_receipt,)
+                .unwrap(),
             path
         );
         assert_eq!(recovered_profile.total_xp(), xp_before_replay);
