@@ -350,8 +350,9 @@ fn stage1_workspace_checks(now: u64, checks: &mut Vec<EvaluationCheck>) -> Resul
         _ => None,
     };
     let readback_ok = observed.as_ref().is_some_and(|(path, content)| {
-        path.is_file()
-            && content == &item.content
+        fs::symlink_metadata(path).is_ok_and(|metadata| {
+            metadata.is_file() && !metadata.file_type().is_symlink()
+        }) && content == &item.content
             && fs::read(path).is_ok_and(|bytes| bytes == item.content.as_bytes())
     });
     checks.push(check(
@@ -381,15 +382,21 @@ fn stage1_workspace_checks(now: u64, checks: &mut Vec<EvaluationCheck>) -> Resul
                 VerificationEvidence::new(
                     "artifact-is-regular-file",
                     "true",
-                    if path.is_file() { "true" } else { "false" },
-                    path.display().to_string(),
+                    if fs::symlink_metadata(path).is_ok_and(|metadata| {
+                        metadata.is_file() && !metadata.file_type().is_symlink()
+                    }) {
+                        "true"
+                    } else {
+                        "false"
+                    },
+                    format!("workspace-artifact:{operation_id}"),
                     true,
                 ),
                 VerificationEvidence::new(
                     "artifact-readback-matches",
                     item.content.as_str(),
                     content.as_str(),
-                    format!("workspace-readback:{}", item.filename),
+                    format!("workspace-readback:{operation_id}"),
                     true,
                 ),
             ],
@@ -437,8 +444,14 @@ fn stage1_workspace_checks(now: u64, checks: &mut Vec<EvaluationCheck>) -> Resul
                         VerificationEvidence::new(
                             "artifact-is-regular-file",
                             "true",
-                            if path.is_file() { "true" } else { "false" },
-                            path.display().to_string(),
+                            if fs::symlink_metadata(path).is_ok_and(|metadata| {
+                                metadata.is_file() && !metadata.file_type().is_symlink()
+                            }) {
+                                "true"
+                            } else {
+                                "false"
+                            },
+                            format!("workspace-artifact:{operation_id}"),
                             true,
                         ),
                         VerificationEvidence::new(
