@@ -18,7 +18,7 @@ The long-term aspiration is increasingly general, transferable, reliable, and ac
 | Interactive REPL | Session-local conversation, bounded planner, model-only reasoning steps, reflector | `repl.rs`, `core.rs` |
 | Turn contracts | Lifecycle, retry limits, cancellation token, budgets, evidence-verification and XP gate | `core.rs` |
 | Portable paths | Resolve all mutable runtime paths beside the executable | `paths.rs` |
-| Workspace artifact capability | Create-only, approved UTF-8 `.txt` artifacts with read-back verification; CLI only | `workspace_artifact.rs`, `commands.rs` |
+| Workspace artifact capability | Create-only, approved UTF-8 `.txt` artifacts with read-back verification; CLI and bounded planner proposal | `workspace_artifact.rs`, `commands.rs`, `repl.rs` |
 | RID | Instance identity, age, XP ledger, deterministic level curve, 99 stat slots | `rid.rs`, `rid_store.rs`, `rid_catalogue.rs` |
 | Memory | Explicit user-approved local records, schema v1, search/export/delete and backup recovery | `memory.rs`, `commands.rs` |
 | Evaluation | Offline deterministic Core Integrity checks and latest JSON report | `eval.rs` |
@@ -102,7 +102,7 @@ External agent-trajectory, memory-transfer, and generalization benchmarks are pl
 
 ## Planned architecture—not current capability
 
-The workspace artifact command is a narrow first application service, not general agent tool access. It is currently invoked directly by the user; the planner does not yet propose or dispatch it. A version-1 JSONL trace records workspace proposal, approval/denial, execution/failure, and verification events without artifact bodies; complete turn/reflection persistence and restart recovery are not yet implemented. Filesystem checks fail closed for detected symlinks but do not claim protection against a hostile local process racing filesystem changes.
+The workspace artifact command is a narrow first application service, not general agent tool access. The planner may propose an optional typed artifact intent, but cannot approve it; dispatch always returns to the interactive CLI for exact human confirmation. A version-1 JSONL trace records workspace proposal, approval/denial, execution/failure, and verification events without artifact bodies; complete turn/reflection persistence and restart recovery are not yet implemented. Filesystem checks fail closed for detected symlinks but do not claim protection against a hostile local process racing filesystem changes.
 
 The following are future roadmap stages, not available seed-release behavior:
 
