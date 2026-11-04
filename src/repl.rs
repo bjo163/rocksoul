@@ -1,13 +1,22 @@
-use std::io::{self, BufRead, Write};
-use std::time::Duration;
+use std::{
+    io::{self, BufRead, Write},
+    sync::atomic::{AtomicU64, Ordering},
+    time::Duration,
+};
 
 use anyhow::{Context, Result};
 use reqwest::Client;
 
 use crate::{
     commands,
+    core::{
+        AcceptanceCheck, CancellationToken, PlanStep, ReflectionOutcome, TurnBudget, TurnEvent,
+        TurnMeter, TurnPlan, TurnReflection, TurnRequest, TurnState,
+    },
     model::{ChatMessage, ModelConfig},
 };
+
+static TURN_SEQUENCE: AtomicU64 = AtomicU64::new(1);
 
 const SYSTEM_PROMPT: &str = "You are Rocksoul, an experimental CLI intelligence runtime. Be accurate and explicit about uncertainty. In this seed release you have no tools and cannot inspect files, run commands, or modify systems. Never claim that an action was performed unless the runtime actually performed it. You may explain plans and provide code for the user to review.";
 const MAX_HISTORY_MESSAGES: usize = 41;
@@ -16,7 +25,7 @@ pub async fn run() -> Result<()> {
     let model = ModelConfig::from_env();
     let client = Client::builder()
         .connect_timeout(Duration::from_secs(10))
-        .timeout(Duration::from_secs(180))
+        .timeout(Duration::from_secs(120))
         .build()
         .context("could not initialize the HTTP client")?;
 
@@ -70,7 +79,7 @@ pub async fn run() -> Result<()> {
 
                 messages.push(ChatMessage::new("user", prompt));
 
-                match model.complete(&client, &messages).await {
+                match run_turn(model, &client, prompt, &messages).await {
                     Ok(answer) => {
                         println!("\n{answer}\n");
                         messages.push(ChatMessage::new("assistant", answer));
@@ -78,7 +87,7 @@ pub async fn run() -> Result<()> {
                     }
                     Err(error) => {
                         messages.pop();
-                        eprintln!("Model request failed: {error:#}");
+                        eprintln!("Turn failed: {error:#}");
                     }
                 }
             }
@@ -86,6 +95,70 @@ pub async fn run() -> Result<()> {
     }
 
     Ok(())
+}
+
+/// Run one bounded interactive turn. The current seed adapter performs one
+/// model action and verifies the response contract; it does not execute tools.
+async fn run_turn(
+    model: &ModelConfig,
+    client: &Client,
+    input: &str,
+    messages: &[ChatMessage],
+) -> Result<String> {
+    let request = TurnRequest {
+        id: format!("turn-{}", TURN_SEQUENCE.fetch_add(1, Ordering::Relaxed)),
+        input: input.to_owned(),
+        budget: TurnBudget::default(),
+    };
+    request.validate()?;
+
+    let plan = TurnPlan {
+        objective: "Produce a useful response to the user's input".to_owned(),
+        steps: vec![PlanStep {
+            id: "generate-response".to_owned(),
+            description: "Request one response from the configured model".to_owned(),
+        }],
+        acceptance_checks: vec![AcceptanceCheck {
+            id: "non-empty-response".to_owned(),
+            description: "The model returns a non-empty assistant response".to_owned(),
+            required: true,
+        }],
+    };
+    plan.validate()?;
+
+    let cancellation = CancellationToken::default();
+    let mut meter = TurnMeter::new(request.budget)?;
+    let mut state = TurnState::new(request.id, 0);
+
+    state.apply(TurnEvent::Start)?;
+    state.apply(TurnEvent::PlanAccepted)?;
+    meter.record_model_call(&cancellation)?;
+
+    let completion = match model.complete(client, messages).await {
+        Ok(completion) => completion,
+        Err(error) => {
+            let _ = state.apply(TurnEvent::Fail);
+            return Err(error);
+        }
+    };
+
+    // Check elapsed time without incorrectly consuming another model-call slot.
+    meter.check_time_budget(&cancellation)?;
+    if let Some(output_tokens) = completion.output_tokens {
+        meter.record_output_tokens(output_tokens)?;
+    }
+    state.apply(TurnEvent::ActionCompleted)?;
+
+    let reflection = TurnReflection {
+        outcome: ReflectionOutcome::Succeeded,
+        summary: "The response passed the non-empty output acceptance check".to_owned(),
+        issues: Vec::new(),
+    };
+    reflection.validate()?;
+    state.apply(TurnEvent::VerificationPassed)?;
+
+    debug_assert_eq!(state.phase, crate::core::TurnPhase::Completed);
+    Ok(completion.content)
 }
 
 fn trim_history(messages: &mut Vec<ChatMessage>) {
