@@ -144,6 +144,70 @@ pub fn init() -> Result<()> {
     Ok(())
 }
 
+/// Persist a complete, content-free verification receipt beside the task trace.
+/// The create-only publish makes retries safe; an existing receipt must match byte-for-byte.
+fn persist_workspace_receipt(
+    logs_dir: &std::path::Path,
+    operation_id: &str,
+    receipt: &crate::core::VerificationReceipt,
+) -> Result<std::path::PathBuf> {
+    use std::io::Write as _;
+
+    let receipt_dir = logs_dir.join("receipts");
+    fs::create_dir_all(&receipt_dir)
+        .with_context(|| format!("could not create receipt directory {}", receipt_dir.display()))?;
+    let operation_key = operation_id.rsplit(':').next().unwrap_or("unknown");
+    let destination = receipt_dir.join(format!("workspace-{operation_key}.json"));
+    let document = serde_json::json!({
+        "schema_version": 1,
+        "operation_id": operation_id,
+        "task_id": receipt.task_id(),
+        "verification_id": receipt.verification_id(),
+        "verified_at_unix": receipt.verified_at_unix(),
+        "required_checks_passed": receipt.required_checks_passed(),
+        "total_checks": receipt.total_checks(),
+        "evidence_refs": receipt.evidence_refs(),
+        "xp_awarded": receipt.xp_awarded(),
+    });
+    let mut encoded = serde_json::to_vec_pretty(&document)
+        .context("could not serialize verification receipt")?;
+    encoded.push(b'\\n');
+
+    if destination.exists() {
+        let existing = fs::read(&destination)
+            .with_context(|| format!("could not read receipt {}", destination.display()))?;
+        anyhow::ensure!(existing == encoded, "existing verification receipt conflicts with this operation");
+        return Ok(destination);
+    }
+
+    let temporary = receipt_dir.join(format!(
+        ".workspace-{operation_key}-{}-{}.tmp",
+        std::process::id(),
+        now_unix()?
+    ));
+    let mut file = fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(&temporary)
+        .context("could not create temporary verification receipt")?;
+    file.write_all(&encoded)?;
+    file.sync_all()?;
+    drop(file);
+
+    let publish = fs::hard_link(&temporary, &destination);
+    let _ = fs::remove_file(&temporary);
+    match publish {
+        Ok(()) => Ok(destination),
+        Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => {
+            let existing = fs::read(&destination)
+                .with_context(|| format!("could not read receipt {}", destination.display()))?;
+            anyhow::ensure!(existing == encoded, "concurrent verification receipt conflicts with this operation");
+            Ok(destination)
+        }
+        Err(error) => Err(error).context("could not publish verification receipt"),
+    }
+}
+
 fn run_workspace(command: WorkspaceCommand) -> Result<()> {
     match command {
         WorkspaceCommand::Trace => {
@@ -286,14 +350,25 @@ fn run_workspace(command: WorkspaceCommand) -> Result<()> {
                 ],
             );
             let verification = verify_turn_and_award_xp(&mut turn, &mut profile, request)?;
-            if let crate::core::VerificationOutcome::Verified { receipt, .. } = &verification {
+            rid_store::save(&paths.rid_file, &profile)
+                .context("could not persist RID after verification")?;
+
+            if let crate::core::VerificationOutcome::Verified { receipt, xp_record } = &verification {
+                let receipt_path = persist_workspace_receipt(
+                    &paths.logs_dir,
+                    &operation_id,
+                    receipt,
+                )?;
+                let newly_awarded = matches!(xp_record, crate::rid::XpRecordOutcome::Recorded);
                 let receipt_detail = format!(
-                    "receipt={} xp={} checks={}/{} evidence={}",
+                    "receipt={} xp={} xp_outcome={} checks={}/{} evidence={} receipt_path={}",
                     receipt.verification_id(),
                     receipt.xp_awarded(),
+                    if newly_awarded { "recorded" } else { "duplicate" },
                     receipt.required_checks_passed(),
                     receipt.total_checks(),
                     receipt.evidence_refs().join(","),
+                    receipt_path.display(),
                 );
                 task_trace::append(
                     &trace_path,
@@ -308,18 +383,19 @@ fn run_workspace(command: WorkspaceCommand) -> Result<()> {
                     &operation_id,
                     TaskTraceEvent::Failed,
                     &proposal.filename,
-                    "independent verification failed",
+                    "independent verification failed; no XP receipt",
                 )?;
             }
-            rid_store::save(&paths.rid_file, &profile)?;
             println!("Workspace artifact {outcome_label}: {}", path.display());
             println!("Independent read-back verified: {bytes} bytes.");
             println!("RID XP total: {}.", profile.total_xp());
-            if let crate::core::VerificationOutcome::Verified { receipt, .. } = verification {
+            if let crate::core::VerificationOutcome::Verified { receipt, xp_record } = verification {
+                let newly_awarded = matches!(xp_record, crate::rid::XpRecordOutcome::Recorded);
                 println!(
-                    "Verification receipt: {} · {} XP",
+                    "Verification receipt: {} · {} XP {}",
                     receipt.verification_id(),
-                    receipt.xp_awarded()
+                    if newly_awarded { receipt.xp_awarded() } else { 0 },
+                    if newly_awarded { "awarded" } else { "(idempotent replay; no new XP)" }
                 );
             }
         }
