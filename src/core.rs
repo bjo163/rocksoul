@@ -106,10 +106,16 @@ impl fmt::Display for TransitionError {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::InvalidTransition { phase, event } => {
-                write!(formatter, "event {event:?} is invalid while turn is {phase:?}")
+                write!(
+                    formatter,
+                    "event {event:?} is invalid while turn is {phase:?}"
+                )
             }
             Self::RetryBudgetExhausted { max_retries } => {
-                write!(formatter, "turn retry budget exhausted (maximum {max_retries})")
+                write!(
+                    formatter,
+                    "turn retry budget exhausted (maximum {max_retries})"
+                )
             }
             Self::TerminalState(phase) => {
                 write!(formatter, "terminal turn state {phase:?} cannot transition")
