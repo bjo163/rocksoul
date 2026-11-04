@@ -14,9 +14,8 @@ pub fn load(path: &Path) -> Result<RuhProfile> {
     if !path.exists() {
         let backup = backup_path(path);
         if backup.is_file() {
-            fs::rename(&backup, path).with_context(|| {
-                format!("could not recover RID backup {}", backup.display())
-            })?;
+            fs::rename(&backup, path)
+                .with_context(|| format!("could not recover RID backup {}", backup.display()))?;
         } else {
             return Err(anyhow!("RID profile does not exist at {}", path.display()));
         }
@@ -56,8 +55,7 @@ pub fn save(path: &Path, profile: &RuhProfile) -> Result<()> {
     let parent = path
         .parent()
         .ok_or_else(|| anyhow!("RID profile path has no parent directory"))?;
-    fs::create_dir_all(parent)
-        .with_context(|| format!("could not create {}", parent.display()))?;
+    fs::create_dir_all(parent).with_context(|| format!("could not create {}", parent.display()))?;
 
     let bytes = serde_json::to_vec_pretty(profile).context("could not serialize RID profile")?;
     let temporary = temporary_path(path)?;
@@ -90,7 +88,8 @@ pub fn save(path: &Path, profile: &RuhProfile) -> Result<()> {
             let _ = fs::rename(&backup, path);
         }
         let _ = fs::remove_file(&temporary);
-        return Err(error).with_context(|| format!("could not replace RID profile {}", path.display()));
+        return Err(error)
+            .with_context(|| format!("could not replace RID profile {}", path.display()));
     }
 
     if moved_previous {
