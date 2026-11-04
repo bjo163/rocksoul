@@ -124,6 +124,14 @@ jobs:
             if ($LASTEXITCODE -ne 0) { throw "Portable memory write failed" }
             & $exe memory list
             if ($LASTEXITCODE -ne 0) { throw "Portable memory list failed" }
+
+            "WRITE windows-smoke.txt" | & $exe workspace write windows-smoke.txt --content "Windows workspace smoke artifact"
+            if ($LASTEXITCODE -ne 0) { throw "Approved workspace artifact write failed" }
+            $artifact = Join-Path $portableRoot "workspace/windows-smoke.txt"
+            if (!(Test-Path $artifact)) { throw "Workspace artifact was not created" }
+            if ((Get-Content $artifact -Raw) -ne "Windows workspace smoke artifact") { throw "Workspace artifact read-back mismatch" }
+            & $exe workspace trace
+            if ($LASTEXITCODE -ne 0) { throw "Workspace task trace inspection failed" }
           }
           finally {
             Pop-Location
