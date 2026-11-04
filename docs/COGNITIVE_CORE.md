@@ -63,4 +63,5 @@ The CLI exposes one narrow create-only workspace artifact operation:
 - The trusted command path submits observed read-back checks to the RID verifier; only a verified receipt can add XP.
 - Cooperative cancellation is checked before execution and immediately before publication. Terminal interrupt wiring and cancellation during a blocking filesystem call are not implemented.
 - This command is not yet invoked by the model planner. Model reflection remains non-evidence.
-- Complete persisted task traces, robust cross-process locking, adversarial filesystem race protection, retry/backoff, and end-to-end planner orchestration remain unfinished.
+- The CLI appends content-free version-1 JSONL lifecycle events under `logs/task-trace.v1.jsonl`; `rocksoul workspace trace` displays them.
+- Complete turn/reflection persistence, recoverable receipts, robust cross-process locking, adversarial filesystem race protection, retry/backoff, and end-to-end planner orchestration remain unfinished.
