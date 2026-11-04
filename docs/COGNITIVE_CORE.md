@@ -61,7 +61,7 @@ The CLI exposes one narrow create-only workspace artifact operation:
 - The service rejects detected workspace/target symlinks, refuses overwrites, stages content in the workspace, publishes without replacing an existing target, and independently reopens the final file to compare bytes.
 - Identical same-name/same-content replay is idempotent. Conflicting content is rejected.
 - The trusted command path submits observed read-back checks to the RID verifier; only a verified receipt can add XP.
-- Cooperative cancellation is checked before execution and immediately before publication. Terminal interrupt wiring and cancellation during a blocking filesystem call are not implemented.
-- This command is not yet invoked by the model planner. Model reflection remains non-evidence.
+- Cooperative cancellation is checked before execution and immediately before publication. Ctrl+C cancels model-driven REPL turns between model calls; terminal workspace execution and blocking filesystem cancellation are not yet signal-wired.
+- The REPL planner may now return an optional typed artifact intent, which is validated and passed to the same interactive approval command. The planner cannot approve or execute it. Model reflection remains non-evidence for the filesystem effect.
 - The CLI appends content-free version-1 JSONL lifecycle events under `logs/task-trace.v1.jsonl`; `rocksoul workspace trace` displays them.
 - Complete turn/reflection persistence, recoverable receipts, robust cross-process locking, adversarial filesystem race protection, retry/backoff, and end-to-end planner orchestration remain unfinished.
