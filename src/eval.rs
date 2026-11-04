@@ -409,7 +409,7 @@ fn stage1_workspace_checks(now: u64, checks: &mut Vec<EvaluationCheck>) -> Resul
         "Only trusted file/read-back evidence passes verification and records XP",
     ));
 
-    let replay_ok = if let Some(approved) = approval.as_ref().ok() {
+    let replay_ok = verification_ok && if let Some(approved) = approval.as_ref().ok() {
         matches!(
             service.execute_approved_with_retry(
                 &item,
