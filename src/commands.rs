@@ -19,7 +19,7 @@ name = "Rocksoul"
 profile = "seed"
 
 [model]
-# Model settings are read from the dotenv file beside rocksoul.exe:
+# Model settings are read from the .env file in the Rocksoul root:
 # ROCKSOUL_BASE_URL, ROCKSOUL_MODEL, ROCKSOUL_API_KEY.
 provider = "openai-compatible"
 
@@ -29,7 +29,7 @@ automatic_promotion = false
 "#;
 
 const INITIAL_ENV: &str = r#"# Rocksoul model configuration
-# This file must stay beside rocksoul.exe.
+# This file stays in the Rocksoul installation root beside rocksoul.exe.
 # Existing Windows process environment variables take precedence.
 
 # Local Ollama example: uncomment and set the model you installed.
@@ -91,12 +91,15 @@ pub fn init() -> Result<()> {
     };
     let (_, rid_created) = rid_store::initialize(&paths.rid_file, identity)?;
 
-    println!("Rocksoul initialized.");
+    println!("Rocksoul initialized (portable root layout).");
+    println!("Root: {}", paths.root_dir.display());
     println!("Config: {}", paths.config_file.display());
     println!("Environment: {}", paths.env_file.display());
     println!("Workspace: {}", paths.workspace_dir.display());
     println!("Memory: {}", paths.memory_dir.display());
     println!("Evolution archive: {}", paths.evolution_dir.display());
+    println!("Cache: {}", paths.cache_dir.display());
+    println!("Logs: {}", paths.logs_dir.display());
     println!(
         "RID profile: {} ({})",
         paths.rid_file.display(),
@@ -123,6 +126,7 @@ pub fn status() -> Result<()> {
     let model = ModelConfig::from_env();
 
     println!("Rocksoul v{}", env!("CARGO_PKG_VERSION"));
+    println!("Root: {}", paths.root_dir.display());
     println!(
         "Initialization: {}",
         if paths.config_file.is_file() {
