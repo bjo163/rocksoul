@@ -8,8 +8,8 @@ mod paths;
 mod repl;
 pub mod rid;
 pub mod rid_catalogue;
-pub mod task_trace;
 mod rid_store;
+pub mod task_trace;
 mod tui;
 pub mod workspace_artifact;
 
