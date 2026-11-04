@@ -120,7 +120,7 @@ pub fn init() -> Result<()> {
     println!("Workspace: {}", paths.workspace_dir.display());
     println!(
         "Memory store: {} ({})",
-        paths.memory_dir.join("store.v1.json").display(),
+        paths.memory_dir.join("store.v2.json").display(),
         if memory_created {
             "created"
         } else {
