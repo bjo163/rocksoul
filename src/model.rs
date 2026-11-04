@@ -38,7 +38,11 @@ impl ModelConfig {
         })
     }
 
-    pub async fn complete(&self, client: &Client, messages: &[ChatMessage]) -> Result<String> {
+    pub async fn complete(
+        &self,
+        client: &Client,
+        messages: &[ChatMessage],
+    ) -> Result<ModelCompletion> {
         let base_url = validate_base_url(&self.base_url)?;
         let endpoint = format!(
             "{}/chat/completions",
@@ -73,14 +77,27 @@ impl ModelConfig {
             .await
             .context("model endpoint returned an invalid chat-completions response")?;
 
-        response
+        let choice = response
             .choices
             .into_iter()
             .next()
-            .map(|choice| choice.message.content)
-            .filter(|content| !content.trim().is_empty())
-            .context("model endpoint returned no assistant message")
+            .context("model endpoint returned no assistant message")?;
+        let content = choice.message.content;
+        if content.trim().is_empty() {
+            bail!("model endpoint returned an empty assistant message");
+        }
+
+        Ok(ModelCompletion {
+            content,
+            output_tokens: response.usage.map(|usage| usage.completion_tokens),
+        })
     }
+}
+
+/// A completion plus provider-reported usage when the endpoint supplies it.
+pub struct ModelCompletion {
+    pub content: String,
+    pub output_tokens: Option<u32>,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -108,6 +125,12 @@ struct ChatCompletionRequest<'a> {
 #[derive(Deserialize)]
 struct ChatCompletionResponse {
     choices: Vec<ChatChoice>,
+    usage: Option<ChatCompletionUsage>,
+}
+
+#[derive(Deserialize)]
+struct ChatCompletionUsage {
+    completion_tokens: u32,
 }
 
 #[derive(Deserialize)]
