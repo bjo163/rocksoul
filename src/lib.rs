@@ -1,9 +1,9 @@
 mod cli;
 mod commands;
-pub mod rid;
 mod model;
 mod paths;
 mod repl;
+pub mod rid;
 
 use anyhow::Result;
 use clap::Parser;
