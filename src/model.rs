@@ -100,10 +100,8 @@ impl ModelConfig {
                     // Do not include provider response bodies: they may contain secrets.
                     drop(response);
                     cancellation.check()?;
-                    tokio::time::sleep(Duration::from_millis(
-                        BASE_BACKOFF_MS * u64::from(attempt),
-                    ))
-                    .await;
+                    tokio::time::sleep(Duration::from_millis(BASE_BACKOFF_MS * u64::from(attempt)))
+                        .await;
                     meter.check_time_budget(cancellation)?;
                     continue;
                 }
