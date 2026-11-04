@@ -100,7 +100,6 @@ impl ModelConfig {
         Ok(ModelCompletion {
             content,
             output_tokens,
-            elapsed_ms: meter.elapsed().as_millis().try_into().unwrap_or(u64::MAX),
         })
     }
 }
@@ -109,7 +108,6 @@ impl ModelConfig {
 pub struct ModelCompletion {
     pub content: String,
     pub output_tokens: Option<u32>,
-    pub elapsed_ms: u64,
 }
 
 #[derive(Clone, Debug, Serialize)]
