@@ -7,7 +7,6 @@ use directories::ProjectDirs;
 pub struct AppPaths {
     pub config_dir: PathBuf,
     pub config_file: PathBuf,
-    pub executable_dir: PathBuf,
     pub env_file: PathBuf,
     pub data_dir: PathBuf,
     pub cache_dir: PathBuf,
@@ -24,17 +23,12 @@ impl AppPaths {
 
         let executable_path =
             std::env::current_exe().context("could not determine the current executable path")?;
-        let executable_dir = executable_path
-            .parent()
-            .context("the current executable has no parent directory")?
-            .to_path_buf();
-        let env_file = executable_dir.join(".env");
+        let env_file = dotenv_path_for_executable(&executable_path)?;
         let data_dir = project.data_local_dir().to_path_buf();
 
         Ok(Self {
             config_dir: project.config_dir().to_path_buf(),
             config_file: project.config_dir().join("config.toml"),
-            executable_dir,
             env_file,
             workspace_dir: data_dir.join("workspace"),
             memory_dir: data_dir.join("memory"),
