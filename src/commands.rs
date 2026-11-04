@@ -221,6 +221,27 @@ fn run_workspace(command: WorkspaceCommand) -> Result<()> {
                     println!("{}", serde_json::to_string(&record)?);
                 }
             }
+            let receipt_dir = paths.logs_dir.join("receipts");
+            if receipt_dir.is_dir() {
+                let mut receipts = fs::read_dir(&receipt_dir)
+                    .with_context(|| format!("could not inspect {}", receipt_dir.display()))?
+                    .filter_map(std::result::Result::ok)
+                    .map(|entry| entry.path())
+                    .filter(|path| path.extension().is_some_and(|extension| extension == "json"))
+                    .collect::<Vec<_>>();
+                receipts.sort();
+                for receipt in receipts {
+                    let content = fs::read_to_string(&receipt)
+                        .with_context(|| format!("could not read receipt {}", receipt.display()))?;
+                    let parsed: serde_json::Value = serde_json::from_str(&content)
+                        .with_context(|| format!("invalid receipt {}", receipt.display()))?;
+                    anyhow::ensure!(
+                        parsed.get("schema_version").and_then(serde_json::Value::as_u64) == Some(1),
+                        "unsupported verification receipt schema"
+                    );
+                    println!("receipt: {}", serde_json::to_string(&parsed)?);
+                }
+            }
         }
         WorkspaceCommand::Write { filename, content } => {
             let proposal = WorkspaceArtifactProposal { filename, content };
