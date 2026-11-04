@@ -410,7 +410,7 @@ fn stage1_workspace_checks(now: u64, checks: &mut Vec<EvaluationCheck>) -> Resul
     ));
 
     let replay_ok = verification_ok
-        && if let Some(approved) = approval.as_ref().ok() {
+        && if let Ok(approved) = approval.as_ref() {
             matches!(
                 service.execute_approved_with_retry(&item, approved, &CancellationToken::default()),
                 Ok(ArtifactOutcome::AlreadyPresent { .. })
