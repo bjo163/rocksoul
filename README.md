@@ -92,7 +92,7 @@ The installation root must be writable for portable runtime data. The installer 
 ```powershell
 git clone https://github.com/bjo163/rocksoul.git
 cd rocksoul
-cargo build --release
+cargo build --locked --release
 .\target\release\rocksoul.exe --help
 ```
 
@@ -252,13 +252,13 @@ See [docs/ROADMAP.md](docs/ROADMAP.md) for implementation status and exit criter
 
 ```powershell
 cargo fmt --all -- --check
-cargo clippy --all-targets -- -D warnings
-cargo test --all-targets
-cargo build --release
-cargo run -- eval run core
+cargo clippy --locked --all-targets -- -D warnings
+cargo test --locked --all-targets
+cargo build --locked --release
+cargo run --locked -- eval run core
 ```
 
-CI runs formatting, Clippy, tests, offline core evaluation, and Windows x64 packaging. Windows packaging produces the installer, portable ZIP, and executable as workflow artifacts.
+CI runs formatting, locked dependency resolution, Clippy, tests, offline core evaluation, and Windows x64 packaging. Clean Windows-runner smoke tests cover both portable ZIP and installer flows. Windows packaging produces the installer, portable ZIP, and executable as workflow artifacts.
 
 ## Repository governance
 
