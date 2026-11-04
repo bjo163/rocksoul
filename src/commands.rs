@@ -149,11 +149,7 @@ pub fn status() -> Result<()> {
 
     if paths.rid_file.is_file() {
         let profile = rid_store::load(&paths.rid_file)?;
-        println!(
-            "RID: level {} · {} XP",
-            profile.level(),
-            profile.total_xp()
-        );
+        println!("RID: level {} · {} XP", profile.level(), profile.total_xp());
     } else {
         println!("RID: not initialized (run rocksoul init)");
     }
@@ -290,14 +286,14 @@ fn rid_history() -> Result<()> {
     for event in events {
         println!(
             "{}  +{} XP  {:?}  event={}  evidence={}",
-            event.occurred_at_unix,
-            event.amount,
-            event.source,
-            event.event_id,
-            event.evidence_ref
+            event.occurred_at_unix, event.amount, event.source, event.event_id, event.evidence_ref
         );
     }
-    println!("Total: {} XP · Level {}", profile.total_xp(), profile.level());
+    println!(
+        "Total: {} XP · Level {}",
+        profile.total_xp(),
+        profile.level()
+    );
     Ok(())
 }
 
