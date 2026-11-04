@@ -374,7 +374,9 @@ fn run_eval(command: EvalCommand) -> Result<()> {
             crate::eval::list();
             Ok(())
         }
-        EvalCommand::Run { suite: EvalSuite::Core } => {
+        EvalCommand::Run {
+            suite: EvalSuite::Core,
+        } => {
             let report = crate::eval::run_core()?;
             crate::eval::print_report(&report);
             if report.passed {
