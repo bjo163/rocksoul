@@ -30,9 +30,6 @@ impl AppPaths {
             .context("the current executable has no parent directory")?
             .to_path_buf();
 
-        let config_dir = root_dir.join("config");
-        let data_dir = root_dir.join("data");
-
         Ok(Self::from_root(root_dir))
     }
 
