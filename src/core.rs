@@ -108,7 +108,8 @@ pub struct VerificationEvidence {
 }
 
 impl VerificationEvidence {
-    pub(crate) fn new(
+    /// Construct evidence from an independently observed result. Never pass raw model claims here.
+    pub fn new(
         check_id: impl Into<String>,
         expected: impl Into<String>,
         observed: impl Into<String>,
@@ -138,7 +139,9 @@ pub struct VerificationRequest {
 }
 
 impl VerificationRequest {
-    pub(crate) fn new(
+    /// Build a verification request inside a trusted application adapter.
+    /// The request must be based on observed tool/runtime results, not model self-report.
+    pub fn new(
         task_id: impl Into<String>,
         verification_id: impl Into<String>,
         verified_at_unix: u64,
@@ -212,7 +215,9 @@ pub enum VerificationOutcome {
 /// Validate an active turn and award XP only when every required acceptance
 /// check matches independently observed evidence. The verification ID makes
 /// replay idempotent; reusing it with different evidence is rejected.
-pub(crate) fn verify_turn_and_award_xp(
+/// Verify a turn using trusted, independently observed evidence and award XP
+/// only after all required checks pass. Do not expose this as a model-callable tool.
+pub fn verify_turn_and_award_xp(
     turn: &mut TurnState,
     profile: &mut RuhProfile,
     request: VerificationRequest,
