@@ -162,7 +162,7 @@ fn run_workspace(command: WorkspaceCommand) -> Result<()> {
             let proposal = WorkspaceArtifactProposal { filename, content };
             proposal.validate()?;
             let paths = AppPaths::discover()?;
-            let operation_id = format!("workspace:{}", proposal.filename);
+            let operation_id = proposal.operation_id();
             let trace_path = paths.logs_dir.join("task-trace.v1.jsonl");
             task_trace::append(
                 &trace_path,
@@ -257,9 +257,9 @@ fn run_workspace(command: WorkspaceCommand) -> Result<()> {
             turn.apply(TurnEvent::Start)?;
             turn.apply(TurnEvent::PlanAccepted)?;
             turn.apply(TurnEvent::ActionCompleted)?;
-            let verification_id = format!("workspace-artifact:{}", proposal.filename);
+            let verification_id = format!("workspace-artifact:{operation_id}");
             let request = VerificationRequest::new(
-                format!("workspace-artifact:{}", proposal.filename),
+                operation_id.clone(),
                 verification_id,
                 timestamp,
                 1,
