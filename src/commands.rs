@@ -48,6 +48,7 @@ pub fn run(command: Command) -> Result<()> {
         Command::Init => init(),
         Command::Status => status(),
         Command::Doctor => doctor(),
+        Command::Tui => crate::tui::run(),
         Command::Rid { command } => run_rid(command),
     }
 }
