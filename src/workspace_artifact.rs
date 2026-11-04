@@ -308,6 +308,7 @@ fn is_retryable_io_error(error: &anyhow::Error) -> bool {
 
 #[cfg(test)]
 mod tests {
+    use anyhow::anyhow;
     use std::{
         fs,
         path::PathBuf,
