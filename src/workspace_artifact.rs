@@ -291,7 +291,9 @@ mod tests {
             ArtifactOutcome::Created { .. }
         ));
         assert!(matches!(
-            service.execute_approved(&item, &approve(&item), &CancellationToken::default()).unwrap(),
+            service
+                .execute_approved(&item, &approve(&item), &CancellationToken::default())
+                .unwrap(),
             ArtifactOutcome::AlreadyPresent { .. }
         ));
         let conflict = proposal("note.txt", "second");
