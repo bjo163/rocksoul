@@ -488,39 +488,62 @@ fn render_tasks(frame: &mut Frame<'_>, area: Rect) {
 }
 
 fn render_memory(frame: &mut Frame<'_>, area: Rect) {
-    let lines = match AppPaths::discover()
-        .and_then(|paths| {
-            let store = MemoryStore::load(&paths.memory_dir)?;
-            let now = now_unix()?;
-            let active = store.active_records(now);
-            let count = |kind| active.iter().filter(|record| record.kind == kind).count();
-            let approved = active.iter().filter(|record| record.user_approved).count();
-            let mut lines = vec![
-                Line::from(format!("Store schema         v{}", store.schema_version)),
-                Line::from(format!("Active records       {}", active.len())),
-                Line::from(format!("User-approved        {approved}")),
-                Line::from(format!("Working              {}", count(MemoryKind::Working))),
-                Line::from(format!("Episodic             {}", count(MemoryKind::Episodic))),
-                Line::from(format!("Semantic             {}", count(MemoryKind::Semantic))),
-                Line::from(format!("Procedural           {}", count(MemoryKind::Procedural))),
-                Line::from(format!("Derived              {}", count(MemoryKind::Derived))),
-                Line::from(""),
-                Line::from(format!("Store: {}", paths.memory_dir.join("store.v1.json").display())),
-                Line::from(""),
-                Line::from("Recent entries (content hidden in cockpit):"),
-            ];
-            for record in active.iter().rev().take(5) {
-                lines.push(Line::from(format!(
-                    "{}  [{}]  {}",
-                    record.id,
-                    record.kind,
-                    if record.user_approved { "approved" } else { "derived/unapproved" }
-                )));
-            }
-            lines.push(Line::from(""));
-            lines.push(Line::from("Writes require explicit CLI user action; models cannot mutate memory."));
-            Ok(lines)
-        }) {
+    let lines = match AppPaths::discover().and_then(|paths| {
+        let store = MemoryStore::load(&paths.memory_dir)?;
+        let now = now_unix()?;
+        let active = store.active_records(now);
+        let count = |kind| active.iter().filter(|record| record.kind == kind).count();
+        let approved = active.iter().filter(|record| record.user_approved).count();
+        let mut lines = vec![
+            Line::from(format!("Store schema         v{}", store.schema_version)),
+            Line::from(format!("Active records       {}", active.len())),
+            Line::from(format!("User-approved        {approved}")),
+            Line::from(format!(
+                "Working              {}",
+                count(MemoryKind::Working)
+            )),
+            Line::from(format!(
+                "Episodic             {}",
+                count(MemoryKind::Episodic)
+            )),
+            Line::from(format!(
+                "Semantic             {}",
+                count(MemoryKind::Semantic)
+            )),
+            Line::from(format!(
+                "Procedural           {}",
+                count(MemoryKind::Procedural)
+            )),
+            Line::from(format!(
+                "Derived              {}",
+                count(MemoryKind::Derived)
+            )),
+            Line::from(""),
+            Line::from(format!(
+                "Store: {}",
+                paths.memory_dir.join("store.v1.json").display()
+            )),
+            Line::from(""),
+            Line::from("Recent entries (content hidden in cockpit):"),
+        ];
+        for record in active.iter().rev().take(5) {
+            lines.push(Line::from(format!(
+                "{}  [{}]  {}",
+                record.id,
+                record.kind,
+                if record.user_approved {
+                    "approved"
+                } else {
+                    "derived/unapproved"
+                }
+            )));
+        }
+        lines.push(Line::from(""));
+        lines.push(Line::from(
+            "Writes require explicit CLI user action; models cannot mutate memory.",
+        ));
+        Ok(lines)
+    }) {
         Ok(lines) => lines,
         Err(error) => vec![
             Line::from("MEMORY STORE UNAVAILABLE"),
