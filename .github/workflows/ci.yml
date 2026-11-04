@@ -50,7 +50,7 @@ jobs:
           retention-days: 7
 
   windows-build:
-    name: Build Windows executable
+    name: Build, package, and smoke-test Windows release
     runs-on: windows-latest
     steps:
       - name: Checkout
@@ -86,6 +86,81 @@ jobs:
           Copy-Item config\config.example.toml "$root\config\config.example.toml"
           Copy-Item README.md $root
           Compress-Archive -Path "$root\*" -DestinationPath "dist\Rocksoul-$version-windows-x64-portable.zip" -Force
+
+      - name: Smoke-test portable ZIP on a clean Windows runner
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+          $portableRoot = Join-Path $env:RUNNER_TEMP "rocksoul-portable-smoke"
+          $portableZip = "dist\Rocksoul-$env:ROCKSOUL_VERSION-windows-x64-portable.zip"
+          Expand-Archive -Path $portableZip -DestinationPath $portableRoot -Force
+          $exe = Join-Path $portableRoot "rocksoul.exe"
+          if (!(Test-Path $exe)) { throw "Portable ZIP is missing rocksoul.exe" }
+
+          Push-Location $portableRoot
+          try {
+            & $exe init
+            if ($LASTEXITCODE -ne 0) { throw "Portable init failed" }
+            foreach ($path in @(".env", "config/config.toml", "data/identity/rid.json", "data/memory/store.v1.json")) {
+              if (!(Test-Path (Join-Path $portableRoot $path))) { throw "Missing initialized path: $path" }
+            }
+
+            Add-Content .env "# smoke-test-preserve"
+            Add-Content config/config.toml "# smoke-test-preserve"
+            & $exe init
+            if ($LASTEXITCODE -ne 0) { throw "Second portable init failed" }
+            if (!(Select-String -Path .env -SimpleMatch "# smoke-test-preserve" -Quiet)) { throw ".env was overwritten by init" }
+            if (!(Select-String -Path config/config.toml -SimpleMatch "# smoke-test-preserve" -Quiet)) { throw "config.toml was overwritten by init" }
+
+            & $exe status
+            if ($LASTEXITCODE -ne 0) { throw "Portable status failed" }
+            & $exe doctor
+            if ($LASTEXITCODE -ne 0) { throw "Portable doctor failed" }
+            & $exe rid status
+            if ($LASTEXITCODE -ne 0) { throw "Portable RID status failed" }
+            & $exe eval run core
+            if ($LASTEXITCODE -ne 0) { throw "Portable core evaluation failed" }
+            & $exe memory add semantic --content "portable smoke test record"
+            if ($LASTEXITCODE -ne 0) { throw "Portable memory write failed" }
+            & $exe memory list
+            if ($LASTEXITCODE -ne 0) { throw "Portable memory list failed" }
+          }
+          finally {
+            Pop-Location
+          }
+
+      - name: Smoke-test installer install, initialize, and uninstall preservation
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+          $installRoot = Join-Path $env:RUNNER_TEMP "rocksoul-installer-smoke"
+          $installer = "dist\Rocksoul-Setup-$env:ROCKSOUL_VERSION-x64.exe"
+          if (!(Test-Path $installer)) { throw "Installer artifact not found: $installer" }
+
+          $process = Start-Process -FilePath (Resolve-Path $installer) -ArgumentList @("/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/SP-", "/DIR=$installRoot") -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw "Installer failed with exit code $($process.ExitCode)" }
+
+          $exe = Join-Path $installRoot "rocksoul.exe"
+          if (!(Test-Path $exe)) { throw "Installed executable is missing" }
+          Push-Location $installRoot
+          try {
+            & $exe init
+            if ($LASTEXITCODE -ne 0) { throw "Installed init failed" }
+            Add-Content .env "# uninstall-preserve"
+            Add-Content config/config.toml "# uninstall-preserve"
+            & $exe status
+            if ($LASTEXITCODE -ne 0) { throw "Installed status failed" }
+          }
+          finally {
+            Pop-Location
+          }
+
+          $uninstaller = Join-Path $installRoot "unins000.exe"
+          if (!(Test-Path $uninstaller)) { throw "Inno Setup uninstaller not found" }
+          $uninstall = Start-Process -FilePath $uninstaller -ArgumentList @("/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART") -Wait -PassThru
+          if ($uninstall.ExitCode -ne 0) { throw "Uninstaller failed with exit code $($uninstall.ExitCode)" }
+          if (!(Test-Path (Join-Path $installRoot ".env"))) { throw "Uninstall removed user .env" }
+          if (!(Test-Path (Join-Path $installRoot "config/config.toml"))) { throw "Uninstall removed user config" }
 
       - name: Upload rocksoul.exe
         uses: actions/upload-artifact@v4
