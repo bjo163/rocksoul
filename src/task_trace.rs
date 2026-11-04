@@ -86,7 +86,7 @@ mod tests {
         time::{SystemTime, UNIX_EPOCH},
     };
 
-    use super::{TaskTraceEvent, append};
+    use super::{TaskTraceEvent, append, read};
 
     #[test]
     fn appends_versioned_content_free_jsonl_records() {
@@ -115,6 +115,7 @@ mod tests {
         .unwrap();
         let text = fs::read_to_string(&path).unwrap();
         assert_eq!(text.lines().count(), 2);
+        assert_eq!(read(&path).unwrap().len(), 2);
         assert!(text.contains("\"schema_version\":1"));
         assert!(!text.contains("private artifact body"));
         fs::remove_file(path).unwrap();
