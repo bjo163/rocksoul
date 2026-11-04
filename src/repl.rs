@@ -51,6 +51,7 @@ pub async fn run() -> Result<()> {
         match prompt.to_ascii_lowercase().as_str() {
             ":help" | "help" | "?" => print_help(),
             ":status" | "status" => commands::status()?,
+            ":rid" | "rid" => commands::rid_status()?,
             ":init" | "init" => commands::init()?,
             ":clear" | "clear" => {
                 messages.clear();
@@ -100,6 +101,7 @@ fn print_help() {
     println!("  :help    Show this help");
     println!("  :status  Show runtime and model status");
     println!("  :init    Initialize local directories and config");
+    println!("  :rid     Show Ruh Information (age, level, XP, stat coverage)");
     println!("  :clear   Clear the current conversation");
     println!("  :exit    Exit Rocksoul");
     println!();
