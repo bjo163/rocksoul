@@ -21,11 +21,11 @@ The roadmap is capability-driven. Each stage must deliver a working, tested incr
 - [x] Generate a structured plan with a dedicated model call.
 - [x] Execute at most three ordered model-only steps.
 - [x] Enforce per-turn model-call, elapsed-time, and reported-token budgets.
-- [ ] Add a separate model reflection pass with independently evaluated acceptance checks.
+- [x] Add a separate model reflection pass that reviews outputs against required acceptance checks (model-based, not external verification).
 - [ ] Wire terminal cancellation and implement retry backoff/idempotency.
 - [ ] Add token estimation for providers that omit usage metadata.
 
-Current status: a turn performs one planning call and one to three model-only execution calls. No shell, filesystem, or external tools are exposed. Verification confirms non-empty outputs, not factual completion of plan-specific acceptance checks.
+Current status: a turn performs one planning call, one to three model-only execution calls, and one model reflection call. The reflector reviews required acceptance checks against the outputs, but this is not independent factual verification. No shell, filesystem, or external tools are exposed.
 
 ## Stage 2 — Persistent memory
 
