@@ -117,7 +117,13 @@ pub async fn run() -> Result<()> {
 
                 let cancellation = CancellationToken::default();
                 let history_snapshot = messages.clone();
-                let turn = run_turn(model, &client, request, &history_snapshot, cancellation.clone());
+                let turn = run_turn(
+                    model,
+                    &client,
+                    request,
+                    &history_snapshot,
+                    cancellation.clone(),
+                );
                 tokio::pin!(turn);
                 let result = tokio::select! {
                     result = &mut turn => result,
