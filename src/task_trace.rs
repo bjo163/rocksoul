@@ -3,6 +3,7 @@ use std::{
     fs::{self, OpenOptions},
     io::{Read, Seek, SeekFrom, Write},
     path::Path,
+    sync::{Mutex, OnceLock},
     time::{SystemTime, UNIX_EPOCH},
 };
 
@@ -11,6 +12,8 @@ use serde::Serialize;
 
 #[derive(Clone, Copy, Debug, Serialize)]
 #[serde(rename_all = "snake_case")]
+static TRACE_APPEND_LOCK: OnceLock<Mutex<()>> = OnceLock::new();
+
 pub enum TaskTraceEvent {
     Proposed,
     Approved,
@@ -59,9 +62,12 @@ pub fn append(
         .open(path)
         .with_context(|| format!("could not open task trace {}", path.display()))?;
 
-    // Advisory OS-level locking serializes cooperating processes and is released on process exit.
-    file.lock()
-        .with_context(|| format!("could not lock task trace {}", path.display()))?;
+    // Process-local serialization is compatible with the crate's Rust 1.85 MSRV.
+    // Cross-process writers must remain disabled until a portable OS lock adapter is added.
+    let _guard = TRACE_APPEND_LOCK
+        .get_or_init(|| Mutex::new(()))
+        .lock()
+        .map_err(|_| anyhow::anyhow!("task trace append lock was poisoned"))?;
     let end = file.seek(SeekFrom::End(0))?;
     if end > 0 {
         file.seek(SeekFrom::End(-1))?;
@@ -76,8 +82,6 @@ pub fn append(
         .context("could not append complete task trace record")?;
     file.sync_data()
         .context("could not persist task trace record")?;
-    file.unlock()
-        .with_context(|| format!("could not unlock task trace {}", path.display()))?;
     Ok(())
 }
 
