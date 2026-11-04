@@ -106,7 +106,11 @@ impl XpLedger {
 
     pub fn record(&mut self, event: XpEvent) -> Result<XpRecordOutcome, RidError> {
         event.validate()?;
-        if let Some(existing) = self.events.iter().find(|item| item.event_id == event.event_id) {
+        if let Some(existing) = self
+            .events
+            .iter()
+            .find(|item| item.event_id == event.event_id)
+        {
             return if existing == &event {
                 Ok(XpRecordOutcome::Duplicate)
             } else {
@@ -176,7 +180,9 @@ impl StatRecord {
             || evaluated_at_unix == 0
             || rubric_version.trim().is_empty()
         {
-            return Err(RidError("stat evaluation requires evidence, time, and rubric".into()));
+            return Err(RidError(
+                "stat evaluation requires evidence, time, and rubric".into(),
+            ));
         }
         self.score = Some(score);
         self.confidence = Some(confidence);
@@ -191,18 +197,26 @@ impl StatRecord {
         if !(1..=STAT_COUNT as u8).contains(&id)
             || self.catalogue_entry_id != self.id.catalogue_entry_id()
         {
-            return Err(RidError(format!("invalid stat or catalogue reference: {id}")));
+            return Err(RidError(format!(
+                "invalid stat or catalogue reference: {id}"
+            )));
         }
         match self.score {
             None if self.confidence.is_none()
                 && self.evidence_refs.is_empty()
                 && self.last_evaluated_at_unix.is_none()
-                && self.rubric_version.is_none() => Ok(()),
+                && self.rubric_version.is_none() =>
+            {
+                Ok(())
+            }
             Some(score)
                 if score <= 100
                     && self.confidence.is_some_and(|value| value <= 100)
                     && !self.evidence_refs.is_empty()
-                    && self.evidence_refs.iter().all(|value| !value.trim().is_empty())
+                    && self
+                        .evidence_refs
+                        .iter()
+                        .all(|value| !value.trim().is_empty())
                     && self.last_evaluated_at_unix.is_some_and(|value| value > 0)
                     && self
                         .rubric_version
@@ -269,10 +283,7 @@ impl RuhProfile {
     }
 
     /// Call only after a trusted kernel verifier authorizes the event and evidence.
-    pub fn record_verified_xp(
-        &mut self,
-        event: XpEvent,
-    ) -> Result<XpRecordOutcome, RidError> {
+    pub fn record_verified_xp(&mut self, event: XpEvent) -> Result<XpRecordOutcome, RidError> {
         self.xp_ledger.record(event)
     }
 
@@ -458,9 +469,11 @@ mod tests {
     fn stat_measurements_need_evidence_and_rubric() {
         let mut profile = profile();
         let id = StatId::new(1).unwrap();
-        assert!(profile
-            .record_stat_evaluation(id, 80, 90, Vec::new(), 1_800_000_200, "v1".into())
-            .is_err());
+        assert!(
+            profile
+                .record_stat_evaluation(id, 80, 90, Vec::new(), 1_800_000_200, "v1".into(),)
+                .is_err()
+        );
 
         profile
             .record_stat_evaluation(
@@ -484,26 +497,16 @@ mod tests {
         let mut profile = profile();
         let id = StatId::new(1).unwrap();
         let evidence = vec!["eval://suite/1".into()];
-        assert!(profile
-            .record_stat_evaluation(
-                id,
-                101,
-                90,
-                evidence.clone(),
-                1_800_000_200,
-                "v1".into(),
-            )
-            .is_err());
-        assert!(profile
-            .record_stat_evaluation(
-                id,
-                80,
-                101,
-                evidence,
-                1_800_000_200,
-                "v1".into(),
-            )
-            .is_err());
+        assert!(
+            profile
+                .record_stat_evaluation(id, 101, 90, evidence.clone(), 1_800_000_200, "v1".into(),)
+                .is_err()
+        );
+        assert!(
+            profile
+                .record_stat_evaluation(id, 80, 101, evidence, 1_800_000_200, "v1".into(),)
+                .is_err()
+        );
     }
 
     #[test]
