@@ -489,6 +489,32 @@ mod tests {
         fs::remove_dir_all(root).unwrap();
     }
 
+    #[test]
+    fn rejects_unsupported_extensions_and_oversized_content() {
+        assert!(proposal("note.md", "content").validate().is_err());
+        assert!(proposal("note.txt", &"x".repeat(16 * 1024 + 1)).validate().is_err());
+        assert!(proposal("note.txt", "").validate().is_err());
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn rejects_target_symlink_without_writing_through_it() {
+        use std::os::unix::fs::symlink;
+        let parent = workspace();
+        fs::create_dir_all(&parent).unwrap();
+        let outside = parent.join("outside.txt");
+        fs::write(&outside, "untouched").unwrap();
+        let root = parent.join("workspace");
+        fs::create_dir(&root).unwrap();
+        symlink(&outside, root.join("note.txt")).unwrap();
+        let item = proposal("note.txt", "attacker-controlled target");
+        assert!(WorkspaceArtifactService::new(&root)
+            .execute_approved(&item, &approve(&item), &CancellationToken::default())
+            .is_err());
+        assert_eq!(fs::read_to_string(outside).unwrap(), "untouched");
+        fs::remove_dir_all(parent).unwrap();
+    }
+
     #[cfg(unix)]
     #[test]
     fn rejects_workspace_symlink() {
