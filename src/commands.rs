@@ -281,7 +281,10 @@ fn run_workspace(command: WorkspaceCommand) -> Result<()> {
                 ],
             );
             let verification = verify_turn_and_award_xp(&mut turn, &mut profile, request)?;
-            if matches!(&verification, crate::core::VerificationOutcome::Verified { .. }) {
+            if matches!(
+                &verification,
+                crate::core::VerificationOutcome::Verified { .. }
+            ) {
                 task_trace::append(
                     &trace_path,
                     &operation_id,
