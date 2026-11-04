@@ -14,6 +14,7 @@ pub struct AppPaths {
     pub memory_dir: PathBuf,
     pub evolution_dir: PathBuf,
     pub logs_dir: PathBuf,
+    pub rid_file: PathBuf,
 }
 
 impl AppPaths {
@@ -34,6 +35,7 @@ impl AppPaths {
             memory_dir: data_dir.join("memory"),
             evolution_dir: data_dir.join("evolution"),
             logs_dir: data_dir.join("logs"),
+            rid_file: data_dir.join("identity").join("rid.json"),
             data_dir,
             cache_dir: project.cache_dir().to_path_buf(),
         })
