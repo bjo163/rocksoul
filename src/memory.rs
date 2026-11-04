@@ -9,8 +9,9 @@ use anyhow::{Context, Result, anyhow, bail};
 use clap::ValueEnum;
 use serde::{Deserialize, Serialize};
 
-pub const MEMORY_SCHEMA_VERSION: u16 = 1;
-const STORE_FILE: &str = "store.v1.json";
+pub const MEMORY_SCHEMA_VERSION: u16 = 2;
+const STORE_FILE: &str = "store.v2.json";
+const LEGACY_STORE_FILE: &str = "store.v1.json";
 
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize, ValueEnum)]
 #[serde(rename_all = "snake_case")]
@@ -71,7 +72,8 @@ impl MemoryStore {
             format!("could not create memory directory {}", directory.display())
         })?;
         let path = store_path(directory);
-        if path.exists() || backup_path(&path).exists() {
+        let legacy = legacy_store_path(directory);
+        if path.exists() || backup_path(&path).exists() || legacy.exists() {
             return Ok((Self::load(directory)?, false));
         }
         let store = Self::default();
@@ -79,25 +81,56 @@ impl MemoryStore {
         Ok((store, true))
     }
 
+    /// Load the current store, recover its last known-good backup when needed,
+    /// or migrate the legacy v1 document without modifying the original file.
     pub fn load(directory: &Path) -> Result<Self> {
         let path = store_path(directory);
-        if !path.exists() {
-            let backup = backup_path(&path);
-            if backup.is_file() {
-                fs::rename(&backup, &path).with_context(|| {
-                    format!("could not recover memory backup {}", backup.display())
-                })?;
-            } else {
-                return Ok(Self::default());
+        let backup = backup_path(&path);
+        if path.exists() {
+            match read_current_store(&path) {
+                Ok(store) => return Ok(store),
+                Err(primary_error) => {
+                    // Unknown future versions must fail closed; never replace them
+                    // with an older backup or legacy document.
+                    if is_unsupported_future_version(&path)? {
+                        return Err(primary_error);
+                    }
+                    if backup.is_file() {
+                        let recovered = read_current_store(&backup).with_context(|| {
+                            format!("primary memory store failed and backup {} is also invalid", backup.display())
+                        })?;
+                        restore_backup(&backup, &path)?;
+                        return Ok(recovered);
+                    }
+                    return Err(primary_error).context("no valid memory backup is available");
+                }
             }
         }
 
-        let bytes = fs::read(&path)
-            .with_context(|| format!("could not read memory store {}", path.display()))?;
-        let store: Self = serde_json::from_slice(&bytes)
-            .with_context(|| format!("memory store is not valid JSON: {}", path.display()))?;
-        store.validate()?;
-        Ok(store)
+        if backup.is_file() {
+            let recovered = read_current_store(&backup)?;
+            restore_backup(&backup, &path)?;
+            return Ok(recovered);
+        }
+
+        let legacy = legacy_store_path(directory);
+        if legacy.is_file() {
+            let bytes = fs::read(&legacy)
+                .with_context(|| format!("could not read legacy memory store {}", legacy.display()))?;
+            let mut store: Self = serde_json::from_slice(&bytes)
+                .with_context(|| format!("legacy memory store is not valid JSON: {}", legacy.display()))?;
+            if store.schema_version != 1 {
+                bail!("legacy memory store has unsupported schema version {}; expected 1", store.schema_version);
+            }
+            // v1 and v2 currently share record fields. Keep this migration explicit
+            // so future schema changes can add typed transformations here.
+            store.schema_version = MEMORY_SCHEMA_VERSION;
+            store.validate()?;
+            store.save(directory)?;
+            return Ok(store);
+        }
+
+        Ok(Self::default())
     }
 
     pub fn validate(&self) -> Result<()> {
@@ -264,6 +297,39 @@ fn store_path(directory: &Path) -> PathBuf {
     directory.join(STORE_FILE)
 }
 
+fn legacy_store_path(directory: &Path) -> PathBuf {
+    directory.join(LEGACY_STORE_FILE)
+}
+
+fn read_current_store(path: &Path) -> Result<MemoryStore> {
+    let bytes = fs::read(path)
+        .with_context(|| format!("could not read memory store {}", path.display()))?;
+    let store: MemoryStore = serde_json::from_slice(&bytes)
+        .with_context(|| format!("memory store is not valid JSON: {}", path.display()))?;
+    store.validate()?;
+    Ok(store)
+}
+
+fn is_unsupported_future_version(path: &Path) -> Result<bool> {
+    let bytes = fs::read(path)?;
+    let value: serde_json::Value = serde_json::from_slice(&bytes)?;
+    Ok(value.get("schema_version").and_then(serde_json::Value::as_u64)
+        .is_some_and(|version| version > u64::from(MEMORY_SCHEMA_VERSION)))
+}
+
+fn restore_backup(backup: &Path, destination: &Path) -> Result<()> {
+    let temporary = destination.with_extension("json.recovery.tmp");
+    fs::copy(backup, &temporary)
+        .with_context(|| format!("could not stage memory backup {}", backup.display()))?;
+    if destination.exists() {
+        fs::remove_file(destination)
+            .with_context(|| format!("could not remove corrupt memory store {}", destination.display()))?;
+    }
+    fs::rename(&temporary, destination)
+        .with_context(|| format!("could not restore memory backup {}", backup.display()))?;
+    Ok(())
+}
+
 fn backup_path(path: &Path) -> PathBuf {
     path.with_extension("json.bak")
 }
@@ -297,10 +363,10 @@ fn write_json_atomic<T: Serialize>(path: &Path, value: &T) -> Result<()> {
     let moved_previous = if path.exists() {
         if backup.exists() {
             fs::remove_file(&backup)
-                .with_context(|| format!("could not remove stale backup {}", backup.display()))?;
+                .with_context(|| format!("could not rotate memory backup {}", backup.display()))?;
         }
         fs::rename(path, &backup)
-            .with_context(|| format!("could not stage previous memory file {}", path.display()))?;
+            .with_context(|| format!("could not preserve previous memory file {}", path.display()))?;
         true
     } else {
         false
@@ -315,9 +381,7 @@ fn write_json_atomic<T: Serialize>(path: &Path, value: &T) -> Result<()> {
             .with_context(|| format!("could not replace memory file {}", path.display()));
     }
 
-    if moved_previous {
-        let _ = fs::remove_file(backup);
-    }
+    // Keep the previous valid generation as a durable recovery point.
     Ok(())
 }
 
@@ -329,7 +393,7 @@ mod tests {
         time::{SystemTime, UNIX_EPOCH},
     };
 
-    use super::{MEMORY_SCHEMA_VERSION, MemoryKind, MemoryStore};
+    use super::{MEMORY_SCHEMA_VERSION, MemoryKind, MemoryStore, legacy_store_path, store_path, backup_path};
 
     fn temp_dir() -> PathBuf {
         let nanos = SystemTime::now()
@@ -337,6 +401,85 @@ mod tests {
             .unwrap()
             .as_nanos();
         std::env::temp_dir().join(format!("rocksoul-memory-{}-{nanos}", std::process::id()))
+    }
+
+    #[test]
+    fn migrates_v1_store_to_v2_without_modifying_legacy_file() {
+        let directory = temp_dir();
+        fs::create_dir_all(&directory).unwrap();
+        let mut legacy = MemoryStore::default();
+        legacy.schema_version = 1;
+        legacy.revision = 7;
+        legacy.records.push(super::MemoryRecord {
+            id: "legacy-id".into(),
+            kind: MemoryKind::Semantic,
+            content: "preserve this record".into(),
+            tags: vec!["legacy".into()],
+            source: "user_explicit".into(),
+            user_approved: true,
+            confidence: Some(0.75),
+            created_at_unix: 10,
+            updated_at_unix: 12,
+            expires_at_unix: Some(100),
+        });
+        let legacy_path = legacy_store_path(&directory);
+        fs::write(&legacy_path, serde_json::to_vec_pretty(&legacy).unwrap()).unwrap();
+
+        let migrated = MemoryStore::load(&directory).unwrap();
+        assert_eq!(migrated.schema_version, MEMORY_SCHEMA_VERSION);
+        assert_eq!(migrated.revision, 7);
+        assert_eq!(migrated.records, legacy.records);
+        assert!(legacy_path.is_file());
+        assert!(store_path(&directory).is_file());
+        assert_eq!(MemoryStore::load(&directory).unwrap(), migrated);
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn keeps_previous_valid_generation_as_recovery_backup() {
+        let directory = temp_dir();
+        let (mut store, _) = MemoryStore::initialize(&directory).unwrap();
+        store.add_user_entry(MemoryKind::Semantic, "first".into(), vec![], None, 10).unwrap();
+        store.save(&directory).unwrap();
+        let backup = backup_path(&store_path(&directory));
+        assert!(backup.is_file());
+        let previous: MemoryStore = serde_json::from_slice(&fs::read(&backup).unwrap()).unwrap();
+        assert!(previous.records.is_empty());
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn recovers_corrupt_current_store_from_valid_backup() {
+        let directory = temp_dir();
+        let (mut store, _) = MemoryStore::initialize(&directory).unwrap();
+        store.add_user_entry(MemoryKind::Semantic, "recoverable".into(), vec![], None, 10).unwrap();
+        store.save(&directory).unwrap();
+        let path = store_path(&directory);
+        let backup = backup_path(&path);
+        let previous: MemoryStore = serde_json::from_slice(&fs::read(&backup).unwrap()).unwrap();
+        fs::write(&path, b"{ truncated").unwrap();
+
+        let recovered = MemoryStore::load(&directory).unwrap();
+        assert_eq!(recovered, previous);
+        let on_disk = MemoryStore::load(&directory).unwrap();
+        assert_eq!(on_disk, previous);
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn rejects_unknown_future_version_without_falling_back_to_backup() {
+        let directory = temp_dir();
+        let (store, _) = MemoryStore::initialize(&directory).unwrap();
+        let path = store_path(&directory);
+        let backup = backup_path(&path);
+        fs::copy(&path, &backup).unwrap();
+        let future = serde_json::json!({"schema_version": 99, "revision": 0, "records": []});
+        fs::write(&path, serde_json::to_vec(&future).unwrap()).unwrap();
+        assert!(MemoryStore::load(&directory).is_err());
+        let still_future: serde_json::Value = serde_json::from_slice(&fs::read(&path).unwrap()).unwrap();
+        assert_eq!(still_future["schema_version"], 99);
+        drop(store);
+        fs::remove_dir_all(directory).unwrap();
     }
 
     #[test]
