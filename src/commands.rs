@@ -6,7 +6,8 @@ use std::{
 use anyhow::{Context, Result};
 
 use crate::{
-    cli::{Command, EvalCommand, EvalSuite, RidCommand},
+    cli::{Command, EvalCommand, EvalSuite, MemoryCommand, RidCommand},
+    memory::{MemoryKind, MemoryRecord, MemoryStore},
     model::ModelConfig,
     paths::AppPaths,
     rid::{RuhIdentity, RuhProfile},
@@ -54,6 +55,7 @@ pub fn run(command: Command) -> Result<()> {
         Command::Tui => crate::tui::run(),
         Command::Rid { command } => run_rid(command),
         Command::Eval { command } => run_eval(command),
+        Command::Memory { command } => run_memory(command),
     }
 }
 
@@ -93,13 +95,18 @@ pub fn init() -> Result<()> {
         created_at_unix,
     };
     let (_, rid_created) = rid_store::initialize(&paths.rid_file, identity)?;
+    let (_, memory_created) = MemoryStore::initialize(&paths.memory_dir)?;
 
     println!("Rocksoul initialized (portable root layout).");
     println!("Root: {}", paths.root_dir.display());
     println!("Config: {}", paths.config_file.display());
     println!("Environment: {}", paths.env_file.display());
     println!("Workspace: {}", paths.workspace_dir.display());
-    println!("Memory: {}", paths.memory_dir.display());
+    println!(
+        "Memory store: {} ({})",
+        paths.memory_dir.join("store.v1.json").display(),
+        if memory_created { "created" } else { "preserved" }
+    );
     println!("Evolution archive: {}", paths.evolution_dir.display());
     println!("Cache: {}", paths.cache_dir.display());
     println!("Logs: {}", paths.logs_dir.display());
@@ -164,7 +171,13 @@ pub fn status() -> Result<()> {
         println!("RID: not initialized (run rocksoul init)");
     }
 
-    println!("Persistent memory: not implemented in seed release");
+    let memory = MemoryStore::load(&paths.memory_dir)?;
+    println!(
+        "Memory: {} active records · {} total · {}",
+        memory.active_records(now_unix()?).len(),
+        memory.records.len(),
+        paths.memory_dir.display()
+    );
     println!("Tool execution: disabled in seed release");
     println!("Self-evolution: disabled in seed release");
 
@@ -226,6 +239,15 @@ pub fn doctor() -> Result<()> {
         None => {
             println!("[warn] model not configured; edit .env beside rocksoul.exe");
         }
+    }
+
+    match MemoryStore::load(&paths.memory_dir) {
+        Ok(store) => println!(
+            "[ok] memory store valid (schema {}, {} records)",
+            store.schema_version,
+            store.records.len()
+        ),
+        Err(error) => println!("[error] memory store invalid: {error:#}"),
     }
 
     println!("[info] shell and generated-code execution are disabled.");
@@ -359,6 +381,104 @@ fn format_age(seconds: u64) -> String {
         format!("{minutes}m {remaining}s")
     } else {
         format!("{remaining}s")
+    }
+}
+
+pub fn memory_status() -> Result<()> {
+    let paths = AppPaths::discover()?;
+    let store = MemoryStore::load(&paths.memory_dir)?;
+    print_memory_records(&store.active_records(now_unix()?), "Rocksoul memory");
+    println!("Store: {}", paths.memory_dir.join("store.v1.json").display());
+    Ok(())
+}
+
+fn run_memory(command: MemoryCommand) -> Result<()> {
+    let paths = AppPaths::discover()?;
+    let (mut store, _) = MemoryStore::initialize(&paths.memory_dir)?;
+    match command {
+        MemoryCommand::Add {
+            kind,
+            content,
+            tags,
+            expires_in_hours,
+        } => {
+            if expires_in_hours.is_some() && kind != MemoryKind::Working {
+                anyhow::bail!("--expires-in-hours is only valid for working memory");
+            }
+            let now = now_unix()?;
+            let expires_at = expires_in_hours
+                .map(|hours| {
+                    if hours == 0 {
+                        anyhow::bail!("--expires-in-hours must be greater than zero");
+                    }
+                    let seconds = hours
+                        .checked_mul(3_600)
+                        .context("working-memory expiry is too large")?;
+                    now.checked_add(seconds)
+                        .context("working-memory expiry timestamp overflow")
+                })
+                .transpose()?;
+            let id = store.add_user_entry(kind, content, tags, expires_at, now)?;
+            store.save(&paths.memory_dir)?;
+            println!("Memory saved with explicit user approval.");
+            println!("ID: {id}");
+            println!("Store: {}", paths.memory_dir.join("store.v1.json").display());
+        }
+        MemoryCommand::List => {
+            print_memory_records(&store.active_records(now_unix()?), "Rocksoul memory");
+            println!("{} total records", store.records.len());
+        }
+        MemoryCommand::Search { query } => {
+            let matches = store.search(&query, now_unix()?);
+            print_memory_records(&matches, "Memory search");
+            println!("{} matching records", matches.len());
+        }
+        MemoryCommand::Delete { id } => {
+            if !store.delete(&id) {
+                anyhow::bail!("memory record not found: {id}");
+            }
+            store.save(&paths.memory_dir)?;
+            println!("Deleted memory record {id}.");
+        }
+        MemoryCommand::Clear { confirm } => {
+            if !confirm {
+                anyhow::bail!("this permanently deletes every memory; rerun with --confirm");
+            }
+            store.clear();
+            store.save(&paths.memory_dir)?;
+            println!("All memory records permanently deleted.");
+        }
+        MemoryCommand::Export => {
+            let path = store.export(&paths.memory_dir)?;
+            println!("Memory exported to {}", path.display());
+        }
+    }
+    Ok(())
+}
+
+fn print_memory_records(records: &[&MemoryRecord], heading: &str) {
+    println!("{heading} — {} records", records.len());
+    if records.is_empty() {
+        println!("No matching memory records.");
+        return;
+    }
+    for record in records {
+        let approval = if record.user_approved { "user-approved" } else { "derived/unapproved" };
+        let tags = if record.tags.is_empty() {
+            String::new()
+        } else {
+            format!(" · tags: {}", record.tags.join(", "))
+        };
+        println!(
+            "{}  [{} · {}]  {}{}",
+            record.id, record.kind, approval, record.content, tags
+        );
+        println!(
+            "    source={} · created={} · expires={}",
+            record.source,
+            record.created_at_unix,
+            record.expires_at_unix.map_or_else(|| "never".to_owned(), |value| value.to_string())
+        );
     }
 }
 
