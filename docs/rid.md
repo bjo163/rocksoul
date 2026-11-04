@@ -24,7 +24,18 @@ The domain model and persistence layer are local-first. HTTP API exposure will b
 
 The domain model creates exactly 99 stable slots, linked by IDs `asmaul_husna:01` through `asmaul_husna:99`. The versioned display catalogue now lives at data/rid/asmaul_husna.v1.json. It contains 99 Arabic labels, transliterations, Indonesian/English draft glosses, and 99 unique technical dimensions grouped into nine domains. Each dimension has an operational definition, an evaluation protocol, a minimum sample requirement (20 by default; 30 for safety/governance), and a scoring-rubric ID. The Rust domain refuses a score below the catalogue's sample threshold. Glosses and technical pairings remain editorial drafts pending independent review. A slot remains unrated until a trusted evaluator produces reproducible evidence.
 
-Asmaul Husna is an inspirational naming layer only. Rocksoul does not possess, embody, or measure divine attributes. A stat is an engineering metric with an operational definition, evidence, confidence, and rubric version.
+The nine technical groups are:
+1. Perception & Input Understanding
+2. Memory & Learning
+3. Reasoning & Decision
+4. Execution & Reliability
+5. Language & Interaction
+6. Safety & Governance
+7. Creativity & Transfer
+8. Metacognition & Calibration
+9. Social Cognition & Collaboration
+
+Asmaul Husna is an inspirational naming layer only. Rocksoul does not possess, embody, or measure divine attributes. A stat is an engineering metric with an operational definition, evidence, confidence, sample count, and rubric version.
 
 The selected sequence is the popular enumeration reproduced in Jami at-Tirmidhi 3507, whose grading is displayed as Da'if (Darussalam) on Sunnah.com. Jami at-Tirmidhi 3508 is displayed as Sahih (Darussalam), but explicitly does not enumerate the names. The catalogue records both references and does not claim that its chosen ordering is the only undisputed enumeration. See:
 - Sahih Muslim 2677: https://sunnah.com/muslim/48/5
