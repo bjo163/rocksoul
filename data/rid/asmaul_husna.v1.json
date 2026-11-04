@@ -1309,7 +1309,7 @@
         "label": "Explanation clarity",
         "domain": "language_interaction",
         "domain_label": "Language & Interaction",
-        "definition": "Explains outcomes and outcomes at the requested level of detail.",
+        "definition": "Explains outcomes and supporting evidence at the requested level of detail.",
         "evaluation_protocol": "Measure reader comprehension and ambiguity rate in blind review.",
         "minimum_samples": 20,
         "score_rubric": "evidence_score_0_100_v1",
