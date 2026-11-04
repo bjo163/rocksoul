@@ -7,11 +7,11 @@ use anyhow::{Context, Result, bail};
 use reqwest::Client;
 
 use crate::{
-    commands,
     cli::{Command, WorkspaceCommand},
+    commands,
     core::{
-        CancellationToken, ReflectionOutcome, TurnBudget, TurnEvent,
-        TurnMeter, TurnPlan, TurnReflection, TurnRequest, TurnState,
+        CancellationToken, ReflectionOutcome, TurnBudget, TurnEvent, TurnMeter, TurnPlan,
+        TurnReflection, TurnRequest, TurnState,
     },
     model::{ChatMessage, ModelConfig},
     workspace_artifact::WorkspaceArtifactProposal,
