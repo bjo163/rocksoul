@@ -50,14 +50,22 @@ pub fn append(
         target,
         detail,
     };
+    if path.exists() {
+        let existing = fs::read(path)
+            .with_context(|| format!("could not inspect task trace {}", path.display()))?;
+        if !existing.is_empty() && !existing.ends_with(b"\n") {
+            anyhow::bail!("task trace ends with an incomplete record; refusing to append");
+        }
+    }
+    let mut encoded = serde_json::to_vec(&record).context("could not serialize task trace")?;
+    encoded.push(b'\n');
     let mut file = OpenOptions::new()
         .create(true)
         .append(true)
         .open(path)
         .with_context(|| format!("could not open task trace {}", path.display()))?;
-    serde_json::to_writer(&mut file, &record).context("could not serialize task trace")?;
-    file.write_all(b"\n")
-        .context("could not finish task trace record")?;
+    file.write_all(&encoded)
+        .context("could not append complete task trace record")?;
     file.sync_data()
         .context("could not persist task trace record")?;
     Ok(())
@@ -70,7 +78,8 @@ pub fn read(path: &Path) -> Result<Vec<serde_json::Value>> {
     }
     let content = fs::read_to_string(path)
         .with_context(|| format!("could not read task trace {}", path.display()))?;
-    content
+    let complete_end = content.rfind('\n').map_or(0, |index| index + 1);
+    content[..complete_end]
         .lines()
         .filter(|line| !line.trim().is_empty())
         .map(|line| {
@@ -87,6 +96,26 @@ mod tests {
     };
 
     use super::{TaskTraceEvent, append, read};
+
+    #[test]
+    fn ignores_incomplete_trailing_record_and_refuses_to_append_after_it() {
+        let path = std::env::temp_dir().join(format!(
+            "rocksoul-trace-partial-{}.jsonl",
+            SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        append(&path, "op-1", TaskTraceEvent::Proposed, "note.txt", "proposal").unwrap();
+        use std::io::Write as _;
+        let mut file = fs::OpenOptions::new().append(true).open(&path).unwrap();
+        file.write_all(b"{\\"partial\\":").unwrap();
+        assert_eq!(read(&path).unwrap().len(), 1);
+        assert!(
+            append(&path, "op-2", TaskTraceEvent::Failed, "other.txt", "failed").is_err()
+        );
+        fs::remove_file(path).unwrap();
+    }
 
     #[test]
     fn appends_versioned_content_free_jsonl_records() {
