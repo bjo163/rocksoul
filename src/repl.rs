@@ -9,8 +9,10 @@ use reqwest::Client;
 
 use crate::{
     commands,
-    core::{CancellationToken, ReflectionOutcome, TurnBudget, TurnEvent, TurnMeter, TurnPlan,
-        TurnReflection, TurnRequest, TurnState},
+    core::{
+        CancellationToken, ReflectionOutcome, TurnBudget, TurnEvent, TurnMeter, TurnPlan,
+        TurnReflection, TurnRequest, TurnState,
+    },
     model::{ChatMessage, ModelConfig},
 };
 
@@ -117,7 +119,11 @@ async fn run_turn(
     let plan = parse_plan(&planning.content)?;
     plan.validate()?;
     if plan.steps.len() > MAX_PLAN_STEPS {
-        bail!("planner returned too many steps: {} (maximum {})", plan.steps.len(), MAX_PLAN_STEPS);
+        bail!(
+            "planner returned too many steps: {} (maximum {})",
+            plan.steps.len(),
+            MAX_PLAN_STEPS
+        );
     }
     state.apply(TurnEvent::PlanAccepted)?;
 
@@ -132,13 +138,24 @@ async fn run_turn(
         meter.record_model_call(&cancellation)?;
         execution.push(ChatMessage::new(
             "user",
-            format!("Plan step {}/{} [{}]: {}. Provide the result for this step only.", index + 1, plan.steps.len(), step.id, step.description),
+            format!(
+                "Plan step {}/{} [{}]: {}. Provide the result for this step only.",
+                index + 1,
+                plan.steps.len(),
+                step.id,
+                step.description
+            ),
         ));
         let completion = model.complete(client, &execution).await?;
         meter.check_time_budget(&cancellation)?;
         record_usage(&mut meter, completion.output_tokens)?;
         execution.push(ChatMessage::new("assistant", completion.content.clone()));
-        outputs.push(format!("Step {} — {}\n{}", index + 1, step.id, completion.content));
+        outputs.push(format!(
+            "Step {} — {}\n{}",
+            index + 1,
+            step.id,
+            completion.content
+        ));
     }
 
     state.apply(TurnEvent::ActionCompleted)?;
@@ -149,7 +166,10 @@ async fn run_turn(
     }
     let reflection = TurnReflection {
         outcome: ReflectionOutcome::Succeeded,
-        summary: format!("{} bounded model steps returned non-empty output", outputs.len()),
+        summary: format!(
+            "{} bounded model steps returned non-empty output",
+            outputs.len()
+        ),
         issues: Vec::new(),
     };
     reflection.validate()?;
@@ -161,7 +181,10 @@ async fn run_turn(
 fn parse_plan(raw: &str) -> Result<TurnPlan> {
     let trimmed = raw.trim();
     let json = if let Some(rest) = trimmed.strip_prefix("```json") {
-        rest.trim().strip_suffix("```").unwrap_or(rest.trim()).trim()
+        rest.trim()
+            .strip_suffix("```")
+            .unwrap_or(rest.trim())
+            .trim()
     } else if let Some(rest) = trimmed.strip_prefix("```") {
         rest.trim().strip_suffix("```").unwrap_or(rest.trim()).trim()
     } else {
