@@ -910,7 +910,8 @@ mod tests {
             TurnEvent, TurnState, VerificationEvidence, VerificationOutcome, VerificationRequest,
             verify_turn_and_award_xp,
         },
-        rid::{RuhIdentity, RuhProfile},
+        rid::{RuhIdentity, RuhProfile, XpRecordOutcome},
+        rid_store,
     };
 
     use super::{format_age, persist_workspace_receipt};
@@ -924,43 +925,81 @@ mod tests {
     }
 
     #[test]
-    fn verification_receipt_is_durable_idempotent_and_provenance_bound() {
+    fn verification_receipt_recovers_after_profile_persist_before_receipt_write() {
         let nonce = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap()
             .as_nanos();
-        let root = std::env::temp_dir().join(format!("rocksoul-receipt-test-{nonce}"));
+        let root = std::env::temp_dir().join(format!("rocksoul-receipt-recovery-test-{nonce}"));
+        fs::create_dir_all(&root).unwrap();
         let logs = root.join("logs");
+        let rid_path = root.join("rid.json");
+        let artifact_path = root.join("workspace").join("note.txt");
+        fs::create_dir_all(artifact_path.parent().unwrap()).unwrap();
+        fs::write(&artifact_path, "expected").unwrap();
+        let actual_readback = fs::read_to_string(&artifact_path).unwrap();
+
         let mut profile = RuhProfile::new(RuhIdentity {
-            instance_id: "receipt-test".to_owned(),
+            instance_id: "receipt-recovery-test".to_owned(),
             created_at_unix: 1_700_000_000,
         })
         .unwrap();
+        let request = || {
+            VerificationRequest::new(
+                "workspace:note.txt:abc123",
+                "workspace-verification:abc123",
+                1_700_000_001,
+                1,
+                1,
+                vec![VerificationEvidence::new(
+                    "artifact-readback-matches",
+                    "expected",
+                    actual_readback.as_str(),
+                    "workspace-readback:abc123",
+                    true,
+                )],
+            )
+        };
         let mut turn = TurnState::new("receipt-task", 0);
         turn.apply(TurnEvent::Start).unwrap();
         turn.apply(TurnEvent::PlanAccepted).unwrap();
         turn.apply(TurnEvent::ActionCompleted).unwrap();
-        let request = VerificationRequest::new(
-            "workspace:note.txt:abc123",
-            "workspace-verification:abc123",
-            1_700_000_001,
-            1,
-            1,
-            vec![VerificationEvidence::new(
-                "artifact-readback-matches",
-                "expected",
-                "expected",
-                "workspace-readback:abc123",
-                true,
-            )],
-        );
-        let verification = verify_turn_and_award_xp(&mut turn, &mut profile, request).unwrap();
-        let receipt = match verification {
-            VerificationOutcome::Verified { receipt, .. } => receipt,
-            other => panic!("expected verified receipt, got {other:?}"),
-        };
+        let first = verify_turn_and_award_xp(&mut turn, &mut profile, request()).unwrap();
+        assert!(matches!(
+            first,
+            VerificationOutcome::Verified {
+                xp_record: XpRecordOutcome::Recorded,
+                ..
+            }
+        ));
+        rid_store::save(&rid_path, &profile).unwrap();
 
-        let path = persist_workspace_receipt(&logs, "workspace:note.txt:abc123", &receipt).unwrap();
+        // Simulate a process restart after XP persistence but before receipt persistence.
+        drop(profile);
+        drop(turn);
+        let mut recovered_profile = rid_store::load(&rid_path).unwrap();
+        let xp_before_replay = recovered_profile.total_xp();
+        let mut replay_turn = TurnState::new("receipt-task-replay", 0);
+        replay_turn.apply(TurnEvent::Start).unwrap();
+        replay_turn.apply(TurnEvent::PlanAccepted).unwrap();
+        replay_turn.apply(TurnEvent::ActionCompleted).unwrap();
+        let replay = verify_turn_and_award_xp(
+            &mut replay_turn,
+            &mut recovered_profile,
+            request(),
+        )
+        .unwrap();
+        let receipt = match replay {
+            VerificationOutcome::Verified {
+                receipt,
+                xp_record: XpRecordOutcome::Duplicate,
+            } => receipt,
+            other => panic!("expected idempotent replay receipt, got {other:?}"),
+        };
+        assert_eq!(recovered_profile.total_xp(), xp_before_replay);
+
+        let path =
+            persist_workspace_receipt(&logs, "workspace:note.txt:abc123", &receipt).unwrap();
         let document: serde_json::Value =
             serde_json::from_slice(&fs::read(&path).unwrap()).unwrap();
         assert_eq!(document["schema_version"], 1);
