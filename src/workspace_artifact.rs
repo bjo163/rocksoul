@@ -129,20 +129,9 @@ impl WorkspaceArtifactService {
         approval: &UserApproval,
         cancellation: &CancellationToken,
     ) -> Result<ArtifactOutcome> {
-        const MAX_ATTEMPTS: u8 = 3;
-        const BASE_BACKOFF_MS: u64 = 20;
-
-        for attempt in 1..=MAX_ATTEMPTS {
-            cancellation.check()?;
-            match self.execute_approved(proposal, approval, cancellation) {
-                Ok(outcome) => return Ok(outcome),
-                Err(error) if is_retryable_io_error(&error) && attempt < MAX_ATTEMPTS => {
-                    std::thread::sleep(Duration::from_millis(BASE_BACKOFF_MS * u64::from(attempt)));
-                }
-                Err(error) => return Err(error),
-            }
-        }
-        unreachable!("the bounded retry loop always returns or exits with an error")
+        execute_with_bounded_retry(cancellation, || {
+            self.execute_approved(proposal, approval, cancellation)
+        })
     }
 
     /// Publish a create-only artifact after exact user approval, then reopen
@@ -282,6 +271,26 @@ impl WorkspaceArtifactService {
     }
 }
 
+fn execute_with_bounded_retry<T>(
+    cancellation: &CancellationToken,
+    mut operation: impl FnMut() -> Result<T>,
+) -> Result<T> {
+    const MAX_ATTEMPTS: u8 = 3;
+    const BASE_BACKOFF_MS: u64 = 20;
+
+    for attempt in 1..=MAX_ATTEMPTS {
+        cancellation.check()?;
+        match operation() {
+            Ok(value) => return Ok(value),
+            Err(error) if is_retryable_io_error(&error) && attempt < MAX_ATTEMPTS => {
+                std::thread::sleep(Duration::from_millis(BASE_BACKOFF_MS * u64::from(attempt)));
+            }
+            Err(error) => return Err(error),
+        }
+    }
+    unreachable!("the bounded retry loop always returns or exits with an error")
+}
+
 fn is_retryable_io_error(error: &anyhow::Error) -> bool {
     error.chain().any(|cause| {
         cause
@@ -335,6 +344,46 @@ mod tests {
 
     fn approve(proposal: &WorkspaceArtifactProposal) -> UserApproval {
         UserApproval::from_typed_confirmation(proposal, &proposal.approval_phrase()).unwrap()
+    }
+
+    #[test]
+    fn bounded_retry_stops_after_three_transient_failures() {
+        use std::cell::Cell;
+        use std::io;
+
+        let attempts = Cell::new(0_u8);
+        let result = super::execute_with_bounded_retry(
+            &CancellationToken::default(),
+            || {
+                attempts.set(attempts.get() + 1);
+                Err(anyhow!(io::Error::new(
+                    io::ErrorKind::WouldBlock,
+                    "transient test failure",
+                )))
+            },
+        );
+        assert!(result.is_err());
+        assert_eq!(attempts.get(), 3);
+    }
+
+    #[test]
+    fn cancellation_during_retry_backoff_prevents_next_attempt() {
+        use std::cell::Cell;
+        use std::io;
+
+        let attempts = Cell::new(0_u8);
+        let cancellation = CancellationToken::default();
+        let token = cancellation.clone();
+        let result = super::execute_with_bounded_retry(&cancellation, || {
+            attempts.set(attempts.get() + 1);
+            token.cancel();
+            Err(anyhow!(io::Error::new(
+                io::ErrorKind::Interrupted,
+                "cancel after transient failure",
+            )))
+        });
+        assert!(result.is_err());
+        assert_eq!(attempts.get(), 1);
     }
 
     #[test]
