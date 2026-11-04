@@ -62,7 +62,7 @@ For a downloaded executable, place .env beside rocksoul.exe, then run rocksoul.e
 
 Precedence: environment variables already set in Windows/PowerShell take priority over values in .env. The .env file is never overwritten by init. Keep real API keys out of Git; .env is ignored by .gitignore.
 
-The Rocksoul root must be writable for init and runtime data. The Windows installer grants write access only to mutable folders and .env, not to the executable itself.
+The Rocksoul root must be writable for portable ZIP installs. The Windows installer grants write access to mutable data/configuration folders and .env, not to the executable itself.
 
 ### CLI
 
@@ -96,6 +96,32 @@ Chat history is session-only. Each model turn has a bounded request count, 16,00
 Run the offline deterministic suite with `rocksoul eval run core`. It checks kernel lifecycle, bounded retries, terminal-state immutability, verified-XP gating and replay behavior, RID initialization, catalogue integrity, and level progression. Reports are saved inside the Rocksoul root at `data/evaluations/core/latest.json`.
 
 These checks measure bounded software invariants; they do not demonstrate AGI, consciousness, or general intelligence. External benchmark adapters are not yet integrated.
+
+## Windows installation
+
+Download the **Rocksoul-Setup** x64 installer from GitHub Releases, or use the portable ZIP if you prefer to choose and manage the root folder yourself. The installer places the executable in Program Files and keeps all mutable Rocksoul state in subfolders of that same installation root. It preserves `.env`, `config/config.toml`, and runtime data when upgrading or uninstalling.
+
+After installation, edit `.env` in the Rocksoul root, then launch Rocksoul from the Start Menu or run `rocksoul.exe init`.
+
+## Portable root layout
+
+```text
+Rocksoul/
+├── rocksoul.exe
+├── .env
+├── config/
+│   └── config.toml
+├── data/
+│   ├── identity/rid.json
+│   ├── memory/
+│   └── evaluations/
+├── cache/
+├── workspace/
+├── evolution/
+└── logs/
+```
+
+No Rocksoul runtime state is written to AppData, Documents, or another user-profile directory.
 
 ## Configuration
 
