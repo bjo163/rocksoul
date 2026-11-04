@@ -150,7 +150,13 @@ fn is_loopback_host(host: &str) -> bool {
         return true;
     }
 
-    host.parse::<IpAddr>()
+    let normalized = host
+        .strip_prefix('[')
+        .and_then(|value| value.strip_suffix(']'))
+        .unwrap_or(host);
+
+    normalized
+        .parse::<IpAddr>()
         .map(|address| address.is_loopback())
         .unwrap_or(false)
 }
