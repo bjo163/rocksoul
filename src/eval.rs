@@ -23,7 +23,7 @@ use crate::{
 };
 
 pub const CORE_SUITE_ID: &str = "rocksoul.core-integrity";
-pub const CORE_SUITE_VERSION: &str = "1.0.0";
+pub const CORE_SUITE_VERSION: &str = "1.1.0";
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct EvaluationCheck {
@@ -58,7 +58,7 @@ impl EvaluationReport {
 pub fn list() {
     println!("{CORE_SUITE_ID}  v{CORE_SUITE_VERSION}  offline / deterministic");
     println!(
-        "  Validates lifecycle, retry bounds, terminal immutability, RID and catalogue invariants."
+        "  Validates lifecycle, retry bounds, verified XP, workspace approval/read-back/replay, task trace, RID and catalogue invariants."
     );
     println!("  External benchmark adapters: planned; no external datasets are downloaded.");
 }
