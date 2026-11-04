@@ -8,18 +8,34 @@ use reqwest::Client;
 
 use crate::{
     commands,
+    cli::{Command, WorkspaceCommand},
     core::{
-        CancellationToken, ReflectionOutcome, TurnBudget, TurnEvent, TurnMeter, TurnPlan,
-        TurnReflection, TurnRequest, TurnState,
+        AcceptanceCheck, CancellationToken, PlanStep, ReflectionOutcome, TurnBudget, TurnEvent,
+        TurnMeter, TurnPlan, TurnReflection, TurnRequest, TurnState,
     },
     model::{ChatMessage, ModelConfig},
+    workspace_artifact::WorkspaceArtifactProposal,
 };
 
 const SYSTEM_PROMPT: &str = "You are Rocksoul, an experimental CLI intelligence runtime. Be accurate and explicit about uncertainty. You have no tools and cannot inspect files, run commands, or modify systems. Never claim that an action was performed unless the runtime actually performed it.";
-const PLANNER_PROMPT: &str = "You are Rocksoul's planner. Return ONLY JSON with this shape: {\"objective\":string,\"steps\":[{\"id\":string,\"description\":string}],\"acceptance_checks\":[{\"id\":string,\"description\":string,\"required\":boolean}]}. Create 1-3 small ordered reasoning steps and at least one required acceptance check. No markdown or extra prose. Plans are proposals, not executable commands.";
+const PLANNER_PROMPT: &str = "You are Rocksoul's planner. Return ONLY JSON with this shape: {\"objective\":string,\"steps\":[{\"id\":string,\"description\":string}],\"acceptance_checks\":[{\"id\":string,\"description\":string,\"required\":boolean}],\"workspace_artifact\":null|{\"filename\":string,\"content\":string}}. Create 1-3 small ordered reasoning steps and at least one required acceptance check. Set workspace_artifact only when the user explicitly asks to create a text file in the Rocksoul workspace; otherwise set it to null. Only propose a flat ASCII .txt filename and content. This is a proposal only; the runtime will show it and require exact human approval before writing. No markdown or extra prose.";
 const REFLECTOR_PROMPT: &str = "You are the reflector. Review the plan, required checks, and supplied model outputs. Do not claim external actions or facts were verified. Return ONLY JSON with outcome (succeeded, needs_retry, or failed), summary, and issues (array of strings). Use succeeded only when every required check is supported by the outputs; otherwise list concrete unresolved issues. No markdown.";
 const MAX_HISTORY_MESSAGES: usize = 41;
 const MAX_PLAN_STEPS: usize = 3;
+
+#[derive(Clone, Debug, serde::Deserialize)]
+struct WorkspaceArtifactIntent {
+    filename: String,
+    content: String,
+}
+
+#[derive(serde::Deserialize)]
+struct PlannerResponse {
+    #[serde(flatten)]
+    plan: TurnPlan,
+    #[serde(default)]
+    workspace_artifact: Option<WorkspaceArtifactIntent>,
+}
 
 struct TurnResult {
     answer: String,
@@ -27,6 +43,7 @@ struct TurnResult {
     model_calls: u32,
     reported_output_tokens: u32,
     usage_complete: bool,
+    workspace_artifact: Option<WorkspaceArtifactIntent>,
 }
 
 pub async fn run() -> Result<()> {
@@ -53,13 +70,12 @@ pub async fn run() -> Result<()> {
     }
 
     let stdin = io::stdin();
-    let mut reader = stdin.lock();
     let mut input = String::new();
     loop {
         print!("rocksoul> ");
         io::stdout().flush()?;
         input.clear();
-        if reader.read_line(&mut input)? == 0 {
+        if stdin.read_line(&mut input)? == 0 {
             println!();
             break;
         }
@@ -102,6 +118,17 @@ pub async fn run() -> Result<()> {
                 match run_turn(model, &client, request, &messages).await {
                     Ok(result) => {
                         println!("\n{}\n", result.answer);
+                        if let Some(artifact) = result.workspace_artifact {
+                            let command = Command::Workspace {
+                                command: WorkspaceCommand::Write {
+                                    filename: artifact.filename,
+                                    content: artifact.content,
+                                },
+                            };
+                            if let Err(error) = commands::run(command) {
+                                eprintln!("Workspace proposal was not completed: {error:#}");
+                            }
+                        }
                         let token_label = if result.usage_complete {
                             format!("{} reported output tokens", result.reported_output_tokens)
                         } else {
@@ -157,8 +184,19 @@ async fn run_turn(
         .await?;
     meter.check_time_budget(&cancellation)?;
     let mut usage_complete = planning.output_tokens.is_some();
-    let plan = parse_plan(&planning.content)?;
+    let planner_response: PlannerResponse =
+        serde_json::from_str(strip_json_fence(planning.content.trim()))
+            .context("planner returned invalid structured JSON")?;
+    let plan = planner_response.plan;
+    let workspace_artifact = planner_response.workspace_artifact;
     plan.validate()?;
+    if let Some(artifact) = &workspace_artifact {
+        WorkspaceArtifactProposal {
+            filename: artifact.filename.clone(),
+            content: artifact.content.clone(),
+        }
+        .validate()?;
+    }
     if plan.steps.len() > MAX_PLAN_STEPS {
         bail!(
             "planner returned too many steps: {} (maximum {})",
@@ -268,6 +306,7 @@ async fn run_turn(
         model_calls: meter.model_calls(),
         reported_output_tokens: meter.output_tokens(),
         usage_complete,
+        workspace_artifact,
     })
 }
 
