@@ -13,7 +13,7 @@ The first milestone is intentionally small:
 - Local RID identity/progression profile with 99 unrated capability dimensions.
 - A keyboard-first Ratatui Cognitive Cockpit.
 - A deterministic offline Core Integrity evaluation suite.
-- A bounded one-request-per-turn model-call budget.
+- A bounded planner, up to three model-only reasoning steps, and a structured reflector per turn.
 - No desktop app, web app, server, plugin marketplace, autonomous tool execution, or multi-agent framework in the seed release.
 
 Rocksoul is a foundation for agent research and self-evolving software. It is not AGI, and the initial release does not modify or replace its own executable.
@@ -87,7 +87,7 @@ Inside the interactive CLI:
 - :clear — clear the current conversation.
 - :exit — leave the REPL.
 
-Chat history is session-only. Each model turn has a bounded request count, 16,000-token output ceiling (sent as `max_tokens`), and 120-second HTTP timeout. Provider-reported output usage is shown when available; providers that omit usage are marked unavailable. A successful model response is not proof that the user's task was completed. No XP is awarded for ordinary chat. Persistent memory and tool execution remain future milestones.
+Chat history is session-only. Each turn uses one planning call, up to three model-only reasoning calls, and one reflector call. The total budget is five calls, 16,000 output tokens, and 120 seconds. Each call receives a conservative token reservation so the sum of request caps stays within the turn ceiling even if a provider omits usage metadata. The reflector is another model call, not independent verification. A successful turn does not prove the user's real-world task was completed; no XP is awarded for ordinary chat. Persistent memory and external tool execution remain future milestones.
 
 ### RID and evaluation
 
