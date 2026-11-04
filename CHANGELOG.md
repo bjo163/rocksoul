@@ -2,6 +2,21 @@
 
 All notable Rocksoul changes are documented here.
 
+## [0.2.0] — 2026-11-04
+
+### Added
+- Versioned persistent local memory stored in `data/memory/store.v1.json`.
+- Episodic, semantic, procedural, working, and derived memory record types.
+- Explicit user-approved memory writes; no automatic conversation ingestion or model write access.
+- Memory list, search, delete, confirmed clear, working-memory expiry, and root-local JSON export.
+- Real memory status in CLI, REPL, diagnostics, and the Cognitive Cockpit.
+- Core evaluation checks for memory schema integrity and explicit approval.
+
+### Storage and privacy
+- All memory records and exports remain under the Rocksoul installation root.
+- No AppData, Documents, user-profile storage, remote sync, vector database, or external database server.
+- Deletion is permanent in the local store; existing exports are separate files and must be deleted separately if no longer wanted.
+
 ## [0.1.0] — 2026-11-04
 
 ### Added
