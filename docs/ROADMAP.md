@@ -35,7 +35,8 @@ The roadmap is capability-driven. Each stage must deliver a working, tested incr
 - [x] Allow the bounded planner to return an optional typed workspace-artifact intent; validate it and dispatch only through the exact human-approval CLI boundary.
 - [ ] Verify all plan acceptance checks against independent runtime evidence and persist the linked task outcome.
 - [ ] Execute plans through typed application services and approved tools.
-- [ ] Add provider-aware retry classification, backoff and idempotency.
+- [x] Add a three-attempt, bounded-backoff retry wrapper for transient workspace filesystem errors; create-only replay remains idempotent.
+- [ ] Add provider-aware model retry classification and link retry budgets to complete task budgets.
 - [x] Wire Ctrl+C during model-driven turns into the cooperative cancellation token.
 - [ ] Extend cancellation through every executor and blocking operation, including terminal workspace approval/execution.
 - [ ] Verify task acceptance against observed effects; chat response completion is not task success.
