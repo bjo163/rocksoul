@@ -1,6 +1,6 @@
 # Rocksoul Terminal UI — Cognitive Cockpit
 
-**Status:** Design baseline; terminal cockpit MVP implemented in PR #12, with remaining capabilities staged below.  
+**Status:** The opt-in Ratatui cockpit MVP is implemented. This document also contains a broader design target; screens, telemetry, command-palette behavior, and controls described below are not all implemented runtime capabilities.  
 **Product:** Rocksoul local-first cognitive runtime  
 **Interface:** Native terminal application
 
@@ -10,7 +10,7 @@ Rocksoul starts as one executable and one CLI. Its terminal interface should fee
 
 The full-screen experience is named **Rocksoul Cognitive Cockpit**.
 
-The cockpit is not a chatbot skin, a decorative system monitor, or a second application architecture. It is a thin terminal presentation and command layer over the same application services and Cognitive Kernel used by the CLI, REPL, and future HTTP API.
+The cockpit is not a chatbot skin, a decorative system monitor, or a second application architecture. It is an opt-in terminal presentation over the same Rocksoul executable and local state used by the CLI. A future service/API layer is a roadmap possibility, not a current interface.
 
 **Experience statement:** Local intelligence. Observable decisions. Human control.
 
@@ -18,7 +18,7 @@ The visual direction is dark industrial / terminal HUD: charcoal surfaces, disci
 
 ## 2. Product boundaries
 
-Three entry points share one runtime:
+The current executable exposes CLI commands, an interactive REPL, and an opt-in TUI. These are entry points in one process/runtime, not separate services:
 
 | Entry point | Command | Purpose |
 |---|---|---|
