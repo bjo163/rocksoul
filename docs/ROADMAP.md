@@ -67,7 +67,6 @@ The roadmap is capability-driven. Each stage must deliver a working, tested incr
 - [ ] Add retention policies, forgetting workflows, and cross-session evaluation ([#39](https://github.com/bjo163/rocksoul/issues/39)).
 - [ ] Add retrieval ranking and offline evaluation ([#40](https://github.com/bjo163/rocksoul/issues/40)); keep context injection disabled until the evaluation gate passes.
 - [ ] Add human-reviewed model memory proposals without silent writes ([#41](https://github.com/bjo163/rocksoul/issues/41)).
-- [ ] Add model-proposed memory with human approval; never enable silent model writes.
 
 ## Stage 3 — Skills and tools
 
