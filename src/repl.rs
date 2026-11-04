@@ -134,16 +134,19 @@ async fn run_turn(
     state.apply(TurnEvent::PlanAccepted)?;
     meter.record_model_call(&cancellation)?;
 
-    let answer = match model.complete(client, messages).await {
-        Ok(answer) => answer,
+    let completion = match model.complete(client, messages).await {
+        Ok(completion) => completion,
         Err(error) => {
             let _ = state.apply(TurnEvent::Fail);
             return Err(error);
         }
     };
 
-    // Re-check the elapsed-time budget after the network operation returns.
-    meter.before_model_call(&cancellation)?;
+    // Check elapsed time without incorrectly consuming another model-call slot.
+    meter.check_time_budget(&cancellation)?;
+    if let Some(output_tokens) = completion.output_tokens {
+        meter.record_output_tokens(output_tokens)?;
+    }
     state.apply(TurnEvent::ActionCompleted)?;
 
     let reflection = TurnReflection {
@@ -155,7 +158,7 @@ async fn run_turn(
     state.apply(TurnEvent::VerificationPassed)?;
 
     debug_assert_eq!(state.phase, crate::core::TurnPhase::Completed);
-    Ok(answer)
+    Ok(completion.content)
 }
 
 fn trim_history(messages: &mut Vec<ChatMessage>) {
