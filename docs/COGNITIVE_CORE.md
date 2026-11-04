@@ -33,7 +33,9 @@ The current REPL integration implements only a subset: one model call per turn a
 
 - Cancellation is cooperative. An adapter must check the token; it does not forcibly stop an in-flight HTTP request.
 - Token accounting depends on actual usage reported by the model provider. The core does not estimate hidden token usage.
-- The meter must be called by the adapter. It cannot independently observe network requests. The current REPL records model calls and checks elapsed time after the response; it does not yet consume provider-reported token usage, so the output-token limit is not yet enforced in live chat.
+- The meter must be called by the adapter. It cannot independently observe network requests.
+- The seed REPL permits one model call per user turn, requests at most 16,000 output tokens, and applies a 120-second HTTP timeout. Provider-reported output-token usage is recorded when supplied; if a provider omits usage, exact token consumption is unavailable.
+- A successful chat turn currently means a non-empty model response was received. It does not mean the user's underlying task was completed, independently verified, or eligible for XP. No XP is awarded for ordinary chat. The current REPL records model calls and checks elapsed time after the response; it does not yet consume provider-reported token usage, so the output-token limit is not yet enforced in live chat.
 - The current CLI has no interactive cancellation command. The cancellation token is available to adapters but is not yet wired to terminal signals or user input.
 - Retry policy is currently represented by the turn state's bounded retry counter. Backoff, provider-specific retry classification, and idempotency are not yet implemented.
 - No shell, filesystem mutation, tool execution, persistent memory, or self-modification is enabled.
