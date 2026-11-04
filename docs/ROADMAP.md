@@ -31,12 +31,13 @@ The roadmap is capability-driven. Each stage must deliver a working, tested incr
 - [x] Five-call, 16,000-token, 120-second per-turn budget; per-call token reservations remain bounded even when usage metadata is absent.
 - [x] Deterministic lifecycle, retry, terminal-state and budget tests.
 - [x] Independent evidence verifier contract for XP; failed required checks award no XP and replay is idempotent.
-- [ ] Verify plan acceptance checks against independent runtime evidence.
+- [x] Add a narrowly scoped, user-approved create-only workspace text-artifact service with independent read-back verification and idempotent same-content replay (CLI entry point; not yet connected to planner).
+- [ ] Connect planner proposals to typed application services and verify plan acceptance checks against independent runtime evidence.
 - [ ] Execute plans through typed application services and approved tools.
 - [ ] Add provider-aware retry classification, backoff and idempotency.
 - [ ] Wire user interruption into cooperative cancellation.
 - [ ] Verify task acceptance against observed effects; chat response completion is not task success.
-- [ ] Persist turn traces and reflection records.
+- [ ] Persist complete turn traces and reflection records (workspace CLI currently has no durable lifecycle trace).
 
 ## Stage 2 — Persistent memory
 
