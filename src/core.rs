@@ -261,8 +261,8 @@ pub(crate) fn verify_turn_and_award_xp(
         });
     }
 
-    let xp_awarded = (5_u32 + u32::from(request.difficulty) + (passed_required as u32 * 2))
-        .min(100);
+    let xp_awarded =
+        (5_u32 + u32::from(request.difficulty) + (passed_required as u32 * 2)).min(100);
     let event = XpEvent {
         event_id: format!("verification:{}", request.verification_id),
         amount: xp_awarded,
@@ -309,7 +309,10 @@ impl fmt::Display for VerificationError {
             }
             Self::InvalidRequest => write!(formatter, "verification request is invalid"),
             Self::InvalidEvidence => {
-                write!(formatter, "verification evidence is incomplete or duplicated")
+                write!(
+                    formatter,
+                    "verification evidence is incomplete or duplicated"
+                )
             }
             Self::Transition(error) => write!(formatter, "{error}"),
             Self::Rid(error) => write!(formatter, "RID rejected verified XP event: {error}"),
@@ -388,13 +391,7 @@ mod tests {
                     "test://artifact/1",
                     true,
                 ),
-                VerificationEvidence::new(
-                    "format",
-                    "valid",
-                    "valid",
-                    "test://format/1",
-                    true,
-                ),
+                VerificationEvidence::new("format", "valid", "valid", "test://format/1", true),
             ],
         )
     }
@@ -456,12 +453,10 @@ mod tests {
         let mut turn = TurnState::new("turn-early", 1);
         let mut profile = profile();
 
-        assert!(verify_turn_and_award_xp(
-            &mut turn,
-            &mut profile,
-            verified_request("verify-early")
-        )
-        .is_err());
+        assert!(
+            verify_turn_and_award_xp(&mut turn, &mut profile, verified_request("verify-early"))
+                .is_err()
+        );
         assert_eq!(profile.total_xp(), 0);
         assert_eq!(turn.phase, TurnPhase::Idle);
     }
