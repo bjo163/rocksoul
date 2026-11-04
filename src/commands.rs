@@ -156,6 +156,15 @@ fn receipt_matches_ignoring_verification_time(existing: &[u8], expected: &[u8]) 
         serde_json::from_slice(existing).context("existing verification receipt is invalid JSON")?;
     let mut expected: serde_json::Value =
         serde_json::from_slice(expected).context("new verification receipt is invalid JSON")?;
+    let timestamps_present = [&existing, &expected].iter().all(|document| {
+        document
+            .get("verified_at_unix")
+            .and_then(serde_json::Value::as_u64)
+            .is_some()
+    });
+    if !timestamps_present {
+        return Ok(false);
+    }
     for document in [&mut existing, &mut expected] {
         if let Some(object) = document.as_object_mut() {
             object.remove("verified_at_unix");
@@ -165,7 +174,7 @@ fn receipt_matches_ignoring_verification_time(existing: &[u8], expected: &[u8]) 
 }
 
 /// Persist a complete, content-free verification receipt beside the task trace.
-/// The create-only publish makes retries safe; an existing receipt must match byte-for-byte.
+/// The create-only publish makes retries safe; replay must match every immutable field.
 fn persist_workspace_receipt(
     logs_dir: &std::path::Path,
     operation_id: &str,
@@ -977,7 +986,12 @@ mod tests {
         turn.apply(TurnEvent::Start).unwrap();
         turn.apply(TurnEvent::PlanAccepted).unwrap();
         turn.apply(TurnEvent::ActionCompleted).unwrap();
-        let first = verify_turn_and_award_xp(&mut turn, &mut profile, request(1_700_000_001)).unwrap();
+        let first = verify_turn_and_award_xp(
+            &mut turn,
+            &mut profile,
+            request(1_700_000_001),
+        )
+        .unwrap();
         assert!(matches!(
             first,
             VerificationOutcome::Verified {
@@ -996,8 +1010,12 @@ mod tests {
         replay_turn.apply(TurnEvent::Start).unwrap();
         replay_turn.apply(TurnEvent::PlanAccepted).unwrap();
         replay_turn.apply(TurnEvent::ActionCompleted).unwrap();
-        let replay =
-            verify_turn_and_award_xp(&mut replay_turn, &mut recovered_profile, request(1_700_000_002)).unwrap();
+        let replay = verify_turn_and_award_xp(
+            &mut replay_turn,
+            &mut recovered_profile,
+            request(1_700_000_002),
+        )
+        .unwrap();
         let receipt = match replay {
             VerificationOutcome::Verified {
                 receipt,
@@ -1020,7 +1038,8 @@ mod tests {
             &mut second_replay_turn,
             &mut recovered_profile,
             request(1_700_000_003),
-        ).unwrap();
+        )
+        .unwrap();
         let second_receipt = match second_replay {
             VerificationOutcome::Verified {
                 receipt,
@@ -1029,7 +1048,12 @@ mod tests {
             other => panic!("expected a second idempotent replay receipt, got {other:?}"),
         };
         assert_eq!(
-            persist_workspace_receipt(&logs, "workspace:note.txt:abc123", &second_receipt).unwrap(),
+            persist_workspace_receipt(
+                &logs,
+                "workspace:note.txt:abc123",
+                &second_receipt,
+            )
+            .unwrap(),
             path
         );
         assert_eq!(recovered_profile.total_xp(), xp_before_replay);
