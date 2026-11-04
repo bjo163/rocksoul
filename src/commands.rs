@@ -13,6 +13,7 @@ use crate::{
     rid::{RuhIdentity, RuhProfile},
     core::{TurnEvent, TurnState, VerificationEvidence, VerificationRequest, verify_turn_and_award_xp},
     workspace_artifact::{ArtifactOutcome, UserApproval, WorkspaceArtifactProposal, WorkspaceArtifactService},
+    core::CancellationToken,
     rid_catalogue::RidCatalogue,
     rid_store,
 };
@@ -158,7 +159,8 @@ fn run_workspace(command: WorkspaceCommand) -> Result<()> {
 
             let paths = AppPaths::discover()?;
             let service = WorkspaceArtifactService::new(&paths.workspace_dir);
-            let outcome = service.execute_approved(&proposal, &approval)?;
+            let cancellation = CancellationToken::default();
+            let outcome = service.execute_approved(&proposal, &approval, &cancellation)?;
             let (path, bytes, outcome_label) = match outcome {
                 ArtifactOutcome::Created { path, bytes } => (path, bytes, "created"),
                 ArtifactOutcome::AlreadyPresent { path, bytes } => (path, bytes, "already present (idempotent replay)"),
