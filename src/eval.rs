@@ -315,10 +315,8 @@ pub fn run_core() -> Result<EvaluationReport> {
 }
 
 fn stage1_workspace_checks(now: u64, checks: &mut Vec<EvaluationCheck>) -> Result<()> {
-    let root = std::env::temp_dir().join(format!(
-        "rocksoul-stage1-eval-{now}-{}",
-        std::process::id()
-    ));
+    let root =
+        std::env::temp_dir().join(format!("rocksoul-stage1-eval-{now}-{}", std::process::id()));
     let item = WorkspaceArtifactProposal {
         filename: "stage1-eval.txt".to_owned(),
         content: "approved and independently observed".to_owned(),
@@ -351,7 +349,9 @@ fn stage1_workspace_checks(now: u64, checks: &mut Vec<EvaluationCheck>) -> Resul
         _ => None,
     };
     let readback_ok = observed.as_ref().is_some_and(|(path, content)| {
-        path.is_file() && content == &item.content && fs::read(path).is_ok_and(|bytes| bytes == item.content.as_bytes())
+        path.is_file()
+            && content == &item.content
+            && fs::read(path).is_ok_and(|bytes| bytes == item.content.as_bytes())
     });
     checks.push(check(
         "stage1.approved_create_and_readback",
@@ -409,18 +409,15 @@ fn stage1_workspace_checks(now: u64, checks: &mut Vec<EvaluationCheck>) -> Resul
         "Only trusted file/read-back evidence passes verification and records XP",
     ));
 
-    let replay_ok = verification_ok && if let Some(approved) = approval.as_ref().ok() {
-        matches!(
-            service.execute_approved_with_retry(
-                &item,
-                approved,
-                &CancellationToken::default()
-            ),
-            Ok(ArtifactOutcome::AlreadyPresent { .. })
-        )
-    } else {
-        false
-    };
+    let replay_ok = verification_ok
+        && if let Some(approved) = approval.as_ref().ok() {
+            matches!(
+                service.execute_approved_with_retry(&item, approved, &CancellationToken::default()),
+                Ok(ArtifactOutcome::AlreadyPresent { .. })
+            )
+        } else {
+            false
+        };
     let xp_before_replay = profile.total_xp();
     let replay_verification = if replay_ok {
         observed.as_ref().and_then(|(path, _)| {
@@ -525,10 +522,7 @@ fn stage1_workspace_checks(now: u64, checks: &mut Vec<EvaluationCheck>) -> Resul
         let symlink_rejected = WorkspaceArtifactService::new(&link_root)
             .execute_approved(
                 &link_item,
-                &UserApproval::from_typed_confirmation(
-                    &link_item,
-                    &link_item.approval_phrase(),
-                )?,
+                &UserApproval::from_typed_confirmation(&link_item, &link_item.approval_phrase())?,
                 &CancellationToken::default(),
             )
             .is_err()
