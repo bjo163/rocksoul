@@ -509,7 +509,7 @@ fn stage1_workspace_checks(now: u64, checks: &mut Vec<EvaluationCheck>) -> Resul
     {
         use std::os::unix::fs::symlink;
         let outside = root.join("outside.txt");
-        fs::write(&outside, "preserve").ok();
+        fs::write(&outside, "preserve")?;
         let link_root = root.join("linked-workspace");
         fs::create_dir_all(&link_root)?;
         symlink(&outside, link_root.join("linked.txt"))?;
