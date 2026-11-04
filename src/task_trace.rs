@@ -3,14 +3,11 @@ use std::{
     fs::{self, OpenOptions},
     io::{Read, Seek, SeekFrom, Write},
     path::Path,
-    sync::{Mutex, OnceLock},
     time::{SystemTime, UNIX_EPOCH},
 };
 
 use anyhow::{Context, Result};
 use serde::Serialize;
-
-static TRACE_APPEND_LOCK: OnceLock<Mutex<()>> = OnceLock::new();
 
 #[derive(Clone, Copy, Debug, Serialize)]
 #[serde(rename_all = "snake_case")]
@@ -63,12 +60,9 @@ pub fn append(
         .open(path)
         .with_context(|| format!("could not open task trace {}", path.display()))?;
 
-    // Process-local serialization is compatible with the crate's Rust 1.85 MSRV.
-    // Cross-process writers must remain disabled until a portable OS lock adapter is added.
-    let _guard = TRACE_APPEND_LOCK
-        .get_or_init(|| Mutex::new(()))
-        .lock()
-        .map_err(|_| anyhow::anyhow!("task trace append lock was poisoned"))?;
+    // OS-level exclusive locking serializes writers across threads and processes.
+    file.lock_exclusive()
+        .with_context(|| format!("could not lock task trace {}", path.display()))?;
     let end = file.seek(SeekFrom::End(0))?;
     if end > 0 {
         file.seek(SeekFrom::End(-1))?;
@@ -83,6 +77,8 @@ pub fn append(
         .context("could not append complete task trace record")?;
     file.sync_data()
         .context("could not persist task trace record")?;
+    file.unlock()
+        .with_context(|| format!("could not unlock task trace {}", path.display()))?;
     Ok(())
 }
 
@@ -158,6 +154,55 @@ mod tests {
         file.write_all(b"{\"partial\":").unwrap();
         assert_eq!(read(&path).unwrap().len(), 1);
         assert!(append(&path, "op-2", TaskTraceEvent::Failed, "other.txt", "failed").is_err());
+        fs::remove_file(path).unwrap();
+    }
+
+    #[test]
+    fn append_helper_process() {
+        if let (Ok(path), Ok(operation_id)) = (
+            std::env::var("ROCKSOUL_TRACE_HELPER_PATH"),
+            std::env::var("ROCKSOUL_TRACE_HELPER_OPERATION"),
+        ) {
+            append(
+                std::path::Path::new(&path),
+                &operation_id,
+                TaskTraceEvent::Proposed,
+                "process.txt",
+                "cross-process proposal",
+            )
+            .unwrap();
+        }
+    }
+
+    #[test]
+    fn cross_process_appends_are_serialized_and_remain_parseable() {
+        use std::process::Command;
+
+        let path = std::env::temp_dir().join(format!(
+            "rocksoul-trace-process-{}.jsonl",
+            SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        let executable = std::env::current_exe().unwrap();
+        let mut children = Vec::new();
+        for index in 0..4 {
+            children.push(
+                Command::new(&executable)
+                    .arg("--exact")
+                    .arg("task_trace::tests::append_helper_process")
+                    .arg("--nocapture")
+                    .env("ROCKSOUL_TRACE_HELPER_PATH", &path)
+                    .env("ROCKSOUL_TRACE_HELPER_OPERATION", format!("process-{index}"))
+                    .spawn()
+                    .unwrap(),
+            );
+        }
+        for mut child in children {
+            assert!(child.wait().unwrap().success());
+        }
+        assert_eq!(read(&path).unwrap().len(), 4);
         fs::remove_file(path).unwrap();
     }
 
