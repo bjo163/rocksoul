@@ -6,7 +6,7 @@ use std::{
 use anyhow::{Context, Result};
 
 use crate::{
-    cli::{Command, RidCommand},
+    cli::{Command, EvalCommand, EvalSuite, RidCommand},
     model::ModelConfig,
     paths::AppPaths,
     rid::{RuhIdentity, RuhProfile},
@@ -50,6 +50,7 @@ pub fn run(command: Command) -> Result<()> {
         Command::Doctor => doctor(),
         Command::Tui => crate::tui::run(),
         Command::Rid { command } => run_rid(command),
+        Command::Eval { command } => run_eval(command),
     }
 }
 
@@ -364,5 +365,30 @@ mod tests {
         assert_eq!(format_age(65), "1m 5s");
         assert_eq!(format_age(3_661), "1h 1m 1s");
         assert_eq!(format_age(90_061), "1d 1h 1m");
+    }
+}
+
+fn run_eval(command: EvalCommand) -> Result<()> {
+    match command {
+        EvalCommand::List => {
+            crate::eval::list();
+            Ok(())
+        }
+        EvalCommand::Run { suite: EvalSuite::Core } => {
+            let report = crate::eval::run_core()?;
+            crate::eval::print_report(&report);
+            if report.passed {
+                Ok(())
+            } else {
+                anyhow::bail!("one or more core integrity checks failed")
+            }
+        }
+        EvalCommand::Latest => {
+            match crate::eval::latest()? {
+                Some(report) => crate::eval::print_report(&report),
+                None => println!("No evaluation report yet. Run: rocksoul eval run core"),
+            }
+            Ok(())
+        }
     }
 }
