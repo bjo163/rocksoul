@@ -308,7 +308,10 @@ impl RuhProfile {
     }
 
     /// Call only after a trusted kernel verifier authorizes the event and evidence.
-    pub(crate) fn record_verified_xp(&mut self, event: XpEvent) -> Result<XpRecordOutcome, RidError> {
+    pub(crate) fn record_verified_xp(
+        &mut self,
+        event: XpEvent,
+    ) -> Result<XpRecordOutcome, RidError> {
         self.xp_ledger.record(event)
     }
 
