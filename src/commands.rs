@@ -364,7 +364,10 @@ async fn run_workspace(command: WorkspaceCommand) -> Result<()> {
                 Ok(outcome) => outcome,
                 Err(error) => {
                     let (event, detail) = if cancellation.is_cancelled() {
-                        (TaskTraceEvent::Cancelled, "workspace execution cancelled before publication")
+                        (
+                            TaskTraceEvent::Cancelled,
+                            "workspace execution cancelled before publication",
+                        )
                     } else {
                         (TaskTraceEvent::Failed, "workspace execution failed")
                     };
