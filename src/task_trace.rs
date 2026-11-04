@@ -211,6 +211,20 @@ mod tests {
     }
 
     #[test]
+    fn rejects_malformed_complete_jsonl_records() {
+        let path = std::env::temp_dir().join(format!(
+            "rocksoul-trace-malformed-{}.jsonl",
+            SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        fs::write(&path, b"{not-json}\\n").unwrap();
+        assert!(read(&path).is_err());
+        fs::remove_file(path).unwrap();
+    }
+
+    #[test]
     fn appends_versioned_content_free_jsonl_records() {
         let path = std::env::temp_dir().join(format!(
             "rocksoul-trace-{}.jsonl",
