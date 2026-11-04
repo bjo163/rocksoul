@@ -61,7 +61,7 @@ The roadmap is capability-driven. Each stage must deliver a working, tested incr
 - [x] Support list, text/tag search, permanent deletion, confirmed clear, and root-local export.
 - [x] Support expiry for working-memory records.
 - [x] Show real store counts and provenance in the Cognitive Cockpit.
-- [ ] Add explicit schema migrations and backup restore diagnostics.
+- [x] Add explicit v1-to-v2 schema migration with metadata-preserving validation and durable backup recovery diagnostics.
 - [ ] Add memory locking for multiple concurrent Rocksoul processes.
 - [ ] Add retention policies, forgetting workflows, and cross-session evaluation.
 - [ ] Add retrieval ranking and memory context injection only after provenance and relevance tests.
