@@ -38,7 +38,7 @@ The current REPL integration implements only a subset: one model call per turn a
 - A successful chat turn currently means a non-empty model response was received. It does not mean the user's underlying task was completed, independently verified, or eligible for XP. No XP is awarded for ordinary chat. The current REPL records model calls and checks elapsed time after the response; it does not yet consume provider-reported token usage, so the output-token limit is not yet enforced in live chat.
 - The current CLI has no interactive cancellation command. The cancellation token is available to adapters but is not yet wired to terminal signals or user input.
 - Retry policy is currently represented by the turn state's bounded retry counter. Backoff, provider-specific retry classification, and idempotency are not yet implemented.
-- No shell, filesystem mutation, tool execution, persistent memory, or self-modification is enabled.
+- No shell, filesystem mutation by the model, tool execution, persistent memory, or self-modification is enabled. Rocksoul's own configuration and runtime files are stored in the executable's root folder, not in the user profile.
 
 ## Validation
 
