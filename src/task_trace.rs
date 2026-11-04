@@ -1,7 +1,7 @@
 //! Append-only, content-free lifecycle records for approved workspace tasks.
 use std::{
     fs::{self, OpenOptions},
-    io::Write,
+    io::{Read, Seek, SeekFrom, Write},
     path::Path,
     time::{SystemTime, UNIX_EPOCH},
 };
@@ -50,24 +50,34 @@ pub fn append(
         target,
         detail,
     };
-    if path.exists() {
-        let existing = fs::read(path)
-            .with_context(|| format!("could not inspect task trace {}", path.display()))?;
-        if !existing.is_empty() && !existing.ends_with(b"\n") {
-            anyhow::bail!("task trace ends with an incomplete record; refusing to append");
-        }
-    }
     let mut encoded = serde_json::to_vec(&record).context("could not serialize task trace")?;
-    encoded.push(b'\n');
+    encoded.push(b'\\n');
     let mut file = OpenOptions::new()
         .create(true)
+        .read(true)
         .append(true)
         .open(path)
         .with_context(|| format!("could not open task trace {}", path.display()))?;
+
+    // Advisory OS-level locking serializes cooperating processes and is released on process exit.
+    file.lock()
+        .with_context(|| format!("could not lock task trace {}", path.display()))?;
+    let end = file.seek(SeekFrom::End(0))?;
+    if end > 0 {
+        file.seek(SeekFrom::End(-1))?;
+        let mut last = [0_u8; 1];
+        file.read_exact(&mut last)?;
+        if last[0] != b'\\n' {
+            anyhow::bail!("task trace ends with an incomplete record; refusing to append");
+        }
+        file.seek(SeekFrom::End(0))?;
+    }
     file.write_all(&encoded)
         .context("could not append complete task trace record")?;
     file.sync_data()
         .context("could not persist task trace record")?;
+    file.unlock()
+        .with_context(|| format!("could not unlock task trace {}", path.display()))?;
     Ok(())
 }
 
@@ -83,7 +93,19 @@ pub fn read(path: &Path) -> Result<Vec<serde_json::Value>> {
         .lines()
         .filter(|line| !line.trim().is_empty())
         .map(|line| {
-            serde_json::from_str(line).context("task trace contains an invalid JSONL record")
+            let record: serde_json::Value =
+                serde_json::from_str(line).context("task trace contains an invalid JSONL record")?;
+            anyhow::ensure!(
+                record.get("schema_version").and_then(serde_json::Value::as_u64) == Some(1),
+                "task trace contains an unsupported schema version"
+            );
+            anyhow::ensure!(
+                record.get("operation_id").and_then(serde_json::Value::as_str).is_some()
+                    && record.get("event").and_then(serde_json::Value::as_str).is_some()
+                    && record.get("target").and_then(serde_json::Value::as_str).is_some(),
+                "task trace record is missing required fields"
+            );
+            Ok(record)
         })
         .collect()
 }
@@ -119,6 +141,35 @@ mod tests {
         file.write_all(b"{\"partial\":").unwrap();
         assert_eq!(read(&path).unwrap().len(), 1);
         assert!(append(&path, "op-2", TaskTraceEvent::Failed, "other.txt", "failed").is_err());
+        fs::remove_file(path).unwrap();
+    }
+
+    #[test]
+    fn concurrent_appends_are_serialized_and_remain_parseable() {
+        let path = std::env::temp_dir().join(format!(
+            "rocksoul-trace-concurrent-{}.jsonl",
+            SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos()
+        ));
+        let mut workers = Vec::new();
+        for index in 0..8 {
+            let path = path.clone();
+            workers.push(std::thread::spawn(move || {
+                append(&path, &format!("op-{index}"), TaskTraceEvent::Proposed, "note.txt", "proposal").unwrap();
+            }));
+        }
+        for worker in workers { worker.join().unwrap(); }
+        assert_eq!(read(&path).unwrap().len(), 8);
+        fs::remove_file(path).unwrap();
+    }
+
+    #[test]
+    fn rejects_unknown_schema_versions() {
+        let path = std::env::temp_dir().join(format!(
+            "rocksoul-trace-schema-{}.jsonl",
+            SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos()
+        ));
+        fs::write(&path, "{\\"schema_version\\":2,\\"operation_id\\":\\"op\\",\\"event\\":\\"proposed\\",\\"target\\":\\"x.txt\\"}\\n").unwrap();
+        assert!(read(&path).is_err());
         fs::remove_file(path).unwrap();
     }
 
