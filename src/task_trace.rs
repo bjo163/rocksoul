@@ -20,6 +20,7 @@ pub enum TaskTraceEvent {
     Denied,
     Executed,
     Failed,
+    Cancelled,
     Verified,
 }
 
