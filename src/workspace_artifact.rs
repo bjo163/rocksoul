@@ -145,6 +145,19 @@ impl WorkspaceArtifactService {
         approval: &UserApproval,
         cancellation: &CancellationToken,
     ) -> Result<ArtifactOutcome> {
+        self.execute_approved_with_publish_hook(proposal, approval, cancellation, || {})
+    }
+
+    fn execute_approved_with_publish_hook<F>(
+        &self,
+        proposal: &WorkspaceArtifactProposal,
+        approval: &UserApproval,
+        cancellation: &CancellationToken,
+        before_publish: F,
+    ) -> Result<ArtifactOutcome>
+    where
+        F: FnOnce(),
+    {
         cancellation.check()?;
         proposal.validate()?;
         if approval.operation_id != proposal.operation_id() {
@@ -173,7 +186,7 @@ impl WorkspaceArtifactService {
                 })
             }
             Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
-                self.create_and_verify(&root, &target, proposal, cancellation)
+                self.create_and_verify(&root, &target, proposal, cancellation, before_publish)
             }
             Err(error) => Err(error).context("could not inspect artifact target"),
         }
@@ -195,13 +208,17 @@ impl WorkspaceArtifactService {
         Ok(())
     }
 
-    fn create_and_verify(
+    fn create_and_verify<F>(
         &self,
         root: &Path,
         target: &Path,
         proposal: &WorkspaceArtifactProposal,
         cancellation: &CancellationToken,
-    ) -> Result<ArtifactOutcome> {
+        before_publish: F,
+    ) -> Result<ArtifactOutcome>
+    where
+        F: FnOnce(),
+    {
         let nonce = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .context("system clock is before the Unix epoch")?
@@ -217,6 +234,9 @@ impl WorkspaceArtifactService {
         file.sync_all()
             .context("could not sync temporary artifact")?;
         drop(file);
+
+        // Tests can deterministically inject cancellation at the publication boundary.
+        before_publish();
 
         // Cancellation is checked before the irreversible publication step.
         if let Err(error) = cancellation.check() {
@@ -363,6 +383,24 @@ mod tests {
             });
         assert!(result.is_err());
         assert_eq!(attempts.get(), 3);
+    }
+
+    #[test]
+    fn cancellation_at_publication_boundary_prevents_file_creation() {
+        let root = workspace();
+        let item = proposal("cancel-at-publish.txt", "must not appear");
+        let cancellation = CancellationToken::default();
+        let service = WorkspaceArtifactService::new(&root);
+        let result = service.execute_approved_with_publish_hook(
+            &item,
+            &approve(&item),
+            &cancellation,
+            || cancellation.cancel(),
+        );
+        assert!(result.is_err());
+        assert!(!root.join("cancel-at-publish.txt").exists());
+        assert_eq!(fs::read_dir(&root).unwrap().count(), 0);
+        fs::remove_dir_all(root).unwrap();
     }
 
     #[test]
