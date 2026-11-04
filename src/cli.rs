@@ -20,4 +20,19 @@ pub enum Command {
     Status,
     /// Check the local setup and model configuration.
     Doctor,
+    /// Inspect the local Ruh Information profile.
+    Rid {
+        #[command(subcommand)]
+        command: RidCommand,
+    },
+}
+
+#[derive(Debug, Subcommand)]
+pub enum RidCommand {
+    /// Display instance age, level, XP, and stat coverage.
+    Status,
+    /// List all 99 capability stat slots and their measurement state.
+    Stats,
+    /// Display the auditable XP progression history.
+    History,
 }
