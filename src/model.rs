@@ -84,10 +84,8 @@ impl ModelConfig {
                 Ok(response) => response,
                 Err(error) if is_retryable_transport(&error) && attempt < MAX_ATTEMPTS => {
                     cancellation.check()?;
-                    tokio::time::sleep(Duration::from_millis(
-                        BASE_BACKOFF_MS * u64::from(attempt),
-                    ))
-                    .await;
+                    tokio::time::sleep(Duration::from_millis(BASE_BACKOFF_MS * u64::from(attempt)))
+                        .await;
                     meter.check_time_budget(cancellation)?;
                     continue;
                 }
@@ -188,10 +186,7 @@ struct ChatResponseMessage {
 }
 
 fn is_retryable_status(status: reqwest::StatusCode) -> bool {
-    matches!(
-        status.as_u16(),
-        408 | 425 | 429 | 500..=599
-    )
+    matches!(status.as_u16(), 408 | 425 | 429 | 500..=599)
 }
 
 fn is_retryable_transport(error: &reqwest::Error) -> bool {
