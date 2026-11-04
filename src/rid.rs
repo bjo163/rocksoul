@@ -72,7 +72,9 @@ impl XpEvent {
             )));
         }
         if self.occurred_at_unix == 0 || self.policy_version == 0 {
-            return Err(RidError("XP timestamp and policy version must be valid".into()));
+            return Err(RidError(
+                "XP timestamp and policy version must be valid".into(),
+            ));
         }
         if self.evidence_ref.trim().is_empty() {
             return Err(RidError("XP event requires an evidence reference".into()));
