@@ -402,11 +402,7 @@ mod tests {
         let altered_item = proposal("note.txt", "different content after approval");
         assert!(
             WorkspaceArtifactService::new(&root)
-                .execute_approved(
-                    &altered_item,
-                    &approval,
-                    &CancellationToken::default()
-                )
+                .execute_approved(&altered_item, &approval, &CancellationToken::default())
                 .is_err()
         );
         assert!(!root.exists());
