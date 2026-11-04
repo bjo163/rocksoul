@@ -37,12 +37,14 @@ The roadmap is capability-driven. Each stage must deliver a working, tested incr
 - [ ] Execute plans through typed application services and approved tools.
 - [x] Add a three-attempt, bounded-backoff retry wrapper for transient workspace filesystem errors; create-only replay remains idempotent.
 - [x] Derive a stable operation/XP idempotency key from the exact filename and content pair.
-- [ ] Add provider-aware model retry classification and link retry budgets to complete task budgets.
+- [x] Add provider-aware model retry classification for connection/timeout and HTTP 408/425/429/5xx failures; every attempt consumes the shared turn call budget.
 - [x] Wire Ctrl+C during model-driven turns into the cooperative cancellation token.
-- [ ] Extend cancellation through every executor and blocking operation, including terminal workspace approval/execution.
+- [ ] Extend cancellation through terminal workspace approval and blocking filesystem operations; model HTTP requests now cancel cooperatively in flight.
 - [ ] Verify task acceptance against observed effects; chat response completion is not task success.
 - [x] Append content-free JSONL lifecycle events for the workspace CLI (proposal, approval/denial, execution/failure, verification).
-- [ ] Persist complete turn traces, model reflections, recoverable operation state, and durable verification receipts.
+- [x] Persist create-only, versioned verification receipt JSON files and expose them through trace inspection.
+- [x] Serialize JSONL trace appends with OS file locks and validate schema version/required fields.
+- [ ] Persist complete planner/turn/reflection state and support recovery of interrupted operations.
 
 ## Stage 2 — Persistent memory
 
