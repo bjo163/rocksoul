@@ -651,6 +651,19 @@ fn render_diagnostics(frame: &mut Frame<'_>, area: Rect, app: &App) {
                 .map(|c| c.catalogue_version.as_str())
                 .unwrap_or("unavailable")
         )),
+        Line::from(format!(
+            "Latest eval   {}",
+            match crate::eval::latest() {
+                Ok(Some(report)) => format!(
+                    "{} ({}/{})",
+                    if report.passed { "PASS" } else { "FAIL" },
+                    report.passed_count(),
+                    report.checks.len()
+                ),
+                Ok(None) => "not run".to_owned(),
+                Err(_) => "report unavailable".to_owned(),
+            }
+        )),
         Line::from(""),
         Line::from("No synthetic latency, token, GPU, RAM or activity telemetry is shown."),
     ];
