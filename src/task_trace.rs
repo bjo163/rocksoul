@@ -168,7 +168,12 @@ mod tests {
             "rocksoul-trace-schema-{}.jsonl",
             SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos()
         ));
-        fs::write(&path, "{\\"schema_version\\":2,\\"operation_id\\":\\"op\\",\\"event\\":\\"proposed\\",\\"target\\":\\"x.txt\\"}\\n").unwrap();
+        fs::write(
+            &path,
+            r#"{"schema_version":2,"operation_id":"op","event":"proposed","target":"x.txt"}
+"#,
+        )
+        .unwrap();
         assert!(read(&path).is_err());
         fs::remove_file(path).unwrap();
     }
