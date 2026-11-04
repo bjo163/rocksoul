@@ -579,6 +579,40 @@ mod tests {
         assert!(proposal("note.txt", "").validate().is_err());
     }
 
+    #[cfg(windows)]
+    #[test]
+    fn rejects_target_symlink_without_writing_through_it_when_supported() {
+        use std::os::windows::fs::symlink_file;
+
+        let parent = workspace();
+        fs::create_dir_all(&parent).unwrap();
+        let outside = parent.join("outside.txt");
+        fs::write(&outside, "untouched").unwrap();
+        let root = parent.join("workspace");
+        fs::create_dir(&root).unwrap();
+        let link = root.join("note.txt");
+        if let Err(error) = symlink_file(&outside, &link) {
+            if matches!(
+                error.kind(),
+                std::io::ErrorKind::PermissionDenied | std::io::ErrorKind::Unsupported
+            ) {
+                eprintln!("skipping Windows symlink assertion: {error}");
+                fs::remove_dir_all(parent).unwrap();
+                return;
+            }
+            panic!("could not create Windows symlink fixture: {error}");
+        }
+
+        let item = proposal("note.txt", "attacker-controlled target");
+        assert!(
+            WorkspaceArtifactService::new(&root)
+                .execute_approved(&item, &approve(&item), &CancellationToken::default())
+                .is_err()
+        );
+        assert_eq!(fs::read_to_string(outside).unwrap(), "untouched");
+        fs::remove_dir_all(parent).unwrap();
+    }
+
     #[cfg(unix)]
     #[test]
     fn rejects_target_symlink_without_writing_through_it() {
