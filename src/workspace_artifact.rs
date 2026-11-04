@@ -17,6 +17,15 @@ use crate::core::CancellationToken;
 pub const MAX_ARTIFACT_BYTES: usize = 16 * 1024;
 pub const MAX_FILENAME_BYTES: usize = 64;
 
+fn is_reserved_windows_basename(filename: &str) -> bool {
+    let stem = filename.strip_suffix(".txt").unwrap_or(filename);
+    let upper = stem.to_ascii_uppercase();
+    matches!(upper.as_str(), "CON" | "PRN" | "AUX" | "NUL")
+        || (upper.len() == 4
+            && (upper.starts_with("COM") || upper.starts_with("LPT"))
+            && matches!(upper.as_bytes()[3], b'1'..=b'9'))
+}
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorkspaceArtifactProposal {
     pub filename: String,
@@ -35,8 +44,9 @@ impl WorkspaceArtifactProposal {
             || name == ".txt"
             || name.starts_with('.')
             || name.contains("..")
+            || is_reserved_windows_basename(name)
         {
-            bail!("artifact filename must be a simple ASCII .txt basename");
+            bail!("artifact filename must be a safe, simple ASCII .txt basename");
         }
         if self.content.is_empty() || self.content.len() > MAX_ARTIFACT_BYTES {
             bail!("artifact content must be between 1 and {MAX_ARTIFACT_BYTES} bytes");
@@ -505,6 +515,13 @@ mod tests {
         ));
         assert!(profile.total_xp() > 0);
         fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn rejects_windows_reserved_device_names_on_every_platform() {
+        for filename in ["CON.txt", "aux.txt", "NUL.txt", "COM1.txt", "lpt9.txt"] {
+            assert!(proposal(filename, "content").validate().is_err());
+        }
     }
 
     #[test]
