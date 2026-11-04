@@ -145,7 +145,7 @@ pub async fn run() -> Result<()> {
                                     content: artifact.content,
                                 },
                             };
-                            if let Err(error) = commands::run(command) {
+                            if let Err(error) = commands::run(command).await {
                                 eprintln!("Workspace proposal was not completed: {error:#}");
                             }
                         }
