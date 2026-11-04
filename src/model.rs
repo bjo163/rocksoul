@@ -59,7 +59,7 @@ impl ModelConfig {
         let payload = ChatCompletionRequest {
             model: &self.model,
             messages,
-            max_tokens: budget.max_output_tokens,
+            max_tokens: meter.max_tokens_per_call(),
             stream: false,
         };
 
