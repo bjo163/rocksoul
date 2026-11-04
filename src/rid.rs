@@ -316,7 +316,9 @@ impl RuhProfile {
     }
 
     /// The caller must be a trusted evaluator; models must not self-authorize scores.
-    // Reserved for the trusted benchmark evaluator; keep private until that service is wired.\n    #[allow(dead_code)]\n    pub(crate) fn record_stat_evaluation(
+    // Reserved for the trusted benchmark evaluator; keep private until that service is wired.
+    #[allow(dead_code)]
+    pub(crate) fn record_stat_evaluation(
         &mut self,
         id: StatId,
         evaluation: StatEvaluation,
