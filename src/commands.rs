@@ -1030,7 +1030,7 @@ mod tests {
         // Simulate another restart after receipt publication but before the
         // corresponding Verified trace event. Replay must preserve the first
         // durable receipt even though its observation timestamp is newer.
-        let mut second_replay_turn = TurnState::new("receipt-task-second-replay", 0);
+        let mut second_replay_turn = TurnState::new("receipt-task-replay", 0);
         second_replay_turn.apply(TurnEvent::Start).unwrap();
         second_replay_turn.apply(TurnEvent::PlanAccepted).unwrap();
         second_replay_turn.apply(TurnEvent::ActionCompleted).unwrap();
