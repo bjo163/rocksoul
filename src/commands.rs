@@ -23,6 +23,9 @@ profile = "seed"
 # ROCKSOUL_BASE_URL, ROCKSOUL_MODEL, ROCKSOUL_API_KEY.
 provider = "openai-compatible"
 
+[storage]
+root = "."
+
 [evolution]
 enabled = false
 automatic_promotion = false
