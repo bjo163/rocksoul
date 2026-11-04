@@ -43,7 +43,8 @@ The roadmap is capability-driven. Each stage must deliver a working, tested incr
 - [ ] Verify task acceptance against observed effects; chat response completion is not task success.
 - [x] Append content-free JSONL lifecycle events for the workspace CLI (proposal, approval/denial, execution/failure, verification).
 - [x] Persist create-only, versioned verification receipt JSON files and expose them through trace inspection.
-- [x] Serialize JSONL trace appends with OS file locks and validate schema version/required fields.
+- [x] Serialize JSONL trace appends within the process and validate schema version/required fields.
+- [ ] Add portable cross-process append locking without raising the Rust 1.85 MSRV.
 - [ ] Persist complete planner/turn/reflection state and support recovery of interrupted operations.
 
 ## Stage 2 — Persistent memory
