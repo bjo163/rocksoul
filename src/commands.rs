@@ -355,6 +355,9 @@ fn run_workspace(command: WorkspaceCommand) -> Result<()> {
                 ),
             };
 
+            let observed_regular_file = fs::symlink_metadata(&path).is_ok_and(|metadata| {
+                metadata.is_file() && !metadata.file_type().is_symlink()
+            });
             let timestamp = now_unix()?;
             let mut profile = rid_store::load(&paths.rid_file)
                 .context("RID profile is required; run rocksoul init first")?;
@@ -372,16 +375,16 @@ fn run_workspace(command: WorkspaceCommand) -> Result<()> {
                 vec![
                     VerificationEvidence::new(
                         "artifact-is-regular-file",
-                        "observed-regular-file",
-                        "observed-regular-file",
-                        format!("workspace:{}", proposal.filename),
+                        "true",
+                        if observed_regular_file { "true" } else { "false" },
+                        format!("workspace-artifact:{operation_id}"),
                         true,
                     ),
                     VerificationEvidence::new(
                         "artifact-readback-matches",
                         proposal.content.as_str(),
                         observed_content.as_str(),
-                        format!("workspace-readback:{}", proposal.filename),
+                        format!("workspace-readback:{operation_id}"),
                         true,
                     ),
                 ],
