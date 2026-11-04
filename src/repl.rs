@@ -219,14 +219,14 @@ fn parse_plan(raw: &str) -> Result<TurnPlan> {
 
 fn parse_reflection(raw: &str) -> Result<TurnReflection> {
     let trimmed = raw.trim();
-    let json = if let Some(rest) = trimmed.strip_prefix("\`\`\`json") {
+    let json = if let Some(rest) = trimmed.strip_prefix("```json") {
         rest.trim()
-            .strip_suffix("\`\`\`")
+            .strip_suffix("```")
             .unwrap_or(rest.trim())
             .trim()
-    } else if let Some(rest) = trimmed.strip_prefix("\`\`\`") {
+    } else if let Some(rest) = trimmed.strip_prefix("```") {
         rest.trim()
-            .strip_suffix("\`\`\`")
+            .strip_suffix("```")
             .unwrap_or(rest.trim())
             .trim()
     } else {
