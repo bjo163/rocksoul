@@ -24,10 +24,13 @@ The roadmap is capability-driven. Each stage must deliver a working, tested incr
 - [x] Structured plan and reflection data contracts.
 - [x] Cooperative cancellation token.
 - [x] Model-call, output-token and wall-clock budget meter.
-- [x] REPL integration with one model call per turn, a 16,000 output-token ceiling, and 120-second HTTP timeout.
+- [x] Structured JSON planning with validated unique steps and required acceptance checks.
+- [x] Bounded model-only execution for up to three ordered reasoning steps.
+- [x] Structured reflector review with explicit limitation that it is not independent evidence.
+- [x] Five-call, 16,000-token, 120-second per-turn budget; per-call token reservations remain bounded even when usage metadata is absent.
 - [x] Deterministic lifecycle, retry, terminal-state and budget tests.
 - [x] Independent evidence verifier contract for XP; failed required checks award no XP and replay is idempotent.
-- [ ] Generate and validate structured model plans.
+- [ ] Verify plan acceptance checks against independent runtime evidence.
 - [ ] Execute plans through typed application services and approved tools.
 - [ ] Add provider-aware retry classification, backoff and idempotency.
 - [ ] Wire user interruption into cooperative cancellation.
