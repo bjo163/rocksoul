@@ -122,6 +122,7 @@ rocksoul eval run core
 rocksoul eval latest
 
 rocksoul memory list
+rocksoul workspace write note.txt --content "A verified workspace artifact"
 rocksoul memory add semantic --content "A user-approved fact"
 rocksoul memory search "fact"
 rocksoul memory delete <memory-id>
