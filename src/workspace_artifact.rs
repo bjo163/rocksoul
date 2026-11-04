@@ -7,7 +7,7 @@ use std::{
     fs::{self, OpenOptions},
     io::Write,
     path::{Path, PathBuf},
-    time::{SystemTime, UNIX_EPOCH},
+    time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
 use anyhow::{Context, Result, anyhow, bail};
@@ -94,6 +94,32 @@ impl WorkspaceArtifactService {
         Self {
             workspace_root: workspace_root.into(),
         }
+    }
+
+    /// Retry only transient filesystem errors. The operation is create-only,
+    /// so replaying after an ambiguous publish is safe and resolves as AlreadyPresent.
+    pub fn execute_approved_with_retry(
+        &self,
+        proposal: &WorkspaceArtifactProposal,
+        approval: &UserApproval,
+        cancellation: &CancellationToken,
+    ) -> Result<ArtifactOutcome> {
+        const MAX_ATTEMPTS: u8 = 3;
+        const BASE_BACKOFF_MS: u64 = 20;
+
+        for attempt in 1..=MAX_ATTEMPTS {
+            cancellation.check()?;
+            match self.execute_approved(proposal, approval, cancellation) {
+                Ok(outcome) => return Ok(outcome),
+                Err(error) if is_retryable_io_error(&error) && attempt < MAX_ATTEMPTS => {
+                    std::thread::sleep(Duration::from_millis(
+                        BASE_BACKOFF_MS * u64::from(attempt),
+                    ));
+                }
+                Err(error) => return Err(error),
+            }
+        }
+        unreachable!("the bounded retry loop always returns or exits with an error")
     }
 
     /// Publish a create-only artifact after exact user approval, then reopen
@@ -233,6 +259,21 @@ impl WorkspaceArtifactService {
     }
 }
 
+fn is_retryable_io_error(error: &anyhow::Error) -> bool {
+    error.chain().any(|cause| {
+        cause
+            .downcast_ref::<std::io::Error>()
+            .is_some_and(|io_error| {
+                matches!(
+                    io_error.kind(),
+                    std::io::ErrorKind::Interrupted
+                        | std::io::ErrorKind::WouldBlock
+                        | std::io::ErrorKind::TimedOut
+                )
+            })
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use std::{
@@ -251,6 +292,7 @@ mod tests {
 
     use super::{
         ArtifactOutcome, UserApproval, WorkspaceArtifactProposal, WorkspaceArtifactService,
+        is_retryable_io_error,
     };
 
     fn workspace() -> PathBuf {
@@ -270,6 +312,22 @@ mod tests {
 
     fn approve(proposal: &WorkspaceArtifactProposal) -> UserApproval {
         UserApproval::from_typed_confirmation(proposal, &proposal.approval_phrase()).unwrap()
+    }
+
+    #[test]
+    fn classifies_only_transient_filesystem_errors_for_retry() {
+        let transient = anyhow::Error::new(std::io::Error::from(
+            std::io::ErrorKind::WouldBlock,
+        ));
+        let timeout = anyhow::Error::new(std::io::Error::from(
+            std::io::ErrorKind::TimedOut,
+        ));
+        let permanent = anyhow::Error::new(std::io::Error::from(
+            std::io::ErrorKind::PermissionDenied,
+        ));
+        assert!(is_retryable_io_error(&transient));
+        assert!(is_retryable_io_error(&timeout));
+        assert!(!is_retryable_io_error(&permanent));
     }
 
     #[test]
