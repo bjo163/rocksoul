@@ -7,13 +7,13 @@ use anyhow::{Context, Result};
 
 use crate::{
     cli::{Command, EvalCommand, EvalSuite, MemoryCommand, RidCommand, WorkspaceCommand},
-    memory::{MemoryKind, MemoryRecord, MemoryStore},
-    model::ModelConfig,
-    paths::AppPaths,
     core::CancellationToken,
     core::{
         TurnEvent, TurnState, VerificationEvidence, VerificationRequest, verify_turn_and_award_xp,
     },
+    memory::{MemoryKind, MemoryRecord, MemoryStore},
+    model::ModelConfig,
+    paths::AppPaths,
     rid::{RuhIdentity, RuhProfile},
     rid_catalogue::RidCatalogue,
     rid_store,
