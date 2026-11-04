@@ -2,11 +2,7 @@ use std::fs;
 
 use anyhow::Result;
 
-use crate::{
-    cli::Command,
-    model::ModelConfig,
-    paths::AppPaths,
-};
+use crate::{cli::Command, model::ModelConfig, paths::AppPaths};
 
 const INITIAL_CONFIG: &str = r#"[core]
 name = "Rocksoul"
@@ -84,9 +80,12 @@ pub fn status() -> Result<()> {
         "Model: {}",
         model
             .as_ref()
-            .map(|config| format!("{} at {}", config.model, config.base_url))
-            .unwrap_or_else(|| "not configured (set ROCKSOUL_MODEL)".to_owned())
+            .map(|config| config.model.as_str())
+            .unwrap_or("not configured (set ROCKSOUL_MODEL)")
     );
+    if model.is_some() {
+        println!("Model endpoint: configured (URL withheld from diagnostics)");
+    }
     println!("Persistent memory: not implemented in seed release");
     println!("Tool execution: disabled in seed release");
     println!("Self-evolution: disabled in seed release");
@@ -102,19 +101,27 @@ pub fn doctor() -> Result<()> {
     println!("[ok] operating system: {}", std::env::consts::OS);
     println!(
         "[{}] configuration directory: {}",
-        if paths.config_dir.is_dir() { "ok" } else { "warn" },
+        if paths.config_dir.is_dir() {
+            "ok"
+        } else {
+            "warn"
+        },
         paths.config_dir.display()
     );
     println!(
         "[{}] local data directory: {}",
-        if paths.data_dir.is_dir() { "ok" } else { "warn" },
+        if paths.data_dir.is_dir() {
+            "ok"
+        } else {
+            "warn"
+        },
         paths.data_dir.display()
     );
 
     match ModelConfig::from_env() {
         Some(config) => {
             println!("[ok] model configured: {}", config.model);
-            println!("[info] endpoint: {}", config.base_url);
+            println!("[info] model endpoint configured (URL withheld)");
         }
         None => {
             println!("[warn] model not configured; set ROCKSOUL_MODEL to enable chat");

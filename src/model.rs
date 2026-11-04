@@ -1,6 +1,6 @@
 use std::{env, net::IpAddr};
 
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result, bail};
 use reqwest::{Client, Url};
 use serde::{Deserialize, Serialize};
 
@@ -38,13 +38,12 @@ impl ModelConfig {
         })
     }
 
-    pub async fn complete(
-        &self,
-        client: &Client,
-        messages: &[ChatMessage],
-    ) -> Result<String> {
+    pub async fn complete(&self, client: &Client, messages: &[ChatMessage]) -> Result<String> {
         let base_url = validate_base_url(&self.base_url)?;
-        let endpoint = format!("{}/chat/completions", base_url.as_str().trim_end_matches('/'));
+        let endpoint = format!(
+            "{}/chat/completions",
+            base_url.as_str().trim_end_matches('/')
+        );
 
         let payload = ChatCompletionRequest {
             model: &self.model,
