@@ -67,7 +67,7 @@ impl WorkspaceArtifactProposal {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct UserApproval {
-    filename: String,
+    operation_id: String,
 }
 
 impl UserApproval {
@@ -80,7 +80,7 @@ impl UserApproval {
             bail!("approval phrase did not match the exact proposed artifact");
         }
         Ok(Self {
-            filename: proposal.filename.clone(),
+            operation_id: proposal.operation_id(),
         })
     }
 }
@@ -148,8 +148,8 @@ impl WorkspaceArtifactService {
     ) -> Result<ArtifactOutcome> {
         cancellation.check()?;
         proposal.validate()?;
-        if approval.filename != proposal.filename {
-            bail!("approval does not authorize this artifact");
+        if approval.operation_id != proposal.operation_id() {
+            bail!("approval does not authorize this exact target and content");
         }
 
         self.prepare_workspace()?;
@@ -382,6 +382,24 @@ mod tests {
         );
         assert_eq!(fs::read(root.join("note.txt")).unwrap(), b"first");
         fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn approval_is_bound_to_exact_target_and_content() {
+        let root = workspace();
+        let approved_item = proposal("note.txt", "content shown before approval");
+        let approval = approve(&approved_item);
+        let altered_item = proposal("note.txt", "different content after approval");
+        assert!(
+            WorkspaceArtifactService::new(&root)
+                .execute_approved(
+                    &altered_item,
+                    &approval,
+                    &CancellationToken::default()
+                )
+                .is_err()
+        );
+        assert!(!root.exists());
     }
 
     #[test]
