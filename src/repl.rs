@@ -115,7 +115,20 @@ pub async fn run() -> Result<()> {
                 request.validate()?;
                 messages.push(ChatMessage::new("user", prompt));
 
-                match run_turn(model, &client, request, &messages).await {
+                let cancellation = CancellationToken::default();
+                let turn = run_turn(model, &client, request, &messages, cancellation.clone());
+                tokio::pin!(turn);
+                let result = tokio::select! {
+                    result = &mut turn => result,
+                    signal = tokio::signal::ctrl_c() => {
+                        if let Err(error) = signal {
+                            eprintln!("Could not register Ctrl+C handler: {error}");
+                        }
+                        cancellation.cancel();
+                        turn.await
+                    }
+                };
+                match result {
                     Ok(result) => {
                         println!("\n{}\n", result.answer);
                         if let Some(artifact) = result.workspace_artifact {
@@ -162,9 +175,9 @@ async fn run_turn(
     client: &Client,
     request: TurnRequest,
     history: &[ChatMessage],
+    cancellation: CancellationToken,
 ) -> Result<TurnResult> {
     request.validate()?;
-    let cancellation = CancellationToken::default();
     let mut meter = TurnMeter::new(request.budget)?;
     let mut state = TurnState::new(request.id, 0);
     state.apply(TurnEvent::Start)?;
