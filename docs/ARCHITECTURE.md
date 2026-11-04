@@ -102,13 +102,13 @@ External agent-trajectory, memory-transfer, and generalization benchmarks are pl
 
 ## Planned architecture—not current capability
 
-The workspace artifact command is a narrow first application service, not general agent tool access. The planner may propose an optional typed artifact intent, but cannot approve it; dispatch always returns to the interactive CLI for exact human confirmation. A version-1 JSONL trace records workspace proposal, approval/denial, execution/failure, and verification events without artifact bodies; complete turn/reflection persistence and restart recovery are not yet implemented. Filesystem checks fail closed for detected symlinks but do not claim protection against a hostile local process racing filesystem changes.
+The workspace artifact command is a narrow first application service, not general agent tool access. Its executor retries only transient filesystem I/O errors for at most three attempts with 20/40 ms backoff; model-provider retries are not enabled. The planner may propose an optional typed artifact intent, but cannot approve it; dispatch always returns to the interactive CLI for exact human confirmation. A version-1 JSONL trace records workspace proposal, approval/denial, execution/failure, and verification events without artifact bodies; complete turn/reflection persistence and restart recovery are not yet implemented. Filesystem checks fail closed for detected symlinks but do not claim protection against a hostile local process racing filesystem changes.
 
 The following are future roadmap stages, not available seed-release behavior:
 
 - Independent verification of plan acceptance checks against observed runtime effects.
 - Typed application services and permissioned tool execution.
-- Provider-aware retries, persisted turn traces, and user-interrupt wiring.
+- Provider-aware model retries, complete persisted turn traces, and user-interrupt wiring through workspace execution.
 - Memory migrations, concurrency control, retention, retrieval ranking, and evaluated context injection.
 - Read-only capability registry, sandboxed workspace tools, and human approval for side effects.
 - Project builder, isolated candidate evolution, benchmarked promotion/rollback.
