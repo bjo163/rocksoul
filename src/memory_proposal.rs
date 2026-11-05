@@ -18,8 +18,9 @@ use crate::{
     memory::{MemoryClaimStatus, MemoryKind, MemoryStore},
 };
 
-const PROPOSAL_SCHEMA_VERSION: u16 = 1;
-const PROPOSAL_FILE: &str = "proposals.v1.json";
+const PROPOSAL_SCHEMA_VERSION: u16 = 2;
+const PROPOSAL_FILE: &str = "proposals.v2.json";
+const LEGACY_PROPOSAL_FILE: &str = "proposals.v1.json";
 const PROPOSAL_LOCK_FILE: &str = ".proposals.lock";
 const LOCK_TIMEOUT: Duration = Duration::from_secs(5);
 const LOCK_RETRY: Duration = Duration::from_millis(25);
@@ -58,7 +59,9 @@ pub struct MemoryProposal {
     pub status: ProposalStatus,
     pub decided_at_unix: Option<u64>,
     pub memory_record_id: Option<String>,
+    #[serde(default)]
     pub claim_status: MemoryClaimStatus,
+    #[serde(default)]
     pub verification_receipt_id: Option<String>,
 }
 
@@ -646,7 +649,44 @@ fn load_unlocked(directory: &Path) -> Result<ProposalStore> {
                 format!("could not recover proposal store from {}", backup.display())
             })?;
         } else {
-            return Ok(ProposalStore::default());
+            let legacy = directory.join(LEGACY_PROPOSAL_FILE);
+            let legacy_backup = directory.join(format!("{LEGACY_PROPOSAL_FILE}.bak"));
+            let legacy_source = if legacy.is_file() {
+                Some(legacy.clone())
+            } else if legacy_backup.is_file() {
+                Some(legacy_backup.clone())
+            } else {
+                None
+            };
+            let Some(legacy_source) = legacy_source else {
+                return Ok(ProposalStore::default());
+            };
+            let bytes = fs::read(&legacy_source)
+                .with_context(|| format!("could not read legacy proposal store {}", legacy_source.display()))?;
+            let mut store: ProposalStore = serde_json::from_slice(&bytes)
+                .with_context(|| format!("invalid legacy proposal store {}", legacy_source.display()))?;
+            if store.schema_version != 1 {
+                bail!("unsupported legacy memory proposal schema version {}", store.schema_version);
+            }
+            store.schema_version = PROPOSAL_SCHEMA_VERSION;
+            for proposal in &mut store.proposals {
+                if proposal.status == ProposalStatus::Pending {
+                    proposal.claim_status = MemoryClaimStatus::Inference;
+                    proposal.verification_receipt_id = None;
+                    proposal.fingerprint = fingerprint(proposal);
+                }
+            }
+            store.validate()?;
+            save_unlocked(directory, &store)?;
+            for old_path in [legacy, legacy_backup] {
+                if old_path.is_file() {
+                    fs::remove_file(&old_path).with_context(|| {
+                        format!("could not remove migrated proposal snapshot {}", old_path.display())
+                    })?;
+                }
+            }
+            eprintln!("Migrated memory proposal store schema v1 to v2.");
+            return Ok(store);
         }
     }
     let bytes = fs::read(&path).with_context(|| format!("could not read {}", path.display()))?;
@@ -656,10 +696,7 @@ fn load_unlocked(directory: &Path) -> Result<ProposalStore> {
     let backup = directory.join(format!("{PROPOSAL_FILE}.bak"));
     if backup.exists() {
         fs::remove_file(&backup).with_context(|| {
-            format!(
-                "could not remove stale proposal backup {}",
-                backup.display()
-            )
+            format!("could not remove stale proposal backup {}", backup.display())
         })?;
     }
     Ok(store)
@@ -907,7 +944,7 @@ mod tests {
         );
         assert!(audit[0].tags.is_empty());
         assert!(
-            !directory.join("proposals.v1.json.bak").exists(),
+            !directory.join("proposals.v2.json.bak").exists(),
             "old proposal backup must not retain the approved candidate payload"
         );
         assert!(approve(&directory, &proposal.id, &proposal.approval_phrase(), 102).is_err());
