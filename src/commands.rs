@@ -812,6 +812,7 @@ async fn run_memory(command: MemoryCommand) -> Result<()> {
             expires_in_hours,
             claim_status,
             verification_receipt_id,
+            verification_task_id,
         } => {
             let now = now_unix()?;
             let expires_at = expires_in_hours
@@ -835,6 +836,7 @@ async fn run_memory(command: MemoryCommand) -> Result<()> {
                     expires_at_unix: expires_at,
                     claim_status,
                     verification_receipt_id,
+                    verification_task_id,
                 },
                 now,
             )?;
