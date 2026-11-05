@@ -644,12 +644,21 @@ fn apply_forgetting_ledger(directory: &Path, store: &mut MemoryStore) -> Result<
 
 fn scrub_forgotten_snapshots(directory: &Path) -> Result<()> {
     let current = store_path(directory);
+    let legacy_v1 = legacy_store_path(directory);
+    let legacy_v2 = legacy_v2_store_path(directory);
     for path in [
         backup_path(&current),
-        legacy_store_path(directory),
-        legacy_v2_store_path(directory),
+        current.with_extension("json.tmp"),
+        current.with_extension("json.recovery.tmp"),
+        legacy_v1.clone(),
+        legacy_v1.with_extension("json.bak"),
+        legacy_v1.with_extension("json.tmp"),
+        legacy_v2.clone(),
+        legacy_v2.with_extension("json.bak"),
+        legacy_v2.with_extension("json.tmp"),
         directory.join("exports/latest.json"),
         directory.join("exports/latest.json.bak"),
+        directory.join("exports/latest.json.tmp"),
     ] {
         if path.is_file() {
             fs::remove_file(&path).with_context(|| {
