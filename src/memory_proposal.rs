@@ -376,6 +376,118 @@ fn decide_without_memory(
     save_unlocked(directory, &store)
 }
 
+
+const RECEIPT_MAX_AGE_SECONDS: u64 = 7 * 24 * 60 * 60;
+const TRUSTED_VERIFIER_ID: &str = "rocksoul.core.verifier";
+const TRUSTED_VERIFIER_VERSION: u16 = 1;
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+struct ReceiptRevocation {
+    verification_id: String,
+    revoked_at_unix: u64,
+    reason_code: String,
+}
+
+pub fn revoke_receipt(
+    receipts_directory: &Path,
+    verification_id: &str,
+    now: u64,
+    reason_code: &str,
+) -> Result<()> {
+    if verification_id.trim().is_empty()
+        || now == 0
+        || reason_code.trim().is_empty()
+        || reason_code.chars().any(char::is_control)
+    {
+        bail!("receipt revocation requires an ID, timestamp, and reason code");
+    }
+    fs::create_dir_all(receipts_directory)?;
+    let path = receipts_directory.join("revoked.jsonl");
+    let mut file = OpenOptions::new().create(true).append(true).open(&path)?;
+    serde_json::to_writer(&mut file, &ReceiptRevocation {
+        verification_id: verification_id.to_owned(),
+        revoked_at_unix: now,
+        reason_code: reason_code.to_owned(),
+    })?;
+    file.write_all(&[10])?;
+    file.sync_all()?;
+    Ok(())
+}
+
+fn is_receipt_revoked(receipts_directory: &Path, verification_id: &str) -> Result<bool> {
+    let path = receipts_directory.join("revoked.jsonl");
+    if !path.is_file() {
+        return Ok(false);
+    }
+    let content = fs::read_to_string(&path)?;
+    for (index, line) in content.lines().enumerate() {
+        if line.trim().is_empty() {
+            continue;
+        }
+        let event: ReceiptRevocation = serde_json::from_str(line)
+            .with_context(|| format!("receipt revocation ledger has invalid line {}", index + 1))?;
+        if event.verification_id.trim().is_empty()
+            || event.revoked_at_unix == 0
+            || event.reason_code.trim().is_empty()
+        {
+            bail!("receipt revocation ledger contains an invalid event");
+        }
+        if event.verification_id == verification_id {
+            return Ok(true);
+        }
+    }
+    Ok(false)
+}
+
+fn load_verified_receipt(
+    receipts_directory: &Path,
+    verification_id: &str,
+    claim: &str,
+    now: u64,
+) -> Result<Option<VerificationReceipt>> {
+    if is_receipt_revoked(receipts_directory, verification_id)? {
+        return Ok(None);
+    }
+    let expected_claim = normalize_task_claim(claim);
+    let expected_claim_hash = format!("{:x}", Sha256::digest(expected_claim.as_bytes()));
+    for entry in fs::read_dir(receipts_directory)? {
+        let path = entry?.path();
+        if !path.is_file()
+            || path.file_name().is_some_and(|name| name == "revoked.jsonl")
+        {
+            continue;
+        }
+        let bytes = fs::read(&path)?;
+        let document: serde_json::Value = serde_json::from_slice(&bytes)
+            .with_context(|| format!("invalid verification receipt {}", path.display()))?;
+        if document.get("verification_id").and_then(serde_json::Value::as_str)
+            != Some(verification_id)
+        {
+            continue;
+        }
+        if document.get("schema_version").and_then(serde_json::Value::as_u64) != Some(2) {
+            return Ok(None);
+        }
+        let receipt: VerificationReceipt = serde_json::from_value(document)?;
+        if !receipt.integrity_valid()
+            || receipt.outcome() != "verified"
+            || receipt.verifier_id() != TRUSTED_VERIFIER_ID
+            || receipt.verifier_version() != TRUSTED_VERIFIER_VERSION
+            || receipt.normalized_claim() != Some(expected_claim.as_str())
+            || receipt.claim_hash() != Some(expected_claim_hash.as_str())
+            || receipt.evidence_hash().len() != 64
+            || receipt.required_checks_passed() == 0
+            || receipt.total_checks() < receipt.required_checks_passed()
+            || receipt.verified_at_unix() > now
+            || now.saturating_sub(receipt.verified_at_unix()) > RECEIPT_MAX_AGE_SECONDS
+        {
+            return Ok(None);
+        }
+        return Ok(Some(receipt));
+    }
+    Ok(None)
+}
+
 fn validate_candidate(
     kind: MemoryKind,
     content: &str,
