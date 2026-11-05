@@ -132,7 +132,7 @@ Earlier CI diagnosis: run #42012045477 found a formatting issue, which was fixed
 ## 4. Documentation and next-task handoff
 
 This documentation update reconciles:
-- `docs/AI_HANDOFF.md` — local-agent onboarding, architecture map, mandatory workflow, build/test commands, safety invariants, active PR state, next-task selection and known deferred work.
+- `docs/AI_HANDOFF.md` — local-agent onboarding, architecture map, mandatory workflow, build/test commands, safety invariants, completed PR state, next-task selection and known deferred work.
 - `docs/PROGRESS.md` — this progress snapshot.
 - `docs/plans/issue-35/` — completed execution specification, design notes, task breakdown, and agent safety rules.
 - `docs/plans/issue-9/` — next TUI completion specification, design boundaries, autonomous task breakdown, and local-agent rules.
