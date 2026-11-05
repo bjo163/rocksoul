@@ -25,6 +25,28 @@ This is the durable progress snapshot for maintainers and delegated/local AI age
 
 > A badge describes the progress snapshot, not a guarantee that a live workflow is currently green. Check the linked PR and CI before merging.
 
+## Active implementation — Issue #9 Cognitive Cockpit
+
+**PR:** [#55 — surface bounded persisted task history](https://github.com/bjo163/rocksoul/pull/55) (draft; not merged)  
+**Branch:** `feat/tui-cockpit-completion`  
+**Base:** `main` at `0e89bcec834880d3e6aca3f066507c44834c2eb7`  
+**Latest code commit with Linux validation:** `b5c6039da99110ad5b5a2cc401a9f6c54d590faa`
+
+Delivered on the PR branch:
+- Bounded newest-first task trace reader and TUI event history with selection/detail navigation.
+- Control-character-safe, content-free task metadata presentation.
+- Memory browser with local search, kind/claim filters and exact source filter; metadata is the default, while explicit Enter-to-reveal uses the shared sensitive-content guard.
+- Created/expiry metadata and schema-v4 memory path correction.
+- Evaluation report loaded once per snapshot rather than from the render function, including suite/version/pass state and failed check IDs.
+- Focused tests for bounded trace reading, sanitization, memory filter cycling and metadata clipping.
+
+Validation:
+- Linux CI run [#42059872680](https://github.com/bjo163/rocksoul/actions/runs/42059872680): formatting, Clippy, **113 tests**, Core Integrity **23/23**, and memory retrieval precision@2/recall@2 **1.000/1.000** passed.
+- Windows release build, tests, portable ZIP smoke and installer preservation smoke passed on the same functional code before the final task-selection/test-only commits in [run #42059339120](https://github.com/bjo163/rocksoul/actions/runs/42059339120). Re-run against the final PR head before merge.
+- Issue #9 remains open; PR #55 remains draft. No merge or issue closure is claimed.
+
+Remaining: explicit memory-content detail reveal (if approved by privacy design), focused UI tests for memory states, diagnostic parser/redaction tests, persisted preferences and actual theme/density/locale application, responsive/focus TestBackend coverage, and final Linux/Windows CI on the final PR head.
+
 ## 1. Accepted baseline on main
 
 Verified `main` SHA after PR #53 merge:
@@ -147,7 +169,7 @@ This progress snapshot was refreshed after PR #53 merged and `main` was verified
 
 ### Immediate
 
-1. Start [Issue #9 — Cognitive Cockpit completion](https://github.com/bjo163/rocksoul/issues/9) from the latest `main`; use [spec](plans/issue-9/spec.md), [design](plans/issue-9/design.md), [task list](plans/issue-9/task.md), and [agent rules](plans/issue-9/rules.md).
+1. Continue the active [Issue #9 — Cognitive Cockpit completion](https://github.com/bjo163/rocksoul/issues/9) work in [draft PR #55](https://github.com/bjo163/rocksoul/pull/55); refresh its head and CI before making changes.
 2. Audit the existing eight-screen TUI before editing; preserve the one-core/read-only boundary and the current terminal lifecycle.
 3. Implement real read models for persisted task trace, memory browsing, diagnostics/evaluation report, and truthful Brains/Tools status.
 4. Add portable presentation preferences, accessibility/responsive tests, and correct the stale memory store path shown in the cockpit.
@@ -156,7 +178,7 @@ This progress snapshot was refreshed after PR #53 merged and `main` was verified
 
 ### Current next task: #9 — Cognitive Cockpit completion
 
-Issue #9 is the next selected implementation task. The initial TUI increment already exists but its task timeline, memory browser, diagnostics/evaluation view, persisted preferences and test coverage remain incomplete. The detailed plan is in `docs/plans/issue-9/`.
+Issue #9 is actively being implemented in draft PR #55. Persisted task history, bounded event detail, metadata-only memory search/filter, schema-v4 path display and snapshot-based evaluation reporting are on the PR branch but not yet merged. Preferences, full diagnostics/redaction coverage, broader UI tests and final cross-platform validation remain open. The detailed plan is in `docs/plans/issue-9/`.
 
 Issue #13 owns the broader AGI-oriented evaluation harness and explicitly depends on #4, #5, #8 and #9. Do not start or duplicate that harness before its dependencies are audited/closed. Issue #8's catalogue is implemented but still requires independent religious/language review; do not mark it complete through AI self-review. Stage 2 umbrella #36 and work packages #37–#41 plus follow-up #44 are closed. Do not start automatic memory injection until separate policy, privacy/contamination, forgetting/deletion and regression gates are reviewed.
 

@@ -47,6 +47,14 @@ The current seed runtime includes:
 
 The current release does **not** provide unrestricted shell execution, autonomous filesystem mutation, automatic code execution, multi-agent orchestration, or automatic self-modification. These are deliberate boundaries, not hidden capabilities.
 
+### Cognitive Cockpit completion — active PR
+
+The initial cockpit is being extended in [draft PR #55](https://github.com/bjo163/rocksoul/pull/55). This work is **not merged into `main` or included in the published release yet**.
+
+The PR adds a bounded, content-free persisted task-trace monitor; keyboard selection and event details; a memory browser with local search and kind/claim/source filters, metadata by default, and explicit privacy-guarded detail reveal; a corrected schema-v4 memory path; and an evaluation report loaded into the refreshable runtime snapshot. It remains read-only and does not invoke models, tools, or memory mutations.
+
+Track implementation and remaining acceptance criteria in [the Issue #9 task plan](docs/plans/issue-9/task.md).
+
 ## Download for Windows
 
 <sub>Latest published release: v0.2.0</sub>

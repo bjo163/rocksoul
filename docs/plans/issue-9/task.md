@@ -13,6 +13,12 @@
 - [x] A5. Record the existing memory path bug (`store.v1.json` display vs schema v4) and all misleading/static status strings.
 - [x] A6. Freeze non-goals: no model calls, tools, memory mutations, arbitrary execution or invented telemetry.
 
+## Incremental implementation notes
+
+The current task branch now includes a bounded persisted task-trace reader and read-only TUI projection, a metadata-only searchable memory browser, the corrected schema-v4 memory path, and a refreshable evaluation-report snapshot. Linux CI has passed for the first implementation slice (111 tests, Clippy, Core Integrity 23/23, memory retrieval precision@2/recall@2 1.000); Windows validation is being repeated against the latest branch head.
+
+The following remain intentionally open: focused UI tests for memory (D5), diagnostic parsing/redaction tests (E6), persisted preferences and responsive/focus tests (Phase F), and complete TestBackend/Windows validation against the final head (Phase G). This is not Issue #9 completion.
+
 ## Phase A — Audit findings recorded
 
 The initial audit confirms the current TUI has eight screens and two navigation tests. The terminal lifecycle is guarded by the interactive-terminal check and `ratatui::run`. Tasks are static rather than a live queue; Memory is a summary only; Brains/Tools lack registries; Diagnostics has no evaluation report; Settings have no persisted preferences. The memory screen still prints the obsolete `store.v1.json` path even though the actual schema is v4. No fake capability or live metric may be added to fill these gaps.
@@ -23,31 +29,31 @@ The initial audit confirms the current TUI has eight screens and two navigation 
 - [ ] B2. Keep all projections pure where possible and source values only from existing services/stores.
 - [ ] B3. Bound all lists, text previews, filters and query sizes.
 - [ ] B4. Sanitize diagnostics and ensure secrets/credentials never enter UI view models.
-- [ ] B5. Correct portable memory path to `store.v4.json`; ensure schema version is shown from loaded data.
+- [x] B5. Correct portable memory path to `store.v4.json`; ensure schema version is shown from loaded data.
 - [ ] B6. Test missing/corrupt/future-version stores and unavailable values.
 
 ## Phase C — Task history / trace screen
 
-- [ ] C1. Project persisted JSONL task trace using the existing reader.
-- [ ] C2. Show event chronology, operation ID, event kind, timestamp and safe target metadata.
-- [ ] C3. Add bounded selection/detail navigation and a truthful empty state.
-- [ ] C4. Display malformed/unsupported trace as a sanitized diagnostic; never crash.
-- [ ] C5. Test valid, empty, malformed, unsupported and large trace fixtures.
+- [x] C1. Project persisted JSONL task trace using the existing reader.
+- [x] C2. Show event chronology, operation ID, event kind, timestamp and safe target metadata.
+- [x] C3. Add bounded selection/detail navigation and a truthful empty state.
+- [x] C4. Display malformed/unsupported trace as a sanitized diagnostic; never crash.
+- [x] C5. Test valid, empty, malformed, unsupported and large trace fixtures.
 
 ## Phase D — Memory browser
 
-- [ ] D1. Add bounded memory list with kind, claim status, provenance, approval, created/expiry metadata.
-- [ ] D2. Add local search/filter by kind, claim status and source; cap query and results.
-- [ ] D3. Add explicit detail reveal; metadata remains the default view.
-- [ ] D4. Reuse existing privacy guard for secret-like content; do not add mutation actions.
+- [x] D1. Add bounded memory list with kind, claim status, provenance, approval, created/expiry metadata.
+- [x] D2. Add local search/filter by kind, claim status and source; cap query and results.
+- [x] D3. Add explicit Enter-to-reveal detail; metadata remains the default view and the shared sensitive-content guard blocks credential/personal-category matches.
+- [x] D4. Keep memory content hidden in the TUI, search locally without rendering content, and expose no mutation actions.
 - [ ] D5. Test filters, search, empty results, expiry, revoked/superseded claims and sensitive content.
 
 ## Phase E — Diagnostics, evaluation and capability truthfulness
 
 - [ ] E1. Extend the existing runtime snapshot (model configuration, RID validity, portable paths) with memory-store health and sanitized RID error detail.
-- [ ] E2. Move the current latest Core Integrity summary lookup into the refreshable snapshot; never run the suite during render.
-- [ ] E3. Show suite/version/commit/pass state and failed check IDs; distinguish missing from corrupt reports.
-- [ ] E4. Ensure Brains and Tools show only known adapters/registries; unknown specialist roles remain unassigned.
+- [x] E2. Move the latest Core Integrity summary lookup into the refreshable snapshot; never run the suite during render.
+- [x] E3. Show suite/version/pass state and failed check IDs; distinguish not-run from unreadable reports. The current report contract does not expose a tested commit SHA.
+- [x] E4. Ensure Brains and Tools show only the known legacy adapter and empty tool registry; unknown specialist roles remain unassigned.
 - [ ] E5. Remove stale/fake status labels; use explicit “not implemented”, “not configured”, “not run” or “unavailable”.
 - [ ] E6. Test report parsing, invalid JSON, redaction, missing config and empty registries.
 

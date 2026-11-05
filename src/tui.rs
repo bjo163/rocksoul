@@ -14,12 +14,12 @@ use ratatui::{
 };
 
 use crate::{
-    memory::{MemoryKind, MemoryStore},
+    memory::{MemoryClaimStatus, MemoryKind, MemorySearchFilters, MemoryStore},
     model::ModelConfig,
     paths::AppPaths,
     rid::{RuhProfile, StatId},
     rid_catalogue::{CatalogueEntry, RidCatalogue},
-    rid_store,
+    rid_store, task_trace,
 };
 
 const BG: Color = Color::Rgb(15, 17, 18);
@@ -89,12 +89,21 @@ impl Screen {
     }
 }
 
+struct MemoryStoreHealth {
+    schema_version: u16,
+    active_records: usize,
+    total_records: usize,
+}
+
 struct Snapshot {
     paths: AppPaths,
     model_configured: bool,
     rid_profile: Option<RuhProfile>,
     rid_error: Option<String>,
     catalogue: Option<RidCatalogue>,
+    evaluation: std::result::Result<Option<crate::eval::EvaluationReport>, String>,
+    memory_evaluation: std::result::Result<Option<crate::eval::MemoryRetrievalEvaluationReport>, String>,
+    memory_store_health: std::result::Result<MemoryStoreHealth, String>,
 }
 
 impl Snapshot {
@@ -108,12 +117,24 @@ impl Snapshot {
         } else {
             (None, None)
         };
+        let memory_store_health = MemoryStore::load(&paths.memory_dir)
+            .map(|store| MemoryStoreHealth {
+                schema_version: store.schema_version,
+                active_records: store.active_records(now_unix()).len(),
+                total_records: store.records.len(),
+            })
+            .map_err(|_| "memory store is unreadable".to_owned());
         Ok(Self {
             paths,
             model_configured: ModelConfig::from_env().is_some(),
             rid_profile,
             rid_error,
             catalogue: RidCatalogue::embedded().ok(),
+            evaluation: crate::eval::latest()
+                .map_err(|_| "evaluation report is unreadable".to_owned()),
+            memory_evaluation: crate::eval::latest_memory_retrieval()
+                .map_err(|_| "memory retrieval report is unreadable".to_owned()),
+            memory_store_health,
         })
     }
 
@@ -139,6 +160,13 @@ struct App {
     help_open: bool,
     quit: bool,
     snapshot: Snapshot,
+    memory_query: String,
+    memory_search_active: bool,
+    memory_detail_open: bool,
+    memory_selected: usize,
+    task_selected: usize,
+    memory_kind_filter: Option<MemoryKind>,
+    memory_claim_filter: Option<MemoryClaimStatus>,
 }
 
 impl App {
@@ -153,6 +181,13 @@ impl App {
             help_open: false,
             quit: false,
             snapshot,
+            memory_query: String::new(),
+            memory_search_active: false,
+            memory_detail_open: false,
+            memory_selected: 0,
+            task_selected: 0,
+            memory_kind_filter: None,
+            memory_claim_filter: None,
         }
     }
 
@@ -164,6 +199,22 @@ impl App {
 
     fn handle_key(&mut self, key: KeyEvent) {
         if key.kind != KeyEventKind::Press {
+            return;
+        }
+        if self.memory_search_active {
+            match key.code {
+                KeyCode::Esc | KeyCode::Enter => self.memory_search_active = false,
+                KeyCode::Backspace => {
+                    self.memory_query.pop();
+                }
+                KeyCode::Char(character)
+                    if !key.modifiers.contains(KeyModifiers::CONTROL)
+                        && self.memory_query.chars().count() < 64 =>
+                {
+                    self.memory_query.push(character);
+                }
+                _ => {}
+            }
             return;
         }
         if self.palette_open || self.help_open {
@@ -181,6 +232,9 @@ impl App {
         }
 
         match key.code {
+            KeyCode::Esc if self.screen == Screen::Memory && self.memory_detail_open => {
+                self.memory_detail_open = false
+            }
             KeyCode::Char('q') | KeyCode::Esc => self.quit = true,
             KeyCode::Char(c @ '1'..='8') => {
                 self.select_screen(Screen::from_index((c as u8 - b'1') as usize))
@@ -189,6 +243,30 @@ impl App {
             KeyCode::BackTab => self.select_screen(Screen::from_index(self.screen.index() + 7)),
             KeyCode::Up if self.screen == Screen::Rid => self.move_stat(-1),
             KeyCode::Down if self.screen == Screen::Rid => self.move_stat(1),
+            KeyCode::Up if self.screen == Screen::Memory => {
+                self.memory_detail_open = false;
+                self.memory_selected = self.memory_selected.saturating_sub(1)
+            }
+            KeyCode::Up if self.screen == Screen::Tasks => {
+                self.task_selected = self.task_selected.saturating_sub(1)
+            }
+            KeyCode::Down if self.screen == Screen::Tasks => {
+                self.task_selected = self.task_selected.saturating_add(1).min(11)
+            }
+            KeyCode::Down if self.screen == Screen::Memory => {
+                self.memory_detail_open = false;
+                self.memory_selected = self.memory_selected.saturating_add(1).min(99)
+            }
+            KeyCode::Char('/') if self.screen == Screen::Memory => self.memory_search_active = true,
+            KeyCode::Enter if self.screen == Screen::Memory => {
+                self.memory_detail_open = !self.memory_detail_open
+            }
+            KeyCode::Char('f') if self.screen == Screen::Memory => {
+                self.memory_kind_filter = next_memory_kind(self.memory_kind_filter)
+            }
+            KeyCode::Char('c') if self.screen == Screen::Memory => {
+                self.memory_claim_filter = next_memory_claim_status(self.memory_claim_filter)
+            }
             KeyCode::Char('k') if key.modifiers.contains(KeyModifiers::CONTROL) => {
                 self.palette_open = true
             }
@@ -358,8 +436,8 @@ fn render_body(frame: &mut Frame<'_>, area: Rect, app: &mut App) {
     match app.screen {
         Screen::Overview => render_overview(frame, columns[0], app),
         Screen::Brains => render_brains(frame, columns[0], app),
-        Screen::Tasks => render_tasks(frame, columns[0]),
-        Screen::Memory => render_memory(frame, columns[0]),
+        Screen::Tasks => render_tasks(frame, columns[0], app),
+        Screen::Memory => render_memory(frame, columns[0], app),
         Screen::Rid => render_rid(frame, columns[0], app),
         Screen::Tools => render_tools(frame, columns[0]),
         Screen::Diagnostics => render_diagnostics(frame, columns[0], app),
@@ -462,23 +540,92 @@ fn render_brains(frame: &mut Frame<'_>, area: Rect, app: &App) {
     );
 }
 
-fn render_tasks(frame: &mut Frame<'_>, area: Rect) {
-    let lines = vec![
-        Line::from(Span::styled(
-            "COGNITIVE TURN LIFECYCLE",
+fn render_tasks(frame: &mut Frame<'_>, area: Rect, app: &mut App) {
+    const MAX_EVENTS: usize = 12;
+    let lines = match AppPaths::discover().and_then(|paths| {
+        let records = task_trace::read_recent(
+            &paths.logs_dir.join("task-trace.v1.jsonl"),
+            262_144,
+            MAX_EVENTS,
+        )?;
+        if records.is_empty() {
+            app.task_selected = 0;
+            return Ok(vec![
+                Line::from(Span::styled(
+                    "NO TASK EVENTS RECORDED",
+                    Style::default().fg(MUTED).add_modifier(Modifier::BOLD),
+                )),
+                Line::from("Verified workspace operations will appear here after execution."),
+                Line::from("No queue or active task is inferred from an empty trace."),
+            ]);
+        }
+        app.task_selected = app.task_selected.min(records.len().saturating_sub(1));
+        let mut lines = vec![
+            Line::from(Span::styled(
+                format!("PERSISTED TASK TRACE · {} RECENT EVENTS", records.len()),
+                Style::default().fg(AMBER).add_modifier(Modifier::BOLD),
+            )),
+            Line::from("Newest events first · ↑/↓ select · content-free metadata only"),
+            Line::from(""),
+        ];
+        for (index, record) in records.iter().enumerate() {
+            let event = safe_trace_text(record.get("event"), 18);
+            let operation = safe_trace_text(record.get("operation_id"), 12);
+            let target = safe_trace_text(record.get("target"), 96);
+            let target_name = target.rsplit('/').next().unwrap_or("target");
+            let timestamp = record
+                .get("timestamp_unix_ms")
+                .and_then(serde_json::Value::as_u64)
+                .map(|value| value.to_string())
+                .unwrap_or_else(|| "time n/a".to_owned());
+            lines.push(Line::from(format!(
+                "{} {timestamp}  {event:<18}  {operation:<12}  {target_name}",
+                if index == app.task_selected {
+                    "▸"
+                } else {
+                    " "
+                }
+            )));
+        }
+        let selected = &records[app.task_selected];
+        lines.push(Line::from(""));
+        lines.push(Line::from(Span::styled(
+            "SELECTED EVENT",
             Style::default().fg(AMBER).add_modifier(Modifier::BOLD),
-        )),
-        Line::from("01  Planning"),
-        Line::from("02  Executing"),
-        Line::from("03  Verifying"),
-        Line::from("04  Completed / Failed / Cancelled"),
-        Line::from(""),
-        Line::from(Span::styled(
-            "NO ACTIVE TASK",
-            Style::default().fg(MUTED).add_modifier(Modifier::BOLD),
-        )),
-        Line::from("Task queue and live turn timeline are not persisted in this increment."),
-    ];
+        )));
+        lines.push(Line::from(format!(
+            "Event       {}",
+            safe_trace_text(selected.get("event"), 32)
+        )));
+        lines.push(Line::from(format!(
+            "Operation   {}",
+            safe_trace_text(selected.get("operation_id"), 64)
+        )));
+        let target = safe_trace_text(selected.get("target"), 96);
+        lines.push(Line::from(format!(
+            "Target      {}",
+            target.rsplit('/').next().unwrap_or("target")
+        )));
+        lines.push(Line::from(format!(
+            "Timestamp   {}",
+            selected
+                .get("timestamp_unix_ms")
+                .and_then(serde_json::Value::as_u64)
+                .map(|value| value.to_string())
+                .unwrap_or_else(|| "n/a".to_owned())
+        )));
+        Ok(lines)
+    }) {
+        Ok(lines) => lines,
+        Err(_) => vec![
+            Line::from(Span::styled(
+                "TASK TRACE UNAVAILABLE",
+                Style::default().fg(RED).add_modifier(Modifier::BOLD),
+            )),
+            Line::from("The trace is malformed, unsupported, or inaccessible."),
+            Line::from("No task state is inferred from invalid records."),
+        ],
+    };
     frame.render_widget(
         Paragraph::new(lines)
             .wrap(Wrap { trim: true })
@@ -487,77 +634,247 @@ fn render_tasks(frame: &mut Frame<'_>, area: Rect) {
     );
 }
 
-fn render_memory(frame: &mut Frame<'_>, area: Rect) {
+fn safe_rid_error(error: &str) -> &'static str {
+    let normalized = error.to_ascii_lowercase();
+    if normalized.contains("unsupported") || normalized.contains("schema") {
+        "unsupported schema/version"
+    } else if normalized.contains("json")
+        || normalized.contains("parse")
+        || normalized.contains("malformed")
+    {
+        "invalid profile data"
+    } else if normalized.contains("permission") || normalized.contains("access denied") {
+        "profile inaccessible"
+    } else {
+        "profile invalid; details withheld"
+    }
+}
+
+fn report_state<T>(report: &std::result::Result<Option<T>, String>) -> &'static str {
+    match report {
+        Ok(Some(_)) => "available",
+        Ok(None) => "not run",
+        Err(_) => "corrupt / unavailable",
+    }
+}
+
+fn safe_trace_text(value: Option<&serde_json::Value>, limit: usize) -> String {
+    let Some(value) = value.and_then(serde_json::Value::as_str) else {
+        return "n/a".to_owned();
+    };
+    let cleaned = value
+        .chars()
+        .filter(|character| !character.is_control())
+        .take(limit)
+        .collect::<String>();
+    if cleaned.is_empty() {
+        "n/a".to_owned()
+    } else {
+        cleaned
+    }
+}
+
+fn render_memory(frame: &mut Frame<'_>, area: Rect, app: &App) {
+    const MAX_RECORDS: usize = 40;
     let lines = match AppPaths::discover().and_then(|paths| {
         let store = MemoryStore::load(&paths.memory_dir)?;
         let now = now_unix();
         let active = store.active_records(now);
-        let count = |kind| active.iter().filter(|record| record.kind == kind).count();
-        let approved = active.iter().filter(|record| record.user_approved).count();
         let mut lines = vec![
             Line::from(format!("Store schema         v{}", store.schema_version)),
             Line::from(format!("Active records       {}", active.len())),
-            Line::from(format!("User-approved        {approved}")),
+            Line::from(format!("Store                {}", paths.memory_dir.join("store.v4.json").display())),
             Line::from(format!(
-                "Working              {}",
-                count(MemoryKind::Working)
+                "Search               {}{}",
+                if app.memory_search_active { ">" } else { "" },
+                if app.memory_query.is_empty()
+            || app.memory_query.split_whitespace().all(|token| token.starts_with("source:"))
+        { "press / to search" } else { &app.memory_query }
             )),
             Line::from(format!(
-                "Episodic             {}",
-                count(MemoryKind::Episodic)
-            )),
-            Line::from(format!(
-                "Semantic             {}",
-                count(MemoryKind::Semantic)
-            )),
-            Line::from(format!(
-                "Procedural           {}",
-                count(MemoryKind::Procedural)
-            )),
-            Line::from(format!(
-                "Derived              {}",
-                count(MemoryKind::Derived)
+                "Filters              kind={:?} · claim={:?} · source:<exact>",
+                app.memory_kind_filter,
+                app.memory_claim_filter
             )),
             Line::from(""),
-            Line::from(format!(
-                "Store: {}",
-                paths.memory_dir.join("store.v1.json").display()
-            )),
-            Line::from(""),
-            Line::from("Recent entries (content hidden in cockpit):"),
+            Line::from("ID             KIND       CLAIM STATUS             SOURCE                       ACCESS"),
         ];
-        for record in active.iter().rev().take(5) {
-            lines.push(Line::from(format!(
-                "{}  [{}]  {}",
-                record.id,
-                record.kind,
-                if record.user_approved {
-                    "approved"
-                } else {
-                    "derived/unapproved"
+        if app.memory_query.is_empty() {
+            let mut records = active
+                .into_iter()
+                .filter(|record| {
+                    app.memory_kind_filter.is_none_or(|kind| record.kind == kind)
+                        && app.memory_claim_filter.is_none_or(|status| record.claim_status == status)
+                })
+                .collect::<Vec<_>>();
+            if let Some(source) = app.memory_query.split_whitespace().find_map(|token| token.strip_prefix("source:")) {
+                records.retain(|record| record.source == source);
+            }
+            records.sort_by_key(|record| std::cmp::Reverse(record.created_at_unix));
+            if records.is_empty() {
+                lines.push(Line::from("No active memory records."));
+            }
+            for (index, record) in records.iter().take(MAX_RECORDS).enumerate() {
+                lines.push(Line::from(format!(
+                    "{} {:<12} {:<10} {:<24} {:<26} {}",
+                    if index == app.memory_selected { "▸" } else { " " },
+                    clip_text(&record.id, 12),
+                    record.kind,
+                    record.claim_status,
+                    clip_text(&record.source, 26),
+                    if record.user_approved { "approved" } else { "unapproved" }
+                )));
+                lines.push(Line::from(format!(
+                    "  created={} · expires={}",
+                    record.created_at_unix,
+                    record.expires_at_unix
+                        .map(|timestamp| timestamp.to_string())
+                        .unwrap_or_else(|| "never".to_owned())
+                )));
+            }
+            if app.memory_detail_open {
+                if let Some(record) = records.get(app.memory_selected.min(records.len().saturating_sub(1))) {
+                    push_memory_detail(&mut lines, &record.content);
                 }
-            )));
+            } else if !records.is_empty() {
+                lines.push(Line::from("Press Enter to reveal the selected record after the privacy guard."));
+            }
+            if records.len() > MAX_RECORDS {
+                lines.push(Line::from(format!("Showing newest {MAX_RECORDS} of {} active records.", records.len())));
+            }
+        } else {
+            let source_filter = app
+                .memory_query
+                .split_whitespace()
+                .find_map(|token| token.strip_prefix("source:"));
+            let text_query = app
+                .memory_query
+                .split_whitespace()
+                .filter(|token| !token.starts_with("source:"))
+                .collect::<Vec<_>>()
+                .join(" ");
+            let filters = MemorySearchFilters {
+                kind: app.memory_kind_filter,
+                source: source_filter.map(str::to_owned),
+                ..MemorySearchFilters::default()
+            };
+            let results = store.search_ranked(&text_query, &filters, now, MAX_RECORDS * 4)
+                .into_iter()
+                .filter(|record| {
+                    app.memory_claim_filter.is_none_or(|status| record.claim_status == status)
+                })
+                .take(MAX_RECORDS)
+                .collect::<Vec<_>>();
+            if results.is_empty() {
+                lines.push(Line::from("No active records matched this local search."));
+            }
+            for (index, record) in results.iter().enumerate() {
+                lines.push(Line::from(format!(
+                    "{} {:<12} {:<10} {:<24} {:<26} {}",
+                    if index == app.memory_selected { "▸" } else { " " },
+                    clip_text(&record.record_id, 12),
+                    record.kind,
+                    record.claim_status,
+                    clip_text(&record.source, 26),
+                    record.verification_receipt_id.as_deref().map(|_| "receipt").unwrap_or("no receipt")
+                )));
+                let expires = store
+                    .records
+                    .iter()
+                    .find(|stored| stored.id == record.record_id)
+                    .and_then(|stored| stored.expires_at_unix)
+                    .map(|timestamp| timestamp.to_string())
+                    .unwrap_or_else(|| "never / n/a".to_owned());
+                lines.push(Line::from(format!(
+                    "  created={} · expires={expires}",
+                    record.created_at_unix
+                )));
+            }
+            if app.memory_detail_open {
+                if let Some(record) = results.get(app.memory_selected.min(results.len().saturating_sub(1))) {
+                    push_memory_detail(&mut lines, &record.content);
+                }
+            } else {
+                lines.push(Line::from("Press Enter to reveal the selected record after the privacy guard."));
+            }
+            lines.push(Line::from("Search inspects local record content; content itself remains hidden by default."));
         }
         lines.push(Line::from(""));
-        lines.push(Line::from(
-            "Writes require explicit CLI user action; models cannot mutate memory.",
-        ));
+        lines.push(Line::from("Read-only inspector · no memory writes or forgetting actions."));
         Ok(lines)
     }) {
         Ok(lines) => lines,
-        Err(error) => vec![
-            Line::from("MEMORY STORE UNAVAILABLE"),
-            Line::from(format!("{error:#}")),
-            Line::from("Run rocksoul init to initialize the portable store."),
+        Err(_) => vec![
+            Line::from(Span::styled("MEMORY STORE UNAVAILABLE", Style::default().fg(RED).add_modifier(Modifier::BOLD))),
+            Line::from("The store is missing, corrupt, unsupported, or inaccessible."),
+            Line::from("No memory content is exposed in this error state."),
         ],
     };
-
     frame.render_widget(
-        Paragraph::new(lines)
-            .wrap(Wrap { trim: true })
-            .block(panel("MEMORY / EXPERIENCE")),
+        Paragraph::new(lines).wrap(Wrap { trim: true }).block(panel(
+            "MEMORY / EXPERIENCE · ↑/↓ SELECT · / SEARCH · f KIND · c CLAIM",
+        )),
         area,
     );
+}
+
+fn push_memory_detail(lines: &mut Vec<Line<'static>>, content: &str) {
+    lines.push(Line::from(""));
+    lines.push(Line::from(Span::styled(
+        "SELECTED MEMORY CONTENT",
+        Style::default().fg(AMBER).add_modifier(Modifier::BOLD),
+    )));
+    if let Some(reason) = crate::memory_proposal::sensitive_content_reason(content) {
+        lines.push(Line::from(format!(
+            "Content blocked by privacy guard: {reason}"
+        )));
+    } else {
+        lines.push(Line::from(clip_text(content, 512)));
+        lines.push(Line::from(
+            "Content truncated to 512 characters; control characters removed.",
+        ));
+    }
+}
+
+fn next_memory_kind(current: Option<MemoryKind>) -> Option<MemoryKind> {
+    let values = [
+        None,
+        Some(MemoryKind::Episodic),
+        Some(MemoryKind::Semantic),
+        Some(MemoryKind::Procedural),
+        Some(MemoryKind::Working),
+        Some(MemoryKind::Derived),
+    ];
+    let index = values
+        .iter()
+        .position(|value| *value == current)
+        .unwrap_or(0);
+    values[(index + 1) % values.len()]
+}
+
+fn next_memory_claim_status(current: Option<MemoryClaimStatus>) -> Option<MemoryClaimStatus> {
+    let values = [
+        None,
+        Some(MemoryClaimStatus::UserAssertion),
+        Some(MemoryClaimStatus::ObservedEvidence),
+        Some(MemoryClaimStatus::Inference),
+        Some(MemoryClaimStatus::UnverifiedTaskOutcome),
+        Some(MemoryClaimStatus::VerifiedTaskOutcome),
+        Some(MemoryClaimStatus::ContradictedSuperseded),
+    ];
+    let index = values
+        .iter()
+        .position(|value| *value == current)
+        .unwrap_or(0);
+    values[(index + 1) % values.len()]
+}
+
+fn clip_text(value: &str, limit: usize) -> String {
+    value
+        .chars()
+        .filter(|character| !character.is_control())
+        .take(limit)
+        .collect()
 }
 
 fn render_rid(frame: &mut Frame<'_>, area: Rect, app: &mut App) {
@@ -697,6 +1014,14 @@ fn render_diagnostics(frame: &mut Frame<'_>, area: Rect, app: &App) {
         )),
         Line::from(format!("RID profile   {rid}")),
         Line::from(format!(
+            "RID detail    {}",
+            app.snapshot
+                .rid_error
+                .as_deref()
+                .map(safe_rid_error)
+                .unwrap_or("none")
+        )),
+        Line::from(format!(
             "RID catalogue {}",
             app.snapshot
                 .catalogue
@@ -706,18 +1031,69 @@ fn render_diagnostics(frame: &mut Frame<'_>, area: Rect, app: &App) {
         )),
         Line::from(format!(
             "Latest eval   {}",
-            match crate::eval::latest() {
+            match &app.snapshot.evaluation {
                 Ok(Some(report)) => format!(
-                    "{} ({}/{})",
+                    "{} [{}] · {} v{} · {}/{}",
                     if report.passed { "PASS" } else { "FAIL" },
+                    report_state(&app.snapshot.evaluation),
+                    report.suite_id,
+                    report.suite_version,
                     report.passed_count(),
                     report.checks.len()
                 ),
                 Ok(None) => "not run".to_owned(),
-                Err(_) => "report unavailable".to_owned(),
+                Err(_) => "corrupt / unavailable".to_owned(),
             }
         )),
         Line::from(""),
+        Line::from(match &app.snapshot.evaluation {
+            Ok(Some(report)) if !report.passed => format!(
+                "Failed checks: {}",
+                report
+                    .checks
+                    .iter()
+                    .filter(|check| !check.passed)
+                    .map(|check| check.id.as_str())
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            ),
+            Ok(Some(_)) => "Failed checks: none".to_owned(),
+            Ok(None) => "Evaluation report: not run".to_owned(),
+            Err(_) => "Evaluation report: corrupt or unavailable".to_owned(),
+        }),
+        Line::from(format!(
+            "Memory eval   {}",
+            match &app.snapshot.memory_evaluation {
+                Ok(Some(report)) => format!(
+                    "{} [{}] · {} v{} · P@{} {:.3} · R@{} {:.3}",
+                    if report.passed { "PASS" } else { "FAIL" },
+                    report_state(&app.snapshot.memory_evaluation),
+                    report.suite_id,
+                    report.suite_version,
+                    report.top_k,
+                    report.precision_at_k,
+                    report.top_k,
+                    report.recall_at_k
+                ),
+                Ok(None) => "not run".to_owned(),
+                Err(_) => "corrupt / unavailable".to_owned(),
+            }
+        )),
+        Line::from(match &app.snapshot.memory_evaluation {
+            Ok(Some(report)) => format!(
+                "Retrieval leakage: stale={} expired={} deleted={}",
+                report.stale_results_at_k, report.expired_leakage, report.deletion_leakage
+            ),
+            Ok(None) => "Memory retrieval report: not run".to_owned(),
+            Err(_) => "Memory retrieval report: corrupt or unavailable".to_owned(),
+        }),
+        Line::from(match &app.snapshot.memory_store_health {
+            Ok(health) => format!(
+                "Memory store  v{} · active {}/{}",
+                health.schema_version, health.active_records, health.total_records
+            ),
+            Err(_) => "Memory store  corrupt / unavailable".to_owned(),
+        }),
         Line::from("No synthetic latency, token, GPU, RAM or activity telemetry is shown."),
     ];
     frame.render_widget(
@@ -842,7 +1218,7 @@ fn render_footer(frame: &mut Frame<'_>, area: Rect, app: &App) {
     let text = if app.screen == Screen::Rid {
         "↑/↓ Browse stats   1-8 Navigate   Ctrl+K Palette   ? Help   q Exit"
     } else {
-        "1-8 Navigate   Tab Next   Ctrl+K Palette   r Refresh   ? Help   q Exit"
+        "1-8 Navigate   / Search   f Kind   c Claim   ↑/↓ Select   Enter/Esc Close Search   q Exit"
     };
     frame.render_widget(
         Paragraph::new(text)
@@ -957,6 +1333,96 @@ fn now_unix() -> u64 {
 #[cfg(test)]
 mod tests {
     use super::{App, Screen, Snapshot};
+
+    #[test]
+    fn all_screens_render_at_standard_wide_and_narrow_sizes() {
+        use ratatui::{backend::TestBackend, Terminal};
+
+        let mut app = App::new(Snapshot::load().unwrap());
+        for (width, height) in [(80, 24), (120, 40), (60, 20)] {
+            let backend = TestBackend::new(width, height);
+            let mut terminal = Terminal::new(backend).unwrap();
+            for index in 0..8 {
+                app.select_screen(Screen::from_index(index));
+                terminal
+                    .draw(|frame| super::render(frame, &mut app))
+                    .unwrap();
+            }
+        }
+    }
+
+    #[test]
+    fn rid_diagnostic_redacts_paths_and_raw_error_details() {
+        let detail = super::safe_rid_error("invalid JSON at C:/Users/example/secret/rid.json");
+        assert_eq!(detail, "invalid profile data");
+        assert!(!detail.contains("secret"));
+        assert_eq!(
+            super::safe_rid_error("unsupported schema version 99"),
+            "unsupported schema/version"
+        );
+    }
+
+    #[test]
+    fn report_state_distinguishes_missing_from_unreadable_without_leaking_errors() {
+        assert_eq!(super::report_state(&Ok::<Option<u8>, String>(None)), "not run");
+        assert_eq!(
+            super::report_state(&Err::<Option<u8>, _>("C:/private/path/secret.json".to_owned())),
+            "corrupt / unavailable"
+        );
+        assert_eq!(
+            super::report_state(&Ok::<Option<u8>, String>(Some(1))),
+            "available"
+        );
+    }
+
+    #[test]
+    fn memory_detail_uses_shared_sensitive_content_guard() {
+        assert_eq!(
+            crate::memory_proposal::sensitive_content_reason("api_key=example-secret"),
+            Some("credential_or_secret")
+        );
+        assert_eq!(
+            crate::memory_proposal::sensitive_content_reason("my medical diagnosis is private"),
+            Some("sensitive_personal_category")
+        );
+    }
+
+    #[test]
+    fn memory_filters_cycle_through_known_values_and_reset() {
+        assert_eq!(
+            super::next_memory_kind(None),
+            Some(crate::memory::MemoryKind::Episodic)
+        );
+        assert_eq!(
+            super::next_memory_kind(Some(crate::memory::MemoryKind::Derived)),
+            None
+        );
+        assert_eq!(
+            super::next_memory_claim_status(None),
+            Some(crate::memory::MemoryClaimStatus::UserAssertion)
+        );
+        assert_eq!(
+            super::next_memory_claim_status(Some(
+                crate::memory::MemoryClaimStatus::ContradictedSuperseded
+            )),
+            None
+        );
+    }
+
+    #[test]
+    fn memory_metadata_clipping_removes_controls_and_bounds_length() {
+        let text = super::clip_text("source\u{001b}[31m-private", 10);
+        assert!(!text.chars().any(char::is_control));
+        assert!(text.chars().count() <= 10);
+    }
+
+    #[test]
+    fn trace_metadata_is_control_free_and_bounded() {
+        let value = serde_json::json!("safe\u{001b}[31m-secret");
+        let text = super::safe_trace_text(Some(&value), 8);
+        assert!(!text.chars().any(char::is_control));
+        assert!(text.chars().count() <= 8);
+    }
 
     #[test]
     fn navigation_selects_each_screen_and_resets_overlays() {
