@@ -81,7 +81,7 @@ One Rust Cargo package (`Cargo.toml`, Rust 1.85 MSRV, edition 2024). Important m
 
 Do not split crates or add layers just for theoretical future extensibility. Extract only when real ownership, compile-time, or reuse pressure justifies it.
 
-## 4. Implemented baseline on main and active PR work
+## 4. Implemented baseline on main
 
 PR #51 merged at `260d29852bb30f2f63129271a07cd368fafccc3f`. Issue #35 merged to `main` at `458df81f87ae0b328dbc12c2b2829ca3a0ff75d9`. Always fetch the latest `origin/main` before starting a new task.
 
