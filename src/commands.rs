@@ -830,7 +830,10 @@ fn run_memory(command: MemoryCommand) -> Result<()> {
                         let id = store.add_user_entry(kind, content, tags, expires_at, now)?;
                         println!("Memory saved with explicit user approval.");
                         println!("ID: {id}");
-                        println!("Store: {}", paths.memory_dir.join("store.v2.json").display());
+                        println!(
+                            "Store: {}",
+                            paths.memory_dir.join("store.v2.json").display()
+                        );
                     }
                     MemoryCommand::List => {
                         print_memory_records(&store.active_records(now_unix()?), "Rocksoul memory");
@@ -849,12 +852,16 @@ fn run_memory(command: MemoryCommand) -> Result<()> {
                     }
                     MemoryCommand::Clear { confirm } => {
                         if !confirm {
-                            anyhow::bail!("this permanently deletes every memory; rerun with --confirm");
+                            anyhow::bail!(
+                                "this permanently deletes every memory; rerun with --confirm"
+                            );
                         }
                         store.clear();
                         println!("All memory records permanently deleted.");
                     }
-                    MemoryCommand::Export => unreachable!("export is handled outside the transaction"),
+                    MemoryCommand::Export => {
+                        unreachable!("export is handled outside the transaction")
+                    }
                 }
                 Ok(())
             })?;
