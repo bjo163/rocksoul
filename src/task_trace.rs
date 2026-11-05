@@ -160,7 +160,10 @@ mod tests {
     fn read_recent_returns_newest_records_first_and_respects_limit() {
         let path = std::env::temp_dir().join(format!(
             "rocksoul-trace-recent-{}.jsonl",
-            SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos()
+            SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
         ));
         for index in 0..3 {
             append(
@@ -189,7 +192,6 @@ mod tests {
         assert!(read_recent(&path, 16, 10).is_err());
         fs::remove_file(path).unwrap();
     }
-
 
     #[test]
     fn ignores_incomplete_trailing_record_and_refuses_to_append_after_it() {
