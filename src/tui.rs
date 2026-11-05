@@ -1235,16 +1235,35 @@ fn render_diagnostics(frame: &mut Frame<'_>, area: Rect, app: &App) {
 
 fn render_settings(frame: &mut Frame<'_>, area: Rect, app: &App) {
     let english = app.preferences.locale == LocaleMode::English;
+    let theme_label = if english { "Theme" } else { "Tema" };
+    let density_label = if english { "Density" } else { "Kepadatan" };
+    let language_label = if english { "Language" } else { "Bahasa" };
     let lines = vec![
-        Line::from(format!("{}  {:?}", if english { "Theme" } else { "Tema" }, app.preferences.theme)),
-        Line::from(format!("{}  {:?}", if english { "Density" } else { "Kepadatan" }, app.preferences.density)),
-        Line::from(if english { "Keymap         keyboard-first" } else { "Tombol         keyboard-first" }),
-        Line::from(if english { "Motion         reduced" } else { "Gerak          dikurangi" }),
-        Line::from(format!("{}  {:?}", if english { "Language" } else { "Bahasa" }, app.preferences.locale)),
+        Line::from(format!("{theme_label}  {:?}", app.preferences.theme)),
+        Line::from(format!("{density_label}  {:?}", app.preferences.density)),
+        Line::from(if english {
+            "Keymap         keyboard-first"
+        } else {
+            "Tombol         keyboard-first"
+        }),
+        Line::from(if english {
+            "Motion         reduced"
+        } else {
+            "Gerak          dikurangi"
+        }),
+        Line::from(format!("{language_label}  {:?}", app.preferences.locale)),
         Line::from(""),
-        Line::from(if english { "t Theme · d Density · l Language · saved to portable config" } else { "t Tema · d Kepadatan · l Bahasa · tersimpan di konfigurasi portable" }),
+        Line::from(if english {
+            "t Theme · d Density · l Language · saved to portable config"
+        } else {
+            "t Tema · d Kepadatan · l Bahasa · tersimpan di konfigurasi portable"
+        }),
         Line::from(if app.preferences_error {
-            if english { "Preferences invalid/unsupported; existing file is preserved." } else { "Preferensi tidak valid/tidak didukung; file lama dipertahankan." }
+            if english {
+                "Preferences invalid/unsupported; existing file is preserved."
+            } else {
+                "Preferensi tidak valid/tidak didukung; file lama dipertahankan."
+            }
         } else if english {
             "Preferences loaded and version-checked."
         } else {
@@ -1415,14 +1434,33 @@ fn render_help(frame: &mut Frame<'_>, area: Rect, app: &App) {
 }
 
 fn render_small(frame: &mut Frame<'_>, area: Rect, app: &App) {
+    let english = app.preferences.locale == LocaleMode::English;
     let rows = vec![
         Line::from(Span::styled(
-            "ROCKSOUL / COGNITIVE COCKPIT",
-            Style::default().fg(app.palette.accent).add_modifier(Modifier::BOLD),
+            if english {
+                "ROCKSOUL / COGNITIVE COCKPIT"
+            } else {
+                "ROCKSOUL / KOKPIT KOGNITIF"
+            },
+            Style::default()
+                .fg(app.palette.accent)
+                .add_modifier(Modifier::BOLD),
         )),
-        Line::from("Terminal is below the recommended 80×24 size."),
-        Line::from("Resize terminal or use CLI commands."),
-        Line::from("Press q or Esc to exit."),
+        Line::from(if english {
+            "Terminal is below the recommended 80×24 size."
+        } else {
+            "Terminal lebih kecil dari ukuran rekomendasi 80×24."
+        }),
+        Line::from(if english {
+            "Resize terminal or use CLI commands."
+        } else {
+            "Perbesar terminal atau gunakan perintah CLI."
+        }),
+        Line::from(if english {
+            "Press q or Esc to exit."
+        } else {
+            "Tekan q atau Esc untuk keluar."
+        }),
     ];
     frame.render_widget(
         Paragraph::new(rows)
