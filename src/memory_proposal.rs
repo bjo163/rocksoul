@@ -484,7 +484,10 @@ fn load_verified_receipt(
     let expected_claim_hash = format!("{:x}", Sha256::digest(expected_claim.as_bytes()));
     for entry in fs::read_dir(receipts_directory)? {
         let path = entry?.path();
-        if !path.is_file() || path.file_name().is_some_and(|name| name == "revoked.jsonl") {
+        if !path.is_file()
+            || path.extension().and_then(|extension| extension.to_str()) != Some("json")
+        {
+            // Ignore lock files, revocation ledgers, backups, and unrelated files.
             continue;
         }
         let bytes = fs::read(&path)?;
