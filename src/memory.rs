@@ -393,7 +393,8 @@ impl MemoryStore {
         let path = store_path(directory);
         let existed = path.is_file()
             || backup_path(&path).is_file()
-            || legacy_store_path(directory).is_file();
+            || legacy_store_path(directory).is_file()
+            || legacy_v2_store_path(directory).is_file();
         let mut store = Self::load_unlocked(directory)?;
         let previous = store.clone();
         let output = operation(&mut store)?;
@@ -1189,6 +1190,33 @@ mod tests {
             ..MemoryStore::default()
         };
         assert!(invalid_confidence.validate().is_err());
+    }
+
+    #[test]
+    fn export_excludes_expired_records_and_carries_forgetting_ids() {
+        let directory = temp_dir();
+        let mut id = String::new();
+        MemoryStore::transact(&directory, |store| {
+            id = store.add_user_entry(
+                MemoryKind::Working,
+                "already expired".into(),
+                vec![],
+                Some(20),
+                10,
+            )?;
+            Ok(())
+        }).unwrap();
+        MemoryStore::transact(&directory, |store| {
+            assert!(store.delete(&id));
+            Ok(())
+        }).unwrap();
+
+        let (store, _) = MemoryStore::initialize(&directory).unwrap();
+        let path = store.export(&directory).unwrap();
+        let export: serde_json::Value = serde_json::from_slice(&fs::read(path).unwrap()).unwrap();
+        assert!(export["records"].as_array().unwrap().is_empty());
+        assert!(export["forgotten_ids"].as_array().unwrap().iter().any(|value| value == &id));
+        fs::remove_dir_all(directory).unwrap();
     }
 
     #[test]
