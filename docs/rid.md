@@ -22,20 +22,11 @@ The domain model and persistence layer are local-first. HTTP API exposure will b
 
 ## 99 Universal Stats
 
-The canonical technical taxonomy is `data/rid/universal_stats.v1.json` (catalogue ID `rocksoul.rid.universal_stats.v1`, version `1.0.0`). It defines exactly 99 stable universal capability dimensions in nine domains, with eleven stats per domain. Each stat has a stable `rid_stat:NN` ID, a concise action-word label (such as `SEE`, `HEAR`, `REMEMBER`, `REASON`, `CREATE`, and `TRUST`), an operational definition, and an evidence-oriented evaluation protocol.
+The canonical technical taxonomy is `data/rid/universal_stats.v2.json` (catalogue ID `rocksoul.rid.universal_stats.v2`, version `2.0.0`). It defines **99 independent first-class universal capability domains**, each with a unique `rid_domain:NN` ID, a unique key and definition, and exactly one linked stat dimension with a stable `rid_stat:NN` ID. There is no mandatory nine-domain parent hierarchy and no fixed 11-stats-per-category grouping.
 
-The complete human-readable catalogue is documented in [RID — Universal 99 Stats](rid-universal-stats.md). The nine domains are:
-1. Perception
-2. Memory & Learning
-3. Reasoning
-4. Execution
-5. Communication
-6. Safety & Integrity
-7. Creativity & Transfer
-8. Metacognition
-9. Collaboration
+The complete human-readable catalogue is documented in [RID — Universal 99 Domains & Stats](rid-universal-stats.md). The former `data/rid/universal_stats.v1.json` (nine broad groups × eleven stats) is retained only as a historical snapshot and is superseded by v2.
 
-The labels are universal capability vocabulary, not a claim that every entity or runtime supports every modality. A score requires a versioned held-out evaluation, explicit acceptance criteria or ground truth, sufficient samples, confidence, evidence references, evaluator identity, timestamp, and rubric version. Initial state is `unrated`; `not_applicable` must remain distinct from zero. XP, level, age, consciousness, personhood, and spiritual worth are independent concepts and must never be used as proxies for stat scores.
+The labels are universal capability vocabulary, not a claim that every entity or runtime supports every modality. A domain may be `not_applicable` when its modality or capability is absent. A score requires a versioned held-out evaluation, explicit acceptance criteria or ground truth, sufficient samples, confidence, evidence references, evaluator identity, timestamp, and rubric version. Initial state is `unrated`; `not_applicable` must remain distinct from zero. XP, level, age, consciousness, personhood, and spiritual worth are independent concepts and must never be used as proxies for stat scores.
 
 ### Religious inspiration catalogue — separate reference layer
 
