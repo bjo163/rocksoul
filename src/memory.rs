@@ -338,10 +338,10 @@ impl MemoryStore {
             {
                 bail!("verified task-outcome memory requires a verifier receipt and evidence hash");
             }
-            if let Some(receipt_id) = &record.verification_receipt_id
-                && !receipt_ids.insert(receipt_id.as_str())
-            {
-                bail!("a kernel verification receipt may verify only one memory claim");
+            if let Some(receipt_id) = &record.verification_receipt_id {
+                if !receipt_ids.insert(receipt_id.as_str()) {
+                    bail!("a kernel verification receipt may verify only one memory claim");
+                }
             }
             if record.evidence_hash.as_ref().is_some_and(|hash| {
                 hash.len() != 64 || !hash.bytes().all(|byte| byte.is_ascii_hexdigit())
