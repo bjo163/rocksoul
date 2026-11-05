@@ -1,6 +1,6 @@
 # Cognitive Core Contracts
 
-**Status:** Describes current implementation on `main`. The interactive planner is model-only; independent verification is currently a separate core contract and deterministic test path.
+**Status:** Describes the merged `main` baseline plus the proposed memory-provenance changes in PR #51. Schema v4 and receipt-gated claim verification are not accepted `main` behavior until PR #51 is merged. The interactive planner remains model-only; independent verification is a separate trusted core contract and deterministic test path.
 
 ## Current interactive turn flow
 
