@@ -276,6 +276,7 @@ mod tests {
         assert_eq!(catalogue.domains.len(), 99);
         assert_eq!(catalogue.entries.len(), 99);
         assert_eq!(catalogue.by_slot(1).unwrap().label, "SEE");
+        assert_eq!(catalogue.by_slot(42).unwrap().label, "RESUME");
         assert_eq!(catalogue.by_slot(99).unwrap().label, "RELIABILITY");
         assert!(catalogue.by_slot(0).is_none());
         assert!(catalogue.by_slot(100).is_none());
