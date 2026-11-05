@@ -109,7 +109,10 @@ impl ProposalStore {
             if proposal.source_turn_reference.trim().is_empty()
                 || proposal.provenance.trim().is_empty()
                 || proposal.fingerprint.len() != 64
-                || !proposal.fingerprint.bytes().all(|byte| byte.is_ascii_hexdigit())
+                || !proposal
+                    .fingerprint
+                    .bytes()
+                    .all(|byte| byte.is_ascii_hexdigit())
             {
                 bail!("memory proposal provenance or SHA-256 fingerprint is invalid");
             }
@@ -140,7 +143,9 @@ impl ProposalStore {
                         || !proposal.content.is_empty()
                         || !proposal.tags.is_empty()
                     {
-                        bail!("approved proposal must be content-scrubbed and retain decision metadata");
+                        bail!(
+                            "approved proposal must be content-scrubbed and retain decision metadata"
+                        );
                     }
                 }
                 ProposalStatus::Denied | ProposalStatus::Cancelled => {
@@ -149,7 +154,9 @@ impl ProposalStore {
                         || !proposal.content.is_empty()
                         || !proposal.tags.is_empty()
                     {
-                        bail!("denied/cancelled proposal must be content-scrubbed and have valid decision metadata");
+                        bail!(
+                            "denied/cancelled proposal must be content-scrubbed and have valid decision metadata"
+                        );
                     }
                 }
             }
@@ -484,7 +491,10 @@ fn load_unlocked(directory: &Path) -> Result<ProposalStore> {
     let backup = directory.join(format!("{PROPOSAL_FILE}.bak"));
     if backup.exists() {
         fs::remove_file(&backup).with_context(|| {
-            format!("could not remove stale proposal backup {}", backup.display())
+            format!(
+                "could not remove stale proposal backup {}",
+                backup.display()
+            )
         })?;
     }
     Ok(store)
@@ -664,7 +674,10 @@ mod tests {
         );
         assert!(memory.records[0].user_approved);
         let audit = list(&directory).unwrap();
-        assert!(audit[0].content.is_empty(), "approved proposal payload must be scrubbed");
+        assert!(
+            audit[0].content.is_empty(),
+            "approved proposal payload must be scrubbed"
+        );
         assert!(audit[0].tags.is_empty());
         assert!(
             !directory.join("proposals.v1.json.bak").exists(),
