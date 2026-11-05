@@ -14,7 +14,7 @@ use ratatui::{
 };
 
 use crate::{
-    memory::MemoryStore,
+    memory::{MemoryClaimStatus, MemoryKind, MemorySearchFilters, MemoryStore},
     model::ModelConfig,
     paths::AppPaths,
     rid::{RuhProfile, StatId},
@@ -145,6 +145,8 @@ struct App {
     memory_query: String,
     memory_search_active: bool,
     memory_selected: usize,
+    memory_kind_filter: Option<MemoryKind>,
+    memory_claim_filter: Option<MemoryClaimStatus>,
 }
 
 impl App {
@@ -162,6 +164,8 @@ impl App {
             memory_query: String::new(),
             memory_search_active: false,
             memory_selected: 0,
+            memory_kind_filter: None,
+            memory_claim_filter: None,
         }
     }
 
@@ -221,6 +225,12 @@ impl App {
                 self.memory_selected = self.memory_selected.saturating_add(1).min(99)
             }
             KeyCode::Char('/') if self.screen == Screen::Memory => self.memory_search_active = true,
+            KeyCode::Char('f') if self.screen == Screen::Memory => {
+                self.memory_kind_filter = next_memory_kind(self.memory_kind_filter)
+            }
+            KeyCode::Char('c') if self.screen == Screen::Memory => {
+                self.memory_claim_filter = next_memory_claim_status(self.memory_claim_filter)
+            }
             KeyCode::Char('k') if key.modifiers.contains(KeyModifiers::CONTROL) => {
                 self.palette_open = true
             }
@@ -585,11 +595,25 @@ fn render_memory(frame: &mut Frame<'_>, area: Rect, app: &App) {
                 if app.memory_search_active { ">" } else { "" },
                 if app.memory_query.is_empty() { "press / to search" } else { &app.memory_query }
             )),
+            Line::from(format!(
+                "Filters              kind={:?} · claim={:?} · source:<exact>",
+                app.memory_kind_filter,
+                app.memory_claim_filter
+            )),
             Line::from(""),
             Line::from("ID             KIND       CLAIM STATUS             SOURCE                       ACCESS"),
         ];
         if app.memory_query.is_empty() {
-            let mut records = active;
+            let mut records = active
+                .into_iter()
+                .filter(|record| {
+                    app.memory_kind_filter.is_none_or(|kind| record.kind == kind)
+                        && app.memory_claim_filter.is_none_or(|status| record.claim_status == status)
+                })
+                .collect::<Vec<_>>();
+            if let Some(source) = app.memory_query.split_whitespace().find_map(|token| token.strip_prefix("source:")) {
+                records.retain(|record| record.source == source);
+            }
             records.sort_by_key(|record| std::cmp::Reverse(record.created_at_unix));
             if records.is_empty() {
                 lines.push(Line::from("No active memory records."));
@@ -616,12 +640,28 @@ fn render_memory(frame: &mut Frame<'_>, area: Rect, app: &App) {
                 lines.push(Line::from(format!("Showing newest {MAX_RECORDS} of {} active records.", records.len())));
             }
         } else {
-            let results = store.search_ranked(
-                &app.memory_query,
-                &crate::memory::MemorySearchFilters::default(),
-                now,
-                MAX_RECORDS,
-            );
+            let source_filter = app
+                .memory_query
+                .split_whitespace()
+                .find_map(|token| token.strip_prefix("source:"));
+            let text_query = app
+                .memory_query
+                .split_whitespace()
+                .filter(|token| !token.starts_with("source:"))
+                .collect::<Vec<_>>()
+                .join(" ");
+            let filters = MemorySearchFilters {
+                kind: app.memory_kind_filter,
+                source: source_filter.map(str::to_owned),
+                ..MemorySearchFilters::default()
+            };
+            let results = store.search_ranked(&text_query, &filters, now, MAX_RECORDS * 4)
+                .into_iter()
+                .filter(|record| {
+                    app.memory_claim_filter.is_none_or(|status| record.claim_status == status)
+                })
+                .take(MAX_RECORDS)
+                .collect::<Vec<_>>();
             if results.is_empty() {
                 lines.push(Line::from("No active records matched this local search."));
             }
@@ -663,9 +703,36 @@ fn render_memory(frame: &mut Frame<'_>, area: Rect, app: &App) {
     frame.render_widget(
         Paragraph::new(lines)
             .wrap(Wrap { trim: true })
-            .block(panel("MEMORY / EXPERIENCE · ↑/↓ SELECT · / SEARCH")),
+            .block(panel("MEMORY / EXPERIENCE · ↑/↓ SELECT · / SEARCH · f KIND · c CLAIM")),
         area,
     );
+}
+
+fn next_memory_kind(current: Option<MemoryKind>) -> Option<MemoryKind> {
+    let values = [
+        None,
+        Some(MemoryKind::Episodic),
+        Some(MemoryKind::Semantic),
+        Some(MemoryKind::Procedural),
+        Some(MemoryKind::Working),
+        Some(MemoryKind::Derived),
+    ];
+    let index = values.iter().position(|value| *value == current).unwrap_or(0);
+    values[(index + 1) % values.len()]
+}
+
+fn next_memory_claim_status(current: Option<MemoryClaimStatus>) -> Option<MemoryClaimStatus> {
+    let values = [
+        None,
+        Some(MemoryClaimStatus::UserAssertion),
+        Some(MemoryClaimStatus::ObservedEvidence),
+        Some(MemoryClaimStatus::Inference),
+        Some(MemoryClaimStatus::UnverifiedTaskOutcome),
+        Some(MemoryClaimStatus::VerifiedTaskOutcome),
+        Some(MemoryClaimStatus::ContradictedSuperseded),
+    ];
+    let index = values.iter().position(|value| *value == current).unwrap_or(0);
+    values[(index + 1) % values.len()]
 }
 
 fn clip_text(value: &str, limit: usize) -> String {
@@ -975,7 +1042,7 @@ fn render_footer(frame: &mut Frame<'_>, area: Rect, app: &App) {
     let text = if app.screen == Screen::Rid {
         "↑/↓ Browse stats   1-8 Navigate   Ctrl+K Palette   ? Help   q Exit"
     } else {
-        "1-8 Navigate   / Search   ↑/↓ Select   Enter/Esc Close Search   Ctrl+K Palette   q Exit"
+        "1-8 Navigate   / Search   f Kind   c Claim   ↑/↓ Select   Enter/Esc Close Search   q Exit"
     };
     frame.render_widget(
         Paragraph::new(text)
