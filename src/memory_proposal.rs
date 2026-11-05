@@ -325,7 +325,7 @@ fn sensitive_content_reason(content: &str) -> Option<&'static str> {
     if content.contains("AKIA")
         && content.as_bytes().windows(20).any(|window| {
             window.starts_with(b"AKIA")
-                && window[4..].iter().all(u8::is_ascii_alphanumeric)
+                && window[4..].iter().all(|byte| byte.is_ascii_alphanumeric())
         })
     {
         return Some("cloud_access_key");
@@ -385,7 +385,14 @@ fn proposal_path(directory: &Path) -> PathBuf {
 fn load_unlocked(directory: &Path) -> Result<ProposalStore> {
     let path = proposal_path(directory);
     if !path.is_file() {
-        return Ok(ProposalStore::default());
+        let backup = directory.join(format!("{PROPOSAL_FILE}.bak"));
+        if backup.is_file() {
+            fs::rename(&backup, &path).with_context(|| {
+                format!("could not recover proposal store from {}", backup.display())
+            })?;
+        } else {
+            return Ok(ProposalStore::default());
+        }
     }
     let bytes = fs::read(&path).with_context(|| format!("could not read {}", path.display()))?;
     let store: ProposalStore = serde_json::from_slice(&bytes)
