@@ -61,9 +61,11 @@ The roadmap is capability-driven. Each stage must deliver a working, tested incr
 - [x] Support list, text/tag search, permanent deletion, confirmed clear, and root-local export.
 - [x] Support expiry for working-memory records.
 - [x] Show real store counts and provenance in the Cognitive Cockpit.
-- [x] Add explicit v1-to-v2 schema migration with metadata-preserving validation and durable backup recovery diagnostics.
+- [x] Migrate v1-to-v2-to-v3 memory stores with retention metadata, metadata-preserving validation, and backup recovery diagnostics.
 - [x] Serialize memory read-modify-write CLI transactions with a stable OS lock file, bounded five-second acquisition timeout, and subprocess tests for contention, process-exit release, and concurrent writers.
-- [ ] Add retention policies, forgetting workflows, and cross-session evaluation.
+- [x] Add versioned per-record retention policies, dry-run-first expiry pruning, and append-only content-free forgetting tombstones.
+- [x] Apply tombstones during normal load and backup recovery; scrub managed backups, legacy snapshots, and exports after explicit forgetting.
+- [ ] Add held-out cross-session retrieval evaluation before any automatic memory context injection.
 - [ ] Add retrieval ranking and memory context injection only after provenance and relevance tests.
 - [ ] Add model-proposed memory with human approval; never enable silent model writes.
 
