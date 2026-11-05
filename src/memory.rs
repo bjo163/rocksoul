@@ -13,10 +13,14 @@ use fs2::FileExt;
 use anyhow::{Context, Result, anyhow, bail};
 use clap::ValueEnum;
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 
-pub const MEMORY_SCHEMA_VERSION: u16 = 3;
+use crate::core::VerificationReceipt;
+
+pub const MEMORY_SCHEMA_VERSION: u16 = 4;
 pub const RETENTION_POLICY_VERSION: u16 = 1;
-const STORE_FILE: &str = "store.v3.json";
+const STORE_FILE: &str = "store.v4.json";
+const LEGACY_V3_STORE_FILE: &str = "store.v3.json";
 const LEGACY_V2_STORE_FILE: &str = "store.v2.json";
 const LEGACY_STORE_FILE: &str = "store.v1.json";
 const FORGETTING_LEDGER_FILE: &str = "forgetting.jsonl";
@@ -46,6 +50,91 @@ impl std::fmt::Display for MemoryKind {
     }
 }
 
+#[derive(Clone, Copy, Debug, Default, Deserialize, Eq, PartialEq, Serialize, ValueEnum)]
+#[serde(rename_all = "snake_case")]
+pub enum MemoryClaimStatus {
+    #[default]
+    UserAssertion,
+    ObservedEvidence,
+    Inference,
+    UnverifiedTaskOutcome,
+    VerifiedTaskOutcome,
+    Contradicted,
+    Superseded,
+}
+
+impl std::fmt::Display for MemoryClaimStatus {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter.write_str(match self {
+            Self::UserAssertion => "user_assertion",
+            Self::ObservedEvidence => "observed_evidence",
+            Self::Inference => "inference",
+            Self::UnverifiedTaskOutcome => "unverified_task_outcome",
+            Self::VerifiedTaskOutcome => "verified_task_outcome",
+            Self::Contradicted => "contradicted",
+            Self::Superseded => "superseded",
+        })
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+pub struct VerificationReceiptSnapshot {
+    pub verification_id: String,
+    pub task_id: String,
+    pub claim_sha256: String,
+    pub evidence_sha256: String,
+    pub verifier_id: String,
+    pub verifier_version: u16,
+    pub policy_version: u16,
+    pub required_checks_passed: usize,
+    pub total_checks: usize,
+    pub evidence_refs: Vec<String>,
+    pub xp_awarded: u32,
+    pub verified_at_unix: u64,
+}
+
+impl VerificationReceiptSnapshot {
+    fn from_receipt(receipt: &VerificationReceipt) -> Result<Self> {
+        let claim_sha256 = receipt
+            .claim_sha256()
+            .context("verification receipt is not bound to an exact claim")?
+            .to_owned();
+        Ok(Self {
+            verification_id: receipt.verification_id().to_owned(),
+            task_id: receipt.task_id().to_owned(),
+            claim_sha256,
+            evidence_sha256: receipt.evidence_sha256().to_owned(),
+            verifier_id: receipt.verifier_id().to_owned(),
+            verifier_version: receipt.verifier_version(),
+            policy_version: receipt.policy_version(),
+            required_checks_passed: receipt.required_checks_passed(),
+            total_checks: receipt.total_checks(),
+            evidence_refs: receipt.evidence_refs().to_vec(),
+            xp_awarded: receipt.xp_awarded(),
+            verified_at_unix: receipt.verified_at_unix(),
+        })
+    }
+
+    fn validates_claim(&self, claim: &str) -> bool {
+        let normalized = claim.split_whitespace().collect::<Vec<_>>().join(" ").to_lowercase();
+        let claim_hash = format!("{:x}", Sha256::digest(normalized.as_bytes()));
+        self.claim_sha256 == claim_hash
+            && self.verification_id.trim() != ""
+            && self.task_id.trim() != ""
+            && self.evidence_sha256.len() == 64
+            && self.evidence_sha256.bytes().all(|byte| byte.is_ascii_hexdigit())
+            && self.verifier_id == "rocksoul.kernel.verifier"
+            && self.verifier_version == 1
+            && self.policy_version > 0
+            && self.required_checks_passed > 0
+            && self.required_checks_passed <= self.total_checks
+            && self.total_checks == self.evidence_refs.len()
+            && self.evidence_refs.iter().all(|reference| !reference.trim().is_empty())
+            && self.xp_awarded > 0
+            && self.verified_at_unix > 0
+    }
+}
+
 #[derive(Clone, Copy, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum RetentionPolicy {
@@ -70,6 +159,16 @@ pub struct MemoryRecord {
     pub retention_policy_version: u16,
     #[serde(default)]
     pub retention_policy: RetentionPolicy,
+    #[serde(default)]
+    pub claim_status: MemoryClaimStatus,
+    #[serde(default)]
+    pub verification_receipt: Option<VerificationReceiptSnapshot>,
+    #[serde(default)]
+    pub verification_invalidated_at_unix: Option<u64>,
+    #[serde(default)]
+    pub supersedes: Option<String>,
+    #[serde(default)]
+    pub superseded_by: Option<String>,
 }
 
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -86,6 +185,7 @@ pub struct MemorySearchResult {
     pub content: String,
     pub kind: MemoryKind,
     pub source: String,
+    pub claim_status: MemoryClaimStatus,
     pub created_at_unix: u64,
     pub updated_at_unix: u64,
     /// Source-record confidence only; not a retrieval relevance probability.
