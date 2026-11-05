@@ -108,8 +108,10 @@ impl ProposalStore {
             }
             if proposal.source_turn_reference.trim().is_empty()
                 || proposal.provenance.trim().is_empty()
+                || proposal.fingerprint.len() != 64
+                || !proposal.fingerprint.bytes().all(|byte| byte.is_ascii_hexdigit())
             {
-                bail!("memory proposal provenance is missing");
+                bail!("memory proposal provenance or SHA-256 fingerprint is invalid");
             }
             match proposal.status {
                 ProposalStatus::Pending => {
@@ -359,7 +361,11 @@ fn validate_candidate(
     if expires_at_unix.is_some_and(|expiry| expiry <= now) {
         bail!("proposal expiry must be in the future");
     }
-    if let Some(reason) = sensitive_content_reason(content) {
+    if let Some(reason) = sensitive_content_reason(content)
+        .or_else(|| sensitive_content_reason(source_turn_reference))
+        .or_else(|| sensitive_content_reason(provenance))
+        .or_else(|| tags.iter().find_map(|tag| sensitive_content_reason(tag)))
+    {
         bail!(
             "proposal rejected by privacy guard ({reason}); remove sensitive data before proposing memory"
         );
