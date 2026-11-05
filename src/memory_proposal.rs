@@ -507,7 +507,14 @@ fn load_verified_receipt(
         {
             return Ok(None);
         }
-        let receipt: VerificationReceipt = serde_json::from_value(document)?;
+        let receipt: VerificationReceipt = serde_json::from_value(document.clone())?;
+        if document
+            .get("operation_id")
+            .and_then(serde_json::Value::as_str)
+            != Some(receipt.task_id())
+        {
+            return Ok(None);
+        }
         if !receipt.integrity_valid()
             || receipt.outcome() != "verified"
             || receipt.verifier_id() != TRUSTED_VERIFIER_ID
@@ -948,7 +955,7 @@ mod tests {
         document
             .as_object_mut()
             .unwrap()
-            .insert("operation_id".into(), serde_json::json!("test-operation"));
+            .insert("operation_id".into(), serde_json::json!("receipt-task"));
         fs::write(
             receipts_directory.join("fixture-receipt.json"),
             serde_json::to_vec_pretty(&document).unwrap(),
@@ -1274,6 +1281,47 @@ mod tests {
             50_003,
         )
         .unwrap();
+        let store = crate::memory::MemoryStore::load(&directory).unwrap();
+        assert_eq!(
+            store
+                .records
+                .iter()
+                .find(|record| record.id == memory_id)
+                .unwrap()
+                .claim_status,
+            crate::memory::MemoryClaimStatus::UnverifiedTaskOutcome
+        );
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn mismatched_operation_id_cannot_verify_a_task_outcome() {
+        let directory = temp_dir();
+        let receipts = directory.join("receipts");
+        let claim = "The workspace operation completed with verified evidence";
+        issue_receipt(&receipts, "verify-operation-binding", claim, 45_000);
+
+        let path = receipts.join("fixture-receipt.json");
+        let mut document: serde_json::Value =
+            serde_json::from_slice(&fs::read(&path).unwrap()).unwrap();
+        document["operation_id"] = serde_json::json!("different-operation");
+        fs::write(&path, serde_json::to_vec_pretty(&document).unwrap()).unwrap();
+
+        let proposal = create(
+            &directory,
+            task_candidate(claim, Some("verify-operation-binding")),
+            45_001,
+        )
+        .unwrap();
+        let memory_id = approve_with_receipts(
+            &directory,
+            Some(&receipts),
+            &proposal.id,
+            &proposal.approval_phrase(),
+            45_002,
+        )
+        .unwrap();
+
         let store = crate::memory::MemoryStore::load(&directory).unwrap();
         assert_eq!(
             store
