@@ -591,6 +591,10 @@ mod tests {
     #[test]
     fn cross_process_lock_contention_has_bounded_timeout() {
         if let Ok(directory) = std::env::var("ROCKSOUL_LOCK_CHILD_DIR") {
+            if std::env::var_os("ROCKSOUL_LOCK_CHILD_EXIT").is_some() {
+                let _lock = super::acquire_store_lock(PathBuf::from(directory).as_path()).unwrap();
+                std::process::exit(0);
+            }
             let error = MemoryStore::load(PathBuf::from(directory).as_path()).unwrap_err();
             assert!(format!("{error:#}").contains("memory store is busy"));
             return;
@@ -616,7 +620,17 @@ mod tests {
             .unwrap();
         assert!(status.success(), "child process should report bounded lock timeout");
         FileExt::unlock(&held).unwrap();
-        assert!(MemoryStore::load(&directory).is_ok(), "lock should be released after owner unlock");
+
+        let exit_status = Command::new(std::env::current_exe().unwrap())
+            .arg("--exact")
+            .arg("memory::tests::cross_process_lock_contention_has_bounded_timeout")
+            .arg("--nocapture")
+            .env("ROCKSOUL_LOCK_CHILD_DIR", &directory)
+            .env("ROCKSOUL_LOCK_CHILD_EXIT", "1")
+            .status()
+            .unwrap();
+        assert!(exit_status.success(), "child process should exit while holding the OS lock");
+        assert!(MemoryStore::load(&directory).is_ok(), "OS lock must be released when its process exits");
         fs::remove_dir_all(directory).unwrap();
     }
 
