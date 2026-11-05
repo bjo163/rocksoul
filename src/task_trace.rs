@@ -124,6 +124,25 @@ pub fn read(path: &Path) -> Result<Vec<serde_json::Value>> {
         .collect()
 }
 
+/// Read a bounded newest-first window for interactive inspectors.
+/// Refuse oversized files rather than allocating without limit in the TUI.
+pub fn read_recent(path: &Path, max_bytes: u64, max_records: usize) -> Result<Vec<serde_json::Value>> {
+    if !path.exists() {
+        return Ok(Vec::new());
+    }
+    let byte_limit = max_bytes.min(1_048_576);
+    let metadata = fs::metadata(path)
+        .with_context(|| format!("could not inspect task trace {}", path.display()))?;
+    anyhow::ensure!(
+        metadata.len() <= byte_limit,
+        "task trace exceeds the interactive read limit"
+    );
+    let mut records = read(path)?;
+    records.reverse();
+    records.truncate(max_records.min(1_000));
+    Ok(records)
+}
+
 #[cfg(test)]
 mod tests {
     use std::{
@@ -131,7 +150,35 @@ mod tests {
         time::{SystemTime, UNIX_EPOCH},
     };
 
-    use super::{TaskTraceEvent, append, read};
+    use super::{TaskTraceEvent, append, read, read_recent};
+    
+    #[test]
+    fn read_recent_returns_newest_records_first_and_respects_limit() {
+        let path = std::env::temp_dir().join(format!(
+            "rocksoul-trace-recent-{}.jsonl",
+            SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos()
+        ));
+        for index in 0..3 {
+            append(&path, &format!("op-{index}"), TaskTraceEvent::Proposed, "note.txt", "safe metadata").unwrap();
+        }
+        let records = read_recent(&path, 16_384, 2).unwrap();
+        assert_eq!(records.len(), 2);
+        assert_eq!(records[0]["operation_id"], "op-2");
+        assert_eq!(records[1]["operation_id"], "op-1");
+        fs::remove_file(path).unwrap();
+    }
+
+    #[test]
+    fn read_recent_rejects_oversized_trace_before_reading() {
+        let path = std::env::temp_dir().join(format!(
+            "rocksoul-trace-large-{}.jsonl",
+            SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos()
+        ));
+        fs::write(&path, vec![b'x'; 32]).unwrap();
+        assert!(read_recent(&path, 16, 10).is_err());
+        fs::remove_file(path).unwrap();
+    }
+
 
     #[test]
     fn ignores_incomplete_trailing_record_and_refuses_to_append_after_it() {
