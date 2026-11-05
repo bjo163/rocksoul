@@ -199,6 +199,7 @@ impl MemoryStore {
         }
 
         for (legacy, expected_version) in [
+            (legacy_v3_store_path(directory), 3_u16),
             (legacy_v2_store_path(directory), 2_u16),
             (legacy_store_path(directory), 1_u16),
         ] {
@@ -230,6 +231,9 @@ impl MemoryStore {
                 } else {
                     RetentionPolicy::KeepUntilDeleted
                 };
+                record.source_turn_ref = None;
+                record.approval_id = None;
+                record.proposal_fingerprint = None;
             }
             store.validate()?;
             apply_forgetting_ledger(directory, &mut store)?;
@@ -716,6 +720,10 @@ fn legacy_v2_store_path(directory: &Path) -> PathBuf {
     directory.join(LEGACY_V2_STORE_FILE)
 }
 
+fn legacy_v3_store_path(directory: &Path) -> PathBuf {
+    directory.join(LEGACY_V3_STORE_FILE)
+}
+
 fn default_retention_policy_version() -> u16 {
     RETENTION_POLICY_VERSION
 }
@@ -805,6 +813,7 @@ fn scrub_forgotten_snapshots(directory: &Path) -> Result<()> {
     let current = store_path(directory);
     let legacy_v1 = legacy_store_path(directory);
     let legacy_v2 = legacy_v2_store_path(directory);
+    let legacy_v3 = legacy_v3_store_path(directory);
     for path in [
         backup_path(&current),
         current.with_extension("json.tmp"),
@@ -815,6 +824,9 @@ fn scrub_forgotten_snapshots(directory: &Path) -> Result<()> {
         legacy_v2.clone(),
         legacy_v2.with_extension("json.bak"),
         legacy_v2.with_extension("json.tmp"),
+        legacy_v3.clone(),
+        legacy_v3.with_extension("json.bak"),
+        legacy_v3.with_extension("json.tmp"),
         directory.join("exports/latest.json"),
         directory.join("exports/latest.json.bak"),
         directory.join("exports/latest.json.tmp"),
