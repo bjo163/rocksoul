@@ -55,13 +55,16 @@ pub enum EvalCommand {
         #[command(subcommand)]
         suite: EvalSuite,
     },
-    /// Show the latest saved evaluation report.
+    /// Show the latest saved core integrity report.
     Latest,
+    /// Show the latest saved memory retrieval evaluation report.
+    MemoryLatest,
 }
 
 #[derive(Debug, Subcommand)]
 pub enum EvalSuite {
     Core,
+    MemoryRetrieval,
 }
 
 #[derive(Debug, Subcommand)]
