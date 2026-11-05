@@ -720,7 +720,7 @@ pub fn rid_status() -> Result<()> {
     println!("XP: {}", profile.total_xp());
     println!("Stats rated: {rated}/99");
     println!("Profile: {}", paths.rid_file.display());
-    println!("Naming layer: Asmaul Husna-inspired technical dimensions; not divine attributes.");
+    println!("Taxonomy: 99 universal capability domains; technical measurements only.");
 
     Ok(())
 }
@@ -742,7 +742,7 @@ fn rid_stats() -> Result<()> {
         profile.stats().len(),
         catalogue.catalogue_version
     );
-    println!("Name labels are inspirational only; technical scores measure software capability.");
+    println!("Each domain has a distinct measurement target; one evidence outcome must not be double-counted.");
 
     for stat in profile.stats() {
         let entry = catalogue
@@ -760,12 +760,12 @@ fn rid_stats() -> Result<()> {
         println!(
             "{:02}  {:<20}  {:<30}  {}  (confidence: {})",
             stat.id.value(),
-            entry.name.transliteration,
-            entry.technical_stat.label,
+            entry.domain_label,
+            entry.label,
             score,
             confidence
         );
-        println!("    {} · {}", entry.name.arabic, entry.technical_stat.key);
+        println!("    {} · {}", entry.key, entry.measurement_target);
     }
 
     Ok(())
