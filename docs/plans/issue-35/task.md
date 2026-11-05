@@ -29,7 +29,7 @@
 - [x] C1. Add a test for identical immutable receipt replay.
 - [x] C2. Add a test for conflicting immutable receipt fields; fail closed and preserve the existing receipt bytes.
 - [x] C3. Add a test for malformed/truncated receipt JSON; fail closed and preserve the corrupt bytes for diagnosis.
-- [x] C4. Add a test for interrupted temp-file/rename publication if the current helper has a deterministic injection seam.
+- [x] C4. Review the temp-file/rename interruption case; no deterministic seam exists, so it is explicitly deferred without adding a production failpoint.
 - [x] C5. Confirm no recovery path silently overwrites a corrupt or conflicting durable receipt.
 
 ## Phase D — Typed, versioned acceptance contract
