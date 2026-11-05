@@ -1,6 +1,6 @@
 # Rocksoul Project Progress
 
-**Last updated:** 2026-11-06 (Asia/Jakarta, Universal 99 domains pairwise contrast reconciliation v2.3.0 published)  
+**Last updated:** 2026-11-06 (Asia/Jakarta, Universal 99 domains measurement-model reconciliation v2.3.1 published)  
 **Repository:** [bjo163/rocksoul](https://github.com/bjo163/rocksoul)  
 **Canonical branch:** `main`  
 **Current principle:** One Core. Infinite Evolution.
@@ -199,25 +199,25 @@ A feature is complete only when:
 Never label an in-progress workflow as passed. Never close an issue because a branch or PR merely exists.
 
 
-## RID Universal 99 Domains & Stats — pairwise contrast reconciliation v2.3.0 (runtime migration implemented; CI pending)
+## RID Universal 99 Domains & Stats — pairwise contrast and measurement-model reconciliation v2.3.1 (runtime migration implemented; CI pending)
 
 **Canonical taxonomy:** `data/rid/universal_stats.v2.json`  
-**Version:** `2.3.0`  
-**Pairwise registry commit:** `20eeafdc7b830529a0cbca02de8e0b491ef40a7f`  
-**Runtime validator commit:** `4cb4195e40171d12fcca2b6db150774acca9482d`  
+**Version:** `2.3.1`  
+**Domain/stat model commit:** `54c273bbd3221a94378afa24be89caf8ae402821`  
+**Runtime validator commit:** `2c994a9bb776eb6cfbb058c4eae9ba126e1394a8`  
 **Human-readable audit:** [docs/rid-universal-stats.md](rid-universal-stats.md)
 
 Delivered:
-- Exactly 99 independent first-class domains and 99 linked stat dimensions; no nine-domain parent grouping.
+- Exactly 99 independent first-class domains and 99 linked stat slots. This is **99 capability dimensions, not 198**: domains define constructs; linked stats store per-profile measurements.
 - Exactly 99 unique domain IDs, keys, labels, measurement targets, stat IDs, stat keys, and stat labels.
-- **274 directed overlap guards / 137 reciprocal pairs**.
-- Added 137 canonical pairwise contrast records (`rid_overlap:001`–`rid_overlap:137`), each naming both constructs, both measurement targets, and a separate-outcome rule.
-- All 99 domain separation rules are distinct and state the primary target, inclusion boundary, exclusion boundary, adjacent construct targets, and no-double-counting rule.
-- Runtime validator checks the pairwise registry exactly matches the graph, in addition to reciprocal edges, unique IDs/keys/labels/targets/rules, sorted adjacency, and domain/stat metadata parity.
+- **274 directed overlap guards / 137 reciprocal pairs** and 137 canonical pairwise contrast records (`rid_overlap:001`–`rid_overlap:137`).
+- Every pair record names both constructs, both measurement targets, and an explicit separate-outcome rule; runtime validates exact graph/registry parity.
+- All 99 domain separation rules are distinct and state primary target, inclusion, exclusion, adjacent construct targets, and no-double-counting requirements.
+- Runtime validator checks unique metadata, normalized keys, sorted/unique reciprocal adjacency, exact graph counts, pairwise contrast IDs and targets, domain/stat metadata parity, and the one-to-one domain/stat measurement contract.
 - Sharpened adjacent definitions: event reconstruction vs. direct recall vs. delayed retention; spatial localization; rubric evaluation vs. independent verification; task completion vs. ownership handoff; interruption resume vs. long-run reliability; and other high-risk pairs.
 - Stat 42 label refined from PERSIST to RESUME; stable stat ID retained.
-- Runtime embeds v2.3.0; schema-v1 archival migration preserves exact original bytes, legacy records, identity, and XP while initializing all universal scores as unrated.
-- Benchmark manifest v1.1.0 now binds evaluation adapters to RID v2.3.0 and declares benchmark families as navigation tags only.
+- Runtime embeds v2.3.1; schema-v1 archival migration preserves exact original bytes, legacy records, identity, and XP while initializing all universal scores as unrated.
+- Evaluation manifest v1.1.1 binds future adapters to the canonical RID taxonomy; benchmark families are navigation tags only, not additional scores.
 - Religious inspiration data remains separate from technical capability taxonomy.
 
 Audit conclusions and remaining gates:
@@ -227,7 +227,7 @@ Audit conclusions and remaining gates:
 - Exact-head Linux/Windows CI must be green before claiming verified completion.
 
 Next:
-1. Verify exact-head Linux and Windows CI for v2.3.0 and fix any failures.
+1. Verify exact-head Linux and Windows CI for v2.3.1 and fix any failures.
 2. Design trusted per-domain evaluator adapters with held-out benchmark suites, negative controls, calibrated confidence, and auditable evidence.
 3. Run independent expert review and empirical discriminant-validity studies before treating scores as comparable capability measurements.
 4. Keep all 99 dimensions `unrated` until trusted evidence exists; do not map historical Asmaul Husna scores by ordinal slot.
