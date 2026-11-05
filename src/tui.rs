@@ -14,7 +14,7 @@ use ratatui::{
 };
 
 use crate::{
-    memory::{MemoryKind, MemoryStore},
+    memory::MemoryStore,
     model::ModelConfig,
     paths::AppPaths,
     rid::{RuhProfile, StatId},
@@ -587,7 +587,7 @@ fn render_memory(frame: &mut Frame<'_>, area: Rect, app: &App) {
         ];
         if app.memory_query.is_empty() {
             let mut records = active;
-            records.sort_by(|left, right| right.created_at_unix.cmp(&left.created_at_unix));
+            records.sort_by_key(|record| std::cmp::Reverse(record.created_at_unix));
             if records.is_empty() {
                 lines.push(Line::from("No active memory records."));
             }
