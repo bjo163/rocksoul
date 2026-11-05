@@ -411,6 +411,10 @@ pub fn revoke_receipt(
     {
         bail!("receipt revocation requires an ID, timestamp, and reason code");
     }
+    let _receipt_lock = acquire_lock(receipts_directory)?;
+    if is_receipt_revoked(receipts_directory, verification_id)? {
+        bail!("kernel receipt {verification_id} is already revoked");
+    }
     fs::create_dir_all(receipts_directory)?;
     let path = receipts_directory.join("revoked.jsonl");
     let mut file = OpenOptions::new().create(true).append(true).open(&path)?;
@@ -456,6 +460,7 @@ fn load_verified_receipt(
     claim: &str,
     now: u64,
 ) -> Result<Option<VerificationReceipt>> {
+    let _receipt_lock = acquire_lock(receipts_directory)?;
     if is_receipt_revoked(receipts_directory, verification_id)? {
         return Ok(None);
     }
