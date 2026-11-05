@@ -127,7 +127,7 @@ impl MemoryStore {
                 Ok(mut store) => {
                     apply_forgetting_ledger(directory, &mut store)?;
                     return Ok(store);
-                },
+                }
                 Err(primary_error) => {
                     // Unknown future versions must fail closed; never replace them
                     // with an older backup or legacy document.
@@ -177,7 +177,10 @@ impl MemoryStore {
                 format!("could not read legacy memory store {}", legacy.display())
             })?;
             let mut store: Self = serde_json::from_slice(&bytes).with_context(|| {
-                format!("legacy memory store is not valid JSON: {}", legacy.display())
+                format!(
+                    "legacy memory store is not valid JSON: {}",
+                    legacy.display()
+                )
             })?;
             if store.schema_version != expected_version {
                 bail!(
@@ -247,7 +250,10 @@ impl MemoryStore {
                 bail!("memory tags must not be empty");
             }
             if record.retention_policy_version != RETENTION_POLICY_VERSION {
-                bail!("unsupported memory retention policy version {}", record.retention_policy_version);
+                bail!(
+                    "unsupported memory retention policy version {}",
+                    record.retention_policy_version
+                );
             }
             if (record.retention_policy == RetentionPolicy::ExpireAt)
                 != record.expires_at_unix.is_some()
@@ -320,7 +326,8 @@ impl MemoryStore {
         let expired = self.expired_ids(now);
         if !expired.is_empty() {
             let expired_set = expired.iter().map(String::as_str).collect::<HashSet<_>>();
-            self.records.retain(|record| !expired_set.contains(record.id.as_str()));
+            self.records
+                .retain(|record| !expired_set.contains(record.id.as_str()));
             self.revision = self.revision.saturating_add(1);
         }
         expired
@@ -398,21 +405,29 @@ impl MemoryStore {
         let mut store = Self::load_unlocked(directory)?;
         let previous = store.clone();
         let output = operation(&mut store)?;
-        let remaining = store.records.iter().map(|record| record.id.as_str()).collect::<HashSet<_>>();
-        let removed = previous.records.iter()
+        let remaining = store
+            .records
+            .iter()
+            .map(|record| record.id.as_str())
+            .collect::<HashSet<_>>();
+        let removed = previous
+            .records
+            .iter()
             .filter(|record| !remaining.contains(record.id.as_str()))
             .collect::<Vec<_>>();
         if !removed.is_empty() {
             let now = now_unix()?;
-            let events = removed.iter().map(|record| ForgetEvent {
+            let events = removed
+                .iter()
+                .map(|record| ForgetEvent {
                 id: record.id.clone(),
                 forgotten_at_unix: now,
                 reason: if record.expires_at_unix.is_some_and(|expires| expires <= now) {
                     "retention_expired".to_owned()
                 } else {
                     "user_forget".to_owned()
-                },
-            }).collect::<Vec<_>>();
+                })
+                .collect::<Vec<_>>();
             append_forgetting_events(directory, &events)?;
         }
         if !existed || store != previous {
@@ -441,9 +456,14 @@ impl MemoryStore {
         })?;
         let path = export_dir.join("latest.json");
         let now = now_unix()?;
-        let mut forgotten_ids = load_forgetting_ids(directory)?.into_iter().collect::<Vec<_>>();
+        let mut forgotten_ids = load_forgetting_ids(directory)?
+            .into_iter()
+            .collect::<Vec<_>>();
         forgotten_ids.sort();
-        let forgotten_set = forgotten_ids.iter().map(String::as_str).collect::<HashSet<_>>();
+        let forgotten_set = forgotten_ids
+            .iter()
+            .map(String::as_str)
+            .collect::<HashSet<_>>();
         let export = MemoryExport {
             schema_version: self.schema_version,
             retention_policy_version: RETENTION_POLICY_VERSION,
@@ -600,7 +620,10 @@ fn load_forgetting_ids(directory: &Path) -> Result<HashSet<String>> {
             || event.forgotten_at_unix == 0
             || event.reason.trim().is_empty()
         {
-            bail!("forgetting ledger contains an invalid event on line {}", index + 1);
+            bail!(
+                "forgetting ledger contains an invalid event on line {}",
+                index + 1
+            );
         }
         ids.insert(event.id);
     }
@@ -631,7 +654,9 @@ fn append_forgetting_events(directory: &Path, events: &[ForgetEvent]) -> Result<
 fn apply_forgetting_ledger(directory: &Path, store: &mut MemoryStore) -> Result<()> {
     let forgotten = load_forgetting_ids(directory)?;
     let before = store.records.len();
-    store.records.retain(|record| !forgotten.contains(&record.id));
+    store
+        .records
+        .retain(|record| !forgotten.contains(&record.id));
     if store.records.len() != before {
         store.revision = store.revision.saturating_add(1);
         store.save_unlocked(directory)?;
@@ -662,7 +687,10 @@ fn scrub_forgotten_snapshots(directory: &Path) -> Result<()> {
     ] {
         if path.is_file() {
             fs::remove_file(&path).with_context(|| {
-                format!("could not remove obsolete memory snapshot {}", path.display())
+                format!(
+                    "could not remove obsolete memory snapshot {}",
+                    path.display()
+                )
             })?;
         }
     }
@@ -774,7 +802,7 @@ mod tests {
     use fs2::FileExt;
 
     use super::{
-        MEMORY_SCHEMA_VERSION, RETENTION_POLICY_VERSION, MemoryKind, MemoryStore, RetentionPolicy,
+        MEMORY_SCHEMA_VERSION, MemoryKind, MemoryStore, RETENTION_POLICY_VERSION, RetentionPolicy,
         backup_path, legacy_store_path, legacy_v2_store_path, store_path,
     };
 
@@ -811,9 +839,19 @@ mod tests {
         });
         let legacy_path = legacy_store_path(&directory);
         let mut legacy_json = serde_json::to_value(&legacy).unwrap();
-        legacy_json["records"][0].as_object_mut().unwrap().remove("retention_policy_version");
-        legacy_json["records"][0].as_object_mut().unwrap().remove("retention_policy");
-        fs::write(&legacy_path, serde_json::to_vec_pretty(&legacy_json).unwrap()).unwrap();
+        legacy_json["records"][0]
+            .as_object_mut()
+            .unwrap()
+            .remove("retention_policy_version");
+        legacy_json["records"][0]
+            .as_object_mut()
+            .unwrap()
+            .remove("retention_policy");
+        fs::write(
+            &legacy_path,
+            serde_json::to_vec_pretty(&legacy_json).unwrap(),
+        )
+        .unwrap();
 
         let migrated = MemoryStore::load(&directory).unwrap();
         assert_eq!(migrated.schema_version, MEMORY_SCHEMA_VERSION);
@@ -821,7 +859,10 @@ mod tests {
         assert_eq!(migrated.records, legacy.records);
         assert!(legacy_path.is_file());
         assert!(store_path(&directory).is_file());
-        assert_eq!(migrated.records[0].retention_policy, RetentionPolicy::ExpireAt);
+        assert_eq!(
+            migrated.records[0].retention_policy,
+            RetentionPolicy::ExpireAt
+        );
         assert_eq!(MemoryStore::load(&directory).unwrap(), migrated);
         fs::remove_dir_all(directory).unwrap();
     }
@@ -857,8 +898,14 @@ mod tests {
 
         let migrated = MemoryStore::load(&directory).unwrap();
         assert_eq!(migrated.schema_version, MEMORY_SCHEMA_VERSION);
-        assert_eq!(migrated.records[0].retention_policy_version, RETENTION_POLICY_VERSION);
-        assert_eq!(migrated.records[0].retention_policy, RetentionPolicy::ExpireAt);
+        assert_eq!(
+            migrated.records[0].retention_policy_version,
+            RETENTION_POLICY_VERSION
+        );
+        assert_eq!(
+            migrated.records[0].retention_policy,
+            RetentionPolicy::ExpireAt
+        );
         assert!(legacy_path.is_file());
         fs::remove_dir_all(directory).unwrap();
     }
@@ -869,7 +916,8 @@ mod tests {
         MemoryStore::transact(&directory, |store| {
             store.add_user_entry(MemoryKind::Semantic, "forget me".into(), vec![], None, 10)?;
             Ok(())
-        }).unwrap();
+        })
+        .unwrap();
         let stale = fs::read(store_path(&directory)).unwrap();
         let id = MemoryStore::load(&directory).unwrap().records[0].id.clone();
 
@@ -1229,9 +1277,16 @@ mod tests {
 
         let (store, _) = MemoryStore::initialize(&directory).unwrap();
         let path = store.export(&directory).unwrap();
-        let export: serde_json::Value = serde_json::from_slice(&fs::read(path).unwrap()).unwrap();
+        let export: serde_json::Value =
+            serde_json::from_slice(&fs::read(path).unwrap()).unwrap();
         assert!(export["records"].as_array().unwrap().is_empty());
-        assert!(export["forgotten_ids"].as_array().unwrap().iter().any(|value| value == &id));
+        assert!(
+            export["forgotten_ids"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .any(|value| value == &id)
+        );
         fs::remove_dir_all(directory).unwrap();
     }
 
