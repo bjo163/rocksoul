@@ -104,7 +104,7 @@ jobs:
           try {
             & $exe init
             if ($LASTEXITCODE -ne 0) { throw "Portable init failed" }
-            foreach ($path in @(".env", "config/config.toml", "data/identity/rid.json", "data/memory/store.v2.json")) {
+            foreach ($path in @(".env", "config/config.toml", "data/identity/rid.json", "data/memory/store.v3.json")) {
               if (!(Test-Path (Join-Path $portableRoot $path))) { throw "Missing initialized path: $path" }
             }
 
