@@ -199,7 +199,7 @@ A feature is complete only when:
 Never label an in-progress workflow as passed. Never close an issue because a branch or PR merely exists.
 
 
-## RID Universal 99 Domains & Stats — overlap reconciliation published (runtime migration pending)
+## RID Universal 99 Domains & Stats — overlap reconciliation and runtime migration implemented (CI pending)
 
 **Canonical taxonomy:** `data/rid/universal_stats.v2.json`  
 **Version:** `2.1.0`  
@@ -220,7 +220,7 @@ Audit findings / remaining work:
 - **Runtime migration code is now on main:** `src/rid_catalogue.rs` embeds universal v2.1.0; `StatId` uses `rid_stat:NN`; CLI and Cockpit show universal domain labels and construct boundaries.
 - Schema-v1 profiles are migrated to schema v2 with exact-byte backup `profile.json.v1.bak`, immutable 99-record legacy archive, preserved identity/XP, and 99 fresh unrated universal stats. Ordinal score mapping is prohibited.
 - Migration fixture and overlap-validator tests are committed; latest GitHub Actions run is still queued, so green CI is not yet claimed.
-- Do not map historical scores by ordinal slot. Runtime migration must archive legacy records unchanged, create new `rid_stat:NN` measurements as unrated, preserve identity and XP, and keep a recoverable pre-migration backup.
+- Do not map historical scores by ordinal slot. The migration code archives legacy records unchanged, creates new `rid_stat:NN` measurements as unrated, preserves identity and XP, and keeps a byte-for-byte pre-migration backup.
 - CI and Rust test results for this taxonomy-only change have not yet been verified.
 
 Next implementation slice:
