@@ -1,6 +1,6 @@
 # Rocksoul Terminal UI — Cognitive Cockpit
 
-**Status:** The opt-in Ratatui cockpit MVP is implemented. The active task branch extends it with bounded persisted task history, event selection/detail, a searchable/filterable memory browser with guarded explicit detail reveal, snapshot-based diagnostics/evaluation reporting, versioned portable preferences, semantic dark/light palettes, density limits and English/Indonesian navigation. These changes are not yet merged to main. Missing-config/empty-registry diagnostics tests and final-head cross-platform validation remain open.  
+**Status:** The opt-in Ratatui Cognitive Cockpit is implemented and merged to `main` via PR #65 (`6474cd130bd8146f03dcacb757d9c341d4b1161a`). Exact-head Linux and Windows CI #42071047960 passed. It includes bounded persisted task history, event selection/detail, searchable/filterable memory with guarded explicit reveal, snapshot diagnostics/evaluation, versioned portable preferences, semantic dark/light palettes, density limits, and English/Indonesian navigation.  
 **Product:** Rocksoul local-first cognitive runtime  
 **Interface:** Native terminal application
 
@@ -236,9 +236,9 @@ The initial increment does not yet implement persistence for UI preferences, rea
 6. Brains / Memory / Tools: read-only inspectors with controlled action intents.
 7. Command palette and polish: search, confirmation flow, accessibility, Windows Terminal validation, and documentation.
 
-## 11.1 Current incremental delivery — current draft PR
+## 11.1 Merged delivery — PR #65
 
-The following behaviors are implemented on `feat/tui-cockpit-completion` and remain pending merge:
+The following behaviors are implemented on `main` and validated by CI #42071047960:
 
 - Task Monitor reads the existing `logs/task-trace.v1.jsonl` records through a bounded reader (maximum 1 MiB and 12 newest events).
 - Events are selectable with Up/Down; the selected event shows only event type, operation ID, target filename and timestamp. Trace detail/body is never rendered.
@@ -250,7 +250,7 @@ The following behaviors are implemented on `feat/tui-cockpit-completion` and rem
 
 The PR does not add a live task queue, tool registry, model registry, memory mutation actions, automatic memory capture, or memory context injection. These remain unavailable or explicitly deferred.
 
-Validation evidence and remaining tasks are tracked in [the Issue #9 execution plan](plans/issue-9/task.md) and [current draft PR](https://github.com/bjo163/rocksoul/pulls). Do not treat branch CI as a main release until the PR is merged.
+Validation evidence and completion status are tracked in [the Issue #9 execution plan](plans/issue-9/task.md), [progress snapshot](PROGRESS.md), and [Cognitive Cockpit architecture](COGNITIVE_COCKPIT_ARCHITECTURE.md). PR #65 is merged and Issue #9 is closed.
 
 ## 12. Acceptance criteria
 
