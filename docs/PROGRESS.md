@@ -217,7 +217,9 @@ Delivered:
 
 Audit findings / remaining work:
 - The taxonomy data and documentation are reconciled, but independent psychometric validation is not complete.
-- **Rust runtime is still legacy:** `src/rid_catalogue.rs` embeds `asmaul_husna.v1.json`; `StatId` still serializes `asmaul_husna:NN`; CLI and Cockpit still display the legacy name layer.
+- **Runtime migration code is now on main:** `src/rid_catalogue.rs` embeds universal v2.1.0; `StatId` uses `rid_stat:NN`; CLI and Cockpit show universal domain labels and construct boundaries.
+- Schema-v1 profiles are migrated to schema v2 with exact-byte backup `profile.json.v1.bak`, immutable 99-record legacy archive, preserved identity/XP, and 99 fresh unrated universal stats. Ordinal score mapping is prohibited.
+- Migration fixture and overlap-validator tests are committed; latest GitHub Actions run is still queued, so green CI is not yet claimed.
 - Do not map historical scores by ordinal slot. Runtime migration must archive legacy records unchanged, create new `rid_stat:NN` measurements as unrated, preserve identity and XP, and keep a recoverable pre-migration backup.
 - CI and Rust test results for this taxonomy-only change have not yet been verified.
 
