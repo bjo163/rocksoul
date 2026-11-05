@@ -178,6 +178,12 @@ This progress snapshot was refreshed after PR #53 merged and `main` was verified
 4. Keep [Issue #8](https://github.com/bjo163/rocksoul/issues/8) as a separate independent human religious/language review; it does not block technical evaluation infrastructure.
 5. Keep arbitrary shell, generic tool execution, automatic memory capture and memory context injection out of scope until separately designed and gated.
 
+### Issue #13 — deterministic report provenance increment
+
+**Main implementation:** evaluation reports now carry the source revision in both Core Integrity and memory-retrieval JSON. CI injects `ROCKSOUL_GIT_SHA=${{ github.sha }}`; local builds without that environment value explicitly report `unknown`. The CLI prints the source revision, old schema-v1 reports remain readable through a serde default, and a round-trip test covers the new field.
+
+**Remaining in Issue #13:** concise Markdown report output, richer run metadata (seed/task provenance/model/backend/resource fields where applicable), model-dependent agent trajectory suite, held-out learning/transfer suite, and independent evaluator evidence aggregation. These are not represented as implemented. CI for the latest main SHA is still queued; do not claim tests pass until exact-head Linux and Windows jobs complete.
+
 ### Current next task: Issue #13 — reproducible evaluation harness
 
 The deterministic Core Integrity and memory-retrieval suites are implemented and wired into CI. The Core Integrity report now records the tested source revision (`ROCKSOUL_GIT_SHA`, or `unknown` for builds without revision metadata), preserving compatibility with older reports. The next implementation work is to add reproducible model-dependent trajectory runs, held-out learning/transfer evaluation, structured evidence manifests, and machine-readable plus human-readable reports without introducing hidden network calls.
