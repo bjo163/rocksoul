@@ -982,10 +982,13 @@ mod tests {
             expires_at_unix: Some(100),
             retention_policy_version: RETENTION_POLICY_VERSION,
             retention_policy: RetentionPolicy::ExpireAt,
-        }source_turn_ref: None,
-        }approval_id: None,
-        }proposal_fingerprint: None,
-        });
+        source_turn_ref: None,
+
+        approval_id: None,
+
+        proposal_fingerprint: None,
+
+        }        });
         let legacy_path = legacy_store_path(&directory);
         let mut legacy_json = serde_json::to_value(&legacy).unwrap();
         legacy_json["records"][0]
@@ -1038,10 +1041,13 @@ mod tests {
             expires_at_unix: Some(50),
             retention_policy_version: RETENTION_POLICY_VERSION,
             retention_policy: RetentionPolicy::ExpireAt,
-        }source_turn_ref: None,
-        }approval_id: None,
-        }proposal_fingerprint: None,
-        });
+        source_turn_ref: None,
+
+        approval_id: None,
+
+        proposal_fingerprint: None,
+
+        }        });
         let mut legacy_json = serde_json::to_value(&legacy).unwrap();
         legacy_json["records"][0]
             .as_object_mut()
@@ -1427,10 +1433,13 @@ mod tests {
                 expires_at_unix: None,
                 retention_policy_version: RETENTION_POLICY_VERSION,
                 retention_policy: RetentionPolicy::KeepUntilDeleted,
-            }source_turn_ref: None,
-            }approval_id: None,
-            }proposal_fingerprint: None,
-            }],
+            source_turn_ref: None,
+
+            approval_id: None,
+
+            proposal_fingerprint: None,
+
+            }            }],
             ..MemoryStore::default()
         };
         assert!(invalid_confidence.validate().is_err());
