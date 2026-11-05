@@ -44,9 +44,9 @@ The initial audit confirms the current TUI has eight screens and two navigation 
 
 ## Phase E — Diagnostics, evaluation and capability truthfulness
 
-- [ ] E1. Add real runtime health snapshot for model configuration, RID store, memory store and portable paths.
-- [ ] E2. Read the latest Core Integrity report without triggering an evaluation during render.
-- [ ] E3. Show suite/version/pass state and failed check IDs; distinguish missing from corrupt reports.
+- [ ] E1. Extend the existing runtime snapshot (model configuration, RID validity, portable paths) with memory-store health and sanitized RID error detail.
+- [ ] E2. Move the current latest Core Integrity summary lookup into the refreshable snapshot; never run the suite during render.
+- [ ] E3. Show suite/version/commit/pass state and failed check IDs; distinguish missing from corrupt reports.
 - [ ] E4. Ensure Brains and Tools show only known adapters/registries; unknown specialist roles remain unassigned.
 - [ ] E5. Remove stale/fake status labels; use explicit “not implemented”, “not configured”, “not run” or “unavailable”.
 - [ ] E6. Test report parsing, invalid JSON, redaction, missing config and empty registries.
