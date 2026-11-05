@@ -232,6 +232,26 @@ impl VerificationReceipt {
     pub fn evidence_hash(&self) -> &str { &self.evidence_hash }
     pub fn receipt_hash(&self) -> &str { &self.receipt_hash }
     pub fn outcome(&self) -> &str { &self.outcome }
+
+    /// Detect accidental or unauthorized mutation of a persisted receipt document.
+    pub fn integrity_valid(&self) -> bool {
+        let payload = serde_json::to_vec(&(
+            &self.verification_id,
+            &self.task_id,
+            self.required_checks_passed,
+            self.total_checks,
+            &self.evidence_refs,
+            self.xp_awarded,
+            self.verified_at_unix,
+            &self.verifier_id,
+            self.verifier_version,
+            &self.normalized_claim,
+            &self.claim_hash,
+            &self.evidence_hash,
+            &self.outcome,
+        ));
+        payload.is_ok_and(|bytes| format!("{:x}", Sha256::digest(bytes)) == self.receipt_hash)
+    }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
