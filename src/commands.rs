@@ -180,7 +180,7 @@ fn receipt_matches_ignoring_verification_time(existing: &[u8], expected: &[u8]) 
 
 /// Persist a complete, content-free verification receipt beside the task trace.
 /// The create-only publish makes retries safe; replay must match every immutable field.
-fn persist_workspace_receipt(
+pub(crate) fn persist_workspace_receipt(
     logs_dir: &std::path::Path,
     operation_id: &str,
     receipt: &crate::core::VerificationReceipt,
@@ -248,15 +248,15 @@ fn persist_workspace_receipt(
     }
 }
 
-struct WorkspaceCompletion {
-    path: PathBuf,
-    bytes: usize,
-    outcome_label: &'static str,
-    profile: RuhProfile,
-    verification: crate::core::VerificationOutcome,
+pub(crate) struct WorkspaceCompletion {
+    pub(crate) path: PathBuf,
+    pub(crate) bytes: usize,
+    pub(crate) outcome_label: &'static str,
+    pub(crate) profile: RuhProfile,
+    pub(crate) verification: crate::core::VerificationOutcome,
 }
 
-fn complete_workspace_operation_with_hook<F>(
+pub(crate) fn complete_workspace_operation_with_hook<F>(
     paths: &AppPaths,
     proposal: &WorkspaceArtifactProposal,
     outcome: ArtifactOutcome,
