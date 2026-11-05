@@ -260,7 +260,7 @@ See [SECURITY.md](SECURITY.md) and [AGENTS.md](AGENTS.md).
 | 6 | **Workforce** | Bounded delegation and coordination |
 | 7 | **Expansion** | Additional interfaces over one core |
 
-See [docs/ROADMAP.md](docs/ROADMAP.md) for implementation status and exit criteria, [docs/AI_HANDOFF.md](docs/AI_HANDOFF.md) for local-agent onboarding and execution rules, and [blueprint.md](blueprint.md) for the complete master blueprint.
+See [docs/ROADMAP.md](docs/ROADMAP.md) for implementation status and exit criteria, [docs/AI_HANDOFF.md](docs/AI_HANDOFF.md) for local-agent onboarding and execution rules, [docs/PROGRESS.md](docs/PROGRESS.md) for the current project status, and [blueprint.md](blueprint.md) for the complete master blueprint.
 
 ## Development and validation
 
