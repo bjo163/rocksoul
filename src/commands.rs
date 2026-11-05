@@ -11,7 +11,7 @@ use crate::{
     core::{
         TurnEvent, TurnState, VerificationEvidence, VerificationRequest, verify_turn_and_award_xp,
     },
-    memory::{MemoryKind, MemoryRecord, MemoryStore},
+    memory::{MemoryKind, MemoryRecord, MemorySearchFilters, MemoryStore},
     model::ModelConfig,
     paths::AppPaths,
     rid::{RuhIdentity, RuhProfile},
