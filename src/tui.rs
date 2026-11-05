@@ -465,7 +465,7 @@ fn render_brains(frame: &mut Frame<'_>, area: Rect, app: &App) {
 fn render_tasks(frame: &mut Frame<'_>, area: Rect) {
     const MAX_EVENTS: usize = 12;
     let lines = match AppPaths::discover().and_then(|paths| {
-        let records = task_trace::read(&paths.logs_dir.join("task-trace.v1.jsonl"))?;
+        let records = task_trace::read_recent(&paths.logs_dir.join("task-trace.v1.jsonl"), 262_144, MAX_EVENTS)?;
         if records.is_empty() {
             return Ok(vec![
                 Line::from(Span::styled(
@@ -478,13 +478,13 @@ fn render_tasks(frame: &mut Frame<'_>, area: Rect) {
         }
         let mut lines = vec![
             Line::from(Span::styled(
-                format!("PERSISTED TASK TRACE · {} EVENTS", records.len()),
+                format!("PERSISTED TASK TRACE · {} RECENT EVENTS", records.len()),
                 Style::default().fg(AMBER).add_modifier(Modifier::BOLD),
             )),
             Line::from("Newest events first · target is limited to its filename"),
             Line::from(""),
         ];
-        for record in records.iter().rev().take(MAX_EVENTS) {
+        for record in &records {
             let event = safe_trace_text(record.get("event"), 18);
             let operation = safe_trace_text(record.get("operation_id"), 12);
             let target = safe_trace_text(record.get("target"), 96);
@@ -496,12 +496,6 @@ fn render_tasks(frame: &mut Frame<'_>, area: Rect) {
                 .unwrap_or_else(|| "time n/a".to_owned());
             lines.push(Line::from(format!(
                 "{timestamp}  {event:<18}  {operation:<12}  {target_name}"
-            )));
-        }
-        if records.len() > MAX_EVENTS {
-            lines.push(Line::from(format!(
-                "Showing latest {MAX_EVENTS} of {} events.",
-                records.len()
             )));
         }
         Ok(lines)
@@ -1010,6 +1004,14 @@ fn now_unix() -> u64 {
 #[cfg(test)]
 mod tests {
     use super::{App, Screen, Snapshot};
+
+    #[test]
+    fn trace_metadata_is_control_free_and_bounded() {
+        let value = serde_json::json!("safe\u{001b}[31m-secret");
+        let text = super::safe_trace_text(Some(&value), 8);
+        assert!(!text.chars().any(char::is_control));
+        assert!(text.chars().count() <= 8);
+    }
 
     #[test]
     fn navigation_selects_each_screen_and_resets_overlays() {
