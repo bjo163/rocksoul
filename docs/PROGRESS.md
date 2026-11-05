@@ -1,6 +1,6 @@
 # Rocksoul Project Progress
 
-**Last updated:** 2026-11-05 (Asia/Jakarta, after PR #53 merge; preparing Issue #9 handoff)  
+**Last updated:** 2026-11-05 (Asia/Jakarta, Issue #9 final cross-platform validation)  
 **Repository:** [bjo163/rocksoul](https://github.com/bjo163/rocksoul)  
 **Canonical branch:** `main`  
 **Current principle:** One Core. Infinite Evolution.
@@ -28,7 +28,7 @@ This is the durable progress snapshot for maintainers and delegated/local AI age
 ## Active implementation — Issue #9 Cognitive Cockpit
 
 **Task branch:** feat/tui-cockpit-completion  
-**Latest implementation/documentation head:** c4a58d986a28c01a1ee8208d53f9e2eefeb45259  
+**Latest validated implementation/documentation head:** `e6cac1fbee4f99bbbdef3f7190161c0e9a8941f1`  
 **Target:** main (no Cockpit completion changes merged yet)
 
 Delivered on the task branch:
@@ -40,12 +40,13 @@ Delivered on the task branch:
 - TestBackend coverage for all eight screens across 80×24, 120×40 and 60×20, both themes/locales, and palette/help overlays.
 - Updated task plan and product/technical handoff documents.
 
-Previously verified code slice:
-- Linux CI #42060471515 passed formatting, Clippy, 114 tests, Core Integrity 23/23 and memory retrieval precision/recall 1.000.
-- Windows CI #42060471515 passed release build/tests, installer and portable packaging, portable smoke and install/init/uninstall-preservation smoke.
-- The task branch has since added preference persistence, semantic theme application, localization and more tests. Final-head CI must be rerun; earlier green CI is not evidence for the current head.
+Exact-head validation:
+- CI [#42070438679](https://github.com/bjo163/rocksoul/actions/runs/42070438679) passed on `e6cac1fbee4f99bbbdef3f7190161c0e9a8941f1` for both Linux and Windows.
+- Linux: `cargo fmt --check`, Clippy, 130 tests, Core Integrity 23/23, memory retrieval precision@2 1.000 / recall@2 1.000.
+- Windows: release build, 129 tests, Core Integrity 22/22, memory retrieval precision@2 1.000 / recall@2 1.000, installer and portable ZIP packaging, clean portable smoke, installer install/init/uninstall-preservation smoke; artifacts uploaded.
+- Full eight-file PR diff and safety boundaries reviewed. No model calls, tool dispatch, remote egress, task execution, memory writes/deletes or context injection were added to the Cockpit.
 
-Remaining: final-head fmt/Clippy/tests/Core Integrity/retrieval evaluation; final Windows build/installer/portable smoke; full diff audit; refreshed PR/merge; main SHA and issue closure verification.
+Remaining: merge PR #65 to main, verify main contains the merge SHA, and close Issue #9 with exact evidence.
 
 ## 1. Accepted baseline on main
 
