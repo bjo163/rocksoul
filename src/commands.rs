@@ -1227,6 +1227,7 @@ mod tests {
         paths::AppPaths,
         rid::{RuhIdentity, RuhProfile, XpRecordOutcome},
         rid_store,
+        task_trace,
         workspace_artifact::{UserApproval, WorkspaceArtifactProposal, WorkspaceArtifactService},
     };
 
