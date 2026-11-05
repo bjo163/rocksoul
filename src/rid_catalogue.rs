@@ -14,8 +14,21 @@ pub struct RidCatalogue {
     pub total_stats: usize,
     pub scoring: ScoringPolicy,
     pub overlap_policy: OverlapPolicy,
+    pub overlap_pairs: Vec<OverlapPair>,
     pub domains: Vec<UniversalDomain>,
     pub entries: Vec<CatalogueEntry>,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+pub struct OverlapPair {
+    pub id: String,
+    pub domain_a: String,
+    pub domain_b: String,
+    pub label_a: String,
+    pub label_b: String,
+    pub measurement_target_a: String,
+    pub measurement_target_b: String,
+    pub contrast_rule: String,
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -99,10 +112,11 @@ impl RidCatalogue {
             self.catalogue_id == "rocksoul.rid.universal_stats.v2",
             "unexpected universal RID catalogue identifier"
         );
-        ensure!(self.catalogue_version == "2.2.1", "unexpected universal RID catalogue version");
+        ensure!(self.catalogue_version == "2.3.0", "unexpected universal RID catalogue version");
         ensure!(self.total_domains == 99 && self.total_stats == 99, "catalogue totals must both equal 99");
         ensure!(self.domains.len() == 99, "RID catalogue must contain exactly 99 domains");
         ensure!(self.entries.len() == 99, "RID catalogue must contain exactly 99 stats");
+        ensure!(self.overlap_pairs.len() == 137, "RID catalogue must contain exactly 137 unique overlap pairs");
         ensure!(
             self.scoring.default_minimum_samples > 0
                 && self.scoring.safety_sensitive_evaluation_minimum_samples
@@ -147,6 +161,58 @@ impl RidCatalogue {
                 directed_edge_count += 1;
             }
         }
+
+        let mut expected_overlap_pairs = HashSet::with_capacity(self.overlap_policy.unique_pair_count);
+        for domain in &self.domains {
+            for adjacent in &domain.overlap_with {
+                let (left, right) = if domain.id.as_str() < adjacent.as_str() {
+                    (domain.id.as_str(), adjacent.as_str())
+                } else {
+                    (adjacent.as_str(), domain.id.as_str())
+                };
+                expected_overlap_pairs.insert(format!("{left}|{right}"));
+            }
+        }
+
+        let mut overlap_pair_ids = HashSet::with_capacity(self.overlap_pairs.len());
+        let mut actual_overlap_pairs = HashSet::with_capacity(self.overlap_pairs.len());
+        let mut contrast_rules = HashSet::with_capacity(self.overlap_pairs.len());
+        for (index, pair) in self.overlap_pairs.iter().enumerate() {
+            let slot = index + 1;
+            ensure!(pair.id == format!("rid_overlap:{slot:03}"), "RID overlap pair ID mismatch at {slot}");
+            ensure!(pair.domain_a < pair.domain_b, "RID overlap pair endpoints must be in canonical order at {slot}");
+            let domain_a = self.domains.iter().find(|domain| domain.id == pair.domain_a)
+                .context("RID overlap pair references an unknown first domain")?;
+            let domain_b = self.domains.iter().find(|domain| domain.id == pair.domain_b)
+                .context("RID overlap pair references an unknown second domain")?;
+            ensure!(
+                pair.label_a == domain_a.label
+                    && pair.label_b == domain_b.label
+                    && pair.measurement_target_a == domain_a.measurement_target
+                    && pair.measurement_target_b == domain_b.measurement_target,
+                "RID overlap pair construct metadata mismatch at {slot}"
+            );
+            ensure!(
+                !pair.contrast_rule.trim().is_empty()
+                    && pair.contrast_rule.contains(pair.measurement_target_a.as_str())
+                    && pair.contrast_rule.contains(pair.measurement_target_b.as_str())
+                    && pair.contrast_rule.contains(pair.label_a.as_str())
+                    && pair.contrast_rule.contains(pair.label_b.as_str()),
+                "RID overlap pair contrast rule is incomplete at {slot}"
+            );
+            ensure!(overlap_pair_ids.insert(pair.id.as_str()), "duplicate RID overlap pair ID: {}", pair.id);
+            ensure!(
+                actual_overlap_pairs.insert(format!("{}|{}", pair.domain_a, pair.domain_b)),
+                "duplicate RID overlap pair: {} ↔ {}",
+                pair.domain_a,
+                pair.domain_b
+            );
+            ensure!(contrast_rules.insert(pair.contrast_rule.as_str()), "duplicate RID pair contrast rule at {slot}");
+        }
+        ensure!(
+            actual_overlap_pairs == expected_overlap_pairs,
+            "RID pairwise contrast registry does not exactly match the domain overlap graph"
+        );
 
         for (index, entry) in self.entries.iter().enumerate() {
             let slot = index as u8 + 1;
@@ -242,7 +308,16 @@ mod tests {
         let catalogue = RidCatalogue::embedded().unwrap();
         assert_eq!(catalogue.overlap_policy.directed_edge_count, 274);
         assert_eq!(catalogue.overlap_policy.unique_pair_count, 137);
+        assert_eq!(catalogue.overlap_pairs.len(), 137);
+        assert!(catalogue.overlap_pairs.iter().all(|pair| pair.contrast_rule.contains(pair.measurement_target_a.as_str()) && pair.contrast_rule.contains(pair.measurement_target_b.as_str())));
         assert_eq!(catalogue.domains.iter().map(|domain| domain.separation_rule.as_str()).collect::<std::collections::HashSet<_>>().len(), 99);
+    }
+
+    #[test]
+    fn validator_rejects_duplicate_pairwise_contrast_records() {
+        let mut catalogue = RidCatalogue::embedded().unwrap();
+        catalogue.overlap_pairs[1] = catalogue.overlap_pairs[0].clone();
+        assert!(catalogue.validate().is_err());
     }
 
     #[test]
