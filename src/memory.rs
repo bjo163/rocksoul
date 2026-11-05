@@ -72,6 +72,29 @@ pub struct MemoryRecord {
     pub retention_policy: RetentionPolicy,
 }
 
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct MemorySearchFilters {
+    pub kind: Option<MemoryKind>,
+    pub source: Option<String>,
+    pub created_after_unix: Option<u64>,
+    pub created_before_unix: Option<u64>,
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+pub struct MemorySearchResult {
+    pub record_id: String,
+    pub content: String,
+    pub kind: MemoryKind,
+    pub source: String,
+    pub created_at_unix: u64,
+    pub updated_at_unix: u64,
+    /// Source-record confidence only; not a retrieval relevance probability.
+    pub source_confidence: Option<f32>,
+    pub lexical_score: u32,
+    pub matched_terms: Vec<String>,
+    pub relevance_explanation: String,
+}
+
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub struct MemoryStore {
     pub schema_version: u16,
@@ -340,21 +363,105 @@ impl MemoryStore {
             .collect()
     }
 
-    pub fn search(&self, query: &str, now: u64) -> Vec<&MemoryRecord> {
-        let needle = query.trim().to_lowercase();
-        if needle.is_empty() {
+    /// Deterministic offline lexical retrieval. Scores are ranking units, not confidence.
+    pub fn search_ranked(
+        &self,
+        query: &str,
+        filters: &MemorySearchFilters,
+        now: u64,
+        limit: usize,
+    ) -> Vec<MemorySearchResult> {
+        if limit == 0 {
             return Vec::new();
         }
-        self.active_records(now)
+        let query_terms = unique_terms(tokenize(query));
+        if query_terms.is_empty() {
+            return Vec::new();
+        }
+        let mut results = self
+            .active_records(now)
             .into_iter()
             .filter(|record| {
-                record.content.to_lowercase().contains(&needle)
-                    || record
-                        .tags
-                        .iter()
-                        .any(|tag| tag.to_lowercase().contains(&needle))
+                filters.kind.is_none_or(|kind| record.kind == kind)
+                    && filters
+                        .source
+                        .as_ref()
+                        .is_none_or(|source| &record.source == source)
+                    && filters
+                        .created_after_unix
+                        .is_none_or(|time| record.created_at_unix >= time)
+                    && filters
+                        .created_before_unix
+                        .is_none_or(|time| record.created_at_unix <= time)
             })
-            .collect()
+            .filter_map(|record| {
+                let content_terms = tokenize(&record.content);
+                let tag_terms = record
+                    .tags
+                    .iter()
+                    .flat_map(|tag| tokenize(tag))
+                    .collect::<Vec<_>>();
+                let all_terms = content_terms
+                    .iter()
+                    .chain(tag_terms.iter())
+                    .collect::<Vec<_>>();
+                let matched_terms = query_terms
+                    .iter()
+                    .filter(|term| all_terms.contains(term))
+                    .cloned()
+                    .collect::<Vec<_>>();
+                if matched_terms.is_empty() {
+                    return None;
+                }
+                let occurrences = query_terms
+                    .iter()
+                    .map(|term| {
+                        all_terms
+                            .iter()
+                            .filter(|candidate| **candidate == term)
+                            .count() as u32
+                    })
+                    .sum::<u32>();
+                let phrase_match = content_terms
+                    .windows(query_terms.len())
+                    .any(|window| window == query_terms.as_slice());
+                let lexical_score = matched_terms.len() as u32 * 100
+                    + occurrences * 10
+                    + if phrase_match { 250 } else { 0 };
+                let relevance_explanation = format!(
+                    "matched {}/{} query terms across content/tags; {} token occurrence(s){}",
+                    matched_terms.len(),
+                    query_terms.len(),
+                    occurrences,
+                    if phrase_match {
+                        "; exact token phrase match"
+                    } else {
+                        ""
+                    }
+                );
+                Some(MemorySearchResult {
+                    record_id: record.id.clone(),
+                    content: record.content.clone(),
+                    kind: record.kind,
+                    source: record.source.clone(),
+                    created_at_unix: record.created_at_unix,
+                    updated_at_unix: record.updated_at_unix,
+                    source_confidence: record.confidence,
+                    lexical_score,
+                    matched_terms,
+                    relevance_explanation,
+                })
+            })
+            .collect::<Vec<_>>();
+        results.sort_by(|left, right| {
+            right
+                .lexical_score
+                .cmp(&left.lexical_score)
+                .then_with(|| right.created_at_unix.cmp(&left.created_at_unix))
+                .then_with(|| left.record_id.cmp(&right.record_id))
+        });
+        results.truncate(limit);
+        results
     }
 
     pub fn delete(&mut self, id: &str) -> bool {
@@ -566,6 +673,22 @@ fn is_lock_contention(error: &std::io::Error) -> bool {
     {
         false
     }
+}
+
+fn tokenize(value: &str) -> Vec<String> {
+    value
+        .split(|character: char| !character.is_alphanumeric())
+        .filter(|term| !term.is_empty())
+        .map(str::to_lowercase)
+        .collect()
+}
+
+fn unique_terms(terms: Vec<String>) -> Vec<String> {
+    let mut seen = HashSet::new();
+    terms
+        .into_iter()
+        .filter(|term| seen.insert(term.clone()))
+        .collect()
 }
 
 fn store_path(directory: &Path) -> PathBuf {
@@ -1198,8 +1321,19 @@ mod tests {
                 1_800_000_000,
             )
             .unwrap();
-        assert_eq!(store.search("CARGO", 1_800_000_001).len(), 1);
-        assert_eq!(store.search("rust", 1_800_000_001).len(), 1);
+        let filters = super::MemorySearchFilters::default();
+        assert_eq!(
+            store
+                .search_ranked("CARGO", &filters, 1_800_000_001, 10)
+                .len(),
+            1
+        );
+        assert_eq!(
+            store
+                .search_ranked("rust", &filters, 1_800_000_001, 10)
+                .len(),
+            1
+        );
         fs::remove_dir_all(directory).unwrap();
     }
 
@@ -1299,6 +1433,115 @@ mod tests {
                 .unwrap()
                 .iter()
                 .any(|value| value == &id)
+        );
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn ranked_search_is_deterministic_and_returns_source_provenance() {
+        let directory = temp_dir();
+        MemoryStore::transact(&directory, |store| {
+            store.add_user_entry(
+                MemoryKind::Semantic,
+                "The canonical branch is main".into(),
+                vec!["git".into(), "branch".into()],
+                None,
+                10,
+            )?;
+            store.add_user_entry(
+                MemoryKind::Procedural,
+                "Use cargo fmt before Rust commits".into(),
+                vec!["rust".into()],
+                None,
+                20,
+            )?;
+            Ok(())
+        })
+        .unwrap();
+        let store = MemoryStore::load(&directory).unwrap();
+        let filters = super::MemorySearchFilters::default();
+        let first = store.search_ranked("cargo fmt rust", &filters, 30, 10);
+        let second = store.search_ranked("cargo fmt rust", &filters, 30, 10);
+        assert_eq!(first, second);
+        assert_eq!(first[0].kind, MemoryKind::Procedural);
+        assert_eq!(first[0].source, "user_explicit");
+        assert_eq!(first[0].source_confidence, None);
+        assert!(first[0].relevance_explanation.contains("matched"));
+        assert!(first[0].lexical_score > 0);
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn ranked_search_applies_kind_source_time_and_expiry_filters() {
+        let directory = temp_dir();
+        MemoryStore::transact(&directory, |store| {
+            store.add_user_entry(
+                MemoryKind::Semantic,
+                "canonical branch main".into(),
+                vec!["git".into()],
+                None,
+                10,
+            )?;
+            store.add_user_entry(
+                MemoryKind::Working,
+                "temporary canonical branch main".into(),
+                vec![],
+                Some(20),
+                11,
+            )?;
+            Ok(())
+        })
+        .unwrap();
+        let store = MemoryStore::load(&directory).unwrap();
+        let filters = super::MemorySearchFilters {
+            kind: Some(MemoryKind::Semantic),
+            source: Some("user_explicit".into()),
+            created_after_unix: Some(10),
+            created_before_unix: Some(10),
+        };
+        let results = store.search_ranked("canonical branch", &filters, 30, 10);
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].kind, MemoryKind::Semantic);
+        assert_eq!(
+            store
+                .search_ranked("canonical branch", &filters, 30, 0)
+                .len(),
+            0
+        );
+        assert!(store.search_ranked("   ", &filters, 30, 10).is_empty());
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn ranked_search_never_returns_user_forgotten_records() {
+        let directory = temp_dir();
+        MemoryStore::transact(&directory, |store| {
+            store.add_user_entry(
+                MemoryKind::Semantic,
+                "secret project codename".into(),
+                vec![],
+                None,
+                10,
+            )?;
+            Ok(())
+        })
+        .unwrap();
+        let id = MemoryStore::load(&directory).unwrap().records[0].id.clone();
+        MemoryStore::transact(&directory, |store| {
+            assert!(store.delete(&id));
+            Ok(())
+        })
+        .unwrap();
+        let loaded = MemoryStore::load(&directory).unwrap();
+        assert!(
+            loaded
+                .search_ranked(
+                    "secret project codename",
+                    &super::MemorySearchFilters::default(),
+                    30,
+                    10
+                )
+                .is_empty()
         );
         fs::remove_dir_all(directory).unwrap();
     }

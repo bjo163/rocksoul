@@ -41,6 +41,17 @@ jobs:
       - name: Run offline core integrity evaluation
         run: cargo run --locked -- eval run core
 
+      - name: Run offline memory retrieval evaluation
+        run: cargo run --locked -- eval run memory-retrieval
+
+      - name: Upload memory retrieval evaluation report
+        uses: actions/upload-artifact@v4
+        with:
+          name: memory-retrieval-evaluation
+          path: target/debug/data/evaluations/memory-retrieval/latest.json
+          if-no-files-found: error
+          retention-days: 14
+
       - name: Upload resolved lockfile
         uses: actions/upload-artifact@v4
         with:
@@ -123,6 +134,8 @@ jobs:
             if ($LASTEXITCODE -ne 0) { throw "Portable RID status failed" }
             & $exe eval run core
             if ($LASTEXITCODE -ne 0) { throw "Portable core evaluation failed" }
+            & $exe eval run memory-retrieval
+            if ($LASTEXITCODE -ne 0) { throw "Portable memory retrieval evaluation failed" }
             & $exe memory add semantic --content "portable smoke test record"
             if ($LASTEXITCODE -ne 0) { throw "Portable memory write failed" }
             & $exe memory list

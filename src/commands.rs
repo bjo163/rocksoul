@@ -11,7 +11,7 @@ use crate::{
     core::{
         TurnEvent, TurnState, VerificationEvidence, VerificationRequest, verify_turn_and_award_xp,
     },
-    memory::{MemoryKind, MemoryRecord, MemoryStore},
+    memory::{MemoryKind, MemoryRecord, MemorySearchFilters, MemoryStore},
     model::ModelConfig,
     paths::AppPaths,
     rid::{RuhIdentity, RuhProfile},
@@ -839,9 +839,35 @@ fn run_memory(command: MemoryCommand) -> Result<()> {
                         print_memory_records(&store.active_records(now_unix()?), "Rocksoul memory");
                         println!("{} total records", store.records.len());
                     }
-                    MemoryCommand::Search { query } => {
-                        let matches = store.search(&query, now_unix()?);
-                        print_memory_records(&matches, "Memory search");
+                    MemoryCommand::Search {
+                        query,
+                        kind,
+                        source,
+                        created_after,
+                        created_before,
+                        limit,
+                    } => {
+                        let filters = MemorySearchFilters {
+                            kind,
+                            source,
+                            created_after_unix: created_after,
+                            created_before_unix: created_before,
+                        };
+                        let matches = store.search_ranked(&query, &filters, now_unix()?, limit);
+                        println!("Memory search — deterministic lexical ranking");
+                        for result in &matches {
+                            println!(
+                                "- [{}] {} ({}, source={}, created={}, source-confidence={:?})",
+                                result.lexical_score,
+                                result.record_id,
+                                result.kind,
+                                result.source,
+                                result.created_at_unix,
+                                result.source_confidence
+                            );
+                            println!("  {}", result.content);
+                            println!("  {}", result.relevance_explanation);
+                        }
                         println!("{} matching records", matches.len());
                     }
                     MemoryCommand::Delete { id } => {
@@ -938,10 +964,30 @@ fn run_eval(command: EvalCommand) -> Result<()> {
                 anyhow::bail!("one or more core integrity checks failed")
             }
         }
+        EvalCommand::Run {
+            suite: EvalSuite::MemoryRetrieval,
+        } => {
+            let report = crate::eval::run_memory_retrieval()?;
+            crate::eval::print_memory_retrieval_report(&report);
+            if report.passed {
+                Ok(())
+            } else {
+                anyhow::bail!("memory retrieval evaluation failed its regression gates")
+            }
+        }
         EvalCommand::Latest => {
             match crate::eval::latest()? {
                 Some(report) => crate::eval::print_report(&report),
                 None => println!("No evaluation report yet. Run: rocksoul eval run core"),
+            }
+            Ok(())
+        }
+        EvalCommand::MemoryLatest => {
+            match crate::eval::latest_memory_retrieval()? {
+                Some(report) => crate::eval::print_memory_retrieval_report(&report),
+                None => println!(
+                    "No memory retrieval report yet. Run: rocksoul eval run memory-retrieval"
+                ),
             }
             Ok(())
         }

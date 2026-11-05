@@ -55,13 +55,16 @@ pub enum EvalCommand {
         #[command(subcommand)]
         suite: EvalSuite,
     },
-    /// Show the latest saved evaluation report.
+    /// Show the latest saved core integrity report.
     Latest,
+    /// Show the latest saved memory retrieval evaluation report.
+    MemoryLatest,
 }
 
 #[derive(Debug, Subcommand)]
 pub enum EvalSuite {
     Core,
+    MemoryRetrieval,
 }
 
 #[derive(Debug, Subcommand)]
@@ -102,8 +105,20 @@ pub enum MemoryCommand {
     },
     /// List active memory records.
     List,
-    /// Search active memory content and tags.
-    Search { query: String },
+    /// Search active memory using deterministic lexical ranking.
+    Search {
+        query: String,
+        #[arg(long, value_enum)]
+        kind: Option<MemoryKind>,
+        #[arg(long)]
+        source: Option<String>,
+        #[arg(long)]
+        created_after: Option<u64>,
+        #[arg(long)]
+        created_before: Option<u64>,
+        #[arg(long, default_value_t = 5)]
+        limit: usize,
+    },
     /// Permanently delete one memory record by ID.
     Delete { id: String },
     /// Permanently delete all memory records (requires --confirm).

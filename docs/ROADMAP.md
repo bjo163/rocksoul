@@ -66,8 +66,9 @@ The roadmap is capability-driven. Each stage must deliver a working, tested incr
 - [x] Serialize memory read-modify-write CLI transactions with a stable OS lock file, bounded five-second acquisition timeout, and subprocess tests for contention, process-exit release, and concurrent writers.
 - [x] Add versioned per-record retention policies, dry-run-first expiry pruning, and append-only content-free forgetting tombstones.
 - [x] Apply tombstones during normal load and backup recovery; scrub managed backups, legacy snapshots, and exports after explicit forgetting.
-- [ ] Add held-out cross-session retrieval evaluation before any automatic memory context injection.
-- [ ] Add retrieval ranking and memory context injection only after provenance and relevance tests.
+- [x] Add deterministic lexical ranking, provenance filters, and offline held-out synthetic retrieval evaluation with precision@k/recall@k, stale ranking, expiry leakage, and deletion leakage gates.
+- [x] Persist machine-readable retrieval reports and run the evaluation in Linux CI and Windows portable smoke tests.
+- [ ] Consider memory context injection only after separate policy approval and additional contamination/regression tests.
 - [ ] Add model-proposed memory with human approval; never enable silent model writes.
 
 ## Stage 3 — Skills and tools
