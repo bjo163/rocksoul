@@ -209,7 +209,12 @@ impl Snapshot {
         let task_history = task_trace::read_recent(
             &paths.logs_dir.join("task-trace.v1.jsonl"),
             262_144,
-            task_event_limit(preferences.as_ref().map(|value| value.density).unwrap_or_default()),
+            task_event_limit(
+                preferences
+                    .as_ref()
+                    .map(|value| value.density)
+                    .unwrap_or(DensityMode::Compact),
+            ),
         )
         .map(|records| records.iter().map(TaskTraceView::from_value).collect())
         .map_err(|_| "task trace is malformed, oversized or unavailable".to_owned());
@@ -1236,10 +1241,12 @@ fn render_diagnostics(frame: &mut Frame<'_>, area: Rect, app: &App) {
             Ok(None) => "Memory retrieval report: not run".to_owned(),
             Err(_) => "Memory retrieval report: corrupt or unavailable".to_owned(),
         }),
-        Line::from(match &app.snapshot.memory_store_health {
-            Ok(health) => format!(
+        Line::from(match &app.snapshot.memory {
+            Ok(memory) => format!(
                 "Memory store  v{} · active {}/{}",
-                health.schema_version, health.active_records, health.total_records
+                memory.health.schema_version,
+                memory.health.active_records,
+                memory.health.total_records
             ),
             Err(_) => "Memory store  corrupt / unavailable".to_owned(),
         }),
