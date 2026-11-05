@@ -290,7 +290,7 @@ impl MemoryStore {
         }
     }
 
-    pub fn save(&self, directory: &Path) -> Result<()> {
+    fn save(&self, directory: &Path) -> Result<()> {
         self.validate()?;
         fs::create_dir_all(directory).with_context(|| format!("could not create memory directory {}", directory.display()))?;
         let _lock = acquire_store_lock(directory)?;
