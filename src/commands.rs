@@ -12,7 +12,7 @@ use crate::{
     core::{
         TurnEvent, TurnState, VerificationEvidence, VerificationRequest, verify_turn_and_award_xp,
     },
-    memory::{MemoryKind, MemoryRecord, MemorySearchFilters, MemoryStore},
+    memory::{MemoryClaimStatus, MemoryKind, MemoryRecord, MemorySearchFilters, MemoryStore},
     memory_proposal,
     model::ModelConfig,
     paths::AppPaths,
@@ -123,7 +123,7 @@ pub fn init() -> Result<()> {
     println!("Workspace: {}", paths.workspace_dir.display());
     println!(
         "Memory store: {} ({})",
-        paths.memory_dir.join("store.v3.json").display(),
+        paths.memory_dir.join("store.v4.json").display(),
         if memory_created {
             "created"
         } else {
@@ -281,7 +281,7 @@ async fn run_workspace(command: WorkspaceCommand) -> Result<()> {
                         parsed
                             .get("schema_version")
                             .and_then(serde_json::Value::as_u64)
-                            == Some(1),
+                            == Some(2),
                         "unsupported verification receipt schema"
                     );
                     println!("receipt: {}", serde_json::to_string(&parsed)?);
@@ -810,6 +810,8 @@ async fn run_memory(command: MemoryCommand) -> Result<()> {
             source_turn_reference,
             provenance,
             expires_in_hours,
+            claim_status,
+            verification_receipt_id,
         } => {
             let now = now_unix()?;
             let expires_at = expires_in_hours
@@ -831,6 +833,8 @@ async fn run_memory(command: MemoryCommand) -> Result<()> {
                     source_turn_reference,
                     provenance,
                     expires_at_unix: expires_at,
+                    claim_status,
+                    verification_receipt_id,
                 },
                 now,
             )?;
@@ -839,6 +843,8 @@ async fn run_memory(command: MemoryCommand) -> Result<()> {
             println!("Kind: {}", proposal.kind);
             println!("Source turn: {}", proposal.source_turn_reference);
             println!("Provenance: {}", proposal.provenance);
+            println!("Claim status: {}", proposal.claim_status);
+            println!("Verification receipt: {}", proposal.verification_receipt_id.as_deref().unwrap_or("none"));
             println!("Fingerprint: {}", proposal.fingerprint);
             println!("Review with: rocksoul memory approve {}", proposal.id);
         }
@@ -849,11 +855,13 @@ async fn run_memory(command: MemoryCommand) -> Result<()> {
             }
             for proposal in proposals {
                 println!(
-                    "{} [{} · {}] source={} fingerprint={}",
+                    "{} [{} · {} · claim={}] source={} receipt={} fingerprint={}",
                     proposal.id,
                     proposal.kind,
                     proposal.status,
+                    proposal.claim_status,
                     proposal.source_turn_reference,
+                    proposal.verification_receipt_id.as_deref().unwrap_or("none"),
                     proposal.fingerprint
                 );
                 if let Some(memory_id) = proposal.memory_record_id {
@@ -895,13 +903,23 @@ async fn run_memory(command: MemoryCommand) -> Result<()> {
                     anyhow::bail!("memory proposal approval cancelled; no memory was written");
                 }
             }
-            let memory_id = memory_proposal::approve(
+            let memory_id = memory_proposal::approve_with_receipts(
                 &paths.memory_dir,
+                Some(&paths.logs_dir.join("receipts")),
                 &id,
                 confirmation.trim_end(),
                 now_unix()?,
             )?;
+            let store = MemoryStore::load(&paths.memory_dir)?;
+            let record = store.records.iter().find(|record| record.id == memory_id)
+                .context("approved memory record was not found after persistence")?;
             println!("Approved exact proposal and persisted memory record {memory_id}.");
+            println!("Claim status: {}", record.claim_status);
+            if let Some(receipt_id) = &record.verification_receipt_id {
+                println!("Kernel receipt: {receipt_id}");
+            } else if record.claim_status == MemoryClaimStatus::UnverifiedTaskOutcome {
+                println!("Outcome remains UNVERIFIED: no fresh, exact, unused, non-revoked kernel receipt matched.");
+            }
         }
         MemoryCommand::Deny { id } => {
             memory_proposal::deny(&paths.memory_dir, &id, now_unix()?)?;
@@ -910,6 +928,15 @@ async fn run_memory(command: MemoryCommand) -> Result<()> {
         MemoryCommand::CancelProposal { id } => {
             memory_proposal::cancel(&paths.memory_dir, &id, now_unix()?)?;
             println!("Cancelled memory proposal {id}; no memory record was written.");
+        }
+        MemoryCommand::RevokeReceipt { verification_id, reason_code } => {
+            memory_proposal::revoke_receipt(
+                &paths.logs_dir.join("receipts"),
+                &verification_id,
+                now_unix()?,
+                &reason_code,
+            )?;
+            println!("Revoked kernel receipt {verification_id}; it cannot verify future memory claims.");
         }
         MemoryCommand::Export => {
             let store = MemoryStore::load(&paths.memory_dir)?;
@@ -971,10 +998,11 @@ async fn run_memory(command: MemoryCommand) -> Result<()> {
                         println!("Memory search — deterministic lexical ranking");
                         for result in &matches {
                             println!(
-                                "- [{}] {} ({}, source={}, created={}, source-confidence={:?})",
+                                "- [{}] {} ({}, claim={}, source={}, created={}, source-confidence={:?})",
                                 result.lexical_score,
                                 result.record_id,
                                 result.kind,
+                                result.claim_status,
                                 result.source,
                                 result.created_at_unix,
                                 result.source_confidence
@@ -1023,7 +1051,8 @@ async fn run_memory(command: MemoryCommand) -> Result<()> {
                     | MemoryCommand::Proposals
                     | MemoryCommand::Approve { .. }
                     | MemoryCommand::Deny { .. }
-                    | MemoryCommand::CancelProposal { .. } => {
+                    | MemoryCommand::CancelProposal { .. }
+                    | MemoryCommand::RevokeReceipt { .. } => {
                         unreachable!(
                             "proposal and export commands are handled outside the memory transaction"
                         )
@@ -1058,8 +1087,10 @@ fn print_memory_records(records: &[&MemoryRecord], heading: &str) {
             record.id, record.kind, approval, record.content, tags
         );
         println!(
-            "    source={} · created={} · expires={}",
+            "    source={} · claim={} · receipt={} · created={} · expires={}",
             record.source,
+            record.claim_status,
+            record.verification_receipt_id.as_deref().unwrap_or("none"),
             record.created_at_unix,
             record
                 .expires_at_unix
