@@ -916,6 +916,7 @@ fn render_memory(frame: &mut Frame<'_>, area: Rect, app: &App) {
     frame.render_widget(
         Paragraph::new(lines).wrap(Wrap { trim: true }).block(panel(
             "MEMORY / EXPERIENCE · ↑/↓ SELECT · / SEARCH · f KIND · c CLAIM",
+            &app.palette,
         )),
         area,
     );
