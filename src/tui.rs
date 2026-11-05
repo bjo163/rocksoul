@@ -23,13 +23,44 @@ use crate::{
     tui_preferences::{DensityMode, LocaleMode, PREFERENCES_FILE, ThemeMode, TuiPreferences},
 };
 
-const BG: Color = Color::Rgb(15, 17, 18);
-const PANEL: Color = Color::Rgb(25, 29, 30);
-const MUTED: Color = Color::Rgb(129, 139, 140);
-const TEXT: Color = Color::Rgb(226, 224, 215);
-const AMBER: Color = Color::Rgb(219, 166, 74);
-const TEAL: Color = Color::Rgb(98, 190, 165);
-const RED: Color = Color::Rgb(214, 104, 93);
+#[derive(Clone, Copy)]
+struct Palette {
+    background: Color,
+    panel: Color,
+    muted: Color,
+    text: Color,
+    accent: Color,
+    success: Color,
+    error: Color,
+    border: Color,
+}
+
+impl Palette {
+    fn for_theme(theme: ThemeMode) -> Self {
+        match theme {
+            ThemeMode::Dark => Self {
+                background: Color::Rgb(15, 17, 18),
+                panel: Color::Rgb(25, 29, 30),
+                muted: Color::Rgb(129, 139, 140),
+                text: Color::Rgb(226, 224, 215),
+                accent: Color::Rgb(219, 166, 74),
+                success: Color::Rgb(98, 190, 165),
+                error: Color::Rgb(214, 104, 93),
+                border: Color::Rgb(66, 75, 76),
+            },
+            ThemeMode::Light => Self {
+                background: Color::Rgb(242, 240, 232),
+                panel: Color::Rgb(255, 253, 246),
+                muted: Color::Rgb(94, 102, 100),
+                text: Color::Rgb(34, 39, 39),
+                accent: Color::Rgb(154, 101, 27),
+                success: Color::Rgb(25, 112, 86),
+                error: Color::Rgb(174, 49, 43),
+                border: Color::Rgb(188, 182, 167),
+            },
+        }
+    }
+}
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 enum Screen {
@@ -168,6 +199,7 @@ struct App {
     snapshot: Snapshot,
     preferences: TuiPreferences,
     preferences_error: bool,
+    palette: Palette,
     memory_query: String,
     memory_search_active: bool,
     memory_detail_open: bool,
@@ -191,6 +223,7 @@ impl App {
             snapshot,
             preferences,
             preferences_error,
+            palette,
             memory_query: String::new(),
             memory_search_active: false,
             memory_detail_open: false,
@@ -314,6 +347,7 @@ impl App {
     fn persist_preferences(&mut self) {
         let path = self.snapshot.paths.config_dir.join(PREFERENCES_FILE);
         self.preferences_error = self.preferences.save(&path).is_err();
+        self.palette = Palette::for_theme(self.preferences.theme);
     }
 
     fn move_stat(&mut self, delta: isize) {
@@ -360,9 +394,9 @@ pub fn run() -> Result<()> {
 
 fn render(frame: &mut Frame<'_>, app: &mut App) {
     let area = frame.area();
-    frame.render_widget(Block::default().style(Style::default().bg(BG)), area);
+    frame.render_widget(Block::default().style(Style::default().bg(app.palette.background)), area);
     if area.width < 80 || area.height < 24 {
-        render_small(frame, area);
+        render_small(frame, area, app);
         return;
     }
 
@@ -387,15 +421,15 @@ fn render(frame: &mut Frame<'_>, app: &mut App) {
     }
 }
 
-fn panel(title: &'static str) -> Block<'static> {
+fn panel(title: &'static str, palette: &Palette) -> Block<'static> {
     Block::default()
         .title(Span::styled(
             format!(" {title} "),
-            Style::default().fg(AMBER).add_modifier(Modifier::BOLD),
+            Style::default().fg(app.palette.accent).add_modifier(Modifier::BOLD),
         ))
         .borders(Borders::ALL)
         .border_style(Style::default().fg(Color::Rgb(66, 73, 73)))
-        .style(Style::default().bg(PANEL).fg(TEXT))
+        .style(Style::default().bg(palette.panel).fg(palette.text))
 }
 
 fn render_header(frame: &mut Frame<'_>, area: Rect, app: &App) {
@@ -413,24 +447,24 @@ fn render_header(frame: &mut Frame<'_>, area: Rect, app: &App) {
     let line = Line::from(vec![
         Span::styled(
             " ROCKSOUL ",
-            Style::default().fg(TEXT).add_modifier(Modifier::BOLD),
+            Style::default().fg(app.palette.text).add_modifier(Modifier::BOLD),
         ),
         Span::styled(
             "/ COGNITIVE COCKPIT ",
-            Style::default().fg(AMBER).add_modifier(Modifier::BOLD),
+            Style::default().fg(app.palette.accent).add_modifier(Modifier::BOLD),
         ),
         Span::styled(status.0, Style::default().fg(status.1)),
         Span::raw("   "),
-        Span::styled(rid, Style::default().fg(MUTED)),
+        Span::styled(rid, Style::default().fg(app.palette.muted)),
     ]);
     frame.render_widget(
         Paragraph::new(line)
             .block(
                 Block::default()
                     .borders(Borders::BOTTOM)
-                    .border_style(Style::default().fg(AMBER)),
+                    .border_style(Style::default().fg(app.palette.accent)),
             )
-            .style(Style::default().bg(PANEL)),
+            .style(Style::default().bg(app.palette.panel)),
         area,
     );
 }
@@ -445,12 +479,12 @@ fn render_navigation(frame: &mut Frame<'_>, area: Rect, app: &App) {
                 Span::styled(
                     label,
                     Style::default()
-                        .fg(BG)
-                        .bg(AMBER)
+                        .fg(app.palette.background)
+                        .bg(app.palette.accent)
                         .add_modifier(Modifier::BOLD),
                 )
             } else {
-                Span::styled(label, Style::default().fg(MUTED))
+                Span::styled(label, Style::default().fg(app.palette.muted))
             }
         })
         .collect::<Vec<_>>();
@@ -502,10 +536,10 @@ fn render_overview(frame: &mut Frame<'_>, area: Rect, app: &App) {
     };
     let summary = vec![
         Line::from(vec![
-            Span::styled("MODEL ", Style::default().fg(MUTED)),
+            Span::styled("MODEL ", Style::default().fg(app.palette.muted)),
             Span::styled(model.0, Style::default().fg(model.1)),
             Span::raw("    "),
-            Span::styled("RID ", Style::default().fg(MUTED)),
+            Span::styled("RID ", Style::default().fg(app.palette.muted)),
             Span::styled(rid.0, Style::default().fg(rid.1)),
         ]),
         Line::from(""),
@@ -513,13 +547,13 @@ fn render_overview(frame: &mut Frame<'_>, area: Rect, app: &App) {
         Line::from("ACTIVE TASK  NONE PERSISTED"),
     ];
     frame.render_widget(
-        Paragraph::new(summary).block(panel("SYSTEM SNAPSHOT")),
+        Paragraph::new(summary).block(panel("SYSTEM SNAPSHOT", &app.palette)),
         chunks[0],
     );
     let lines = vec![
         Line::from(Span::styled(
             "RUNTIME MAP",
-            Style::default().fg(AMBER).add_modifier(Modifier::BOLD),
+            Style::default().fg(app.palette.accent).add_modifier(Modifier::BOLD),
         )),
         Line::from("• One local-first runtime; CLI, REPL and TUI share application services."),
         Line::from("• Verified task lifecycle: Planning → Executing → Verifying → Completed."),
@@ -527,7 +561,7 @@ fn render_overview(frame: &mut Frame<'_>, area: Rect, app: &App) {
         Line::from(""),
         Line::from(Span::styled(
             "NOT IMPLEMENTED YET",
-            Style::default().fg(AMBER).add_modifier(Modifier::BOLD),
+            Style::default().fg(app.palette.accent).add_modifier(Modifier::BOLD),
         )),
         Line::from(
             "• Persistent task queue, Memory OS, tool registry and specialist model routing.",
@@ -537,7 +571,7 @@ fn render_overview(frame: &mut Frame<'_>, area: Rect, app: &App) {
     frame.render_widget(
         Paragraph::new(lines)
             .wrap(Wrap { trim: true })
-            .block(panel("SYSTEM MAP")),
+            .block(panel("SYSTEM MAP", &app.palette)),
         chunks[1],
     );
 }
@@ -551,7 +585,7 @@ fn render_brains(frame: &mut Frame<'_>, area: Rect, app: &App) {
     let lines = vec![
         Line::from(Span::styled(
             "AUTOMATIC SPECIALIST REGISTRY",
-            Style::default().fg(AMBER).add_modifier(Modifier::BOLD),
+            Style::default().fg(app.palette.accent).add_modifier(Modifier::BOLD),
         )),
         Line::from(
             "Local-first is fixed runtime policy; backend choice is not a top-level user mode.",
@@ -571,7 +605,7 @@ fn render_brains(frame: &mut Frame<'_>, area: Rect, app: &App) {
     frame.render_widget(
         Paragraph::new(lines)
             .wrap(Wrap { trim: true })
-            .block(panel("BRAINS / RUNTIME")),
+            .block(panel("BRAINS / RUNTIME", &app.palette)),
         area,
     );
 }
@@ -589,7 +623,7 @@ fn render_tasks(frame: &mut Frame<'_>, area: Rect, app: &mut App) {
             return Ok(vec![
                 Line::from(Span::styled(
                     "NO TASK EVENTS RECORDED",
-                    Style::default().fg(MUTED).add_modifier(Modifier::BOLD),
+                    Style::default().fg(app.palette.muted).add_modifier(Modifier::BOLD),
                 )),
                 Line::from("Verified workspace operations will appear here after execution."),
                 Line::from("No queue or active task is inferred from an empty trace."),
@@ -599,7 +633,7 @@ fn render_tasks(frame: &mut Frame<'_>, area: Rect, app: &mut App) {
         let mut lines = vec![
             Line::from(Span::styled(
                 format!("PERSISTED TASK TRACE · {} RECENT EVENTS", records.len()),
-                Style::default().fg(AMBER).add_modifier(Modifier::BOLD),
+                Style::default().fg(app.palette.accent).add_modifier(Modifier::BOLD),
             )),
             Line::from("Newest events first · ↑/↓ select · content-free metadata only"),
             Line::from(""),
@@ -627,7 +661,7 @@ fn render_tasks(frame: &mut Frame<'_>, area: Rect, app: &mut App) {
         lines.push(Line::from(""));
         lines.push(Line::from(Span::styled(
             "SELECTED EVENT",
-            Style::default().fg(AMBER).add_modifier(Modifier::BOLD),
+            Style::default().fg(app.palette.accent).add_modifier(Modifier::BOLD),
         )));
         lines.push(Line::from(format!(
             "Event       {}",
@@ -656,7 +690,7 @@ fn render_tasks(frame: &mut Frame<'_>, area: Rect, app: &mut App) {
         Err(_) => vec![
             Line::from(Span::styled(
                 "TASK TRACE UNAVAILABLE",
-                Style::default().fg(RED).add_modifier(Modifier::BOLD),
+                Style::default().fg(app.palette.error).add_modifier(Modifier::BOLD),
             )),
             Line::from("The trace is malformed, unsupported, or inaccessible."),
             Line::from("No task state is inferred from invalid records."),
@@ -665,7 +699,7 @@ fn render_tasks(frame: &mut Frame<'_>, area: Rect, app: &mut App) {
     frame.render_widget(
         Paragraph::new(lines)
             .wrap(Wrap { trim: true })
-            .block(panel("TASK / TURN MONITOR")),
+            .block(panel("TASK / TURN MONITOR", &app.palette)),
         area,
     );
 }
@@ -841,7 +875,7 @@ fn render_memory(frame: &mut Frame<'_>, area: Rect, app: &App) {
     }) {
         Ok(lines) => lines,
         Err(_) => vec![
-            Line::from(Span::styled("MEMORY STORE UNAVAILABLE", Style::default().fg(RED).add_modifier(Modifier::BOLD))),
+            Line::from(Span::styled("MEMORY STORE UNAVAILABLE", Style::default().fg(app.palette.error).add_modifier(Modifier::BOLD))),
             Line::from("The store is missing, corrupt, unsupported, or inaccessible."),
             Line::from("No memory content is exposed in this error state."),
         ],
@@ -858,7 +892,7 @@ fn push_memory_detail(lines: &mut Vec<Line<'static>>, content: &str) {
     lines.push(Line::from(""));
     lines.push(Line::from(Span::styled(
         "SELECTED MEMORY CONTENT",
-        Style::default().fg(AMBER).add_modifier(Modifier::BOLD),
+        Style::default().fg(app.palette.accent).add_modifier(Modifier::BOLD),
     )));
     match memory_detail_display(content) {
         Ok(content) => {
@@ -926,7 +960,7 @@ fn render_rid(frame: &mut Frame<'_>, area: Rect, app: &mut App) {
     let Some(catalogue) = app.snapshot.catalogue.as_ref() else {
         frame.render_widget(
             Paragraph::new("RID catalogue unavailable. No score or label is displayed.")
-                .block(panel("RID ERROR")),
+                .block(panel("RID ERROR", &app.palette)),
             area,
         );
         return;
@@ -934,17 +968,17 @@ fn render_rid(frame: &mut Frame<'_>, area: Rect, app: &mut App) {
     let metrics = if let Some(profile) = &app.snapshot.rid_profile {
         vec![
             Line::from(vec![
-                Span::styled("AGE ", Style::default().fg(MUTED)),
+                Span::styled("AGE ", Style::default().fg(app.palette.muted)),
                 Span::styled(
                     format_age(profile.age_seconds_at(now_unix())),
-                    Style::default().fg(TEXT),
+                    Style::default().fg(app.palette.text),
                 ),
                 Span::raw("   "),
-                Span::styled("LEVEL ", Style::default().fg(MUTED)),
-                Span::styled(profile.level().to_string(), Style::default().fg(AMBER)),
+                Span::styled("LEVEL ", Style::default().fg(app.palette.muted)),
+                Span::styled(profile.level().to_string(), Style::default().fg(app.palette.accent)),
                 Span::raw("   "),
-                Span::styled("XP ", Style::default().fg(MUTED)),
-                Span::styled(profile.total_xp().to_string(), Style::default().fg(TEXT)),
+                Span::styled("XP ", Style::default().fg(app.palette.muted)),
+                Span::styled(profile.total_xp().to_string(), Style::default().fg(app.palette.text)),
             ]),
             Line::from(format!(
                 "RATED {}/99 · CATALOGUE {} · UNRATED IS UNKNOWN, NOT ZERO",
@@ -962,7 +996,7 @@ fn render_rid(frame: &mut Frame<'_>, area: Rect, app: &mut App) {
         .constraints([Constraint::Length(3), Constraint::Min(4)])
         .split(area);
     frame.render_widget(
-        Paragraph::new(metrics).block(panel("RUH INFORMATION")),
+        Paragraph::new(metrics).block(panel("RUH INFORMATION", &app.palette)),
         chunks[0],
     );
 
@@ -977,36 +1011,36 @@ fn render_rid(frame: &mut Frame<'_>, area: Rect, app: &mut App) {
                 .map(|value| format!("{value:>3}/100"))
                 .unwrap_or_else(|| "unrated".to_owned());
             ListItem::new(Line::from(vec![
-                Span::styled(format!("{:02} ", entry.slot_id), Style::default().fg(MUTED)),
+                Span::styled(format!("{:02} ", entry.slot_id), Style::default().fg(app.palette.muted)),
                 Span::styled(
                     format!("{:<18}", entry.name.transliteration),
-                    Style::default().fg(TEXT),
+                    Style::default().fg(app.palette.text),
                 ),
                 Span::styled(
                     format!("{:<25}", entry.technical_stat.label),
-                    Style::default().fg(MUTED),
+                    Style::default().fg(app.palette.muted),
                 ),
-                Span::styled(score, Style::default().fg(AMBER)),
+                Span::styled(score, Style::default().fg(app.palette.accent)),
             ]))
         })
         .collect::<Vec<_>>();
     let list = List::new(items)
-        .block(panel("99 CAPABILITY DIMENSIONS"))
+        .block(panel("99 CAPABILITY DIMENSIONS", &app.palette))
         .highlight_symbol("▸ ")
         .highlight_style(
             Style::default()
-                .fg(TEXT)
+                .fg(app.palette.text)
                 .bg(Color::Rgb(51, 55, 52))
                 .add_modifier(Modifier::BOLD),
         );
     frame.render_stateful_widget(list, chunks[1], &mut app.rid_state);
 }
 
-fn render_tools(frame: &mut Frame<'_>, area: Rect) {
+fn render_tools(frame: &mut Frame<'_>, area: Rect, app: &App) {
     let lines = vec![
         Line::from(Span::styled(
             "TOOL REGISTRY",
-            Style::default().fg(AMBER).add_modifier(Modifier::BOLD),
+            Style::default().fg(app.palette.accent).add_modifier(Modifier::BOLD),
         )),
         Line::from("No tools are registered for execution in this seed runtime."),
         Line::from("Shell execution     disabled"),
@@ -1021,7 +1055,7 @@ fn render_tools(frame: &mut Frame<'_>, area: Rect) {
     frame.render_widget(
         Paragraph::new(lines)
             .wrap(Wrap { trim: true })
-            .block(panel("TOOLS / PERMISSIONS")),
+            .block(panel("TOOLS / PERMISSIONS", &app.palette)),
         area,
     );
 }
@@ -1144,7 +1178,7 @@ fn render_diagnostics(frame: &mut Frame<'_>, area: Rect, app: &App) {
     frame.render_widget(
         Paragraph::new(lines)
             .wrap(Wrap { trim: true })
-            .block(panel("DIAGNOSTICS / EVENTS")),
+            .block(panel("DIAGNOSTICS / EVENTS", &app.palette)),
         area,
     );
 }
@@ -1170,7 +1204,7 @@ fn render_settings(frame: &mut Frame<'_>, area: Rect, app: &App) {
     frame.render_widget(
         Paragraph::new(lines)
             .wrap(Wrap { trim: true })
-            .block(panel("SETTINGS")),
+            .block(panel("SETTINGS", &app.palette)),
         area,
     );
 }
@@ -1179,7 +1213,7 @@ fn render_inspector(frame: &mut Frame<'_>, area: Rect, app: &App) {
     let mut lines = vec![
         Line::from(Span::styled(
             "INSPECTOR",
-            Style::default().fg(AMBER).add_modifier(Modifier::BOLD),
+            Style::default().fg(app.palette.accent).add_modifier(Modifier::BOLD),
         )),
         Line::from(""),
         Line::from(format!("SCREEN  {}", app.screen.label())),
@@ -1208,7 +1242,7 @@ fn render_inspector(frame: &mut Frame<'_>, area: Rect, app: &App) {
     frame.render_widget(
         Paragraph::new(lines)
             .wrap(Wrap { trim: true })
-            .block(panel("SYSTEM INSPECTOR")),
+            .block(panel("SYSTEM INSPECTOR", &app.palette)),
         area,
     );
 }
@@ -1218,14 +1252,14 @@ fn rid_detail(entry: &CatalogueEntry, profile: Option<&RuhProfile>) -> Vec<Line<
         Line::from(""),
         Line::from(Span::styled(
             entry.name.transliteration.clone(),
-            Style::default().fg(TEXT).add_modifier(Modifier::BOLD),
+            Style::default().fg(app.palette.text).add_modifier(Modifier::BOLD),
         )),
         Line::from(entry.name.arabic.clone()),
         Line::from(entry.name.gloss.id.clone()),
         Line::from(""),
         Line::from(Span::styled(
             entry.technical_stat.label.clone(),
-            Style::default().fg(AMBER),
+            Style::default().fg(app.palette.accent),
         )),
         Line::from(entry.technical_stat.key.clone()),
         Line::from(entry.technical_stat.definition.clone()),
@@ -1273,17 +1307,17 @@ fn render_footer(frame: &mut Frame<'_>, area: Rect, app: &App) {
     frame.render_widget(
         Paragraph::new(text)
             .alignment(Alignment::Center)
-            .style(Style::default().fg(MUTED))
+            .style(Style::default().fg(app.palette.muted))
             .block(
                 Block::default()
                     .borders(Borders::TOP)
-                    .border_style(Style::default().fg(Color::DarkGray)),
+                    .border_style(Style::default().fg(palette.border)),
             ),
         area,
     );
 }
 
-fn render_palette(frame: &mut Frame<'_>, area: Rect) {
+fn render_palette(frame: &mut Frame<'_>, area: Rect, app: &App) {
     let popup = centered_rect(54, 68, area);
     frame.render_widget(Clear, popup);
     let rows = Screen::ALL
@@ -1292,12 +1326,12 @@ fn render_palette(frame: &mut Frame<'_>, area: Rect) {
         .map(|(i, screen)| ListItem::new(format!("{}  {}", i + 1, screen.title())))
         .collect::<Vec<_>>();
     frame.render_widget(
-        List::new(rows).block(panel("COMMAND PALETTE · PRESS 1-8")),
+        List::new(rows).block(panel("COMMAND PALETTE · PRESS 1-8", &app.palette)),
         popup,
     );
 }
 
-fn render_help(frame: &mut Frame<'_>, area: Rect) {
+fn render_help(frame: &mut Frame<'_>, area: Rect, app: &App) {
     let popup = centered_rect(60, 62, area);
     frame.render_widget(Clear, popup);
     let rows = vec![
@@ -1312,17 +1346,17 @@ fn render_help(frame: &mut Frame<'_>, area: Rect) {
     ];
     frame.render_widget(
         Paragraph::new(rows)
-            .block(panel("KEYBOARD HELP"))
+            .block(panel("KEYBOARD HELP", &app.palette))
             .wrap(Wrap { trim: true }),
         popup,
     );
 }
 
-fn render_small(frame: &mut Frame<'_>, area: Rect) {
+fn render_small(frame: &mut Frame<'_>, area: Rect, app: &App) {
     let rows = vec![
         Line::from(Span::styled(
             "ROCKSOUL / COGNITIVE COCKPIT",
-            Style::default().fg(AMBER).add_modifier(Modifier::BOLD),
+            Style::default().fg(app.palette.accent).add_modifier(Modifier::BOLD),
         )),
         Line::from("Terminal is below the recommended 80×24 size."),
         Line::from("Resize terminal or use CLI commands."),
@@ -1331,7 +1365,7 @@ fn render_small(frame: &mut Frame<'_>, area: Rect) {
     frame.render_widget(
         Paragraph::new(rows)
             .alignment(Alignment::Center)
-            .block(panel("TERMINAL TOO SMALL")),
+            .block(panel("TERMINAL TOO SMALL", &app.palette)),
         area,
     );
 }
