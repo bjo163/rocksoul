@@ -154,6 +154,9 @@ pub enum MemoryCommand {
         /// Optional kernel receipt ID; it is validated at approval and may not be replayed.
         #[arg(long)]
         verification_receipt_id: Option<String>,
+        /// Expected task/operation ID bound by the kernel receipt; required with --verification-receipt-id.
+        #[arg(long)]
+        verification_task_id: Option<String>,
     },
     /// List pending and decided model memory proposals.
     Proposals,
