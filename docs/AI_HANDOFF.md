@@ -227,18 +227,20 @@ A task is complete only when:
 6. Related issue is closed with the merge evidence.
 7. The next task is recorded with dependencies and acceptance criteria.
 
-## 9. Next-task selection after PR #51
+## 9. Next task selected — issue #35
 
-Do not invent the next issue number. After PR #51 is green and merged:
+PR #51 is merged and issue #44 is closed. The next unblocked reliability task is [#35 — crash-window recovery and generalized acceptance gates](https://github.com/bjo163/rocksoul/issues/35). Start from the latest `main` SHA; do not continue the old PR #51 branch.
 
-1. Refresh latest main, open issues, PRs, and `docs/ROADMAP.md`.
-2. Verify issue #44 is closed and its scope is fully represented in code/tests/docs.
-3. Inspect Stage 2 follow-through issue #35 and the Stage 2 umbrella/remaining issues. Avoid duplicating completed work.
-4. Choose the smallest unblocked vertical slice with clear acceptance tests. Prefer memory correctness, recovery, provenance and evaluation before context injection.
-5. Keep memory context injection disabled until a separately reviewed policy, contamination tests, privacy rules, deletion/forgetting semantics and regression gates exist.
-6. Only after Stage 2 exit criteria are met, start Stage 3 with a narrowly scoped typed, read-only capability contract. Do not introduce unrestricted tools.
+Required scope:
+1. Add deterministic crash injection after workspace artifact publication but before XP persistence; prove replay does not duplicate the artifact or award XP twice and reconstructs the durable outcome.
+2. Extend offline evaluation for this crash window and conflicting/corrupt receipt records; malformed records must fail closed.
+3. Define a typed, versioned acceptance-check contract reusable by future application services without introducing a generic unrestricted executor.
+4. Document the precise recovery boundary: operation/receipt/XP replay is durable; planner/reflection conversation history is not resumed.
+5. Keep XP gated on trusted observed effects; model reflection remains advisory.
 
-For each new task, write/update an execution plan with:
+Acceptance: deterministic offline tests, Linux/Windows CI, accurate docs/evaluation report, no arbitrary shell or unrestricted tools. Keep memory context injection disabled until separate policy, contamination, privacy, deletion/forgetting and regression gates are reviewed.
+
+For every new task, write/update an execution plan with:
 - Goal and explicit non-goals.
 - Current main SHA and source files.
 - Invariants and threat model.
