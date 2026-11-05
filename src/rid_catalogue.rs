@@ -175,7 +175,7 @@ impl RidCatalogue {
             ensure!(stat_keys.insert(entry.key.to_ascii_lowercase()), "duplicate RID stat key: {}", entry.key);
             ensure!(stat_labels.insert(entry.label.trim().to_ascii_lowercase()), "duplicate RID stat label: {}", entry.label);
             ensure!(entry.key.chars().all(|ch| ch.is_ascii_lowercase() || ch.is_ascii_digit() || ch == '_'), "RID stat key must be lowercase snake_case at slot {slot}");
-            ensure!(entry.evaluation_protocol.contains(&domain.separation_rule), "RID evaluation protocol omits its domain-specific separation rule at slot {slot}");
+            ensure!(entry.evaluation_protocol.contains(domain.separation_rule.as_str()), "RID evaluation protocol omits its domain-specific separation rule at slot {slot}");
             for adjacent in &entry.overlap_with {
                 ensure!(domain_ids.contains(adjacent.as_str()), "unknown overlap domain {adjacent} at stat {slot}");
                 ensure!(adjacent != &entry.domain_id, "domain cannot overlap itself at stat {slot}");
