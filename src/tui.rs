@@ -703,9 +703,9 @@ fn render_memory(frame: &mut Frame<'_>, area: Rect, app: &App) {
         ],
     };
     frame.render_widget(
-        Paragraph::new(lines)
-            .wrap(Wrap { trim: true })
-            .block(panel("MEMORY / EXPERIENCE · ↑/↓ SELECT · / SEARCH · f KIND · c CLAIM")),
+        Paragraph::new(lines).wrap(Wrap { trim: true }).block(panel(
+            "MEMORY / EXPERIENCE · ↑/↓ SELECT · / SEARCH · f KIND · c CLAIM",
+        )),
         area,
     );
 }
@@ -719,7 +719,10 @@ fn next_memory_kind(current: Option<MemoryKind>) -> Option<MemoryKind> {
         Some(MemoryKind::Working),
         Some(MemoryKind::Derived),
     ];
-    let index = values.iter().position(|value| *value == current).unwrap_or(0);
+    let index = values
+        .iter()
+        .position(|value| *value == current)
+        .unwrap_or(0);
     values[(index + 1) % values.len()]
 }
 
@@ -733,7 +736,10 @@ fn next_memory_claim_status(current: Option<MemoryClaimStatus>) -> Option<Memory
         Some(MemoryClaimStatus::VerifiedTaskOutcome),
         Some(MemoryClaimStatus::ContradictedSuperseded),
     ];
-    let index = values.iter().position(|value| *value == current).unwrap_or(0);
+    let index = values
+        .iter()
+        .position(|value| *value == current)
+        .unwrap_or(0);
     values[(index + 1) % values.len()]
 }
 
