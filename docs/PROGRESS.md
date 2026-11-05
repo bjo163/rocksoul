@@ -112,6 +112,7 @@ The receipt digest is tamper-evident integrity metadata, not a digital signature
 This documentation update reconciles:
 - `docs/AI_HANDOFF.md` — local-agent onboarding, architecture map, mandatory workflow, build/test commands, safety invariants, active PR state, next-task selection and known deferred work.
 - `docs/PROGRESS.md` — this progress snapshot.
+- `docs/plans/issue-35/` — execution specification, design notes, small autonomous task breakdown, and agent safety rules for the next issue.
 - `docs/ARCHITECTURE.md` — describes the merged schema v4 baseline and task-bound receipt policy.
 - `docs/COGNITIVE_CORE.md` — distinguishes model-only planner/reflection from trusted verification and documents the merged claim-provenance gate.
 - `docs/ROADMAP.md` — marks schema v4 claim provenance and task-bound receipt gating complete while keeping context injection gated.
@@ -123,7 +124,7 @@ This progress snapshot was refreshed after PR #51 merged. Keep it synchronized w
 
 ### Immediate
 
-1. Start issue #35 from the latest `main` SHA `260d29852bb30f2f63129271a07cd368fafccc3f` (refresh main first).
+1. Start issue #35 from latest `main` (refresh main first); use the [spec](plans/issue-35/spec.md), [design](plans/issue-35/design.md), [task list](plans/issue-35/task.md), and [agent rules](plans/issue-35/rules.md).
 2. Add deterministic crash injection after artifact publication but before XP persistence; prove artifact and XP replay are idempotent and durable.
 3. Add conflicting/corrupt receipt recovery fixtures and a typed, versioned acceptance-check contract for future services.
 4. Update evaluation, architecture, cognitive-core, roadmap, README and AI handoff docs.
