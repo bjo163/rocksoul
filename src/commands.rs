@@ -978,7 +978,7 @@ async fn run_memory(command: MemoryCommand) -> Result<()> {
                         println!("ID: {id}");
                         println!(
                             "Store: {}",
-                            paths.memory_dir.join("store.v3.json").display()
+                            paths.memory_dir.join("store.v4.json").display()
                         );
                     }
                     MemoryCommand::List => {
