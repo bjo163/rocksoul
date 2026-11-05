@@ -93,7 +93,9 @@ impl MemoryStore {
     /// Load the current store, recover its last known-good backup when needed,
     /// or migrate the legacy v1 document without modifying the original file.
     pub fn load(directory: &Path) -> Result<Self> {
-        fs::create_dir_all(directory).with_context(|| format!("could not create memory directory {}", directory.display()))?;
+        fs::create_dir_all(directory).with_context(|| {
+            format!("could not create memory directory {}", directory.display())
+        })?;
         let _lock = acquire_store_lock(directory)?;
         Self::load_unlocked(directory)
     }
@@ -303,15 +305,24 @@ impl MemoryStore {
         write_json_atomic(&store_path(directory), self)
     }
 
-    pub fn transact<T>(directory: &Path, operation: impl FnOnce(&mut Self) -> Result<T>) -> Result<T> {
-        fs::create_dir_all(directory).with_context(|| format!("could not create memory directory {}", directory.display()))?;
+    pub fn transact<T>(
+        directory: &Path,
+        operation: impl FnOnce(&mut Self) -> Result<T>,
+    ) -> Result<T> {
+        fs::create_dir_all(directory).with_context(|| {
+            format!("could not create memory directory {}", directory.display())
+        })?;
         let _lock = acquire_store_lock(directory)?;
         let path = store_path(directory);
-        let existed = path.is_file() || backup_path(&path).is_file() || legacy_store_path(directory).is_file();
+        let existed = path.is_file()
+            || backup_path(&path).is_file()
+            || legacy_store_path(directory).is_file();
         let mut store = Self::load_unlocked(directory)?;
         let previous = store.clone();
         let output = operation(&mut store)?;
-        if !existed || store != previous { store.save_unlocked(directory)?; }
+        if !existed || store != previous {
+            store.save_unlocked(directory)?;
+        }
         Ok(output)
     }
 
@@ -366,11 +377,19 @@ fn acquire_store_lock(directory: &Path) -> Result<File> {
             Ok(()) => return Ok(file),
             Err(error) if error.kind() == ErrorKind::WouldBlock => {
                 if started.elapsed() >= LOCK_TIMEOUT {
-                    bail!("memory store is busy; could not acquire {} within {} seconds. Close other Rocksoul operations and retry", lock_path.display(), LOCK_TIMEOUT.as_secs());
+                    bail!(
+                        "memory store is busy; could not acquire {} within {} seconds. Close other Rocksoul operations and retry",
+                        lock_path.display(),
+                        LOCK_TIMEOUT.as_secs()
+                    );
                 }
                 thread::sleep(LOCK_RETRY_INTERVAL);
             }
-            Err(error) => return Err(error).with_context(|| format!("could not lock memory store {}", lock_path.display())),
+            Err(error) => {
+                return Err(error).with_context(|| {
+                    format!("could not lock memory store {}", lock_path.display())
+                });
+            }
         }
     }
 }
@@ -629,7 +648,10 @@ mod tests {
             .env("ROCKSOUL_LOCK_CHILD_DIR", &directory)
             .status()
             .unwrap();
-        assert!(status.success(), "child process should report bounded lock timeout");
+        assert!(
+            status.success(),
+            "child process should report bounded lock timeout"
+        );
         FileExt::unlock(&held).unwrap();
 
         let exit_status = Command::new(std::env::current_exe().unwrap())
@@ -640,8 +662,14 @@ mod tests {
             .env("ROCKSOUL_LOCK_CHILD_EXIT", "1")
             .status()
             .unwrap();
-        assert!(exit_status.success(), "child process should exit while holding the OS lock");
-        assert!(MemoryStore::load(&directory).is_ok(), "OS lock must be released when its process exits");
+        assert!(
+            exit_status.success(),
+            "child process should exit while holding the OS lock"
+        );
+        assert!(
+            MemoryStore::load(&directory).is_ok(),
+            "OS lock must be released when its process exits"
+        );
 
         let executable = std::env::current_exe().unwrap();
         let child_a = Command::new(&executable)
@@ -663,7 +691,11 @@ mod tests {
         assert!(child_a.wait_with_output().unwrap().status.success());
         assert!(child_b.wait_with_output().unwrap().status.success());
         let combined = MemoryStore::load(&directory).unwrap();
-        assert_eq!(combined.records.len(), 2, "concurrent writers must not lose either committed record");
+        assert_eq!(
+            combined.records.len(),
+            2,
+            "concurrent writers must not lose either committed record"
+        );
         fs::remove_dir_all(directory).unwrap();
     }
 
