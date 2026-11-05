@@ -5,6 +5,7 @@ edition = "2024"
 rust-version = "1.85"
 description = "A Rust-first, CLI-native intelligence runtime designed for gradual evolution."
 publish = false
+build = "build.rs"
 
 [dependencies]
 anyhow = "1.0"
