@@ -15,8 +15,8 @@ use crate::{
     memory::{MEMORY_SCHEMA_VERSION, MemoryKind, MemoryRecord, MemorySearchFilters, MemoryStore},
     paths::AppPaths,
     rid::{RuhIdentity, RuhProfile, XpRecordOutcome, level_for_xp},
-    rid_store,
     rid_catalogue::RidCatalogue,
+    rid_store,
     task_trace::{self, TaskTraceEvent},
     workspace_artifact::{
         ArtifactOutcome, UserApproval, WorkspaceArtifactProposal, WorkspaceArtifactService,
@@ -619,9 +619,7 @@ fn stage1_workspace_checks(now: u64, checks: &mut Vec<EvaluationCheck>) -> Resul
 }
 
 fn stage1_crash_recovery_checks(now: u64, checks: &mut Vec<EvaluationCheck>) -> Result<()> {
-    let nonce = SystemTime::now()
-        .duration_since(UNIX_EPOCH)?
-        .as_nanos();
+    let nonce = SystemTime::now().duration_since(UNIX_EPOCH)?.as_nanos();
     let root = std::env::temp_dir().join(format!(
         "rocksoul-stage1-crash-eval-{now}-{nonce}-{}",
         std::process::id()
@@ -638,23 +636,14 @@ fn stage1_crash_recovery_checks(now: u64, checks: &mut Vec<EvaluationCheck>) -> 
         filename: "crash-recovery.txt".to_owned(),
         content: "published before XP persistence".to_owned(),
     };
-    let approval = UserApproval::from_typed_confirmation(
-        &proposal,
-        &proposal.approval_phrase(),
-    )?;
+    let approval = UserApproval::from_typed_confirmation(&proposal, &proposal.approval_phrase())?;
     let service = WorkspaceArtifactService::new(&paths.workspace_dir);
-    let published = service.execute_approved(
-        &proposal,
-        &approval,
-        &CancellationToken::default(),
-    )?;
-    let interrupted = complete_workspace_operation_with_hook(
-        &paths,
-        &proposal,
-        published,
-        now.max(1),
-        || anyhow::bail!("deterministic evaluation crash after artifact read-back"),
-    );
+    let published =
+        service.execute_approved(&proposal, &approval, &CancellationToken::default())?;
+    let interrupted =
+        complete_workspace_operation_with_hook(&paths, &proposal, published, now.max(1), || {
+            anyhow::bail!("deterministic evaluation crash after artifact read-back")
+        });
     let artifact_path = paths.workspace_dir.join(&proposal.filename);
     let after_crash = rid_store::load(&paths.rid_file)?;
     let crash_recovery_boundary_ok = interrupted.is_err()
@@ -668,11 +657,7 @@ fn stage1_crash_recovery_checks(now: u64, checks: &mut Vec<EvaluationCheck>) -> 
         "Injected process loss leaves the exact artifact but no persisted XP or verified receipt",
     ));
 
-    let replay = service.execute_approved(
-        &proposal,
-        &approval,
-        &CancellationToken::default(),
-    )?;
+    let replay = service.execute_approved(&proposal, &approval, &CancellationToken::default())?;
     let replay_was_existing = matches!(replay, ArtifactOutcome::AlreadyPresent { .. });
     let first = complete_workspace_operation_with_hook(
         &paths,
@@ -695,11 +680,8 @@ fn stage1_crash_recovery_checks(now: u64, checks: &mut Vec<EvaluationCheck>) -> 
         .join("receipts")
         .join(format!("workspace-{receipt_key}.json"));
     let original_receipt = fs::read(&receipt_path)?;
-    let replay_again = service.execute_approved(
-        &proposal,
-        &approval,
-        &CancellationToken::default(),
-    )?;
+    let replay_again =
+        service.execute_approved(&proposal, &approval, &CancellationToken::default())?;
     let second = complete_workspace_operation_with_hook(
         &paths,
         &proposal,
@@ -757,8 +739,8 @@ fn stage1_crash_recovery_checks(now: u64, checks: &mut Vec<EvaluationCheck>) -> 
     )? {
         VerificationOutcome::Verified { receipt, .. } => {
             let before = fs::read(&receipt_path)?;
-            let rejected = persist_workspace_receipt(&paths.logs_dir, &operation_id, &receipt)
-                .is_err();
+            let rejected =
+                persist_workspace_receipt(&paths.logs_dir, &operation_id, &receipt).is_err();
             rejected && fs::read(&receipt_path)? == before
         }
         VerificationOutcome::Rejected { .. } => false,
