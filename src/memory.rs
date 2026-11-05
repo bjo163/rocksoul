@@ -304,6 +304,27 @@ impl MemoryStore {
         Ok(id)
     }
 
+    pub fn expired_ids(&self, now: u64) -> Vec<String> {
+        self.records
+            .iter()
+            .filter(|record| {
+                record.retention_policy == RetentionPolicy::ExpireAt
+                    && record.expires_at_unix.is_some_and(|expires| expires <= now)
+            })
+            .map(|record| record.id.clone())
+            .collect()
+    }
+
+    pub fn prune_expired(&mut self, now: u64) -> Vec<String> {
+        let expired = self.expired_ids(now);
+        if !expired.is_empty() {
+            let expired_set = expired.iter().map(String::as_str).collect::<HashSet<_>>();
+            self.records.retain(|record| !expired_set.contains(record.id.as_str()));
+            self.revision = self.revision.saturating_add(1);
+        }
+        expired
+    }
+
     pub fn active_records(&self, now: u64) -> Vec<&MemoryRecord> {
         self.records
             .iter()
@@ -732,7 +753,8 @@ mod tests {
     use fs2::FileExt;
 
     use super::{
-        MEMORY_SCHEMA_VERSION, MemoryKind, MemoryStore, backup_path, legacy_store_path, store_path,
+        MEMORY_SCHEMA_VERSION, RETENTION_POLICY_VERSION, MemoryKind, MemoryStore, RetentionPolicy,
+        backup_path, legacy_store_path, legacy_v2_store_path, store_path,
     };
 
     fn temp_dir() -> PathBuf {
@@ -744,7 +766,7 @@ mod tests {
     }
 
     #[test]
-    fn migrates_v1_store_to_v2_without_modifying_legacy_file() {
+    fn migrates_v1_store_to_v3_without_modifying_legacy_file() {
         let directory = temp_dir();
         fs::create_dir_all(&directory).unwrap();
         let mut legacy = MemoryStore {
@@ -763,6 +785,8 @@ mod tests {
             created_at_unix: 10,
             updated_at_unix: 12,
             expires_at_unix: Some(100),
+            retention_policy_version: RETENTION_POLICY_VERSION,
+            retention_policy: RetentionPolicy::ExpireAt,
         });
         let legacy_path = legacy_store_path(&directory);
         fs::write(&legacy_path, serde_json::to_vec_pretty(&legacy).unwrap()).unwrap();
@@ -773,6 +797,7 @@ mod tests {
         assert_eq!(migrated.records, legacy.records);
         assert!(legacy_path.is_file());
         assert!(store_path(&directory).is_file());
+        assert_eq!(migrated.records[0].retention_policy, RetentionPolicy::ExpireAt);
         assert_eq!(MemoryStore::load(&directory).unwrap(), migrated);
         fs::remove_dir_all(directory).unwrap();
     }
@@ -1046,6 +1071,8 @@ mod tests {
                 created_at_unix: 1,
                 updated_at_unix: 1,
                 expires_at_unix: None,
+                retention_policy_version: RETENTION_POLICY_VERSION,
+                retention_policy: RetentionPolicy::KeepUntilDeleted,
             }],
             ..MemoryStore::default()
         };
