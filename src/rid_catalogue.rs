@@ -117,22 +117,44 @@ impl RidCatalogue {
     }
 
     pub fn validate(&self) -> Result<()> {
-        ensure!(self.schema_version == 2, "unsupported universal RID catalogue schema");
+        ensure!(
+            self.schema_version == 2,
+            "unsupported universal RID catalogue schema"
+        );
         ensure!(
             self.catalogue_id == "rocksoul.rid.universal_stats.v2",
             "unexpected universal RID catalogue identifier"
         );
-        ensure!(self.catalogue_version == "2.3.2", "unexpected universal RID catalogue version");
-        ensure!(self.total_domains == 99 && self.total_stats == 99, "catalogue totals must both equal 99");
-        ensure!(self.domains.len() == 99, "RID catalogue must contain exactly 99 domains");
-        ensure!(self.entries.len() == 99, "RID catalogue must contain exactly 99 stats");
-        ensure!(self.overlap_pairs.len() == 149, "RID catalogue must contain exactly 149 unique overlap pairs");
+        ensure!(
+            self.catalogue_version == "2.3.2",
+            "unexpected universal RID catalogue version"
+        );
+        ensure!(
+            self.total_domains == 99 && self.total_stats == 99,
+            "catalogue totals must both equal 99"
+        );
+        ensure!(
+            self.domains.len() == 99,
+            "RID catalogue must contain exactly 99 domains"
+        );
+        ensure!(
+            self.entries.len() == 99,
+            "RID catalogue must contain exactly 99 stats"
+        );
+        ensure!(
+            self.overlap_pairs.len() == 149,
+            "RID catalogue must contain exactly 149 unique overlap pairs"
+        );
         ensure!(
             self.domain_stat_relationship.relationship == "one_to_one"
                 && self.domain_stat_relationship.independent_capability_count == 99
                 && !self.domain_stat_relationship.domain_role.trim().is_empty()
                 && !self.domain_stat_relationship.stat_role.trim().is_empty()
-                && !self.domain_stat_relationship.counting_rule.trim().is_empty(),
+                && !self
+                    .domain_stat_relationship
+                    .counting_rule
+                    .trim()
+                    .is_empty(),
             "RID domain/stat relationship contract is invalid"
         );
         ensure!(
@@ -153,9 +175,18 @@ impl RidCatalogue {
         let mut directed_edge_count = 0usize;
         for (index, domain) in self.domains.iter().enumerate() {
             let slot = index as u8 + 1;
-            ensure!(domain.slot == slot, "RID domain slot order mismatch at {slot}");
-            ensure!(domain.id == format!("rid_domain:{slot:02}"), "RID domain ID mismatch at {slot}");
-            ensure!(domain.stat_id == format!("rid_stat:{slot:02}"), "RID domain stat link mismatch at {slot}");
+            ensure!(
+                domain.slot == slot,
+                "RID domain slot order mismatch at {slot}"
+            );
+            ensure!(
+                domain.id == format!("rid_domain:{slot:02}"),
+                "RID domain ID mismatch at {slot}"
+            );
+            ensure!(
+                domain.stat_id == format!("rid_stat:{slot:02}"),
+                "RID domain stat link mismatch at {slot}"
+            );
             ensure!(
                 !domain.key.trim().is_empty()
                     && !domain.label.trim().is_empty()
@@ -166,21 +197,52 @@ impl RidCatalogue {
                     && !domain.separation_rule.trim().is_empty(),
                 "RID domain construct metadata is incomplete at {slot}"
             );
-            ensure!(domain_ids.insert(domain.id.as_str()), "duplicate RID domain ID: {}", domain.id);
-            ensure!(domain_keys.insert(domain.key.to_ascii_lowercase()), "duplicate RID domain key: {}", domain.key);
-            ensure!(domain_labels.insert(domain.label.trim().to_ascii_lowercase()), "duplicate RID domain label: {}", domain.label);
-            ensure!(measurement_targets.insert(domain.measurement_target.trim().to_ascii_lowercase()), "duplicate RID measurement target at slot {slot}");
-            ensure!(separation_rules.insert(domain.separation_rule.trim().to_ascii_lowercase()), "duplicate or generic RID separation rule at slot {slot}");
-            ensure!(domain.key.chars().all(|ch| ch.is_ascii_lowercase() || ch.is_ascii_digit() || ch == '_'), "RID domain key must be lowercase snake_case at slot {slot}");
+            ensure!(
+                domain_ids.insert(domain.id.as_str()),
+                "duplicate RID domain ID: {}",
+                domain.id
+            );
+            ensure!(
+                domain_keys.insert(domain.key.to_ascii_lowercase()),
+                "duplicate RID domain key: {}",
+                domain.key
+            );
+            ensure!(
+                domain_labels.insert(domain.label.trim().to_ascii_lowercase()),
+                "duplicate RID domain label: {}",
+                domain.label
+            );
+            ensure!(
+                measurement_targets.insert(domain.measurement_target.trim().to_ascii_lowercase()),
+                "duplicate RID measurement target at slot {slot}"
+            );
+            ensure!(
+                separation_rules.insert(domain.separation_rule.trim().to_ascii_lowercase()),
+                "duplicate or generic RID separation rule at slot {slot}"
+            );
+            ensure!(
+                domain
+                    .key
+                    .chars()
+                    .all(|ch| ch.is_ascii_lowercase() || ch.is_ascii_digit() || ch == '_'),
+                "RID domain key must be lowercase snake_case at slot {slot}"
+            );
             let mut adjacent_ids = HashSet::with_capacity(domain.overlap_with.len());
-            ensure!(domain.overlap_with.windows(2).all(|pair| pair[0] < pair[1]), "RID overlap list must be sorted and unique at slot {slot}");
+            ensure!(
+                domain.overlap_with.windows(2).all(|pair| pair[0] < pair[1]),
+                "RID overlap list must be sorted and unique at slot {slot}"
+            );
             for adjacent in &domain.overlap_with {
-                ensure!(adjacent_ids.insert(adjacent.as_str()), "duplicate overlap reference {adjacent} at slot {slot}");
+                ensure!(
+                    adjacent_ids.insert(adjacent.as_str()),
+                    "duplicate overlap reference {adjacent} at slot {slot}"
+                );
                 directed_edge_count += 1;
             }
         }
 
-        let mut expected_overlap_pairs = HashSet::with_capacity(self.overlap_policy.unique_pair_count);
+        let mut expected_overlap_pairs =
+            HashSet::with_capacity(self.overlap_policy.unique_pair_count);
         for domain in &self.domains {
             for adjacent in &domain.overlap_with {
                 let (left, right) = if domain.id.as_str() < adjacent.as_str() {
@@ -197,11 +259,23 @@ impl RidCatalogue {
         let mut contrast_rules = HashSet::with_capacity(self.overlap_pairs.len());
         for (index, pair) in self.overlap_pairs.iter().enumerate() {
             let slot = index + 1;
-            ensure!(pair.id == format!("rid_overlap:{slot:03}"), "RID overlap pair ID mismatch at {slot}");
-            ensure!(pair.domain_a < pair.domain_b, "RID overlap pair endpoints must be in canonical order at {slot}");
-            let domain_a = self.domains.iter().find(|domain| domain.id == pair.domain_a)
+            ensure!(
+                pair.id == format!("rid_overlap:{slot:03}"),
+                "RID overlap pair ID mismatch at {slot}"
+            );
+            ensure!(
+                pair.domain_a < pair.domain_b,
+                "RID overlap pair endpoints must be in canonical order at {slot}"
+            );
+            let domain_a = self
+                .domains
+                .iter()
+                .find(|domain| domain.id == pair.domain_a)
                 .context("RID overlap pair references an unknown first domain")?;
-            let domain_b = self.domains.iter().find(|domain| domain.id == pair.domain_b)
+            let domain_b = self
+                .domains
+                .iter()
+                .find(|domain| domain.id == pair.domain_b)
                 .context("RID overlap pair references an unknown second domain")?;
             ensure!(
                 pair.label_a == domain_a.label
@@ -212,20 +286,31 @@ impl RidCatalogue {
             );
             ensure!(
                 !pair.contrast_rule.trim().is_empty()
-                    && pair.contrast_rule.contains(pair.measurement_target_a.as_str())
-                    && pair.contrast_rule.contains(pair.measurement_target_b.as_str())
+                    && pair
+                        .contrast_rule
+                        .contains(pair.measurement_target_a.as_str())
+                    && pair
+                        .contrast_rule
+                        .contains(pair.measurement_target_b.as_str())
                     && pair.contrast_rule.contains(pair.label_a.as_str())
                     && pair.contrast_rule.contains(pair.label_b.as_str()),
                 "RID overlap pair contrast rule is incomplete at {slot}"
             );
-            ensure!(overlap_pair_ids.insert(pair.id.as_str()), "duplicate RID overlap pair ID: {}", pair.id);
+            ensure!(
+                overlap_pair_ids.insert(pair.id.as_str()),
+                "duplicate RID overlap pair ID: {}",
+                pair.id
+            );
             ensure!(
                 actual_overlap_pairs.insert(format!("{}|{}", pair.domain_a, pair.domain_b)),
                 "duplicate RID overlap pair: {} ↔ {}",
                 pair.domain_a,
                 pair.domain_b
             );
-            ensure!(contrast_rules.insert(pair.contrast_rule.as_str()), "duplicate RID pair contrast rule at {slot}");
+            ensure!(
+                contrast_rules.insert(pair.contrast_rule.as_str()),
+                "duplicate RID pair contrast rule at {slot}"
+            );
         }
         ensure!(
             actual_overlap_pairs == expected_overlap_pairs,
@@ -235,10 +320,22 @@ impl RidCatalogue {
         for (index, entry) in self.entries.iter().enumerate() {
             let slot = index as u8 + 1;
             let domain = &self.domains[index];
-            ensure!(entry.id == slot, "RID stat slot order mismatch at {slot}");
-            ensure!(entry.stat_id == format!("rid_stat:{slot:02}"), "RID stat ID mismatch at {slot}");
-            ensure!(entry.domain_id == domain.id, "RID stat/domain link mismatch at {slot}");
-            ensure!(entry.domain == domain.key && entry.domain_label == domain.label, "RID stat domain metadata mismatch at {slot}");
+            ensure!(
+                entry.id == slot,
+                "RID stat slot order mismatch at {slot}"
+            );
+            ensure!(
+                entry.stat_id == format!("rid_stat:{slot:02}"),
+                "RID stat ID mismatch at {slot}"
+            );
+            ensure!(
+                entry.domain_id == domain.id,
+                "RID stat/domain link mismatch at {slot}"
+            );
+            ensure!(
+                entry.domain == domain.key && entry.domain_label == domain.label,
+                "RID stat domain metadata mismatch at {slot}"
+            );
             ensure!(
                 entry.measurement_target == domain.measurement_target
                     && entry.inclusion_criteria == domain.inclusion_criteria
@@ -255,23 +352,68 @@ impl RidCatalogue {
                     && entry.initial_state == "unrated",
                 "RID stat metadata or initial state is invalid at {slot}"
             );
-            ensure!(stat_ids.insert(entry.stat_id.as_str()), "duplicate RID stat ID: {}", entry.stat_id);
-            ensure!(stat_keys.insert(entry.key.to_ascii_lowercase()), "duplicate RID stat key: {}", entry.key);
-            ensure!(stat_labels.insert(entry.label.trim().to_ascii_lowercase()), "duplicate RID stat label: {}", entry.label);
-            ensure!(entry.key.chars().all(|ch| ch.is_ascii_lowercase() || ch.is_ascii_digit() || ch == '_'), "RID stat key must be lowercase snake_case at slot {slot}");
-            ensure!(entry.evaluation_protocol.contains(domain.separation_rule.as_str()), "RID evaluation protocol omits its domain-specific separation rule at slot {slot}");
+            ensure!(
+                stat_ids.insert(entry.stat_id.as_str()),
+                "duplicate RID stat ID: {}",
+                entry.stat_id
+            );
+            ensure!(
+                stat_keys.insert(entry.key.to_ascii_lowercase()),
+                "duplicate RID stat key: {}",
+                entry.key
+            );
+            ensure!(
+                stat_labels.insert(entry.label.trim().to_ascii_lowercase()),
+                "duplicate RID stat label: {}",
+                entry.label
+            );
+            ensure!(
+                entry
+                    .key
+                    .chars()
+                    .all(|ch| ch.is_ascii_lowercase() || ch.is_ascii_digit() || ch == '_'),
+                "RID stat key must be lowercase snake_case at slot {slot}"
+            );
+            ensure!(
+                entry
+                    .evaluation_protocol
+                    .contains(domain.separation_rule.as_str()),
+                "RID evaluation protocol omits its domain-specific separation rule at slot {slot}"
+            );
             for adjacent in &entry.overlap_with {
-                ensure!(domain_ids.contains(adjacent.as_str()), "unknown overlap domain {adjacent} at stat {slot}");
-                ensure!(adjacent != &entry.domain_id, "domain cannot overlap itself at stat {slot}");
-                let reverse = self.domains.iter().find(|candidate| candidate.id == *adjacent)
+                ensure!(
+                    domain_ids.contains(adjacent.as_str()),
+                    "unknown overlap domain {adjacent} at stat {slot}"
+                );
+                ensure!(
+                    adjacent != &entry.domain_id,
+                    "domain cannot overlap itself at stat {slot}"
+                );
+                let reverse = self
+                    .domains
+                    .iter()
+                    .find(|candidate| candidate.id == *adjacent)
                     .is_some_and(|candidate| candidate.overlap_with.contains(&entry.domain_id));
-                ensure!(reverse, "overlap relation must be symmetric: {} ↔ {adjacent}", entry.domain_id);
+                ensure!(
+                    reverse,
+                    "overlap relation must be symmetric: {} ↔ {adjacent}",
+                    entry.domain_id
+                );
             }
         }
 
-        ensure!(directed_edge_count == self.overlap_policy.directed_edge_count, "RID overlap directed-edge count mismatch");
-        ensure!(directed_edge_count % 2 == 0, "RID overlap graph must have reciprocal edge pairs");
-        ensure!(self.overlap_policy.unique_pair_count == directed_edge_count / 2, "RID overlap unique-pair count mismatch");
+        ensure!(
+            directed_edge_count == self.overlap_policy.directed_edge_count,
+            "RID overlap directed-edge count mismatch"
+        );
+        ensure!(
+            directed_edge_count % 2 == 0,
+            "RID overlap graph must have reciprocal edge pairs"
+        );
+        ensure!(
+            self.overlap_policy.unique_pair_count == directed_edge_count / 2,
+            "RID overlap unique-pair count mismatch"
+        );
         ensure!(
             !self.overlap_policy.principle.trim().is_empty()
                 && !self.overlap_policy.evidence_reuse.trim().is_empty()
@@ -293,7 +435,12 @@ mod tests {
         let catalogue = RidCatalogue::embedded().unwrap();
         assert_eq!(catalogue.domains.len(), 99);
         assert_eq!(catalogue.entries.len(), 99);
-        assert_eq!(catalogue.domain_stat_relationship.independent_capability_count, 99);
+        assert_eq!(
+            catalogue
+                .domain_stat_relationship
+                .independent_capability_count,
+            99
+        );
         assert_eq!(catalogue.by_slot(1).unwrap().label, "SEE");
         assert_eq!(catalogue.by_slot(42).unwrap().label, "RESUME");
         assert_eq!(catalogue.by_slot(99).unwrap().label, "RELIABILITY");
@@ -318,7 +465,12 @@ mod tests {
         for domain in &catalogue.domains {
             assert!(!domain.overlap_with.contains(&domain.id));
             for adjacent in &domain.overlap_with {
-                assert!(catalogue.domains.iter().any(|candidate| &candidate.id == adjacent));
+                assert!(
+                    catalogue
+                        .domains
+                        .iter()
+                        .any(|candidate| &candidate.id == adjacent)
+                );
             }
         }
     }
@@ -329,8 +481,22 @@ mod tests {
         assert_eq!(catalogue.overlap_policy.directed_edge_count, 298);
         assert_eq!(catalogue.overlap_policy.unique_pair_count, 149);
         assert_eq!(catalogue.overlap_pairs.len(), 149);
-        assert!(catalogue.overlap_pairs.iter().all(|pair| pair.contrast_rule.contains(pair.measurement_target_a.as_str()) && pair.contrast_rule.contains(pair.measurement_target_b.as_str())));
-        assert_eq!(catalogue.domains.iter().map(|domain| domain.separation_rule.as_str()).collect::<std::collections::HashSet<_>>().len(), 99);
+        assert!(catalogue.overlap_pairs.iter().all(|pair| {
+            pair.contrast_rule
+                .contains(pair.measurement_target_a.as_str())
+                && pair
+                    .contrast_rule
+                    .contains(pair.measurement_target_b.as_str())
+        }));
+        assert_eq!(
+            catalogue
+                .domains
+                .iter()
+                .map(|domain| domain.separation_rule.as_str())
+                .collect::<std::collections::HashSet<_>>()
+                .len(),
+            99
+        );
     }
 
     #[test]
