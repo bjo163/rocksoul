@@ -877,10 +877,7 @@ async fn run_memory(command: MemoryCommand) -> Result<()> {
                         .verification_receipt_id
                         .as_deref()
                         .unwrap_or("none"),
-                    proposal
-                        .verification_task_id
-                        .as_deref()
-                        .unwrap_or("none"),
+                    proposal.verification_task_id.as_deref().unwrap_or("none"),
                     proposal.fingerprint
                 );
                 if let Some(memory_id) = proposal.memory_record_id {
