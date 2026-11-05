@@ -123,7 +123,6 @@ fn migrate_v1_profile(path: &Path, original_bytes: &[u8], value: Value) -> Resul
                 archive_path.display()
             )
         })?;
-        File::open(&archive_path)?.sync_all()?;
     }
 
     let migrated_at_unix = SystemTime::now()
