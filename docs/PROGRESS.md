@@ -202,7 +202,7 @@ Never label an in-progress workflow as passed. Never close an issue because a br
 ## RID Universal 99 Domains & Stats — third-pass overlap reconciliation v2.3.3 (runtime migration implemented; CI pending)
 
 **Canonical taxonomy:** `data/rid/universal_stats.v2.json`  
-**Version:** `2.3.2`  
+**Version:** `2.3.3`  
 **Second-pass taxonomy commit:** `653fc83cf2f087ee81431840fa48c459ff30710f`  
 **Third-pass taxonomy commit:** `01a171d09fbea7aa8a278ecbccb8bf88277c22c8`  
 **Runtime validator commit:** `af7d4d9c831f7960ad9516214dd0d6bcdcce6ada`  
@@ -211,7 +211,7 @@ Never label an in-progress workflow as passed. Never close an issue because a br
 Delivered:
 - Exactly 99 independent first-class domains and 99 linked stat slots: **99 capability dimensions, not 198**.
 - Exactly 99 unique domain IDs, keys, labels, measurement targets, stat IDs, stat keys, stat labels, and domain-specific separation rules.
-- **322 directed overlap guards / 161 reciprocal pairs**, plus 161 canonical pairwise contrast records (`rid_overlap:001`–`rid_overlap:149`).
+- **322 directed overlap guards / 161 reciprocal pairs**, plus 161 canonical pairwise contrast records (`rid_overlap:001`–`rid_overlap:161`).
 - Second-pass review added 12 missing adjacency guards: READ/UNDERSTAND, READ/TRANSLATE, TRACK/DIALOGUE, RETAIN/ADAPT, LEARN/INTEGRATE, OPTIMIZE/ITERATE, COMPLETE/SELF_CHECK, EXPRESS/STRUCTURE, TRANSLATE/TUNE, BOUNDARY/SECURE, SECURE/RESIST, and GOAL_TRACK/HANDOFF.
 - Each pair record names both constructs, both measurement targets, and an explicit separate-outcome rule; runtime validates exact graph/registry parity.
 - Third-pass review added 12 additional adjacency guards: NOTICE/ERROR_DETECTION, TRACK/MONITOR, TRACK/GOAL_TRACK, UPDATE/SYNTHESIZE, ANALYZE/REFLECT, PRIORITIZE/ESCALATE, EXECUTE/TRANSFER, EXECUTE/MONITOR, ALIGN/VIEWPOINT_MODEL, ALIGN/INCLUDE, INVENT/REFRAME, and EXPERIMENT/REFLECT.
@@ -224,7 +224,7 @@ Delivered:
 
 Audit conclusions and remaining gates:
 - No duplicate IDs, keys, labels, primary measurement targets, or separation rules were found in the current 99-entry catalogue.
-- A lexical similarity screen found no unlisted domain pair above the review threshold; the second-pass manual review nevertheless added the 12 adjacent pairs listed above.
+- The lexical screen is a candidate-discovery aid, not proof of independence. The second-pass and third-pass semantic reviews added 24 adjacency guards after reviewing candidate pairs that were not explicit in the prior graph.
 - Correlation between capabilities is expected; the control is distinct measurement targets and non-reused outcome evidence, not a claim that capabilities are statistically independent.
 - Structural validation and editorial boundary review do **not** constitute independent psychometric validation. Trusted evaluator design, held-out benchmark quality, inter-rater reliability, and empirical discriminant validity remain pending.
 - Exact-head Linux/Windows CI must be green before claiming verified completion.
