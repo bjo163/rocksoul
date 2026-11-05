@@ -1074,6 +1074,42 @@ mod tests {
     }
 
     #[test]
+    fn model_proposal_cannot_self_assign_verified_status_or_supply_mutated_receipt() {
+        let directory = temp_dir();
+        let mut forbidden = candidate(
+            crate::memory::MemoryKind::Episodic,
+            "The task completed",
+            "turn-forbidden",
+        );
+        forbidden.claim_status = crate::memory::MemoryClaimStatus::VerifiedTaskOutcome;
+        assert!(create(&directory, forbidden, 50_000).is_err());
+
+        let receipts = directory.join("receipts");
+        let claim = "The task completed with trusted evidence";
+        issue_receipt(&receipts, "verify-mutated", claim, 50_001);
+        let path = receipts.join("fixture-receipt.json");
+        let mut document: serde_json::Value =
+            serde_json::from_slice(&fs::read(&path).unwrap()).unwrap();
+        document["evidence_hash"] = serde_json::json!("0".repeat(64));
+        fs::write(&path, serde_json::to_vec_pretty(&document).unwrap()).unwrap();
+
+        let proposal = create(&directory, task_candidate(claim, Some("verify-mutated")), 50_002).unwrap();
+        let memory_id = approve_with_receipts(
+            &directory,
+            Some(&receipts),
+            &proposal.id,
+            &proposal.approval_phrase(),
+            50_003,
+        ).unwrap();
+        let store = crate::memory::MemoryStore::load(&directory).unwrap();
+        assert_eq!(
+            store.records.iter().find(|record| record.id == memory_id).unwrap().claim_status,
+            crate::memory::MemoryClaimStatus::UnverifiedTaskOutcome
+        );
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
     fn receipt_is_one_time_and_cannot_verify_a_second_memory_claim() {
         let directory = temp_dir();
         let receipts = directory.join("receipts");
