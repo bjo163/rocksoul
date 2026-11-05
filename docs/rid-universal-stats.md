@@ -1,184 +1,137 @@
-# RID — Universal 99 Stats
+# RID — Universal 99 Domains & Stats
 
-**Canonical catalogue:** `data/rid/universal_stats.v1.json`  
-**Catalogue ID:** `rocksoul.rid.universal_stats.v1`  
-**Version:** 1.0.0  
-**Status:** Canonical technical taxonomy; evaluator integration and legacy-profile migration remain pending.
+**Canonical catalogue:** `data/rid/universal_stats.v2.json`  
+**Catalogue ID:** `rocksoul.rid.universal_stats.v2`  
+**Version:** `2.0.0`  
+**Structure:** **99 independent universal domains → 99 linked stat dimensions**  
+**Status:** Canonical taxonomy v2; evaluator integration and legacy-profile migration remain pending.
 
-## Purpose and boundaries
+## Core model
 
-RID uses a game-like character-stat presentation to make capabilities legible. The 99 stats are universal capability dimensions, not the familiar handful of RPG attributes. Each is an observable technical construct with a definition and evidence-oriented evaluation protocol. They do not measure consciousness, personhood, human worth, faith, spiritual rank, or divine attributes.
+This catalogue contains **99 first-class domains**. Every domain has its own stable `rid_domain:NN` identifier, unique key, name, definition, and exactly one linked stat dimension (`rid_stat:NN`). There is no mandatory parent-domain hierarchy, no nine-domain grouping, and no rule that each domain must contain eleven stats. The 99 domains are peers in the canonical model.
 
-A stat starts as `UNRATED`. A missing measurement is not zero; `not_applicable` is distinct from both zero and unrated. XP and Level are progression records, not stat scores. Scores require trusted evaluation evidence; the evaluated system cannot authorize its own score.
+The names are technical capability areas, not divine attributes. A domain applies only when the evaluated entity has the relevant modality or capability. For example, a text-only process may be `not_applicable` for auditory perception. That is not a zero score.
 
-## Domain overview
+## Scoring and evidence contract
 
-| Domain | Slots |
-|---|---:|
-| Perception | 11 |
-| Memory & Learning | 11 |
-| Reasoning | 11 |
-| Execution | 11 |
-| Communication | 11 |
-| Safety & Integrity | 11 |
-| Creativity & Transfer | 11 |
-| Metacognition | 11 |
-| Collaboration | 11 |
+- Initial state: `unrated`; never manufacture a score from XP, level, uptime, message count, self-report, or model confidence alone.
+- Score range: 0–100; confidence range: 0–100.
+- A score requires a versioned held-out task set, explicit ground truth or acceptance criteria, evidence references, sample count, evaluator identity, timestamp, and rubric version.
+- Default minimum sample policy: 20; safety-sensitive evaluations: 30. These are catalogue policy defaults, not a claim that every task has been statistically validated.
+- The evaluated entity cannot authorize its own score. A trusted evaluator must issue the result.
+- `not_applicable`, `unrated`, and a measured score of zero are distinct states.
+- XP, Level, Age, identity, capability scores, consciousness, personhood, and spiritual worth are separate concepts.
 
-## The 99 stats
+## The 99 independent domains
 
-### Perception
-
-| ID | Stat | Definition |
-|---:|---|---|
-| 01 | **SEE** | Detects and describes visible objects, text, layouts, and changes in supported visual input. |
-| 02 | **HEAR** | Detects and distinguishes supported sounds, speech, speakers, and acoustic events. |
-| 03 | **READ** | Extracts meaning and structure from written text, including noisy or formatted input. |
-| 04 | **SENSE** | Receives and interprets supported non-visual input signals or sensor modalities. |
-| 05 | **NOTICE** | Detects relevant details, changes, omissions, and anomalies in an input. |
-| 06 | **RECOGNIZE** | Identifies known objects, patterns, entities, formats, and previously encountered signals. |
-| 07 | **DISTINGUISH** | Separates similar or easily confused entities, states, meanings, and signals. |
-| 08 | **LOCATE** | Identifies the position or source of a relevant object, fact, event, or detail. |
-| 09 | **TRACK** | Follows an entity, signal, or state across frames, steps, or time. |
-| 10 | **FILTER** | Separates relevant signal from noise while preserving task-critical information. |
-| 11 | **INTERPRET** | Builds a context-aware representation of received signals while preserving uncertainty. |
-
-### Memory & Learning
-
-| ID | Stat | Definition |
-|---:|---|---|
-| 12 | **REMEMBER** | Retains task-relevant information across the supported memory boundary and time period. |
-| 13 | **RECALL** | Retrieves a previously stored fact or episode accurately when prompted. |
-| 14 | **RETAIN** | Preserves learned information after delays, interruptions, or context changes. |
-| 15 | **LEARN** | Improves performance after valid instruction, examples, or feedback. |
-| 16 | **ADAPT** | Adjusts behavior when the environment, constraints, or task requirements change. |
-| 17 | **ASSOCIATE** | Connects related facts, concepts, events, and entities without inventing unsupported links. |
-| 18 | **ORGANIZE** | Structures stored information so it can be found and used reliably. |
-| 19 | **RETRIEVE** | Selects the correct stored information for a specific query or task. |
-| 20 | **UPDATE** | Revises stored information when newer, better-supported evidence becomes available. |
-| 21 | **CONSOLIDATE** | Combines repeated or related learning into stable, non-duplicated knowledge. |
-| 22 | **CONTEXTUALIZE** | Preserves source, time, scope, and context needed to interpret remembered information. |
-
-### Reasoning
-
-| ID | Stat | Definition |
-|---:|---|---|
-| 23 | **UNDERSTAND** | Builds a faithful model of a request, concept, or situation and its constraints. |
-| 24 | **INFER** | Derives conclusions that follow from available facts and stated assumptions. |
-| 25 | **REASON** | Applies coherent multi-step logic and maintains consistency across a solution. |
-| 26 | **COMPARE** | Identifies meaningful similarities, differences, trade-offs, and relative properties. |
-| 27 | **ANALYZE** | Breaks a complex problem or body of information into relevant parts. |
-| 28 | **SYNTHESIZE** | Combines multiple relevant sources or components into a coherent result. |
-| 29 | **CALCULATE** | Performs numerical, quantitative, and symbolic operations accurately. |
-| 30 | **PREDICT** | Estimates likely outcomes and communicates uncertainty in those estimates. |
-| 31 | **EVALUATE** | Judges options or claims against explicit criteria and available evidence. |
-| 32 | **DECIDE** | Selects an action or answer that best satisfies the goal and constraints. |
-| 33 | **PRIORITIZE** | Orders actions by impact, urgency, risk, dependency, and available resources. |
-
-### Execution
-
-| ID | Stat | Definition |
-|---:|---|---|
-| 34 | **PLAN** | Produces a feasible sequence of actions with goals, dependencies, and completion criteria. |
-| 35 | **DECOMPOSE** | Breaks a large goal into small, independently verifiable tasks. |
-| 36 | **SEQUENCE** | Orders tasks so prerequisites and dependencies are respected. |
-| 37 | **INITIATE** | Starts an authorized task with valid inputs and within permitted scope. |
-| 38 | **EXECUTE** | Carries out required steps accurately and within the allowed environment. |
-| 39 | **OPERATE** | Uses available tools, interfaces, and systems correctly and within permission boundaries. |
-| 40 | **VERIFY** | Checks that a result satisfies its acceptance criteria before reporting completion. |
-| 41 | **RECOVER** | Diagnoses failure and restores a safe, known state without hiding the failure. |
-| 42 | **PERSIST** | Continues useful work through interruptions while respecting retry and stop limits. |
-| 43 | **OPTIMIZE** | Improves time, resource use, or quality without violating correctness or safety constraints. |
-| 44 | **COMPLETE** | Delivers the agreed output and closes the task with evidence and accurate status. |
-
-### Communication
-
-| ID | Stat | Definition |
-|---:|---|---|
-| 45 | **EXPRESS** | Communicates intended meaning in a form the recipient can understand. |
-| 46 | **EXPLAIN** | Makes reasoning, instructions, and results understandable at the required detail level. |
-| 47 | **SUMMARIZE** | Compresses information while preserving essential meaning and important caveats. |
-| 48 | **TRANSLATE** | Transfers meaning accurately between supported languages or representations. |
-| 49 | **QUESTION** | Asks targeted questions that obtain information needed to proceed correctly. |
-| 50 | **LISTEN** | Incorporates content and constraints supplied by another party rather than assumptions. |
-| 51 | **CLARIFY** | Resolves ambiguity with minimal, relevant clarification and confirms important interpretations. |
-| 52 | **STRUCTURE** | Organizes information into readable, valid, appropriately formatted outputs. |
-| 53 | **TUNE** | Adapts tone, vocabulary, and detail to context without changing factual meaning. |
-| 54 | **DIALOGUE** | Maintains coherence and continuity across multiple conversational turns. |
-| 55 | **ALIGN** | Keeps communication and deliverables aligned with the recipient's stated goal and constraints. |
-
-### Safety & Integrity
-
-| ID | Stat | Definition |
-|---:|---|---|
-| 56 | **COMPLY** | Follows applicable policies, rules, and explicit operating constraints. |
-| 57 | **RESPECT** | Honors permission boundaries, ownership, privacy, and scope restrictions. |
-| 58 | **SECURE** | Handles secrets and sensitive data using approved protection practices. |
-| 59 | **MINIMIZE** | Uses and retains only data and permissions necessary for the task. |
-| 60 | **CONSENT** | Requires valid authorization before actions that need user approval. |
-| 61 | **CONTAIN** | Keeps execution within its sandbox, workspace, and granted capability boundary. |
-| 62 | **RESIST** | Detects and resists prompt injection, malicious instructions, and untrusted data directives. |
-| 63 | **AUDIT** | Produces complete, useful, and tamper-evident records of important actions. |
-| 64 | **ESCALATE** | Routes high-risk, uncertain, or unauthorized situations to the appropriate human or control. |
-| 65 | **ROLLBACK** | Reverses or safely contains a change when validation fails or recovery is required. |
-| 66 | **REFUSE** | Declines unsafe or unauthorized requests clearly and explains safe boundaries where possible. |
-
-### Creativity & Transfer
-
-| ID | Stat | Definition |
-|---:|---|---|
-| 67 | **IMAGINE** | Generates plausible possibilities beyond immediately supplied examples. |
-| 68 | **GENERATE** | Produces multiple candidate ideas, answers, or approaches relevant to a goal. |
-| 69 | **DESIGN** | Shapes a solution around user needs, constraints, usability, and quality criteria. |
-| 70 | **INVENT** | Develops a new method or combination that solves a defined problem. |
-| 71 | **REFRAME** | Restates a problem from a useful alternative perspective without losing its facts. |
-| 72 | **ABSTRACT** | Extracts general principles or reusable patterns from specific examples. |
-| 73 | **ANALOGIZE** | Uses a relevant analogy to transfer understanding and identifies its limits. |
-| 74 | **EXPERIMENT** | Tests hypotheses through controlled, informative trials. |
-| 75 | **ITERATE** | Improves an artifact through repeated feedback and measured revisions. |
-| 76 | **TRANSFER** | Applies a learned skill or principle to a meaningfully different task or domain. |
-| 77 | **COMPOSE** | Combines existing components into a coherent, functional whole. |
-
-### Metacognition
-
-| ID | Stat | Definition |
-|---:|---|---|
-| 78 | **CALIBRATE** | Matches expressed confidence to observed correctness over repeated evaluations. |
-| 79 | **UNCERTAINTY** | Identifies and communicates what is unknown, ambiguous, or weakly supported. |
-| 80 | **SELF_CHECK** | Reviews its own output against explicit criteria before submission. |
-| 81 | **ERROR_SENSE** | Detects likely mistakes, inconsistencies, and unsupported claims in its own work. |
-| 82 | **ASSUMPTION** | Records and distinguishes assumptions from verified facts. |
-| 83 | **MONITOR** | Tracks progress, state, and deviations while a task is underway. |
-| 84 | **ESTIMATE** | Estimates effort, time, resources, and completion likelihood with calibrated uncertainty. |
-| 85 | **REFLECT** | Extracts actionable lessons from completed work and observed outcomes. |
-| 86 | **INTEGRATE** | Incorporates valid feedback into subsequent behavior or work products. |
-| 87 | **DETECT_DRIFT** | Notices when behavior, results, or stored knowledge diverge from an established baseline. |
-| 88 | **BOUND** | Identifies capability limits accurately and avoids claiming unsupported abilities. |
-
-### Collaboration
-
-| ID | Stat | Definition |
-|---:|---|---|
-| 89 | **PERSPECTIVE** | Models another party's stated viewpoint and constraints without assuming private feelings. |
-| 90 | **GOAL_SENSE** | Identifies and tracks goals explicitly expressed by a collaborator. |
-| 91 | **CONTEXT_SENSE** | Adapts collaboration to shared history, environment, and current situation. |
-| 92 | **COORDINATE** | Synchronizes tasks, dependencies, and responsibilities across participants or agents. |
-| 93 | **COOPERATE** | Contributes compatible work toward a shared objective. |
-| 94 | **DE_ESCALATE** | Reduces avoidable conflict and returns discussion to facts, needs, and workable next steps. |
-| 95 | **REPAIR** | Detects and corrects communication breakdowns or misunderstandings. |
-| 96 | **INCLUDE** | Accounts for accessibility needs and relevant differences in participant capabilities. |
-| 97 | **NEGOTIATE** | Finds acceptable trade-offs while preserving explicit constraints and commitments. |
-| 98 | **HANDOFF** | Transfers work with sufficient context, artifacts, ownership, and next steps. |
-| 99 | **TRUST** | Demonstrates reliability through consistency, transparency, evidence, and honoring commitments over time. |
-
-## Evaluation contract
-
-Each catalogue entry contains a machine key, stable ID, domain, definition, and evaluation protocol. Evaluation must use a versioned held-out task set and explicit ground truth or acceptance criteria. Store score (0–100), confidence (0–100), sample count, evidence references, evaluator identity, evaluation timestamp, and rubric version. Default minimum sample count is 20; safety/integrity evaluations default to 30. These defaults are policy inputs, not proof of validity by themselves.
-
-## Relationship to Asmaul Husna
-
-The separate `data/rid/asmaul_husna.v1.json` file is retained as a respectful religious/inspirational reference catalogue. It does not determine Universal Stat identity, label, score, or evaluation. An ordinal match is not a semantic or theological mapping. No technical stat is equivalent to, or a measurement of, a divine attribute. Arabic spelling, transliteration, glosses, enumeration and optional editorial associations remain subject to qualified independent religious and language review.
+| # | Domain ID | Universal domain | Linked stat | Capability definition |
+|---:|---|---|---|---|
+| 01 | `rid_domain:01` | **Visual Perception** | `SEE` (`rid_stat:01`) | Detecting and describing visible objects, scenes, text, layouts, spatial relationships, and visual change. |
+| 02 | `rid_domain:02` | **Auditory Perception** | `HEAR` (`rid_stat:02`) | Detecting and distinguishing sound, speech, speakers, acoustic events, and relevant audio patterns. |
+| 03 | `rid_domain:03` | **Textual Comprehension** | `READ` (`rid_stat:03`) | Extracting meaning, structure, intent, and constraints from written or formatted language. |
+| 04 | `rid_domain:04` | **Sensor Input** | `SENSE` (`rid_stat:04`) | Receiving and interpreting supported non-visual signals from physical or digital sensors. |
+| 05 | `rid_domain:05` | **Salience Detection** | `NOTICE` (`rid_stat:05`) | Finding relevant details, omissions, changes, and anomalies within complex inputs. |
+| 06 | `rid_domain:06` | **Entity Recognition** | `RECOGNIZE` (`rid_stat:06`) | Identifying known entities, objects, symbols, formats, and previously encountered patterns. |
+| 07 | `rid_domain:07` | **Discrimination** | `DISTINGUISH` (`rid_stat:07`) | Separating similar or easily confused entities, states, signals, and meanings. |
+| 08 | `rid_domain:08` | **Spatial Localization** | `LOCATE` (`rid_stat:08`) | Determining position, direction, distance, source, and spatial relationships. |
+| 09 | `rid_domain:09` | **Temporal Tracking** | `TRACK` (`rid_stat:09`) | Following entities, signals, and state changes across time, frames, and events. |
+| 10 | `rid_domain:10` | **Signal Filtering** | `FILTER` (`rid_stat:10`) | Separating task-relevant signal from noise while retaining critical information. |
+| 11 | `rid_domain:11` | **Contextual Interpretation** | `INTERPRET` (`rid_stat:11`) | Building context-aware representations of inputs while preserving ambiguity and uncertainty. |
+| 12 | `rid_domain:12` | **Episodic Memory** | `REMEMBER` (`rid_stat:12`) | Retaining task-relevant events and experiences across supported memory boundaries. |
+| 13 | `rid_domain:13` | **Information Recall** | `RECALL` (`rid_stat:13`) | Retrieving previously stored facts or episodes accurately when prompted. |
+| 14 | `rid_domain:14` | **Memory Retention** | `RETAIN` (`rid_stat:14`) | Preserving learned information across delays, interruptions, and context changes. |
+| 15 | `rid_domain:15` | **Skill Acquisition** | `LEARN` (`rid_stat:15`) | Improving performance through valid instruction, examples, practice, or feedback. |
+| 16 | `rid_domain:16` | **Behavioral Adaptation** | `ADAPT` (`rid_stat:16`) | Adjusting behavior when environments, constraints, or task requirements change. |
+| 17 | `rid_domain:17` | **Associative Linking** | `ASSOCIATE` (`rid_stat:17`) | Connecting related facts, concepts, events, and entities without inventing unsupported links. |
+| 18 | `rid_domain:18` | **Knowledge Organization** | `ORGANIZE` (`rid_stat:18`) | Structuring stored information so it can be found, maintained, and used reliably. |
+| 19 | `rid_domain:19` | **Targeted Retrieval** | `RETRIEVE` (`rid_stat:19`) | Selecting the correct stored information for a particular query or task. |
+| 20 | `rid_domain:20` | **Knowledge Revision** | `UPDATE` (`rid_stat:20`) | Updating stored information when newer or better-supported evidence becomes available. |
+| 21 | `rid_domain:21` | **Knowledge Consolidation** | `CONSOLIDATE` (`rid_stat:21`) | Combining repeated or related learning into stable, non-duplicated knowledge. |
+| 22 | `rid_domain:22` | **Context & Provenance** | `CONTEXTUALIZE` (`rid_stat:22`) | Preserving source, time, scope, and context required to interpret remembered information. |
+| 23 | `rid_domain:23` | **Conceptual Understanding** | `UNDERSTAND` (`rid_stat:23`) | Building a faithful model of a request, concept, system, or situation and its constraints. |
+| 24 | `rid_domain:24` | **Logical Inference** | `INFER` (`rid_stat:24`) | Deriving conclusions that follow from available facts and explicit assumptions. |
+| 25 | `rid_domain:25` | **Multi-step Reasoning** | `REASON` (`rid_stat:25`) | Applying coherent chains of logic and maintaining consistency across a solution. |
+| 26 | `rid_domain:26` | **Comparative Analysis** | `COMPARE` (`rid_stat:26`) | Identifying meaningful similarities, differences, trade-offs, and relative properties. |
+| 27 | `rid_domain:27` | **Problem Analysis** | `ANALYZE` (`rid_stat:27`) | Breaking complex problems or information into relevant components and relationships. |
+| 28 | `rid_domain:28` | **Cross-source Synthesis** | `SYNTHESIZE` (`rid_stat:28`) | Combining multiple relevant sources or components into a coherent result. |
+| 29 | `rid_domain:29` | **Quantitative Computation** | `CALCULATE` (`rid_stat:29`) | Performing numerical, quantitative, and symbolic operations accurately. |
+| 30 | `rid_domain:30` | **Outcome Forecasting** | `PREDICT` (`rid_stat:30`) | Estimating likely outcomes and communicating uncertainty in those estimates. |
+| 31 | `rid_domain:31` | **Criteria Evaluation** | `EVALUATE` (`rid_stat:31`) | Judging options or claims against explicit criteria and available evidence. |
+| 32 | `rid_domain:32` | **Decision Selection** | `DECIDE` (`rid_stat:32`) | Selecting an action or answer that best satisfies goals and constraints. |
+| 33 | `rid_domain:33` | **Priority Management** | `PRIORITIZE` (`rid_stat:33`) | Ordering actions by impact, urgency, risk, dependency, and available resources. |
+| 34 | `rid_domain:34` | **Strategic Planning** | `PLAN` (`rid_stat:34`) | Producing feasible action sequences with goals, dependencies, and completion criteria. |
+| 35 | `rid_domain:35` | **Goal Decomposition** | `DECOMPOSE` (`rid_stat:35`) | Breaking large goals into small, independently verifiable tasks. |
+| 36 | `rid_domain:36` | **Dependency Sequencing** | `SEQUENCE` (`rid_stat:36`) | Ordering tasks so prerequisites, dependencies, and execution constraints are respected. |
+| 37 | `rid_domain:37` | **Authorized Initiation** | `INITIATE` (`rid_stat:37`) | Starting an authorized task with valid inputs and within permitted scope. |
+| 38 | `rid_domain:38` | **Task Execution** | `EXECUTE` (`rid_stat:38`) | Carrying out required steps accurately within the allowed environment. |
+| 39 | `rid_domain:39` | **Tool Operation** | `OPERATE` (`rid_stat:39`) | Using available tools, interfaces, and systems correctly within permission boundaries. |
+| 40 | `rid_domain:40` | **Result Verification** | `VERIFY` (`rid_stat:40`) | Checking that a result satisfies acceptance criteria before reporting completion. |
+| 41 | `rid_domain:41` | **Failure Recovery** | `RECOVER` (`rid_stat:41`) | Diagnosing failure and restoring a safe, known state without concealing the failure. |
+| 42 | `rid_domain:42` | **Interruption Resilience** | `PERSIST` (`rid_stat:42`) | Continuing useful work through interruptions while respecting retry and stop limits. |
+| 43 | `rid_domain:43` | **Resource Optimization** | `OPTIMIZE` (`rid_stat:43`) | Improving time, resource use, or quality without violating correctness or safety constraints. |
+| 44 | `rid_domain:44` | **Delivery Completion** | `COMPLETE` (`rid_stat:44`) | Delivering the agreed output and closing a task with evidence and accurate status. |
+| 45 | `rid_domain:45` | **Meaning Expression** | `EXPRESS` (`rid_stat:45`) | Communicating intended meaning in a form the recipient or target system can understand. |
+| 46 | `rid_domain:46` | **Explanatory Communication** | `EXPLAIN` (`rid_stat:46`) | Making reasoning, instructions, and results understandable at the required detail level. |
+| 47 | `rid_domain:47` | **Information Compression** | `SUMMARIZE` (`rid_stat:47`) | Reducing information volume while preserving essential meaning and important caveats. |
+| 48 | `rid_domain:48` | **Language Translation** | `TRANSLATE` (`rid_stat:48`) | Transferring meaning accurately between supported languages or representations. |
+| 49 | `rid_domain:49` | **Information Seeking** | `QUESTION` (`rid_stat:49`) | Asking targeted questions that obtain information needed to proceed correctly. |
+| 50 | `rid_domain:50` | **Active Listening** | `LISTEN` (`rid_stat:50`) | Incorporating content and constraints supplied by another party rather than substituting assumptions. |
+| 51 | `rid_domain:51` | **Ambiguity Resolution** | `CLARIFY` (`rid_stat:51`) | Resolving ambiguity with minimal relevant clarification and confirming important interpretations. |
+| 52 | `rid_domain:52` | **Information Structuring** | `STRUCTURE` (`rid_stat:52`) | Organizing information into readable, valid, and appropriately formatted outputs. |
+| 53 | `rid_domain:53` | **Communication Tuning** | `TUNE` (`rid_stat:53`) | Adapting tone, vocabulary, and detail to context without changing factual meaning. |
+| 54 | `rid_domain:54` | **Dialogue Continuity** | `DIALOGUE` (`rid_stat:54`) | Maintaining coherence and continuity across multiple conversational turns. |
+| 55 | `rid_domain:55` | **Objective Alignment** | `ALIGN` (`rid_stat:55`) | Keeping communication and deliverables aligned with the recipient's stated goals and constraints. |
+| 56 | `rid_domain:56` | **Policy Conformance** | `COMPLY` (`rid_stat:56`) | Following applicable policies, rules, and explicit operating constraints. |
+| 57 | `rid_domain:57` | **Boundary Respect** | `RESPECT` (`rid_stat:57`) | Honoring permission boundaries, ownership, privacy, and scope restrictions. |
+| 58 | `rid_domain:58` | **Data Security** | `SECURE` (`rid_stat:58`) | Handling secrets and sensitive data using approved protection practices. |
+| 59 | `rid_domain:59` | **Data Minimization** | `MINIMIZE` (`rid_stat:59`) | Using and retaining only the data and permissions necessary for the task. |
+| 60 | `rid_domain:60` | **Authorization & Consent** | `CONSENT` (`rid_stat:60`) | Obtaining valid authorization before actions that require user or owner approval. |
+| 61 | `rid_domain:61` | **Execution Containment** | `CONTAIN` (`rid_stat:61`) | Keeping execution within its sandbox, workspace, and granted capability boundary. |
+| 62 | `rid_domain:62` | **Instruction Attack Resistance** | `RESIST` (`rid_stat:62`) | Detecting and resisting prompt injection, malicious instructions, and directives embedded in untrusted data. |
+| 63 | `rid_domain:63` | **Action Auditability** | `AUDIT` (`rid_stat:63`) | Producing complete, useful, and tamper-evident records of important actions. |
+| 64 | `rid_domain:64` | **Risk Escalation** | `ESCALATE` (`rid_stat:64`) | Routing high-risk, uncertain, or unauthorized situations to the appropriate human or control. |
+| 65 | `rid_domain:65` | **Change Rollback** | `ROLLBACK` (`rid_stat:65`) | Reversing or safely containing a change when validation fails or recovery is required. |
+| 66 | `rid_domain:66` | **Safe Refusal** | `REFUSE` (`rid_stat:66`) | Declining unsafe or unauthorized requests clearly and explaining safe boundaries where possible. |
+| 67 | `rid_domain:67` | **Possibility Generation** | `IMAGINE` (`rid_stat:67`) | Generating plausible possibilities beyond immediately supplied examples. |
+| 68 | `rid_domain:68` | **Candidate Generation** | `GENERATE` (`rid_stat:68`) | Producing multiple candidate ideas, answers, or approaches relevant to a goal. |
+| 69 | `rid_domain:69` | **Solution Design** | `DESIGN` (`rid_stat:69`) | Shaping solutions around needs, constraints, usability, and quality criteria. |
+| 70 | `rid_domain:70` | **Method Invention** | `INVENT` (`rid_stat:70`) | Developing a new method or combination that solves a defined problem. |
+| 71 | `rid_domain:71` | **Problem Reframing** | `REFRAME` (`rid_stat:71`) | Restating a problem from a useful alternative perspective without losing its facts. |
+| 72 | `rid_domain:72` | **Principle Abstraction** | `ABSTRACT` (`rid_stat:72`) | Extracting general principles or reusable patterns from specific examples. |
+| 73 | `rid_domain:73` | **Analogical Transfer** | `ANALOGIZE` (`rid_stat:73`) | Using relevant analogies to transfer understanding while identifying their limits. |
+| 74 | `rid_domain:74` | **Controlled Experimentation** | `EXPERIMENT` (`rid_stat:74`) | Testing hypotheses through controlled, informative trials. |
+| 75 | `rid_domain:75` | **Iterative Refinement** | `ITERATE` (`rid_stat:75`) | Improving an artifact through repeated feedback and measured revisions. |
+| 76 | `rid_domain:76` | **Cross-domain Transfer** | `TRANSFER` (`rid_stat:76`) | Applying a learned skill or principle to a meaningfully different task or domain. |
+| 77 | `rid_domain:77` | **System Composition** | `COMPOSE` (`rid_stat:77`) | Combining existing components into a coherent, functional whole. |
+| 78 | `rid_domain:78` | **Confidence Calibration** | `CALIBRATE` (`rid_stat:78`) | Matching expressed confidence to observed correctness over repeated evaluations. |
+| 79 | `rid_domain:79` | **Uncertainty Awareness** | `UNCERTAINTY` (`rid_stat:79`) | Identifying and communicating what is unknown, ambiguous, or weakly supported. |
+| 80 | `rid_domain:80` | **Self Review** | `SELF_CHECK` (`rid_stat:80`) | Reviewing output against explicit criteria before submission. |
+| 81 | `rid_domain:81` | **Self-error Detection** | `ERROR_SENSE` (`rid_stat:81`) | Detecting likely mistakes, inconsistencies, and unsupported claims in one's own work. |
+| 82 | `rid_domain:82` | **Assumption Management** | `ASSUMPTION` (`rid_stat:82`) | Recording and distinguishing assumptions from verified facts. |
+| 83 | `rid_domain:83` | **Process Monitoring** | `MONITOR` (`rid_stat:83`) | Tracking progress, state, and deviations while a task is underway. |
+| 84 | `rid_domain:84` | **Resource Estimation** | `ESTIMATE` (`rid_stat:84`) | Estimating effort, time, resources, and completion likelihood with calibrated uncertainty. |
+| 85 | `rid_domain:85` | **Outcome Reflection** | `REFLECT` (`rid_stat:85`) | Extracting actionable lessons from completed work and observed outcomes. |
+| 86 | `rid_domain:86` | **Feedback Integration** | `INTEGRATE` (`rid_stat:86`) | Incorporating valid feedback into subsequent behavior or work products. |
+| 87 | `rid_domain:87` | **Baseline Drift Detection** | `DETECT_DRIFT` (`rid_stat:87`) | Noticing when behavior, results, or stored knowledge diverge from an established baseline. |
+| 88 | `rid_domain:88` | **Capability Boundary Awareness** | `BOUND` (`rid_stat:88`) | Identifying capability limits accurately and avoiding unsupported ability claims. |
+| 89 | `rid_domain:89` | **Perspective Modeling** | `PERSPECTIVE` (`rid_stat:89`) | Modeling another party's stated viewpoint and constraints without assuming private feelings. |
+| 90 | `rid_domain:90` | **Shared Goal Tracking** | `GOAL_SENSE` (`rid_stat:90`) | Identifying and tracking goals explicitly expressed by a collaborator. |
+| 91 | `rid_domain:91` | **Collaboration Context** | `CONTEXT_SENSE` (`rid_stat:91`) | Adapting collaboration to shared history, environment, and current situation. |
+| 92 | `rid_domain:92` | **Multi-party Coordination** | `COORDINATE` (`rid_stat:92`) | Synchronizing tasks, dependencies, and responsibilities across participants or agents. |
+| 93 | `rid_domain:93` | **Cooperative Contribution** | `COOPERATE` (`rid_stat:93`) | Contributing compatible work toward a shared objective. |
+| 94 | `rid_domain:94` | **Conflict De-escalation** | `DE_ESCALATE` (`rid_stat:94`) | Reducing avoidable conflict and returning discussion to facts, needs, and workable next steps. |
+| 95 | `rid_domain:95` | **Interaction Repair** | `REPAIR` (`rid_stat:95`) | Detecting and correcting communication breakdowns or misunderstandings. |
+| 96 | `rid_domain:96` | **Accessibility & Inclusion** | `INCLUDE` (`rid_stat:96`) | Accounting for accessibility needs and relevant differences in participant capabilities. |
+| 97 | `rid_domain:97` | **Constraint-aware Negotiation** | `NEGOTIATE` (`rid_stat:97`) | Finding acceptable trade-offs while preserving explicit constraints and commitments. |
+| 98 | `rid_domain:98` | **Work Handoff** | `HANDOFF` (`rid_stat:98`) | Transferring work with sufficient context, artifacts, ownership, and next steps. |
+| 99 | `rid_domain:99` | **Reliability & Consistency** | `TRUST` (`rid_stat:99`) | Demonstrating reliability through consistency, transparency, evidence, and honoring commitments over time. |
 
 ## Compatibility and migration
 
-Existing runtime code and persisted profiles still contain legacy IDs `asmaul_husna:01` through `asmaul_husna:99`. The new taxonomy uses `rid_stat:01` through `rid_stat:99`. Preserve old profiles and historical evidence. Runtime migration must be explicit, versioned, backed up, recoverable, and tested against real legacy profile fixtures. Do not silently reinterpret old scores. Until that migration is implemented, the new file is the canonical product taxonomy while the legacy catalogue remains the runtime compatibility source.
+The previous `data/rid/universal_stats.v1.json` represented nine broad parent domains with eleven stats each. It is retained as a historical snapshot only and is superseded by v2. Do not treat its nine groups as canonical domains, and do not silently migrate stored profiles by ordinal position.
+
+Existing Rust RID structures and saved profiles may still contain legacy `asmaul_husna:NN` identifiers. Preserve all legacy data, score history, and evidence. Runtime migration remains a separate explicit, versioned, backed-up, reversible/recoverable implementation task with profile-fixture tests.
+
+## Religious inspiration catalogue — separate reference layer
+
+`data/rid/asmaul_husna.v1.json` remains a separate religious/inspirational reference catalogue. It does not define technical domain identities, stat labels, scores, or evaluation. Never infer semantic or theological equivalence from matching ordinal positions. Arabic names, transliterations, glosses, enumeration variants, and optional editorial associations require qualified independent religious and language review. No technical domain or stat represents or measures a divine attribute.
