@@ -33,7 +33,7 @@ impl AppPaths {
         Ok(Self::from_root(root_dir))
     }
 
-    fn from_root(root_dir: PathBuf) -> Self {
+    pub(crate) fn from_root(root_dir: PathBuf) -> Self {
         let config_dir = root_dir.join("config");
         let data_dir = root_dir.join("data");
 
