@@ -22,7 +22,7 @@ The domain model and persistence layer are local-first. HTTP API exposure will b
 
 ## 99 Universal Stats
 
-The canonical technical taxonomy is `data/rid/universal_stats.v2.json` (catalogue ID `rocksoul.rid.universal_stats.v2`, version `2.3.0`). It defines **99 independent first-class universal capability domains**, each with a unique `rid_domain:NN` ID, a unique key and definition, and exactly one linked stat dimension with a stable `rid_stat:NN` ID. There is no mandatory nine-domain parent hierarchy and no fixed 11-stats-per-category grouping.
+The canonical technical taxonomy is `data/rid/universal_stats.v2.json` (catalogue ID `rocksoul.rid.universal_stats.v2`, version `2.3.1`). It defines **99 independent first-class universal capability domains** (99 capabilities, not 198 domain/stat dimensions), each with a unique `rid_domain:NN` ID, a unique key and definition, and exactly one linked stat dimension with a stable `rid_stat:NN` ID. There is no mandatory nine-domain parent hierarchy and no fixed 11-stats-per-category grouping.
 
 The complete human-readable catalogue, inclusion/exclusion criteria, and overlap guards are documented in [RID — Universal 99 Domains & Stats](rid-universal-stats.md). The former `data/rid/universal_stats.v1.json` (nine broad groups × eleven stats) is retained only as a historical snapshot and is superseded by v2.
 
@@ -39,7 +39,7 @@ The selected legacy sequence is the popular enumeration reproduced in Jami at-Ti
 
 ### Compatibility and migration
 
-The Rust runtime now embeds the universal v2.3.0 catalogue and new profile schema v2 uses stable `rid_stat:01` through `rid_stat:99` identifiers. When a schema-v1 profile is loaded, migration preserves the exact original profile bytes in `profile.json.v1.bak`, stores all 99 legacy stat records in an immutable archive inside the migrated profile, preserves instance identity and XP, and initializes all 99 universal stats as `unrated`. Historical scores are never mapped by ordinal position because the constructs changed. The separate Asmaul Husna file remains a religious/inspirational reference only. Migration code and fixture coverage are now on main; CI verification is pending.
+The Rust runtime now embeds the universal v2.3.1 catalogue and new profile schema v2 uses stable `rid_stat:01` through `rid_stat:99` identifiers. When a schema-v1 profile is loaded, migration preserves the exact original profile bytes in `profile.json.v1.bak`, stores all 99 legacy stat records in an immutable archive inside the migrated profile, preserves instance identity and XP, and initializes all 99 universal stats as `unrated`. Historical scores are never mapped by ordinal position because the constructs changed. The separate Asmaul Husna file remains a religious/inspirational reference only. Migration code and fixture coverage are now on main; CI verification is pending.
 
 ## XP integrity
 
