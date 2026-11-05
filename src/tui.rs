@@ -96,6 +96,7 @@ struct Snapshot {
     rid_error: Option<String>,
     catalogue: Option<RidCatalogue>,
     evaluation: std::result::Result<Option<crate::eval::EvaluationReport>, String>,
+    memory_evaluation: std::result::Result<Option<crate::eval::MemoryRetrievalEvaluationReport>, String>,
 }
 
 impl Snapshot {
@@ -117,6 +118,8 @@ impl Snapshot {
             catalogue: RidCatalogue::embedded().ok(),
             evaluation: crate::eval::latest()
                 .map_err(|_| "evaluation report is unreadable".to_owned()),
+            memory_evaluation: crate::eval::latest_memory_retrieval()
+                .map_err(|_| "memory retrieval report is unreadable".to_owned()),
         })
     }
 
@@ -616,6 +619,14 @@ fn render_tasks(frame: &mut Frame<'_>, area: Rect, app: &mut App) {
     );
 }
 
+fn report_state<T>(report: &std::result::Result<Option<T>, String>) -> &'static str {
+    match report {
+        Ok(Some(_)) => "available",
+        Ok(None) => "not run",
+        Err(_) => "corrupt / unavailable",
+    }
+}
+
 fn safe_trace_text(value: Option<&serde_json::Value>, limit: usize) -> String {
     let Some(value) = value.and_then(serde_json::Value::as_str) else {
         return "n/a".to_owned();
@@ -1010,6 +1021,31 @@ fn render_diagnostics(frame: &mut Frame<'_>, area: Rect, app: &App) {
             Ok(None) => "Evaluation report: not run".to_owned(),
             Err(_) => "Evaluation report: corrupt or unavailable".to_owned(),
         }),
+        Line::from(format!(
+            "Memory eval   {}",
+            match &app.snapshot.memory_evaluation {
+                Ok(Some(report)) => format!(
+                    "{} · {} v{} · P@{} {:.3} · R@{} {:.3}",
+                    if report.passed { "PASS" } else { "FAIL" },
+                    report.suite_id,
+                    report.suite_version,
+                    report.top_k,
+                    report.precision_at_k,
+                    report.top_k,
+                    report.recall_at_k
+                ),
+                Ok(None) => "not run".to_owned(),
+                Err(_) => "corrupt / unavailable".to_owned(),
+            }
+        )),
+        Line::from(match &app.snapshot.memory_evaluation {
+            Ok(Some(report)) => format!(
+                "Retrieval leakage: stale={} expired={} deleted={}",
+                report.stale_results_at_k, report.expired_leakage, report.deletion_leakage
+            ),
+            Ok(None) => "Memory retrieval report: not run".to_owned(),
+            Err(_) => "Memory retrieval report: corrupt or unavailable".to_owned(),
+        }),
         Line::from("No synthetic latency, token, GPU, RAM or activity telemetry is shown."),
     ];
     frame.render_widget(
@@ -1249,6 +1285,19 @@ fn now_unix() -> u64 {
 #[cfg(test)]
 mod tests {
     use super::{App, Screen, Snapshot};
+
+    #[test]
+    fn report_state_distinguishes_missing_from_unreadable_without_leaking_errors() {
+        assert_eq!(super::report_state(&Ok::<Option<u8>, String>(None)), "not run");
+        assert_eq!(
+            super::report_state(&Err::<Option<u8>, _>("C:/private/path/secret.json".to_owned())),
+            "corrupt / unavailable"
+        );
+        assert_eq!(
+            super::report_state(&Ok::<Option<u8>, String>(Some(1))),
+            "available"
+        );
+    }
 
     #[test]
     fn memory_detail_uses_shared_sensitive_content_guard() {
