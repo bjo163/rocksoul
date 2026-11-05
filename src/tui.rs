@@ -603,6 +603,13 @@ fn render_memory(frame: &mut Frame<'_>, area: Rect, app: &App) {
                     clip_text(&record.source, 26),
                     if record.user_approved { "approved" } else { "unapproved" }
                 )));
+                lines.push(Line::from(format!(
+                    "  created={} · expires={}",
+                    record.created_at_unix,
+                    record.expires_at_unix
+                        .map(|timestamp| timestamp.to_string())
+                        .unwrap_or_else(|| "never".to_owned())
+                )));
             }
             if records.len() > MAX_RECORDS {
                 lines.push(Line::from(format!("Showing newest {MAX_RECORDS} of {} active records.", records.len())));
@@ -626,6 +633,17 @@ fn render_memory(frame: &mut Frame<'_>, area: Rect, app: &App) {
                     record.claim_status,
                     clip_text(&record.source, 26),
                     record.verification_receipt_id.as_deref().map(|_| "receipt").unwrap_or("no receipt")
+                )));
+                let expires = store
+                    .records
+                    .iter()
+                    .find(|stored| stored.id == record.record_id)
+                    .and_then(|stored| stored.expires_at_unix)
+                    .map(|timestamp| timestamp.to_string())
+                    .unwrap_or_else(|| "never / n/a".to_owned());
+                lines.push(Line::from(format!(
+                    "  created={} · expires={expires}",
+                    record.created_at_unix
                 )));
             }
             lines.push(Line::from("Search inspects local record content; content itself remains hidden."));
