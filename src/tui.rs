@@ -593,7 +593,9 @@ fn render_memory(frame: &mut Frame<'_>, area: Rect, app: &App) {
             Line::from(format!(
                 "Search               {}{}",
                 if app.memory_search_active { ">" } else { "" },
-                if app.memory_query.is_empty() { "press / to search" } else { &app.memory_query }
+                if app.memory_query.is_empty()
+            || app.memory_query.split_whitespace().all(|token| token.starts_with("source:"))
+        { "press / to search" } else { &app.memory_query }
             )),
             Line::from(format!(
                 "Filters              kind={:?} · claim={:?} · source:<exact>",
