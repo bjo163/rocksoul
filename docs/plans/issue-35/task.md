@@ -54,16 +54,18 @@
 
 ## Phase F — Verification and merge
 
-- First PR CI run #42012045477: Windows release build/tests/package/smoke passed; Linux job stopped at `cargo fmt --check` due to an extra blank line in `src/workspace_artifact.rs`. The formatting issue was corrected, and additional acceptance-bound tests plus Core Integrity coverage were added afterward. A fresh full CI run is required for the current head.
+- First PR CI run #42012045477 exposed a formatting-only issue; corrected.
+- CI run #42042937489 passed Linux (108 tests, Core Integrity 23/23, memory retrieval) but exposed a Windows-only failure in an existing memory v1 migration test (revision 0 instead of 7). The temp-directory helper used PID + timestamp only; Windows clock precision allowed parallel tests to collide. Added a per-process atomic sequence to make test roots unique.
+- Final validation for head `8a0876fe9a3020477f52de5bab7451754acc8f62`: [CI #42043396826](https://github.com/bjo163/rocksoul/actions/runs/42043396826) passed all Linux and Windows jobs, including installer/portable packaging and smoke tests.
 
-- [ ] F1. Run `cargo fmt --all -- --check`.
-- [ ] F2. Run `cargo clippy --locked --all-targets -- -D warnings`.
-- [ ] F3. Run `cargo test --locked --all-targets`.
-- [ ] F4. Run `cargo run --locked -- eval run core`.
-- [ ] F5. Verify CI Linux formatting/Clippy/tests/Core Integrity/memory retrieval.
-- [ ] F6. Verify CI Windows build/tests/portable packaging/installer smoke.
-- [ ] F7. Inspect the complete diff and ensure no arbitrary tools, environment failpoints, or unrelated refactors.
-- [ ] F8. Open a PR targeting main with base SHA, behavior, safety implications, test evidence and recovery limitations.
+- [x] F1. Run `cargo fmt --all -- --check`.
+- [x] F2. Run `cargo clippy --locked --all-targets -- -D warnings`.
+- [x] F3. Run `cargo test --locked --all-targets`.
+- [x] F4. Run `cargo run --locked -- eval run core`.
+- [x] F5. Verify CI Linux formatting/Clippy/tests/Core Integrity/memory retrieval.
+- [x] F6. Verify CI Windows build/tests/portable packaging/installer smoke.
+- [x] F7. Inspect the complete diff and ensure no arbitrary tools, environment failpoints, or unrelated refactors.
+- [x] F8. Open a PR targeting main with base SHA, behavior, safety implications, test evidence and recovery limitations.
 - [ ] F9. Merge only after required checks pass; verify main SHA and close #35 with evidence.
 
 ## Completion output
