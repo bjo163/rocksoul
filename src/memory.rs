@@ -1082,6 +1082,9 @@ mod tests {
             expires_at_unix: Some(50),
             retention_policy_version: RETENTION_POLICY_VERSION,
             retention_policy: RetentionPolicy::ExpireAt,
+            claim_status: MemoryClaimStatus::UserAssertion,
+            verification_receipt_id: None,
+            evidence_hash: None,
         });
         let mut legacy_json = serde_json::to_value(&legacy).unwrap();
         legacy_json["records"][0]
