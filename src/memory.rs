@@ -592,11 +592,21 @@ mod tests {
     #[test]
     fn cross_process_lock_contention_has_bounded_timeout() {
         if let Ok(directory) = std::env::var("ROCKSOUL_LOCK_CHILD_DIR") {
+            let directory = PathBuf::from(directory);
+            if std::env::var_os("ROCKSOUL_LOCK_CHILD_WRITE").is_some() {
+                let content = std::env::var("ROCKSOUL_LOCK_CHILD_WRITE").unwrap();
+                MemoryStore::transact(&directory, |store| {
+                    store.add_user_entry(MemoryKind::Semantic, content, vec![], None, 30)?;
+                    Ok(())
+                })
+                .unwrap();
+                return;
+            }
             if std::env::var_os("ROCKSOUL_LOCK_CHILD_EXIT").is_some() {
-                let _lock = super::acquire_store_lock(PathBuf::from(directory).as_path()).unwrap();
+                let _lock = super::acquire_store_lock(&directory).unwrap();
                 std::process::exit(0);
             }
-            let error = MemoryStore::load(PathBuf::from(directory).as_path()).unwrap_err();
+            let error = MemoryStore::load(&directory).unwrap_err();
             assert!(format!("{error:#}").contains("memory store is busy"));
             return;
         }
@@ -632,6 +642,28 @@ mod tests {
             .unwrap();
         assert!(exit_status.success(), "child process should exit while holding the OS lock");
         assert!(MemoryStore::load(&directory).is_ok(), "OS lock must be released when its process exits");
+
+        let executable = std::env::current_exe().unwrap();
+        let child_a = Command::new(&executable)
+            .arg("--exact")
+            .arg("memory::tests::cross_process_lock_contention_has_bounded_timeout")
+            .arg("--nocapture")
+            .env("ROCKSOUL_LOCK_CHILD_DIR", &directory)
+            .env("ROCKSOUL_LOCK_CHILD_WRITE", "writer A")
+            .spawn()
+            .unwrap();
+        let child_b = Command::new(&executable)
+            .arg("--exact")
+            .arg("memory::tests::cross_process_lock_contention_has_bounded_timeout")
+            .arg("--nocapture")
+            .env("ROCKSOUL_LOCK_CHILD_DIR", &directory)
+            .env("ROCKSOUL_LOCK_CHILD_WRITE", "writer B")
+            .spawn()
+            .unwrap();
+        assert!(child_a.wait_with_output().unwrap().status.success());
+        assert!(child_b.wait_with_output().unwrap().status.success());
+        let combined = MemoryStore::load(&directory).unwrap();
+        assert_eq!(combined.records.len(), 2, "concurrent writers must not lose either committed record");
         fs::remove_dir_all(directory).unwrap();
     }
 
