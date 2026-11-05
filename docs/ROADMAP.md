@@ -19,7 +19,7 @@ The roadmap is capability-driven. Each stage must deliver a working, tested incr
 
 ## Stage 1 — Reliable cognition loop
 
-**Status:** The Stage 1A–1E bounded workspace-artifact vertical slice is merged to `main` via PR #34 (`0f5ca4bc4d1c65322cb02963fcc23c53fa990f5d`). Linux/Windows CI #248 passed. The delivered slice includes exact human approval, create-only execution, observed read-back verification, bounded retries/cancellation, versioned traces, persisted receipts, and XP replay idempotency. This does not mean the broader autonomous plan/act/observe loop is complete; residual planner recovery and broader acceptance-check orchestration are explicitly deferred to [#35](https://github.com/bjo163/rocksoul/issues/35).
+**Status:** The bounded workspace-artifact slice from PR #34 is extended by the Issue #35 reliability work in PR #53: deterministic recovery after publication but before XP persistence, immutable receipt conflict/corruption handling, and a versioned bounded `AcceptanceCheckSet` schema v1 consumed by the trusted verifier. Core Integrity v1.3.0 covers both crash windows and receipt conflict/corruption. Full planner/reflection conversation resume and independent acceptance adapters for additional typed services remain deferred.
 
 - [x] Explicit request and turn-state contracts.
 - [x] Structured plan and reflection data contracts.
@@ -41,7 +41,10 @@ The roadmap is capability-driven. Each stage must deliver a working, tested incr
 - [x] Wire Ctrl+C through terminal approval and executor; cancellation is honored at safe pre-publication checkpoints and in-flight model HTTP requests.
 - [x] Add deterministic cancellation-at-publication-boundary coverage; cancellation before the irreversible hard-link publish leaves no artifact.
 - [x] Test restart/replay around XP and receipt persistence windows; preserve idempotent XP and durable receipt reconstruction.
-- [ ] Add a crash-injection test for recovery after file publication but before XP persistence.
+- [x] Add a private test-only crash-injection test after file publication/read-back but before XP persistence; replay re-verifies the existing artifact and records XP exactly once.
+- [x] Reject conflicting immutable and malformed durable receipts without overwriting or deleting their bytes.
+- [x] Define bounded, versioned `AcceptanceCheckSet` schema v1 (max 64 checks, unique IDs, required-check presence, bounded values/evidence references, unsupported-version rejection).
+- [x] Extend Core Integrity v1.3.0 with machine-readable crash-window, replay/idempotency, receipt-conflict and receipt-corruption checks.
 - [x] Verify the supported workspace-artifact task against observed file metadata/read-back; chat response completion is not task success.
 - [ ] Extend independent acceptance verification to future typed services as each is introduced.
 - [x] Append content-free JSONL lifecycle events for the workspace CLI (proposal, approval/denial, execution/failure, verification).

@@ -8,6 +8,7 @@ use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 
 use crate::{
+    commands::{complete_workspace_operation_with_hook, persist_workspace_receipt},
     core::{
         CancellationToken, TurnEvent, TurnPhase, TurnState, VerificationEvidence,
         VerificationOutcome, VerificationRequest, verify_turn_and_award_xp,
@@ -16,6 +17,7 @@ use crate::{
     paths::AppPaths,
     rid::{RuhIdentity, RuhProfile, XpRecordOutcome, level_for_xp},
     rid_catalogue::RidCatalogue,
+    rid_store,
     task_trace::{self, TaskTraceEvent},
     workspace_artifact::{
         ArtifactOutcome, UserApproval, WorkspaceArtifactProposal, WorkspaceArtifactService,
@@ -23,7 +25,7 @@ use crate::{
 };
 
 pub const CORE_SUITE_ID: &str = "rocksoul.core-integrity";
-pub const CORE_SUITE_VERSION: &str = "1.2.0";
+pub const CORE_SUITE_VERSION: &str = "1.3.0";
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct EvaluationCheck {
@@ -58,7 +60,7 @@ impl EvaluationReport {
 pub fn list() {
     println!("{CORE_SUITE_ID}  v{CORE_SUITE_VERSION}  offline / deterministic");
     println!(
-        "  Validates lifecycle, retry bounds, verified XP, workspace approval/read-back mismatch/replay, retry/cancellation boundaries, task trace, RID and catalogue invariants."
+        "  Validates lifecycle, retry bounds, verified XP, workspace crash recovery/receipt conflicts, acceptance checks, cancellation, RID and catalogue invariants."
     );
     println!("rocksoul.memory-retrieval  v1.0.0  offline / deterministic");
     println!(
@@ -610,6 +612,160 @@ fn stage1_workspace_checks(now: u64, checks: &mut Vec<EvaluationCheck>) -> Resul
             "A symlink target is rejected without writing through it",
         ));
     }
+
+    stage1_crash_recovery_checks(now, checks)?;
+
+    let _ = fs::remove_dir_all(root);
+    Ok(())
+}
+
+fn stage1_crash_recovery_checks(now: u64, checks: &mut Vec<EvaluationCheck>) -> Result<()> {
+    let nonce = SystemTime::now().duration_since(UNIX_EPOCH)?.as_nanos();
+    let root = std::env::temp_dir().join(format!(
+        "rocksoul-stage1-crash-eval-{now}-{nonce}-{}",
+        std::process::id()
+    ));
+    let paths = AppPaths::from_root(root.clone());
+    fs::create_dir_all(&paths.logs_dir)?;
+    let initial_profile = RuhProfile::new(RuhIdentity {
+        instance_id: format!("rocksoul-stage1-crash-eval-{now}"),
+        created_at_unix: now.max(1),
+    })?;
+    rid_store::save(&paths.rid_file, &initial_profile)?;
+
+    let proposal = WorkspaceArtifactProposal {
+        filename: "crash-recovery.txt".to_owned(),
+        content: "published before XP persistence".to_owned(),
+    };
+    let approval = UserApproval::from_typed_confirmation(&proposal, &proposal.approval_phrase())?;
+    let service = WorkspaceArtifactService::new(&paths.workspace_dir);
+    let published =
+        service.execute_approved(&proposal, &approval, &CancellationToken::default())?;
+    let interrupted =
+        complete_workspace_operation_with_hook(&paths, &proposal, published, now.max(1), || {
+            anyhow::bail!("deterministic evaluation crash after artifact read-back")
+        });
+    let artifact_path = paths.workspace_dir.join(&proposal.filename);
+    let after_crash = rid_store::load(&paths.rid_file)?;
+    let crash_recovery_boundary_ok = interrupted.is_err()
+        && fs::read(&artifact_path).is_ok_and(|bytes| bytes == proposal.content.as_bytes())
+        && after_crash.total_xp() == 0
+        && after_crash.xp_events().is_empty()
+        && !paths.logs_dir.join("receipts").exists();
+    checks.push(check(
+        "stage1.crash_after_publish_before_xp",
+        crash_recovery_boundary_ok,
+        "Injected process loss leaves the exact artifact but no persisted XP or verified receipt",
+    ));
+
+    let replay = service.execute_approved(&proposal, &approval, &CancellationToken::default())?;
+    let replay_was_existing = matches!(replay, ArtifactOutcome::AlreadyPresent { .. });
+    let first = complete_workspace_operation_with_hook(
+        &paths,
+        &proposal,
+        replay,
+        now.saturating_add(1).max(1),
+        || Ok(()),
+    )?;
+    let first_verified = matches!(
+        &first.verification,
+        VerificationOutcome::Verified {
+            xp_record: XpRecordOutcome::Recorded,
+            ..
+        }
+    ) && first.profile.xp_events().len() == 1;
+    let operation_id = proposal.operation_id();
+    let receipt_key = operation_id.rsplit(':').next().unwrap_or("unknown");
+    let receipt_path = paths
+        .logs_dir
+        .join("receipts")
+        .join(format!("workspace-{receipt_key}.json"));
+    let original_receipt = fs::read(&receipt_path)?;
+    let replay_again =
+        service.execute_approved(&proposal, &approval, &CancellationToken::default())?;
+    let second = complete_workspace_operation_with_hook(
+        &paths,
+        &proposal,
+        replay_again,
+        now.saturating_add(2).max(1),
+        || Ok(()),
+    )?;
+    let replay_idempotency_ok = replay_was_existing
+        && first_verified
+        && matches!(
+            &second.verification,
+            VerificationOutcome::Verified {
+                xp_record: XpRecordOutcome::Duplicate,
+                ..
+            }
+        )
+        && second.profile.total_xp() == first.profile.total_xp()
+        && second.profile.xp_events().len() == 1
+        && fs::read(&receipt_path).is_ok_and(|bytes| bytes == original_receipt)
+        && task_trace::read(&paths.logs_dir.join("task-trace.v1.jsonl"))
+            .is_ok_and(|records| records.len() == 2);
+    checks.push(check(
+        "stage1.crash_replay_xp_receipt_idempotency",
+        replay_idempotency_ok,
+        "Replay re-verifies the existing artifact, records one XP event and stable receipt, then remains idempotent",
+    ));
+
+    let mut conflict_turn = TurnState::new("stage1-receipt-conflict", 0);
+    conflict_turn.apply(TurnEvent::Start)?;
+    conflict_turn.apply(TurnEvent::PlanAccepted)?;
+    conflict_turn.apply(TurnEvent::ActionCompleted)?;
+    let mut conflict_profile = RuhProfile::new(RuhIdentity {
+        instance_id: format!("rocksoul-stage1-conflict-{now}"),
+        created_at_unix: now.max(1),
+    })?;
+    let conflict_request = VerificationRequest::new(
+        operation_id.clone(),
+        format!("workspace-artifact:{operation_id}"),
+        now.saturating_add(3).max(1),
+        1,
+        1,
+        vec![VerificationEvidence::new(
+            "artifact-readback-matches",
+            proposal.content.as_str(),
+            proposal.content.as_str(),
+            format!("workspace-readback:conflicting-evidence:{operation_id}"),
+            true,
+        )],
+    )
+    .with_claim("same artifact claim, conflicting evidence reference");
+    let conflicting_receipt_rejected = match verify_turn_and_award_xp(
+        &mut conflict_turn,
+        &mut conflict_profile,
+        conflict_request,
+    )? {
+        VerificationOutcome::Verified { receipt, .. } => {
+            let before = fs::read(&receipt_path)?;
+            let rejected =
+                persist_workspace_receipt(&paths.logs_dir, &operation_id, &receipt).is_err();
+            rejected && fs::read(&receipt_path)? == before
+        }
+        VerificationOutcome::Rejected { .. } => false,
+    };
+    checks.push(check(
+        "stage1.receipt_conflict_fails_closed",
+        conflicting_receipt_rejected,
+        "A receipt with conflicting immutable evidence cannot replace the original receipt",
+    ));
+
+    let corrupt_bytes = b"{truncated receipt".to_vec();
+    fs::write(&receipt_path, &corrupt_bytes)?;
+    let corrupt_receipt_rejected = match &first.verification {
+        VerificationOutcome::Verified { receipt, .. } => {
+            persist_workspace_receipt(&paths.logs_dir, &operation_id, receipt).is_err()
+                && fs::read(&receipt_path)? == corrupt_bytes
+        }
+        VerificationOutcome::Rejected { .. } => false,
+    };
+    checks.push(check(
+        "stage1.receipt_corruption_fails_closed",
+        corrupt_receipt_rejected,
+        "Malformed durable receipt JSON is rejected and preserved for diagnosis",
+    ));
 
     let _ = fs::remove_dir_all(root);
     Ok(())

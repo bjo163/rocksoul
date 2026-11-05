@@ -224,7 +224,7 @@ Rocksoul/
 ├── data/
 │   ├── identity/rid.json
 │   ├── memory/
-│   │   ├── store.v1.json
+│   │   ├── store.v4.json
 │   │   └── exports/
 │   └── evaluations/
 ├── cache/
@@ -280,7 +280,7 @@ CI runs formatting, locked dependency resolution, Clippy, tests, offline core ev
 
 ## Project status
 
-Rocksoul is an actively developed experimental runtime. The current release is a bounded CLI seed—not an autonomous AGI system. The portable runtime, committed dependency lockfile, and automated clean Windows-runner installer/portable smoke tests are in place. Manual clean-device verification remains outstanding. Stage 1's bounded workspace-artifact vertical slice is merged to `main` through PR #34 (`0f5ca4bc4d1c65322cb02963fcc23c53fa990f5d`); Linux and Windows CI #248 passed. It includes exact human approval, create-only artifact execution, independent read-back verification, bounded provider/filesystem retries, cooperative cancellation, cross-process-safe traces, persisted receipts, and XP replay idempotency. This is not a claim that the broader autonomous planner/act/observe loop is complete: full model-conversation recovery and generalized acceptance-check orchestration remain future work. Stage 2's local memory schema v4, claim provenance, task-bound kernel receipt verification, receipt revocation, claim supersession, locking, retention/forgetting, evaluated retrieval, and human-reviewed proposals are merged through PR #51 (`260d29852bb30f2f63129271a07cd368fafccc3f`). Issue #44 is closed. Automatic cognition-to-memory emission and context injection remain disabled pending separate policy and contamination gates.
+Rocksoul is an actively developed experimental runtime. The current release is a bounded CLI seed—not an autonomous AGI system. The portable runtime, committed dependency lockfile, and automated clean Windows-runner installer/portable smoke tests are in place. Manual clean-device verification remains outstanding. Stage 1's bounded workspace-artifact vertical slice is merged to `main` through PR #34 (`0f5ca4bc4d1c65322cb02963fcc23c53fa990f5d`); Linux and Windows CI #248 passed. It includes exact human approval, create-only artifact execution, independent read-back verification, bounded provider/filesystem retries, cooperative cancellation, cross-process-safe traces, persisted receipts, and XP replay idempotency. Issue #35 extends the reliability boundary with deterministic replay after publication but before XP persistence, fail-closed receipt conflict/corruption handling, and a bounded versioned acceptance-check contract (schema v1). Core Integrity v1.3.0 reports these cases. This is not a claim that the broader autonomous planner/act/observe loop is complete: full model-conversation recovery and independent acceptance adapters for additional typed services remain future work. Stage 2's local memory schema v4, claim provenance, task-bound kernel receipt verification, receipt revocation, claim supersession, locking, retention/forgetting, evaluated retrieval, and human-reviewed proposals are merged through PR #51 (`260d29852bb30f2f63129271a07cd368fafccc3f`). Issue #44 is closed. Automatic cognition-to-memory emission and context injection remain disabled pending separate policy and contamination gates.
 
 ---
 

@@ -107,7 +107,7 @@ impl TurnState {
 ///
 /// Fields are deliberately private. Model output is not an evidence object;
 /// an application adapter must create this value from an observed result.
-#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct VerificationEvidence {
     check_id: String,
     expected: String,
@@ -135,6 +135,65 @@ impl VerificationEvidence {
     }
 }
 
+/// Versioned, bounded contract for evidence checks supplied by a trusted adapter.
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+pub struct AcceptanceCheckSet {
+    schema_version: u16,
+    checks: Vec<VerificationEvidence>,
+}
+
+impl AcceptanceCheckSet {
+    pub const CURRENT_SCHEMA_VERSION: u16 = 1;
+    const MAX_CHECKS: usize = 64;
+    const MAX_CHECK_ID_BYTES: usize = 128;
+    const MAX_VALUE_BYTES: usize = 16_384;
+    const MAX_EVIDENCE_REF_BYTES: usize = 1_024;
+
+    /// Construct the current versioned acceptance-check contract.
+    pub fn new(checks: Vec<VerificationEvidence>) -> Self {
+        Self::with_schema_version(Self::CURRENT_SCHEMA_VERSION, checks)
+    }
+
+    /// Explicit version constructor; unsupported versions fail closed at verification.
+    pub fn with_schema_version(schema_version: u16, checks: Vec<VerificationEvidence>) -> Self {
+        Self {
+            schema_version,
+            checks,
+        }
+    }
+
+    pub fn schema_version(&self) -> u16 {
+        self.schema_version
+    }
+
+    pub fn checks(&self) -> &[VerificationEvidence] {
+        &self.checks
+    }
+
+    fn validate(&self) -> bool {
+        if self.schema_version != Self::CURRENT_SCHEMA_VERSION
+            || self.checks.is_empty()
+            || self.checks.len() > Self::MAX_CHECKS
+            || !self.checks.iter().any(|check| check.required)
+        {
+            return false;
+        }
+
+        let mut check_ids = std::collections::HashSet::with_capacity(self.checks.len());
+        self.checks.iter().all(|check| {
+            !check.check_id.trim().is_empty()
+                && check.check_id.len() <= Self::MAX_CHECK_ID_BYTES
+                && !check.check_id.chars().any(char::is_control)
+                && check_ids.insert(check.check_id.as_str())
+                && check.expected.len() <= Self::MAX_VALUE_BYTES
+                && check.observed.len() <= Self::MAX_VALUE_BYTES
+                && !check.evidence_ref.trim().is_empty()
+                && check.evidence_ref.len() <= Self::MAX_EVIDENCE_REF_BYTES
+                && !check.evidence_ref.chars().any(char::is_control)
+        })
+    }
+}
+
 /// Request to verify a completed turn. Only crate-owned executor adapters
 /// should construct it from observed, attributable evidence.
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -144,7 +203,7 @@ pub struct VerificationRequest {
     verified_at_unix: u64,
     difficulty: u8,
     policy_version: u16,
-    checks: Vec<VerificationEvidence>,
+    acceptance_checks: AcceptanceCheckSet,
     normalized_claim: Option<String>,
 }
 
@@ -165,7 +224,7 @@ impl VerificationRequest {
             verified_at_unix,
             difficulty,
             policy_version,
-            checks,
+            acceptance_checks: AcceptanceCheckSet::new(checks),
             normalized_claim: None,
         }
     }
@@ -173,6 +232,12 @@ impl VerificationRequest {
     /// Bind a trusted verification to the exact normalized task-outcome claim.
     pub fn with_claim(mut self, claim: impl AsRef<str>) -> Self {
         self.normalized_claim = Some(normalize_task_claim(claim.as_ref()));
+        self
+    }
+
+    /// Replace the default v1 set with an explicitly versioned acceptance contract.
+    pub fn with_acceptance_check_set(mut self, checks: AcceptanceCheckSet) -> Self {
+        self.acceptance_checks = checks;
         self
     }
 }
@@ -296,17 +361,20 @@ pub fn verify_turn_and_award_xp(
         || request.verified_at_unix == 0
         || request.policy_version == 0
         || !(1..=10).contains(&request.difficulty)
-        || request.checks.is_empty()
     {
         return Err(VerificationError::InvalidRequest);
     }
+    if !request.acceptance_checks.validate() {
+        return Err(VerificationError::InvalidAcceptanceCheckSet);
+    }
 
-    let mut check_ids = std::collections::HashSet::with_capacity(request.checks.len());
+    let checks = request.acceptance_checks.checks();
+    let mut check_ids = std::collections::HashSet::with_capacity(checks.len());
     let mut failed_required_checks = Vec::new();
     let mut passed_required = 0_usize;
-    let mut evidence_refs = Vec::with_capacity(request.checks.len());
+    let mut evidence_refs = Vec::with_capacity(checks.len());
 
-    for check in &request.checks {
+    for check in checks {
         if check.check_id.trim().is_empty()
             || check.evidence_ref.trim().is_empty()
             || !check_ids.insert(check.check_id.as_str())
@@ -334,8 +402,8 @@ pub fn verify_turn_and_award_xp(
 
     let xp_awarded =
         (5_u32 + u32::from(request.difficulty) + (passed_required as u32 * 2)).min(100);
-    let evidence_bytes = serde_json::to_vec(&request.checks)
-        .expect("verification evidence serialization cannot fail");
+    let evidence_bytes = serde_json::to_vec(&request.acceptance_checks)
+        .expect("acceptance check serialization cannot fail");
     let evidence_hash = format!("{:x}", Sha256::digest(evidence_bytes));
     let claim_hash = request
         .normalized_claim
@@ -363,7 +431,7 @@ pub fn verify_turn_and_award_xp(
         &request.verification_id,
         &request.task_id,
         passed_required,
-        request.checks.len(),
+        checks.len(),
         &evidence_refs,
         xp_awarded,
         request.verified_at_unix,
@@ -381,7 +449,7 @@ pub fn verify_turn_and_award_xp(
             verification_id: request.verification_id,
             task_id: request.task_id,
             required_checks_passed: passed_required,
-            total_checks: request.checks.len(),
+            total_checks: checks.len(),
             evidence_refs,
             xp_awarded,
             verified_at_unix: request.verified_at_unix,
@@ -410,6 +478,7 @@ pub enum VerificationError {
     NotVerifying(TurnPhase),
     InvalidRequest,
     InvalidEvidence,
+    InvalidAcceptanceCheckSet,
     Transition(TransitionError),
     Rid(String),
 }
@@ -426,6 +495,9 @@ impl fmt::Display for VerificationError {
                     formatter,
                     "verification evidence is incomplete or duplicated"
                 )
+            }
+            Self::InvalidAcceptanceCheckSet => {
+                write!(formatter, "acceptance-check schema or contents are invalid")
             }
             Self::Transition(error) => write!(formatter, "{error}"),
             Self::Rid(error) => write!(formatter, "RID rejected verified XP event: {error}"),
@@ -564,6 +636,93 @@ mod tests {
         tampered.normalized_claim = Some("deployment failed".to_owned());
         assert!(!tampered.integrity_valid());
         assert_eq!(normalize_task_claim("  A  B\nC "), "a b c");
+    }
+
+    #[test]
+    fn versioned_acceptance_check_contract_fails_closed_before_xp() {
+        let checks = vec![VerificationEvidence::new(
+            "required-output",
+            "present",
+            "present",
+            "test://acceptance/output",
+            true,
+        )];
+
+        for acceptance in [
+            super::AcceptanceCheckSet::with_schema_version(99, checks.clone()),
+            super::AcceptanceCheckSet::new(vec![
+                VerificationEvidence::new("duplicate", "a", "a", "test://a", true),
+                VerificationEvidence::new("duplicate", "b", "b", "test://b", true),
+            ]),
+            super::AcceptanceCheckSet::new(vec![VerificationEvidence::new(
+                "optional-only",
+                "present",
+                "present",
+                "test://optional",
+                false,
+            )]),
+            super::AcceptanceCheckSet::new(vec![VerificationEvidence::new(
+                "oversized-ref",
+                "present",
+                "present",
+                "x".repeat(1_025),
+                true,
+            )]),
+            super::AcceptanceCheckSet::new(vec![VerificationEvidence::new(
+                "oversized-value",
+                "x".repeat(16_385),
+                "present",
+                "test://oversized-value",
+                true,
+            )]),
+            super::AcceptanceCheckSet::new(vec![VerificationEvidence::new(
+                " ",
+                "present",
+                "present",
+                "test://empty-id",
+                true,
+            )]),
+            super::AcceptanceCheckSet::new(vec![VerificationEvidence::new(
+                "missing-evidence-ref",
+                "present",
+                "present",
+                " ",
+                true,
+            )]),
+            super::AcceptanceCheckSet::new(Vec::new()),
+            super::AcceptanceCheckSet::new(
+                (0..65)
+                    .map(|index| {
+                        VerificationEvidence::new(
+                            format!("check-{index}"),
+                            "present",
+                            "present",
+                            format!("test://check/{index}"),
+                            true,
+                        )
+                    })
+                    .collect(),
+            ),
+        ] {
+            let mut turn = TurnState::new("invalid-acceptance-contract", 0);
+            let mut profile = profile();
+            reach_verification(&mut turn);
+            let request = VerificationRequest::new(
+                "invalid-acceptance-contract",
+                "invalid-acceptance-contract-verification",
+                1_800_000_102,
+                1,
+                1,
+                checks.clone(),
+            )
+            .with_acceptance_check_set(acceptance);
+            assert!(matches!(
+                verify_turn_and_award_xp(&mut turn, &mut profile, request),
+                Err(super::VerificationError::InvalidAcceptanceCheckSet)
+            ));
+            assert_eq!(profile.total_xp(), 0);
+            assert_eq!(turn.phase, TurnPhase::Verifying);
+        }
     }
 
     #[test]

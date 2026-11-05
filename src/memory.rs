@@ -1168,6 +1168,7 @@ mod tests {
         fs,
         path::PathBuf,
         process::Command,
+        sync::atomic::{AtomicU64, Ordering},
         time::{SystemTime, UNIX_EPOCH},
     };
 
@@ -1179,12 +1180,18 @@ mod tests {
         legacy_v2_store_path, legacy_v3_store_path, store_path,
     };
 
+    static NEXT_TEMP_DIR_ID: AtomicU64 = AtomicU64::new(0);
+
     fn temp_dir() -> PathBuf {
         let nanos = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap()
             .as_nanos();
-        std::env::temp_dir().join(format!("rocksoul-memory-{}-{nanos}", std::process::id()))
+        let sequence = NEXT_TEMP_DIR_ID.fetch_add(1, Ordering::Relaxed);
+        std::env::temp_dir().join(format!(
+            "rocksoul-memory-{}-{nanos}-{sequence}",
+            std::process::id()
+        ))
     }
 
     #[test]

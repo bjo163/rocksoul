@@ -1,6 +1,6 @@
 # Rocksoul Project Progress
 
-**Last updated:** 2026-11-05 (Asia/Jakarta, after PR #51 merge)  
+**Last updated:** 2026-11-05 (Asia/Jakarta, PR #53 validation passed; merge pending)  
 **Repository:** [bjo163/rocksoul](https://github.com/bjo163/rocksoul)  
 **Canonical branch:** `main`  
 **Current principle:** One Core. Infinite Evolution.
@@ -14,8 +14,8 @@ This is the durable progress snapshot for maintainers and delegated/local AI age
 | Product foundation | **In place** | One Rust Cargo package, one portable native executable, CLI/REPL and optional Ratatui cockpit |
 | Stage 0 — Seed CLI | **Implemented** | Windows release build and automated installer/portable smoke tests; manual clean-device upgrade test remains |
 | Stage 1 — Reliable cognition | **Vertical slice merged** | PR #34, merge commit `0f5ca4bc4d1c65322cb02963fcc23c53fa990f5d`; CI #248 passed |
-| Stage 1 follow-through | **Open** | Issue #35: crash injection after artifact publication/before XP persistence and generalized typed acceptance checks |
-| Stage 2 — Persistent memory | **Core baseline merged** | Schema v3, locking, retention/forgetting, retrieval evaluation and human-reviewed proposals merged through PRs #43/#46/#47/#49/#50 |
+| Stage 1 follow-through | **Implementation + CI complete; merge pending** | Issue #35 / PR #53: crash recovery, receipt integrity, versioned acceptance checks, Core Integrity v1.3.0; Linux and Windows CI #42043396826 passed |
+| Stage 2 — Persistent memory | **Complete on main** | Schema v4, locking, retention/forgetting, evaluated retrieval and human-reviewed proposals; see PRs #43/#46/#47/#49/#50/#51 |
 | Stage 2 claim integrity | **Merged** | PR #51 merged as `260d29852bb30f2f63129271a07cd368fafccc3f`; issue #44 closed; CI #42008862735 passed on Linux and Windows |
 | Stage 3 — Skills/tools | **Not started** | No general tool registry or arbitrary tool execution |
 | Stage 4 — Application builder | **Not started** | Future bounded project-generation workflow |
@@ -27,11 +27,11 @@ This is the durable progress snapshot for maintainers and delegated/local AI age
 
 ## 1. Accepted baseline on main
 
-Verified main SHA after PR #51 merge:
+Verified `main` base SHA used for the current Issue #35 branch:
 
-`260d29852bb30f2f63129271a07cd368fafccc3f`
+`b76bf36740056e41933f8510c22a8376f49d997a`
 
-Re-check latest main before using this as a base.
+This is the PR #53 base, not a promise that `main` has not advanced since. Refresh the remote ref before every new task.
 
 ### Stage 0 — Seed CLI
 
@@ -57,11 +57,7 @@ PR #34 is merged. The bounded workspace-artifact slice includes:
 - Bounded retry/cancellation behavior and content-free JSONL traces.
 - XP award only after trusted verification, with replay idempotency.
 
-Remaining in issue #35:
-- Crash injection after file publication but before XP persistence.
-- Conflicting/corrupt durable receipt failure tests and evaluation coverage.
-- Reusable typed/versioned acceptance-check contract for future services.
-- Clear recovery boundary docs: operation/receipt/XP replay is durable; planner/reflection conversation history is not resumed.
+Issue #35 implementation is in draft PR #53. The branch now contains a private test-only crash seam after real artifact read-back, exact replay recovery with one XP event/receipt, immutable receipt conflict and malformed-receipt preservation tests, bounded `AcceptanceCheckSet` schema v1, and Core Integrity v1.3.0 machine-readable checks. Full planner/reflection conversation resume and independent acceptance adapters for additional typed services remain deferred. Do not call #35 complete until fresh Linux and Windows CI pass, PR #53 merges, `main` is verified, and the issue is closed.
 
 ### Stage 2 — Persistent memory
 
@@ -107,7 +103,33 @@ CI evidence:
 
 The receipt digest is tamper-evident integrity metadata, not a digital signature against a local actor with write access to the executable root. Automatic conversation capture and memory context injection remain disabled.
 
-## 3. Documentation included in this update
+## 3. Active implementation — Issue #35 / PR #53
+
+**PR:** https://github.com/bjo163/rocksoul/pull/53 (ready for review; not merged)  
+**Issue:** https://github.com/bjo163/rocksoul/issues/35 (open)  
+**Base SHA:** `b76bf36740056e41933f8510c22a8376f49d997a`  
+**Latest branch head at this checkpoint:** `937b986fb54a0db82b3e3a2ee8519aaeee1fa2ad`  
+**Final CI:** [#42043396826](https://github.com/bjo163/rocksoul/actions/runs/42043396826) — all Linux and Windows jobs passed on source head `8a0876fe9a3020477f52de5bab7451754acc8f62`. Linux: formatting, Clippy, 108 tests, Core Integrity 23/23 and memory retrieval (precision@2 1.000, recall@2 1.000). Windows: release build, 107 tests, installer/portable packaging, clean portable smoke, installer install/init/uninstall-preservation smoke, and artifact uploads passed. The final `937b986f` branch commit only updates task-plan validation evidence; it does not change source code.
+
+Earlier CI diagnosis: run #42012045477 found a formatting issue, which was fixed. Run #42042937489 passed Linux but exposed a Windows-only collision in the existing memory v1 migration test: the helper named temporary roots with PID + timestamp, and Windows clock precision allowed parallel tests to reuse a path. `src/memory.rs` now adds a per-process atomic sequence to guarantee unique test roots. The final Windows run #42043396826 passed after that fix.
+
+### Implemented on the PR branch (not yet accepted by main)
+
+- `src/commands.rs`: shared workspace completion boundary, private test-only post-read-back hook, create-only receipt persistence exposed internally to offline evaluation.
+- `src/core.rs`: bounded `AcceptanceCheckSet` schema v1 (max 64 checks, required-check presence, unique/non-empty IDs, bounded values and evidence references, unsupported-version rejection); validation occurs before XP mutation.
+- `src/eval.rs`: Core Integrity v1.3.0 adds machine-readable checks for crash-after-publication/before-XP, replayed XP/receipt/trace idempotency, conflicting immutable receipts, and malformed receipt preservation.
+- `src/commands.rs` tests: process-loss simulation with real temporary filesystem, reload from portable RID store, exact replay, one XP event, stable receipt, conflict and corruption preservation.
+- `src/core.rs` tests: unsupported version, duplicate/blank IDs, missing evidence reference, optional-only/empty set, oversized values/references and more than 64 checks fail before XP.
+- `docs/plans/issue-35/task.md`: audit and implementation phases A–D plus evaluation checks E1–E2 recorded; documentation and final CI/merge tasks remain in progress.
+
+### Deferred by design
+
+- Full planner/turn/reflection conversation resume.
+- Generalized execution or arbitrary tool dispatch; the contract only validates evidence supplied by trusted adapters.
+- A deterministic temp-file/rename interruption hook; current receipt publication uses create-only temp + sync + hard-link, and no production failpoint or extra abstraction was introduced just for this optional subcase.
+- Power-loss durability guarantees beyond the filesystem operations explicitly performed.
+
+## 4. Documentation included in this update
 
 This documentation update reconciles:
 - `docs/AI_HANDOFF.md` — local-agent onboarding, architecture map, mandatory workflow, build/test commands, safety invariants, active PR state, next-task selection and known deferred work.
@@ -120,22 +142,22 @@ This documentation update reconciles:
 
 This progress snapshot was refreshed after PR #51 merged. Keep it synchronized with future merges, CI evidence, issue state and the next selected task.
 
-## 4. Next execution order
+## 5. Next execution order
 
 ### Immediate
 
-1. Start issue #35 from latest `main` (refresh main first); use the [spec](plans/issue-35/spec.md), [design](plans/issue-35/design.md), [task list](plans/issue-35/task.md), and [agent rules](plans/issue-35/rules.md).
-2. Add deterministic crash injection after artifact publication but before XP persistence; prove artifact and XP replay are idempotent and durable.
-3. Add conflicting/corrupt receipt recovery fixtures and a typed, versioned acceptance-check contract for future services.
-4. Update evaluation, architecture, cognitive-core, roadmap, README and AI handoff docs.
-5. Run Linux and Windows CI, then merge through a PR to main.
+1. Continue the existing [PR #53](https://github.com/bjo163/rocksoul/pull/53); do not create a duplicate branch or PR.
+2. Re-run full CI on the latest PR head after the formatting and evaluation/documentation commits.
+3. Fix any Linux/Windows failures, inspect the full diff and review threads, and verify Core Integrity v1.3.0 reports all new checks.
+4. Update the PR body with exact current head and CI evidence; mark ready only after checks pass.
+5. Merge to `main`, verify the resulting main SHA, then close issue #35 with the evidence.
 6. Keep arbitrary shell, unrestricted tools, automatic memory capture and memory context injection out of scope.
 
-### Current next task: #35
+### Current task: finish PR #53 / issue #35
 
-Issue #35 is the next selected implementation task. Stage 2 umbrella issue #36 was reconciled and closed after all work packages #37–#41 and follow-up #44 were completed. Issue #13 remains the owner of the AGI-oriented evaluation harness; do not create a duplicate evaluation subsystem. Do not start automatic memory injection until a separate policy, privacy/contamination test matrix, forgetting/deletion behavior and regression gates are reviewed.
+Issue #35 is already in progress through PR #53. Stage 2 umbrella issue #36 and its work packages #37–#41 plus follow-up #44 are closed. Issue #13 remains the owner of the AGI-oriented evaluation harness; do not create a duplicate evaluation subsystem. Do not start automatic memory injection until a separate policy, privacy/contamination test matrix, forgetting/deletion behavior and regression gates are reviewed.
 
-## 5. Release and merge gates
+## 6. Release and merge gates
 
 A feature is complete only when:
 - The code implements the documented behavior.

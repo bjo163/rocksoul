@@ -1,64 +1,71 @@
 # Issue #35 — Autonomous task breakdown
 
-**Base:** Refresh `main` immediately before starting. Planned base at handoff: `260d29852bb30f2f63129271a07cd368fafccc3f`.  
+**Base:** `main` at `b76bf36740056e41933f8510c22a8376f49d997a` (verified before implementation).  
 **Branch:** `feat/stage1-crash-window-recovery`  
 **PR base:** `main` only.
 
 ## Phase A — Audit and test map
 
-- [ ] A1. Refresh latest main and record exact SHA; verify no newer PR/issue supersedes #35.
-- [ ] A2. Read AGENTS, blueprint, this plan, issue #35, workspace artifact service, command orchestration, RID store, core verifier, task trace, and eval.
-- [ ] A3. Map current operation ID, XP event ID, receipt path, trace events, and replay branches.
-- [ ] A4. Identify the existing test for crash after RID save but before receipt write; preserve it.
-- [ ] A5. Write down the precise new failure boundary before changing code.
+- [x] A1. Refresh latest main and record exact SHA; verify no newer PR/issue supersedes #35.
+- [x] A2. Read AGENTS, blueprint, this plan, issue #35, workspace artifact service, command orchestration, RID store, core verifier, task trace, and eval.
+- [x] A3. Map current operation ID, XP event ID, receipt path, trace events, and replay branches.
+- [x] A4. Identify the existing test for crash after RID save but before receipt write; preserve it.
+- [x] A5. Write down the precise new failure boundary before changing code.
 
 ## Phase B — Crash-window recovery
 
-- [ ] B1. Add a private deterministic test failpoint after artifact publication and independent read-back but before trusted verification/XP mutation.
-- [ ] B2. Ensure the failpoint is unreachable from production CLI/config/environment.
-- [ ] B3. Add a real-filesystem test that injects the crash and confirms the artifact exists with exact bytes.
-- [ ] B4. Drop in-memory objects, reload RID from the portable root, and prove no XP event was persisted by the failed attempt.
-- [ ] B5. Replay the same operation ID and exact approval; assert the artifact is returned as AlreadyPresent and read back again.
-- [ ] B6. Verify the replayed observed evidence through the trusted core verifier and persist the RID.
-- [ ] B7. Persist the receipt and verified trace; assert one XP event and one receipt.
-- [ ] B8. Replay a third time; assert no duplicate artifact, XP event, or receipt.
-- [ ] B9. Keep the existing crash-after-RID-before-receipt recovery test green.
+- [x] B1. Add a private deterministic test failpoint after artifact publication and independent read-back but before trusted verification/XP mutation.
+- [x] B2. Ensure the failpoint is unreachable from production CLI/config/environment.
+- [x] B3. Add a real-filesystem test that injects the crash and confirms the artifact exists with exact bytes.
+- [x] B4. Drop in-memory objects, reload RID from the portable root, and prove no XP event was persisted by the failed attempt.
+- [x] B5. Replay the same operation ID and exact approval; assert the artifact is returned as AlreadyPresent and read back again.
+- [x] B6. Verify the replayed observed evidence through the trusted core verifier and persist the RID.
+- [x] B7. Persist the receipt and verified trace; assert one XP event and one receipt.
+- [x] B8. Replay a third time; assert no duplicate artifact, XP event, or receipt.
+- [x] B9. Keep the existing crash-after-RID-before-receipt recovery test green.
 
 ## Phase C — Durable receipt conflict handling
 
-- [ ] C1. Add a test for identical immutable receipt replay.
-- [ ] C2. Add a test for conflicting immutable receipt fields; fail closed and preserve the existing receipt bytes.
-- [ ] C3. Add a test for malformed/truncated receipt JSON; fail closed and preserve the corrupt bytes for diagnosis.
-- [ ] C4. Add a test for interrupted temp-file/rename publication if the current helper has a deterministic injection seam.
-- [ ] C5. Confirm no recovery path silently overwrites a corrupt or conflicting durable receipt.
+- [x] C1. Add a test for identical immutable receipt replay.
+- [x] C2. Add a test for conflicting immutable receipt fields; fail closed and preserve the existing receipt bytes.
+- [x] C3. Add a test for malformed/truncated receipt JSON; fail closed and preserve the corrupt bytes for diagnosis.
+- [x] C4. Add a test for interrupted temp-file/rename publication if the current helper has a deterministic injection seam.
+- [x] C5. Confirm no recovery path silently overwrites a corrupt or conflicting durable receipt.
 
 ## Phase D — Typed, versioned acceptance contract
 
-- [ ] D1. Audit `VerificationEvidence` and `VerificationRequest`; avoid duplicating fields already represented.
-- [ ] D2. Define the smallest versioned acceptance-check set contract (schema version + typed checks).
-- [ ] D3. Validate schema version, unique check IDs, bounds, required-check presence, and evidence references.
-- [ ] D4. Convert the validated contract into the existing verifier input without adding generic execution.
-- [ ] D5. Add positive, invalid-version, duplicate-ID, empty-required-set, oversized-value, and missing-evidence tests.
-- [ ] D6. Keep workspace artifact verification as the first adapter using the shared contract.
+- [x] D1. Audit `VerificationEvidence` and `VerificationRequest`; avoid duplicating fields already represented.
+- [x] D2. Define the smallest versioned acceptance-check set contract (schema version + typed checks).
+- [x] D3. Validate schema version, unique check IDs, bounds, required-check presence, and evidence references.
+- [x] D4. Convert the validated contract into the existing verifier input without adding generic execution.
+- [x] D5. Add positive, invalid-version, duplicate-ID, empty-required-set, oversized-value, and missing-evidence tests.
+- [x] D6. Keep workspace artifact verification as the first adapter using the shared contract.
 
 ## Phase E — Evaluation and documentation
 
-- [ ] E1. Add offline Core Integrity checks for crash-after-publication, replayed XP idempotency, and receipt conflicts/corruption.
-- [ ] E2. Include machine-readable check IDs and concise explanations in the evaluation report.
-- [ ] E3. Update COGNITIVE_CORE recovery semantics and distinguish tested guarantees from deferred conversation resume.
-- [ ] E4. Update ARCHITECTURE, ROADMAP, README, PROGRESS, and AI_HANDOFF.
-- [ ] E5. Update this plan with actual source paths, tests, evidence and remaining limitations.
+- Evaluation suite is now v1.3.0 and reports dedicated crash-window, replay/idempotency, immutable receipt-conflict, and malformed-receipt check IDs.
+- The temp-file/rename interruption subcase (C4) was reviewed: the current create-only hard-link publication has no existing deterministic seam for injecting an interrupted temp publication. No production failpoint or extra abstraction was added; this subcase is deferred unless a future refactor introduces a suitable private seam.
+
+- [x] E1. Add offline Core Integrity checks for crash-after-publication, replayed XP idempotency, and receipt conflicts/corruption.
+- [x] E2. Include machine-readable check IDs and concise explanations in the evaluation report.
+- [x] E3. Update COGNITIVE_CORE recovery semantics and distinguish tested guarantees from deferred conversation resume.
+- [x] E4. Update ARCHITECTURE, ROADMAP, README, PROGRESS, and AI_HANDOFF.
+- [x] E5. Update this plan with actual source paths, tests, evidence and remaining limitations.
 
 ## Phase F — Verification and merge
 
-- [ ] F1. Run `cargo fmt --all -- --check`.
-- [ ] F2. Run `cargo clippy --locked --all-targets -- -D warnings`.
-- [ ] F3. Run `cargo test --locked --all-targets`.
-- [ ] F4. Run `cargo run --locked -- eval run core`.
-- [ ] F5. Verify CI Linux formatting/Clippy/tests/Core Integrity/memory retrieval.
-- [ ] F6. Verify CI Windows build/tests/portable packaging/installer smoke.
-- [ ] F7. Inspect the complete diff and ensure no arbitrary tools, environment failpoints, or unrelated refactors.
-- [ ] F8. Open a PR targeting main with base SHA, behavior, safety implications, test evidence and recovery limitations.
+- First PR CI run #42012045477 exposed a formatting-only issue; corrected.
+- CI run #42042937489 passed Linux (108 tests, Core Integrity 23/23, memory retrieval) but exposed a Windows-only failure in an existing memory v1 migration test (revision 0 instead of 7). The temp-directory helper used PID + timestamp only; Windows clock precision allowed parallel tests to collide. Added a per-process atomic sequence to make test roots unique.
+- Final validation for head `8a0876fe9a3020477f52de5bab7451754acc8f62`: [CI #42043396826](https://github.com/bjo163/rocksoul/actions/runs/42043396826) passed all Linux and Windows jobs, including installer/portable packaging and smoke tests.
+
+- [x] F1. Run `cargo fmt --all -- --check`.
+- [x] F2. Run `cargo clippy --locked --all-targets -- -D warnings`.
+- [x] F3. Run `cargo test --locked --all-targets`.
+- [x] F4. Run `cargo run --locked -- eval run core`.
+- [x] F5. Verify CI Linux formatting/Clippy/tests/Core Integrity/memory retrieval.
+- [x] F6. Verify CI Windows build/tests/portable packaging/installer smoke.
+- [x] F7. Inspect the complete diff and ensure no arbitrary tools, environment failpoints, or unrelated refactors.
+- [x] F8. Open a PR targeting main with base SHA, behavior, safety implications, test evidence and recovery limitations.
 - [ ] F9. Merge only after required checks pass; verify main SHA and close #35 with evidence.
 
 ## Completion output
