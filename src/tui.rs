@@ -144,6 +144,7 @@ struct App {
     snapshot: Snapshot,
     memory_query: String,
     memory_search_active: bool,
+    memory_detail_open: bool,
     memory_selected: usize,
     task_selected: usize,
     memory_kind_filter: Option<MemoryKind>,
@@ -164,6 +165,7 @@ impl App {
             snapshot,
             memory_query: String::new(),
             memory_search_active: false,
+            memory_detail_open: false,
             memory_selected: 0,
             task_selected: 0,
             memory_kind_filter: None,
@@ -212,6 +214,9 @@ impl App {
         }
 
         match key.code {
+            KeyCode::Esc if self.screen == Screen::Memory && self.memory_detail_open => {
+                self.memory_detail_open = false
+            }
             KeyCode::Char('q') | KeyCode::Esc => self.quit = true,
             KeyCode::Char(c @ '1'..='8') => {
                 self.select_screen(Screen::from_index((c as u8 - b'1') as usize))
@@ -221,6 +226,7 @@ impl App {
             KeyCode::Up if self.screen == Screen::Rid => self.move_stat(-1),
             KeyCode::Down if self.screen == Screen::Rid => self.move_stat(1),
             KeyCode::Up if self.screen == Screen::Memory => {
+                self.memory_detail_open = false;
                 self.memory_selected = self.memory_selected.saturating_sub(1)
             }
             KeyCode::Up if self.screen == Screen::Tasks => {
@@ -230,9 +236,13 @@ impl App {
                 self.task_selected = self.task_selected.saturating_add(1).min(11)
             }
             KeyCode::Down if self.screen == Screen::Memory => {
+                self.memory_detail_open = false;
                 self.memory_selected = self.memory_selected.saturating_add(1).min(99)
             }
             KeyCode::Char('/') if self.screen == Screen::Memory => self.memory_search_active = true,
+            KeyCode::Enter if self.screen == Screen::Memory => {
+                self.memory_detail_open = !self.memory_detail_open
+            }
             KeyCode::Char('f') if self.screen == Screen::Memory => {
                 self.memory_kind_filter = next_memory_kind(self.memory_kind_filter)
             }
@@ -680,6 +690,11 @@ fn render_memory(frame: &mut Frame<'_>, area: Rect, app: &App) {
                         .unwrap_or_else(|| "never".to_owned())
                 )));
             }
+            if app.memory_detail_open {
+                if let Some(record) = records.get(app.memory_selected.min(records.len().saturating_sub(1))) {
+                    push_memory_detail(&mut lines, &record.content);
+                }
+            }
             if records.len() > MAX_RECORDS {
                 lines.push(Line::from(format!("Showing newest {MAX_RECORDS} of {} active records.", records.len())));
             }
@@ -731,7 +746,14 @@ fn render_memory(frame: &mut Frame<'_>, area: Rect, app: &App) {
                     record.created_at_unix
                 )));
             }
-            lines.push(Line::from("Search inspects local record content; content itself remains hidden."));
+            if app.memory_detail_open {
+                if let Some(record) = results.get(app.memory_selected.min(results.len().saturating_sub(1))) {
+                    push_memory_detail(&mut lines, &record.content);
+                }
+            } else {
+                lines.push(Line::from("Press Enter to reveal the selected record after the privacy guard."));
+            }
+            lines.push(Line::from("Search inspects local record content; content itself remains hidden by default."));
         }
         lines.push(Line::from(""));
         lines.push(Line::from("Read-only inspector · no memory writes or forgetting actions."));
@@ -750,6 +772,20 @@ fn render_memory(frame: &mut Frame<'_>, area: Rect, app: &App) {
         )),
         area,
     );
+}
+
+fn push_memory_detail(lines: &mut Vec<Line<'static>>, content: &str) {
+    lines.push(Line::from(""));
+    lines.push(Line::from(Span::styled(
+        "SELECTED MEMORY CONTENT",
+        Style::default().fg(AMBER).add_modifier(Modifier::BOLD),
+    )));
+    if let Some(reason) = crate::memory_proposal::sensitive_content_reason(content) {
+        lines.push(Line::from(format!("Content blocked by privacy guard: {reason}")));
+    } else {
+        lines.push(Line::from(clip_text(content, 512)));
+        lines.push(Line::from("Content truncated to 512 characters; control characters removed."));
+    }
 }
 
 fn next_memory_kind(current: Option<MemoryKind>) -> Option<MemoryKind> {
@@ -1207,6 +1243,18 @@ fn now_unix() -> u64 {
 #[cfg(test)]
 mod tests {
     use super::{App, Screen, Snapshot};
+
+    #[test]
+    fn memory_detail_uses_shared_sensitive_content_guard() {
+        assert_eq!(
+            crate::memory_proposal::sensitive_content_reason("api_key=example-secret"),
+            Some("credential_or_secret")
+        );
+        assert_eq!(
+            crate::memory_proposal::sensitive_content_reason("my medical diagnosis is private"),
+            Some("sensitive_personal_category")
+        );
+    }
 
     #[test]
     fn memory_filters_cycle_through_known_values_and_reset() {
