@@ -552,7 +552,11 @@ fn render_tasks(frame: &mut Frame<'_>, area: Rect, app: &mut App) {
                 .unwrap_or_else(|| "time n/a".to_owned());
             lines.push(Line::from(format!(
                 "{} {timestamp}  {event:<18}  {operation:<12}  {target_name}",
-                if index == app.task_selected { "▸" } else { " " }
+                if index == app.task_selected {
+                    "▸"
+                } else {
+                    " "
+                }
             )));
         }
         let selected = &records[app.task_selected];
