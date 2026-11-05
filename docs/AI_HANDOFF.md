@@ -159,7 +159,7 @@ The final validated head passed:
 **PR:** https://github.com/bjo163/rocksoul/pull/53 (draft; not merged at this checkpoint)  
 **Issue:** https://github.com/bjo163/rocksoul/issues/35 (open)  
 **Base:** `b76bf36740056e41933f8510c22a8376f49d997a`  
-**Branch head at documentation checkpoint:** `205d07526cb1191b43f69dee828197ae9e6de48e`
+**Latest branch head at documentation checkpoint:** `8db6160f4c07b120195068bd137da29f459dec2a`
 
 The PR branch contains:
 - A private, test-only post-read-back failpoint; production passes a no-op and there is no CLI/environment/config switch.
@@ -170,7 +170,7 @@ The PR branch contains:
 - Core Integrity v1.3.0 machine-readable checks for the new crash boundary, replay/XP/receipt/trace idempotency, receipt conflicts and corruption.
 - Updated architecture, cognitive-core, roadmap, README, progress and plan documents on the PR branch.
 
-First CI run [#42012045477](https://github.com/bjo163/rocksoul/actions/runs/42012045477): Windows release build/tests/package/smoke passed; Linux stopped at formatting due to an extra blank line in `src/workspace_artifact.rs`. That defect was corrected, and additional tests/evaluation/docs were committed afterward. **The current PR head still requires a fresh full CI run.** Do not merge or close issue #35 until Linux and Windows jobs pass on the latest head.
+Final source-head CI [#42043396826](https://github.com/bjo163/rocksoul/actions/runs/42043396826) passed all Linux and Windows jobs. Linux passed formatting, Clippy, 108 tests, Core Integrity 23/23, and memory retrieval (precision@2 1.000, recall@2 1.000). Windows passed release build, 107 tests, installer/portable packaging, clean portable smoke, installer install/init/uninstall-preservation smoke, and artifact uploads. The final `8db6160f` commit updates documentation evidence after the validated source head `8a0876fe`; no source code changed after that CI run. PR #53 remains unmerged until the owner merge step is completed.
 
 Optional temp-file/rename interruption injection was reviewed but not added: the current receipt publication uses create-only temporary file + sync + hard-link and has no existing deterministic seam. Do not introduce a production failpoint or broad filesystem abstraction solely for this optional subcase.
 
