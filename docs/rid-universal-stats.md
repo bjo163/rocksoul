@@ -152,9 +152,9 @@ High-risk boundaries that must use separate outcome measures:
 
 The prior `data/rid/universal_stats.v1.json` is a historical nine-group × eleven-stat catalogue. It is superseded. The current v2.1.0 taxonomy preserves the 99 stable ordinal stat slots but revises labels and construct boundaries; consumers must bind by explicit IDs, never by display text or inferred meaning.
 
-**Critical runtime finding:** `src/rid_catalogue.rs` still embeds `data/rid/asmaul_husna.v1.json`; `StatId::catalogue_entry_id()` still emits `asmaul_husna:NN`; CLI and Cockpit still render the legacy religious name layer. Thus the v2.1.0 taxonomy is canonical documentation/data but is not yet the active Rust runtime catalogue. Do not claim runtime migration complete.
+**Runtime migration implemented on main; CI verification pending:** `src/rid_catalogue.rs` now embeds `data/rid/universal_stats.v2.json`; `StatId` emits `rid_stat:NN`; CLI and Cockpit render universal domain labels and construct boundaries rather than Asmaul Husna names.
 
-Historical profiles must not have scores silently reassigned to the new constructs. The safe migration must preserve the complete legacy stat records as an immutable archive, create 99 new `rid_stat:NN` slots as `unrated`, preserve identity and XP ledger, and write a versioned migration marker plus a recoverable pre-migration backup. No ordinal score mapping is permitted because old scores were evaluated under different constructs.
+Schema-v1 profile migration archives the exact original bytes in `profile.json.v1.bak`, stores all 99 legacy records in the new profile's legacy archive, preserves instance identity and XP, and initializes all universal scores as `unrated`. It explicitly refuses to overwrite a different existing legacy archive. No ordinal score mapping is performed because old scores were evaluated under different constructs. A regression fixture verifies a historical score remains in the byte-for-byte backup while the new stat is unrated.
 
 ## 7. Religious inspiration catalogue — separate reference layer
 
