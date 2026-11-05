@@ -522,6 +522,41 @@ mod tests {
     }
 
     #[test]
+    fn verifier_receipt_binds_exact_normalized_claim_and_evidence() {
+        let mut turn = TurnState::new("turn-claim-bound", 0);
+        let mut profile = profile();
+        reach_verification(&mut turn);
+        let request = verified_request("verify-claim-bound")
+            .with_claim("  Created artifact report.txt with exact approved content.  ");
+        let outcome = verify_turn_and_award_xp(&mut turn, &mut profile, request).unwrap();
+        let VerificationOutcome::Verified { receipt, .. } = outcome else {
+            panic!("expected a verified receipt");
+        };
+        assert!(receipt.validates_claim("created artifact report.txt with exact approved content."));
+        assert!(!receipt.validates_claim("created artifact report.txt with different content."));
+        assert_eq!(receipt.verifier_id(), "rocksoul.kernel.verifier");
+        assert_eq!(receipt.verifier_version(), 1);
+        assert_eq!(receipt.policy_version(), 1);
+        assert_eq!(receipt.claim_sha256().unwrap().len(), 64);
+        assert_eq!(receipt.evidence_sha256().len(), 64);
+    }
+
+    #[test]
+    fn receipt_without_exact_claim_cannot_authorize_verified_memory() {
+        let mut turn = TurnState::new("turn-no-claim", 0);
+        let mut profile = profile();
+        reach_verification(&mut turn);
+        let outcome =
+            verify_turn_and_award_xp(&mut turn, &mut profile, verified_request("verify-no-claim"))
+                .unwrap();
+        let VerificationOutcome::Verified { receipt, .. } = outcome else {
+            panic!("expected task verification");
+        };
+        assert!(!receipt.validates_claim("some other claim"));
+        assert!(receipt.claim_sha256().is_none());
+    }
+
+    #[test]
     fn failed_required_check_rejects_turn_without_xp() {
         let mut turn = TurnState::new("turn-rejected", 1);
         let mut profile = profile();
