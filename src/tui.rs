@@ -1597,6 +1597,29 @@ mod tests {
     }
 
     #[test]
+    fn snapshot_loads_typed_memory_and_task_read_models() {
+        let snapshot = Snapshot::load().unwrap();
+        assert!(snapshot.memory.is_ok());
+        assert!(snapshot.task_history.is_ok());
+    }
+
+    #[test]
+    fn task_trace_projection_keeps_safe_typed_metadata_only() {
+        let value = serde_json::json!({
+            "event": "proposed\u{001b}[31m",
+            "operation_id": "op-123",
+            "target": "workspace/src/main.rs",
+            "timestamp_unix_ms": 1234,
+            "detail": "must never enter the view model"
+        });
+        let record = super::TaskTraceView::from_value(&value);
+        assert_eq!(record.target_name, "main.rs");
+        assert_eq!(record.operation_id, "op-123");
+        assert_eq!(record.timestamp_unix_ms, Some(1234));
+        assert!(!record.event.chars().any(char::is_control));
+    }
+
+    #[test]
     fn report_state_distinguishes_missing_from_unreadable_without_leaking_errors() {
         assert_eq!(
             super::report_state(&Ok::<Option<u8>, String>(None)),
