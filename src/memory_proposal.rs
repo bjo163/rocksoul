@@ -956,7 +956,7 @@ mod tests {
         let mut value = candidate(
             crate::memory::MemoryKind::Episodic,
             content,
-            "turn-task-outcome",
+            "turn-work-result",
         );
         value.claim_status = crate::memory::MemoryClaimStatus::UnverifiedTaskOutcome;
         value.verification_receipt_id = receipt_id.map(str::to_owned);
@@ -1074,7 +1074,8 @@ mod tests {
             &proposal.id,
             &proposal.approval_phrase(),
             10_002,
-        ).unwrap();
+        )
+        .unwrap();
         let memory = crate::memory::MemoryStore::load(&directory).unwrap();
         let record = memory
             .records
@@ -1399,7 +1400,7 @@ mod tests {
     fn modified_payload_is_rejected_before_approval() {
         let directory = temp_dir();
         let proposal = create_one(&directory);
-        let path = directory.join("proposals.v1.json");
+        let path = directory.join("proposals.v2.json");
         let mut store: serde_json::Value =
             serde_json::from_slice(&fs::read(&path).unwrap()).unwrap();
         store["proposals"][0]["content"] =
