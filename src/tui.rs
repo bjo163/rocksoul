@@ -414,10 +414,10 @@ fn render(frame: &mut Frame<'_>, app: &mut App) {
     render_body(frame, shell[2], app);
     render_footer(frame, shell[3], app);
     if app.palette_open {
-        render_palette(frame, shell[2]);
+        render_palette(frame, shell[2], app);
     }
     if app.help_open {
-        render_help(frame, shell[2]);
+        render_help(frame, shell[2], app);
     }
 }
 
@@ -440,9 +440,9 @@ fn render_header(frame: &mut Frame<'_>, area: Rect, app: &App) {
         .map(|profile| format!("RID L{} · {} XP", profile.level(), profile.total_xp()))
         .unwrap_or_else(|| "RID NOT INITIALIZED".to_owned());
     let status = if app.snapshot.rid_error.is_some() {
-        ("DEGRADED", RED)
+        ("DEGRADED", app.palette.error)
     } else {
-        ("LOCAL RUNTIME", TEAL)
+        ("LOCAL RUNTIME", app.palette.success)
     };
     let line = Line::from(vec![
         Span::styled(
@@ -509,7 +509,7 @@ fn render_body(frame: &mut Frame<'_>, area: Rect, app: &mut App) {
         Screen::Tasks => render_tasks(frame, columns[0], app),
         Screen::Memory => render_memory(frame, columns[0], app),
         Screen::Rid => render_rid(frame, columns[0], app),
-        Screen::Tools => render_tools(frame, columns[0]),
+        Screen::Tools => render_tools(frame, columns[0], app),
         Screen::Diagnostics => render_diagnostics(frame, columns[0], app),
         Screen::Settings => render_settings(frame, columns[0], app),
     }
@@ -525,14 +525,14 @@ fn render_overview(frame: &mut Frame<'_>, area: Rect, app: &App) {
         .margin(1)
         .split(area);
     let model = if app.snapshot.model_configured {
-        ("CONFIGURED", TEAL)
+        ("CONFIGURED", app.palette.success)
     } else {
-        ("NOT CONFIGURED", AMBER)
+        ("NOT CONFIGURED", app.palette.accent)
     };
     let rid = if app.snapshot.rid_profile.is_some() {
-        ("INITIALIZED", TEAL)
+        ("INITIALIZED", app.palette.success)
     } else {
-        ("NOT INITIALIZED", AMBER)
+        ("NOT INITIALIZED", app.palette.accent)
     };
     let summary = vec![
         Line::from(vec![
