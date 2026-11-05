@@ -13,10 +13,20 @@ pub struct RidCatalogue {
     pub total_domains: usize,
     pub total_stats: usize,
     pub scoring: ScoringPolicy,
+    pub domain_stat_relationship: DomainStatRelationship,
     pub overlap_policy: OverlapPolicy,
     pub overlap_pairs: Vec<OverlapPair>,
     pub domains: Vec<UniversalDomain>,
     pub entries: Vec<CatalogueEntry>,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+pub struct DomainStatRelationship {
+    pub relationship: String,
+    pub independent_capability_count: usize,
+    pub domain_role: String,
+    pub stat_role: String,
+    pub counting_rule: String,
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -112,11 +122,19 @@ impl RidCatalogue {
             self.catalogue_id == "rocksoul.rid.universal_stats.v2",
             "unexpected universal RID catalogue identifier"
         );
-        ensure!(self.catalogue_version == "2.3.0", "unexpected universal RID catalogue version");
+        ensure!(self.catalogue_version == "2.3.1", "unexpected universal RID catalogue version");
         ensure!(self.total_domains == 99 && self.total_stats == 99, "catalogue totals must both equal 99");
         ensure!(self.domains.len() == 99, "RID catalogue must contain exactly 99 domains");
         ensure!(self.entries.len() == 99, "RID catalogue must contain exactly 99 stats");
         ensure!(self.overlap_pairs.len() == 137, "RID catalogue must contain exactly 137 unique overlap pairs");
+        ensure!(
+            self.domain_stat_relationship.relationship == "one_to_one"
+                && self.domain_stat_relationship.independent_capability_count == 99
+                && !self.domain_stat_relationship.domain_role.trim().is_empty()
+                && !self.domain_stat_relationship.stat_role.trim().is_empty()
+                && !self.domain_stat_relationship.counting_rule.trim().is_empty(),
+            "RID domain/stat relationship contract is invalid"
+        );
         ensure!(
             self.scoring.default_minimum_samples > 0
                 && self.scoring.safety_sensitive_evaluation_minimum_samples
@@ -275,6 +293,7 @@ mod tests {
         let catalogue = RidCatalogue::embedded().unwrap();
         assert_eq!(catalogue.domains.len(), 99);
         assert_eq!(catalogue.entries.len(), 99);
+        assert_eq!(catalogue.domain_stat_relationship.independent_capability_count, 99);
         assert_eq!(catalogue.by_slot(1).unwrap().label, "SEE");
         assert_eq!(catalogue.by_slot(42).unwrap().label, "RESUME");
         assert_eq!(catalogue.by_slot(99).unwrap().label, "RELIABILITY");
