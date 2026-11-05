@@ -114,12 +114,14 @@ impl ProposalStore {
             match proposal.status {
                 ProposalStatus::Pending
                     if proposal.decided_at_unix.is_some()
-                        || proposal.memory_record_id.is_some() => {
+                        || proposal.memory_record_id.is_some() =>
+                {
                     bail!("pending memory proposal has decision metadata");
                 }
                 ProposalStatus::Approved
                     if proposal.decided_at_unix.is_none()
-                        || proposal.memory_record_id.is_none() => {
+                        || proposal.memory_record_id.is_none() =>
+                {
                     bail!("approved memory proposal is missing its persisted decision");
                 }
                 ProposalStatus::Denied | ProposalStatus::Cancelled
@@ -693,12 +695,12 @@ mod tests {
             assert!(
                 create(
                     &directory,
-                crate::memory::MemoryKind::Semantic,
-                content.into(),
-                vec![],
-                "turn-secret".into(),
-                "test-model".into(),
-                None,
+                    crate::memory::MemoryKind::Semantic,
+                    content.into(),
+                    vec![],
+                    "turn-secret".into(),
+                    "test-model".into(),
+                    None,
                     100,
                 )
                 .is_err()
