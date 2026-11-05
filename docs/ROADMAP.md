@@ -63,7 +63,7 @@ The roadmap is capability-driven. Each stage must deliver a working, tested incr
 - [x] Support expiry for working-memory records.
 - [x] Show real store counts and provenance in the Cognitive Cockpit.
 - [x] Migrate v1-to-v2-to-v3 memory stores with retention metadata, metadata-preserving validation, and backup recovery diagnostics.
-- [ ] Migrate v3-to-v4 claim provenance without promoting legacy model proposals; gate verified task outcomes on exact fresh single-use kernel receipts; support revocation downgrade and append-only supersession (proposed in PR #51).
+- [ ] Migrate v3-to-v4 claim provenance without promoting legacy model proposals; gate verified task outcomes on exact fresh single-use kernel receipts with a matching expected task/operation ID; support revocation downgrade and append-only supersession (proposed in PR #51).
 - [x] Serialize memory read-modify-write CLI transactions with a stable OS lock file, bounded five-second acquisition timeout, and subprocess tests for contention, process-exit release, and concurrent writers.
 - [x] Add versioned per-record retention policies, dry-run-first expiry pruning, and append-only content-free forgetting tombstones.
 - [x] Apply tombstones during normal load and backup recovery; scrub managed backups, legacy snapshots, and exports after explicit forgetting.
