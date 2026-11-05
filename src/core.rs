@@ -224,13 +224,27 @@ impl VerificationReceipt {
         self.verified_at_unix
     }
 
-    pub fn verifier_id(&self) -> &str { &self.verifier_id }
-    pub fn verifier_version(&self) -> u16 { self.verifier_version }
-    pub fn normalized_claim(&self) -> Option<&str> { self.normalized_claim.as_deref() }
-    pub fn claim_hash(&self) -> Option<&str> { self.claim_hash.as_deref() }
-    pub fn evidence_hash(&self) -> &str { &self.evidence_hash }
-    pub fn receipt_hash(&self) -> &str { &self.receipt_hash }
-    pub fn outcome(&self) -> &str { &self.outcome }
+    pub fn verifier_id(&self) -> &str {
+        &self.verifier_id
+    }
+    pub fn verifier_version(&self) -> u16 {
+        self.verifier_version
+    }
+    pub fn normalized_claim(&self) -> Option<&str> {
+        self.normalized_claim.as_deref()
+    }
+    pub fn claim_hash(&self) -> Option<&str> {
+        self.claim_hash.as_deref()
+    }
+    pub fn evidence_hash(&self) -> &str {
+        &self.evidence_hash
+    }
+    pub fn receipt_hash(&self) -> &str {
+        &self.receipt_hash
+    }
+    pub fn outcome(&self) -> &str {
+        &self.outcome
+    }
 
     /// Detect accidental or partial mutation; this digest is not a digital signature.
     pub fn integrity_valid(&self) -> bool {
@@ -323,9 +337,10 @@ pub fn verify_turn_and_award_xp(
     let evidence_bytes = serde_json::to_vec(&request.checks)
         .expect("verification evidence serialization cannot fail");
     let evidence_hash = format!("{:x}", Sha256::digest(evidence_bytes));
-    let claim_hash = request.normalized_claim.as_ref().map(|claim| {
-        format!("{:x}", Sha256::digest(claim.as_bytes()))
-    });
+    let claim_hash = request
+        .normalized_claim
+        .as_ref()
+        .map(|claim| format!("{:x}", Sha256::digest(claim.as_bytes())));
     let event = XpEvent {
         event_id: format!("verification:{}", request.verification_id),
         amount: xp_awarded,
@@ -358,7 +373,8 @@ pub fn verify_turn_and_award_xp(
         &claim_hash,
         &evidence_hash,
         &outcome,
-    )).expect("verification receipt serialization cannot fail");
+    ))
+    .expect("verification receipt serialization cannot fail");
     let receipt_hash = format!("{:x}", Sha256::digest(receipt_hash_payload));
     Ok(VerificationOutcome::Verified {
         receipt: VerificationReceipt {
@@ -382,7 +398,11 @@ pub fn verify_turn_and_award_xp(
 }
 
 pub fn normalize_task_claim(claim: &str) -> String {
-    claim.split_whitespace().collect::<Vec<_>>().join(" ").to_lowercase()
+    claim
+        .split_whitespace()
+        .collect::<Vec<_>>()
+        .join(" ")
+        .to_lowercase()
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -533,7 +553,10 @@ mod tests {
         let VerificationOutcome::Verified { receipt, .. } = outcome else {
             panic!("expected verified claim receipt");
         };
-        assert_eq!(receipt.normalized_claim(), Some("deployment completed successfully"));
+        assert_eq!(
+            receipt.normalized_claim(),
+            Some("deployment completed successfully")
+        );
         assert_eq!(receipt.verifier_id(), "rocksoul.core.verifier");
         assert_eq!(receipt.verifier_version(), 1);
         assert!(receipt.integrity_valid());
