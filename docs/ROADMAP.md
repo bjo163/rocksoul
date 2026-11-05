@@ -54,7 +54,7 @@ The roadmap is capability-driven. Each stage must deliver a working, tested incr
 
 ## Stage 2 — Persistent memory
 
-**Status:** Local-only schema v3 memory lifecycle is implemented on this branch; automatic cognition-to-memory and retrieval injection remain disabled.
+**Status:** Local-only schema v3 memory lifecycle and deterministic retrieval evaluation are merged to `main`. The human-reviewed proposal workflow is being validated in PR #50; automatic cognition-to-memory ingestion and retrieval injection remain disabled.
 
 - [x] Add a root-local JSON store with schema versioning and atomic replacement/backup recovery.
 - [x] Separate episodic, semantic, procedural, working, and derived record kinds.
@@ -69,7 +69,7 @@ The roadmap is capability-driven. Each stage must deliver a working, tested incr
 - [x] Add deterministic lexical ranking, provenance filters, and offline held-out synthetic retrieval evaluation with precision@k/recall@k, stale ranking, expiry leakage, and deletion leakage gates.
 - [x] Persist machine-readable retrieval reports and run the evaluation in Linux CI and Windows portable smoke tests.
 - [ ] Consider memory context injection only after separate policy approval and additional contamination/regression tests.
-- [ ] Add model-proposed memory with human approval; never enable silent model writes.
+- [x] Add typed model-proposal records with source-turn provenance, retention suggestions, credential/sensitive-category rejection, exact SHA-256 payload binding, one-time interactive approval, denial/cancellation, and idempotent persistence; silent model writes and automatic context injection remain disabled.
 
 ## Stage 3 — Skills and tools
 
