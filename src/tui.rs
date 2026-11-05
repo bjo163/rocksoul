@@ -1497,6 +1497,16 @@ mod tests {
                             .draw(|frame| super::render(frame, &mut app))
                             .unwrap();
                     }
+                    app.palette_open = true;
+                    terminal
+                        .draw(|frame| super::render(frame, &mut app))
+                        .unwrap();
+                    app.palette_open = false;
+                    app.help_open = true;
+                    terminal
+                        .draw(|frame| super::render(frame, &mut app))
+                        .unwrap();
+                    app.help_open = false;
                 }
             }
         }
