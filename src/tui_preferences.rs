@@ -82,17 +82,22 @@ impl TuiPreferences {
         let temporary = path.with_extension("json.tmp");
         let backup = path.with_extension("json.bak");
         if temporary.exists() {
-            fs::remove_file(&temporary).with_context(|| "could not remove stale preferences temp file")?;
+            fs::remove_file(&temporary)
+                .with_context(|| "could not remove stale preferences temp file")?;
         }
         let bytes = serde_json::to_vec_pretty(self)?;
-        let mut file = File::create(&temporary).with_context(|| "could not create preferences temp file")?;
-        file.write_all(&bytes).with_context(|| "could not write preferences temp file")?;
-        file.sync_all().with_context(|| "could not sync preferences temp file")?;
+        let mut file =
+            File::create(&temporary).with_context(|| "could not create preferences temp file")?;
+        file.write_all(&bytes)
+            .with_context(|| "could not write preferences temp file")?;
+        file.sync_all()
+            .with_context(|| "could not sync preferences temp file")?;
         drop(file);
 
         if path.exists() {
             if backup.exists() {
-                fs::remove_file(&backup).with_context(|| "could not remove stale preferences backup")?;
+                fs::remove_file(&backup)
+                    .with_context(|| "could not remove stale preferences backup")?;
             }
             fs::rename(path, &backup).with_context(|| "could not preserve previous preferences")?;
             if let Err(error) = fs::rename(&temporary, path) {
@@ -109,7 +114,10 @@ impl TuiPreferences {
 
 #[cfg(test)]
 mod tests {
-    use super::{DensityMode, LocaleMode, PREFERENCES_FILE, PREFERENCES_SCHEMA_VERSION, ThemeMode, TuiPreferences};
+    use super::{
+        DensityMode, LocaleMode, PREFERENCES_FILE, PREFERENCES_SCHEMA_VERSION, ThemeMode,
+        TuiPreferences,
+    };
     use std::{
         fs,
         path::PathBuf,
