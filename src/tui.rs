@@ -680,88 +680,65 @@ fn render_brains(frame: &mut Frame<'_>, area: Rect, app: &App) {
 }
 
 fn render_tasks(frame: &mut Frame<'_>, area: Rect, app: &mut App) {
-    let max_events = task_event_limit(app.preferences.density);
-    let lines = match AppPaths::discover().and_then(|paths| {
-        let records = task_trace::read_recent(
-            &paths.logs_dir.join("task-trace.v1.jsonl"),
-            262_144,
-            max_events,
-        )?;
-        if records.is_empty() {
+    let lines = match &app.snapshot.task_history {
+        Ok(records) if records.is_empty() => {
             app.task_selected = 0;
-            return Ok(vec![
+            vec![
                 Line::from(Span::styled(
                     "NO TASK EVENTS RECORDED",
                     Style::default().fg(app.palette.muted).add_modifier(Modifier::BOLD),
                 )),
                 Line::from("Verified workspace operations will appear here after execution."),
                 Line::from("No queue or active task is inferred from an empty trace."),
-            ]);
+            ]
         }
-        app.task_selected = app.task_selected.min(records.len().saturating_sub(1));
-        let mut lines = vec![
-            Line::from(Span::styled(
-                format!("PERSISTED TASK TRACE · {} RECENT EVENTS", records.len()),
+        Ok(records) => {
+            app.task_selected = app.task_selected.min(records.len().saturating_sub(1));
+            let mut lines = vec![
+                Line::from(Span::styled(
+                    format!("PERSISTED TASK TRACE · {} RECENT EVENTS", records.len()),
+                    Style::default().fg(app.palette.accent).add_modifier(Modifier::BOLD),
+                )),
+                Line::from("Newest events first · ↑/↓ select · content-free metadata only"),
+                Line::from(""),
+            ];
+            for (index, record) in records.iter().enumerate() {
+                let timestamp = record
+                    .timestamp_unix_ms
+                    .map(|value| value.to_string())
+                    .unwrap_or_else(|| "time n/a".to_owned());
+                lines.push(Line::from(format!(
+                    "{} {timestamp}  {:<18}  {:<12}  {}",
+                    if index == app.task_selected { "▸" } else { " " },
+                    record.event,
+                    clip_text(&record.operation_id, 12),
+                    record.target_name
+                )));
+            }
+            let selected = &records[app.task_selected];
+            lines.push(Line::from(""));
+            lines.push(Line::from(Span::styled(
+                "SELECTED EVENT",
                 Style::default().fg(app.palette.accent).add_modifier(Modifier::BOLD),
-            )),
-            Line::from("Newest events first · ↑/↓ select · content-free metadata only"),
-            Line::from(""),
-        ];
-        for (index, record) in records.iter().enumerate() {
-            let event = safe_trace_text(record.get("event"), 18);
-            let operation = safe_trace_text(record.get("operation_id"), 12);
-            let target = safe_trace_text(record.get("target"), 96);
-            let target_name = target.rsplit('/').next().unwrap_or("target");
-            let timestamp = record
-                .get("timestamp_unix_ms")
-                .and_then(serde_json::Value::as_u64)
-                .map(|value| value.to_string())
-                .unwrap_or_else(|| "time n/a".to_owned());
-            lines.push(Line::from(format!(
-                "{} {timestamp}  {event:<18}  {operation:<12}  {target_name}",
-                if index == app.task_selected {
-                    "▸"
-                } else {
-                    " "
-                }
             )));
+            lines.push(Line::from(format!("Event       {}", selected.event)));
+            lines.push(Line::from(format!("Operation   {}", selected.operation_id)));
+            lines.push(Line::from(format!("Target      {}", selected.target_name)));
+            lines.push(Line::from(format!(
+                "Timestamp   {}",
+                selected
+                    .timestamp_unix_ms
+                    .map(|value| value.to_string())
+                    .unwrap_or_else(|| "n/a".to_owned())
+            )));
+            lines
         }
-        let selected = &records[app.task_selected];
-        lines.push(Line::from(""));
-        lines.push(Line::from(Span::styled(
-            "SELECTED EVENT",
-            Style::default().fg(app.palette.accent).add_modifier(Modifier::BOLD),
-        )));
-        lines.push(Line::from(format!(
-            "Event       {}",
-            safe_trace_text(selected.get("event"), 32)
-        )));
-        lines.push(Line::from(format!(
-            "Operation   {}",
-            safe_trace_text(selected.get("operation_id"), 64)
-        )));
-        let target = safe_trace_text(selected.get("target"), 96);
-        lines.push(Line::from(format!(
-            "Target      {}",
-            target.rsplit('/').next().unwrap_or("target")
-        )));
-        lines.push(Line::from(format!(
-            "Timestamp   {}",
-            selected
-                .get("timestamp_unix_ms")
-                .and_then(serde_json::Value::as_u64)
-                .map(|value| value.to_string())
-                .unwrap_or_else(|| "n/a".to_owned())
-        )));
-        Ok(lines)
-    }) {
-        Ok(lines) => lines,
         Err(_) => vec![
             Line::from(Span::styled(
                 "TASK TRACE UNAVAILABLE",
                 Style::default().fg(app.palette.error).add_modifier(Modifier::BOLD),
             )),
-            Line::from("The trace is malformed, unsupported, or inaccessible."),
+            Line::from("The trace is malformed, unsupported, oversized or inaccessible."),
             Line::from("No task state is inferred from invalid records."),
         ],
     };
@@ -771,30 +748,6 @@ fn render_tasks(frame: &mut Frame<'_>, area: Rect, app: &mut App) {
             .block(panel("TASK / TURN MONITOR", &app.palette)),
         area,
     );
-}
-
-fn safe_rid_error(error: &str) -> &'static str {
-    let normalized = error.to_ascii_lowercase();
-    if normalized.contains("unsupported") || normalized.contains("schema") {
-        "unsupported schema/version"
-    } else if normalized.contains("json")
-        || normalized.contains("parse")
-        || normalized.contains("malformed")
-    {
-        "invalid profile data"
-    } else if normalized.contains("permission") || normalized.contains("access denied") {
-        "profile inaccessible"
-    } else {
-        "profile invalid; details withheld"
-    }
-}
-
-fn report_state<T>(report: &std::result::Result<Option<T>, String>) -> &'static str {
-    match report {
-        Ok(Some(_)) => "available",
-        Ok(None) => "not run",
-        Err(_) => "corrupt / unavailable",
-    }
 }
 
 fn safe_trace_text(value: Option<&serde_json::Value>, limit: usize) -> String {
@@ -815,77 +768,36 @@ fn safe_trace_text(value: Option<&serde_json::Value>, limit: usize) -> String {
 
 fn render_memory(frame: &mut Frame<'_>, area: Rect, app: &App) {
     let max_records = memory_record_limit(app.preferences.density);
-    let lines = match AppPaths::discover().and_then(|paths| {
-        let store = MemoryStore::load(&paths.memory_dir)?;
-        let now = now_unix();
-        let active = store.active_records(now);
-        let mut lines = vec![
-            Line::from(format!("Store schema         v{}", store.schema_version)),
-            Line::from(format!("Active records       {}", active.len())),
-            Line::from(format!("Store                {}", paths.memory_dir.join("store.v4.json").display())),
-            Line::from(format!(
-                "Search               {}{}",
-                if app.memory_search_active { ">" } else { "" },
-                if app.memory_query.is_empty()
-            || app.memory_query.split_whitespace().all(|token| token.starts_with("source:"))
-        { "press / to search" } else { &app.memory_query }
-            )),
-            Line::from(format!(
-                "Filters              kind={:?} · claim={:?} · source:<exact>",
-                app.memory_kind_filter,
-                app.memory_claim_filter
-            )),
-            Line::from(""),
-            Line::from("ID             KIND       CLAIM STATUS             SOURCE                       ACCESS"),
-        ];
-        if app.memory_query.is_empty()
-            || app.memory_query
-                .split_whitespace()
-                .all(|token| token.starts_with("source:"))
-        {
-            let mut records = active
-                .into_iter()
-                .filter(|record| {
-                    app.memory_kind_filter.is_none_or(|kind| record.kind == kind)
-                        && app.memory_claim_filter.is_none_or(|status| record.claim_status == status)
-                })
-                .collect::<Vec<_>>();
-            if let Some(source) = app.memory_query.split_whitespace().find_map(|token| token.strip_prefix("source:")) {
-                records.retain(|record| record.source == source);
-            }
-            records.sort_by_key(|record| std::cmp::Reverse(record.created_at_unix));
-            if records.is_empty() {
-                lines.push(Line::from("No active memory records."));
-            }
-            for (index, record) in records.iter().take(max_records).enumerate() {
-                lines.push(Line::from(format!(
-                    "{} {:<12} {:<10} {:<24} {:<26} {}",
-                    if index == app.memory_selected { "▸" } else { " " },
-                    clip_text(&record.id, 12),
-                    record.kind,
-                    record.claim_status,
-                    clip_text(&record.source, 26),
-                    if record.user_approved { "approved" } else { "unapproved" }
-                )));
-                lines.push(Line::from(format!(
-                    "  created={} · expires={}",
-                    record.created_at_unix,
-                    record.expires_at_unix
-                        .map(|timestamp| timestamp.to_string())
-                        .unwrap_or_else(|| "never".to_owned())
-                )));
-            }
-            if app.memory_detail_open {
-                if let Some(record) = records.get(app.memory_selected.min(records.len().saturating_sub(1))) {
-                    push_memory_detail(&mut lines, &record.content);
-                }
-            } else if !records.is_empty() {
-                lines.push(Line::from("Press Enter to reveal the selected record after the privacy guard."));
-            }
-            if records.len() > MAX_RECORDS {
-                lines.push(Line::from(format!("Showing newest {MAX_RECORDS} of {} active records.", records.len())));
-            }
-        } else {
+    let lines = match &app.snapshot.memory {
+        Ok(memory) => {
+            let store = &memory.store;
+            let active = store.active_records(now_unix());
+            let mut lines = vec![
+                Line::from(format!("Store schema         v{}", memory.health.schema_version)),
+                Line::from(format!(
+                    "Active records       {}/{}",
+                    memory.health.active_records, memory.health.total_records
+                )),
+                Line::from(format!(
+                    "Store                {}",
+                    app.snapshot.paths.memory_dir.join("store.v4.json").display()
+                )),
+                Line::from(format!(
+                    "Search               {}{}",
+                    if app.memory_search_active { ">" } else { "" },
+                    if app.memory_query.is_empty() {
+                        "press / to search"
+                    } else {
+                        &app.memory_query
+                    }
+                )),
+                Line::from(format!(
+                    "Filters              kind={:?} · claim={:?} · source:<exact>",
+                    app.memory_kind_filter, app.memory_claim_filter
+                )),
+                Line::from(""),
+                Line::from("ID             KIND       CLAIM STATUS             SOURCE                       ACCESS"),
+            ];
             let source_filter = app
                 .memory_query
                 .split_whitespace()
@@ -896,68 +808,138 @@ fn render_memory(frame: &mut Frame<'_>, area: Rect, app: &App) {
                 .filter(|token| !token.starts_with("source:"))
                 .collect::<Vec<_>>()
                 .join(" ");
-            let filters = MemorySearchFilters {
-                kind: app.memory_kind_filter,
-                source: source_filter.map(str::to_owned),
-                ..MemorySearchFilters::default()
-            };
-            let results = store.search_ranked(&text_query, &filters, now, MAX_RECORDS * 4)
-                .into_iter()
-                .filter(|record| {
-                    app.memory_claim_filter.is_none_or(|status| record.claim_status == status)
-                })
-                .take(MAX_RECORDS)
-                .collect::<Vec<_>>();
-            if results.is_empty() {
-                lines.push(Line::from("No active records matched this local search."));
-            }
-            for (index, record) in results.iter().enumerate() {
-                lines.push(Line::from(format!(
-                    "{} {:<12} {:<10} {:<24} {:<26} {}",
-                    if index == app.memory_selected { "▸" } else { " " },
-                    clip_text(&record.record_id, 12),
-                    record.kind,
-                    record.claim_status,
-                    clip_text(&record.source, 26),
-                    record.verification_receipt_id.as_deref().map(|_| "receipt").unwrap_or("no receipt")
-                )));
-                let expires = store
-                    .records
-                    .iter()
-                    .find(|stored| stored.id == record.record_id)
-                    .and_then(|stored| stored.expires_at_unix)
-                    .map(|timestamp| timestamp.to_string())
-                    .unwrap_or_else(|| "never / n/a".to_owned());
-                lines.push(Line::from(format!(
-                    "  created={} · expires={expires}",
-                    record.created_at_unix
-                )));
-            }
-            if app.memory_detail_open {
-                if let Some(record) = results.get(app.memory_selected.min(results.len().saturating_sub(1))) {
-                    push_memory_detail(&mut lines, &record.content);
+            if text_query.is_empty() {
+                let mut records = active
+                    .into_iter()
+                    .filter(|record| {
+                        app.memory_kind_filter.is_none_or(|kind| record.kind == kind)
+                            && app
+                                .memory_claim_filter
+                                .is_none_or(|status| record.claim_status == status)
+                    })
+                    .collect::<Vec<_>>();
+                if let Some(source) = source_filter {
+                    records.retain(|record| record.source == source);
+                }
+                records.sort_by_key(|record| std::cmp::Reverse(record.created_at_unix));
+                if records.is_empty() {
+                    lines.push(Line::from("No active memory records match these filters."));
+                }
+                for (index, record) in records.iter().take(max_records).enumerate() {
+                    lines.push(Line::from(format!(
+                        "{} {:<12} {:<10} {:<24} {:<26} {}",
+                        if index == app.memory_selected { "▸" } else { " " },
+                        clip_text(&record.id, 12),
+                        record.kind,
+                        record.claim_status,
+                        clip_text(&record.source, 26),
+                        if record.user_approved { "approved" } else { "unapproved" }
+                    )));
+                    lines.push(Line::from(format!(
+                        "  created={} · expires={}",
+                        record.created_at_unix,
+                        record
+                            .expires_at_unix
+                            .map(|timestamp| timestamp.to_string())
+                            .unwrap_or_else(|| "never".to_owned())
+                    )));
+                }
+                if app.memory_detail_open {
+                    if let Some(record) =
+                        records.get(app.memory_selected.min(records.len().saturating_sub(1)))
+                    {
+                        push_memory_detail(&mut lines, &record.content);
+                    }
+                } else if !records.is_empty() {
+                    lines.push(Line::from(
+                        "Press Enter to reveal the selected record after the privacy guard.",
+                    ));
+                }
+                if records.len() > max_records {
+                    lines.push(Line::from(format!(
+                        "Showing newest {max_records} of {} matching records.",
+                        records.len()
+                    )));
                 }
             } else {
-                lines.push(Line::from("Press Enter to reveal the selected record after the privacy guard."));
+                let filters = MemorySearchFilters {
+                    kind: app.memory_kind_filter,
+                    source: source_filter.map(str::to_owned),
+                    ..MemorySearchFilters::default()
+                };
+                let results = store
+                    .search_ranked(&text_query, &filters, now_unix(), max_records * 4)
+                    .into_iter()
+                    .filter(|record| {
+                        app.memory_claim_filter
+                            .is_none_or(|status| record.claim_status == status)
+                    })
+                    .take(max_records)
+                    .collect::<Vec<_>>();
+                if results.is_empty() {
+                    lines.push(Line::from("No active records matched this local search."));
+                }
+                for (index, record) in results.iter().enumerate() {
+                    lines.push(Line::from(format!(
+                        "{} {:<12} {:<10} {:<24} {:<26} {}",
+                        if index == app.memory_selected { "▸" } else { " " },
+                        clip_text(&record.record_id, 12),
+                        record.kind,
+                        record.claim_status,
+                        clip_text(&record.source, 26),
+                        record
+                            .verification_receipt_id
+                            .as_deref()
+                            .map(|_| "receipt")
+                            .unwrap_or("no receipt")
+                    )));
+                    let expires = store
+                        .records
+                        .iter()
+                        .find(|stored| stored.id == record.record_id)
+                        .and_then(|stored| stored.expires_at_unix)
+                        .map(|timestamp| timestamp.to_string())
+                        .unwrap_or_else(|| "never / n/a".to_owned());
+                    lines.push(Line::from(format!(
+                        "  created={} · expires={expires}",
+                        record.created_at_unix
+                    )));
+                }
+                if app.memory_detail_open {
+                    if let Some(record) = results
+                        .get(app.memory_selected.min(results.len().saturating_sub(1)))
+                    {
+                        push_memory_detail(&mut lines, &record.content);
+                    }
+                } else if !results.is_empty() {
+                    lines.push(Line::from(
+                        "Press Enter to reveal the selected record after the privacy guard.",
+                    ));
+                }
+                lines.push(Line::from(
+                    "Search inspects local record content; content itself remains hidden by default.",
+                ));
             }
-            lines.push(Line::from("Search inspects local record content; content itself remains hidden by default."));
+            lines.push(Line::from(""));
+            lines.push(Line::from("Read-only inspector · no memory writes or forgetting actions."));
+            lines
         }
-        lines.push(Line::from(""));
-        lines.push(Line::from("Read-only inspector · no memory writes or forgetting actions."));
-        Ok(lines)
-    }) {
-        Ok(lines) => lines,
         Err(_) => vec![
-            Line::from(Span::styled("MEMORY STORE UNAVAILABLE", Style::default().fg(app.palette.error).add_modifier(Modifier::BOLD))),
+            Line::from(Span::styled(
+                "MEMORY STORE UNAVAILABLE",
+                Style::default().fg(app.palette.error).add_modifier(Modifier::BOLD),
+            )),
             Line::from("The store is missing, corrupt, unsupported, or inaccessible."),
             Line::from("No memory content is exposed in this error state."),
         ],
     };
     frame.render_widget(
-        Paragraph::new(lines).wrap(Wrap { trim: true }).block(panel(
-            "MEMORY / EXPERIENCE · ↑/↓ SELECT · / SEARCH · f KIND · c CLAIM",
-            &app.palette,
-        )),
+        Paragraph::new(lines)
+            .wrap(Wrap { trim: true })
+            .block(panel(
+                "MEMORY / EXPERIENCE · ↑/↓ SELECT · / SEARCH · f KIND · c CLAIM",
+                &app.palette,
+            )),
         area,
     );
 }
