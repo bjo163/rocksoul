@@ -41,7 +41,7 @@ The current seed runtime includes:
 - **RID profile** — local instance identity, age, append-only XP events, deterministic level progression, and 99 unrated capability slots.
 - **Cognitive Cockpit** — keyboard-first Ratatui terminal interface.
 - **Bounded cognition loop** — structured planning, up to three model-only reasoning steps, a structured reflector, and explicit per-turn budgets.
-- **Explicit local memory** — versioned local JSON store with retention metadata, dry-run expiry pruning, managed forgetting tombstones, provenance-aware ranked retrieval, and offline retrieval evaluation.
+- **Explicit local memory** — versioned local JSON store with retention metadata, dry-run expiry pruning, managed forgetting tombstones, provenance-aware ranked retrieval, explicit claim status, kernel-receipt-gated task outcomes, and offline retrieval evaluation.
 - **Human-reviewed model memory proposals** — candidates are redacted/validated, stored as pending proposals, and persisted only after an exact SHA-256-bound interactive approval. Candidate content is scrubbed from proposal audit records after approval, denial, or cancellation; silent writes remain disabled.
 - **Core Integrity evaluation** — deterministic offline checks for runtime invariants.
 
@@ -125,7 +125,10 @@ rocksoul eval latest
 rocksoul eval memory-latest
 
 rocksoul memory list
-rocksoul memory propose semantic --content "Candidate fact" --source-turn-reference "turn-42" --provenance "model-name"
+rocksoul memory propose semantic --content "Candidate fact" --source-turn-reference "turn-42" --provenance "model-name" --claim-status inference
+rocksoul memory propose episodic --content "Task completed" --source-turn-reference "turn-43" --provenance "model-name" --claim-status unverified-task-outcome --verification-receipt-id <verification-id>
+rocksoul memory supersede <memory-id>
+rocksoul memory revoke-receipt <verification-id>
 rocksoul memory proposals
 rocksoul memory approve <proposal-id>   # exact interactive approval required
 rocksoul memory deny <proposal-id>
