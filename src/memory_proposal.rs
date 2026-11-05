@@ -390,6 +390,7 @@ struct ReceiptRevocation {
 
 pub fn revoke_receipt(
     receipts_directory: &Path,
+    memory_directory: &Path,
     verification_id: &str,
     now: u64,
     reason_code: &str,
@@ -411,6 +412,7 @@ pub fn revoke_receipt(
     })?;
     file.write_all(&[10])?;
     file.sync_all()?;
+    crate::memory::downgrade_revoked_receipt_claims(memory_directory, verification_id, now)?;
     Ok(())
 }
 
@@ -972,7 +974,7 @@ mod tests {
             crate::memory::MemoryClaimStatus::UnverifiedTaskOutcome);
 
         issue_receipt(&receipts, "verify-revoked", claim, 30_000);
-        super::revoke_receipt(&receipts, "verify-revoked", 30_001, "operator_review").unwrap();
+        super::revoke_receipt(&receipts, &directory, "verify-revoked", 30_001, "operator_review").unwrap();
         let revoked = create(&directory, task_candidate(claim, Some("verify-revoked")), 30_002).unwrap();
         let revoked_id = approve_with_receipts(
             &directory, Some(&receipts), &revoked.id, &revoked.approval_phrase(), 30_003,
