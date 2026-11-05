@@ -781,7 +781,8 @@ mod tests {
     };
 
     use super::{
-        MemoryProposalCandidate, ProposalStatus, approve, cancel, create, deny, get_pending, list,
+        MemoryProposalCandidate, ProposalStatus, approve, approve_with_receipts, cancel, create,
+        deny, get_pending, list,
     };
 
     fn temp_dir() -> PathBuf {
@@ -806,6 +807,8 @@ mod tests {
             source_turn_reference: source_turn_reference.into(),
             provenance: "test-model".into(),
             expires_at_unix: None,
+            claim_status: crate::memory::MemoryClaimStatus::Inference,
+            verification_receipt_id: None,
         }
     }
 
