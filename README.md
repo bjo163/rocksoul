@@ -126,7 +126,7 @@ rocksoul eval memory-latest
 
 rocksoul memory list
 rocksoul memory propose semantic --content "Candidate fact" --source-turn-reference "turn-42" --provenance "model-name" --claim-status inference
-rocksoul memory propose episodic --content "Task completed" --source-turn-reference "turn-43" --provenance "model-name" --claim-status unverified-task-outcome --verification-receipt-id <verification-id>
+rocksoul memory propose episodic --content "Task completed" --source-turn-reference "turn-43" --provenance "model-name" --claim-status unverified-task-outcome --verification-receipt-id <verification-id> --verification-task-id <task-id>
 rocksoul memory supersede <memory-id>
 rocksoul memory revoke-receipt <verification-id>
 rocksoul memory proposals
