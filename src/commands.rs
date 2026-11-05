@@ -120,7 +120,7 @@ pub fn init() -> Result<()> {
     println!("Workspace: {}", paths.workspace_dir.display());
     println!(
         "Memory store: {} ({})",
-        paths.memory_dir.join("store.v2.json").display(),
+        paths.memory_dir.join("store.v3.json").display(),
         if memory_created {
             "created"
         } else {
@@ -789,7 +789,7 @@ pub fn memory_status() -> Result<()> {
     print_memory_records(&store.active_records(now_unix()?), "Rocksoul memory");
     println!(
         "Store: {}",
-        paths.memory_dir.join("store.v2.json").display()
+        paths.memory_dir.join("store.v3.json").display()
     );
     Ok(())
 }
@@ -832,7 +832,7 @@ fn run_memory(command: MemoryCommand) -> Result<()> {
                         println!("ID: {id}");
                         println!(
                             "Store: {}",
-                            paths.memory_dir.join("store.v2.json").display()
+                            paths.memory_dir.join("store.v3.json").display()
                         );
                     }
                     MemoryCommand::List => {
@@ -858,6 +858,25 @@ fn run_memory(command: MemoryCommand) -> Result<()> {
                         }
                         store.clear();
                         println!("All memory records permanently deleted.");
+                    }
+                    MemoryCommand::PruneExpired { apply } => {
+                        let now = now_unix()?;
+                        let expired = store.expired_ids(now);
+                        if apply {
+                            store.prune_expired(now);
+                            println!("Forgot {} expired memory record(s).", expired.len());
+                        } else {
+                            println!(
+                                "Dry run: {} expired memory record(s) would be forgotten.",
+                                expired.len()
+                            );
+                            for id in expired {
+                                println!("- {id}");
+                            }
+                            println!(
+                                "Run rocksoul memory prune-expired --apply to confirm deletion."
+                            );
+                        }
                     }
                     MemoryCommand::Export => {
                         unreachable!("export is handled outside the transaction")

@@ -36,11 +36,13 @@ This verifier is not yet wired to the interactive planner's acceptance checks or
 ## Memory and other runtime boundaries
 
 Persistent local memory is implemented separately from the REPL:
-- The memory store is schema v2 JSON under the executable root. Existing v1 stores are migrated on first load to v2 while preserving the original v1 file as a rollback source; each subsequent successful save retains one validated v2 backup.
+- The memory store is schema v3 JSON under the executable root. Existing v1 and v2 stores are migrated on first load to v3 with per-record retention policy metadata; originals remain as rollback sources until an explicit forget operation requires scrubbing managed legacy snapshots.
 - CLI commands provide explicit user-controlled add, list, search, export, delete, and clear operations.
 - The model cannot silently write or delete memory.
+- User forgetting is recorded in an append-only `forgetting.jsonl` ledger containing record IDs, timestamps, and reason codes only—not deleted content. The ledger is applied during load and backup recovery; managed backup, legacy snapshot, and latest export files are scrubbed after forgetting.
+- Expired records are excluded from active reads and exports. `memory prune-expired` previews candidates; `--apply` explicitly commits deletion. Ordinary file deletion is not forensic secure erasure; external copies, filesystem snapshots, and backups outside the managed root remain outside this guarantee.
 - Conversation history is session-only; it is not automatically ingested into memory or injected from memory into prompts.
-- Schema v1-to-v2 migration and multi-process locking are implemented. CLI read-modify-write transactions use a stable OS lock file with a bounded five-second wait; network filesystems and storage layers that do not honor OS advisory locks are unsupported for concurrent access. Retrieval ranking and evaluated context injection remain planned.
+- Schema v1/v2-to-v3 migration, versioned retention metadata, an append-only content-free forgetting ledger, and multi-process locking are implemented. Tombstones are applied during load and backup recovery; managed backups, legacy snapshots, and latest exports are removed after a forget operation. Ordinary file deletion is not a forensic secure-erasure guarantee. CLI read-modify-write transactions use a stable OS lock file with a bounded five-second wait; network filesystems and storage layers that do not honor OS advisory locks are unsupported for concurrent access. Retrieval ranking and evaluated context injection remain planned.
 
 The current runtime exposes no shell executor, arbitrary function tools, plugin marketplace, or autonomous filesystem mutation. Model-only reasoning steps do not perform external actions. Self-modification and autonomous code execution are not enabled.
 

@@ -41,7 +41,7 @@ The current seed runtime includes:
 - **RID profile** — local instance identity, age, append-only XP events, deterministic level progression, and 99 unrated capability slots.
 - **Cognitive Cockpit** — keyboard-first Ratatui terminal interface.
 - **Bounded cognition loop** — structured planning, up to three model-only reasoning steps, a structured reflector, and explicit per-turn budgets.
-- **Explicit local memory** — versioned local JSON store; model output cannot silently write or delete memories.
+- **Explicit local memory** — versioned local JSON store with retention metadata, dry-run expiry pruning, and tombstones that prevent forgotten records from returning through managed backup recovery.
 - **Core Integrity evaluation** — deterministic offline checks for runtime invariants.
 
 The current release does **not** provide unrestricted shell execution, autonomous filesystem mutation, automatic code execution, multi-agent orchestration, or automatic self-modification. These are deliberate boundaries, not hidden capabilities.
@@ -127,6 +127,8 @@ rocksoul workspace trace
 rocksoul memory add semantic --content "A user-approved fact"
 rocksoul memory search "fact"
 rocksoul memory delete <memory-id>
+rocksoul memory prune-expired                 # preview only
+rocksoul memory prune-expired --apply          # confirm expiry deletion
 rocksoul memory export
 
 rocksoul --help
