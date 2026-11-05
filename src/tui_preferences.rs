@@ -4,7 +4,6 @@ use std::{
     fs::{self, File},
     io::Write,
     path::Path,
-    time::{SystemTime, UNIX_EPOCH},
 };
 
 pub const PREFERENCES_SCHEMA_VERSION: u16 = 1;
