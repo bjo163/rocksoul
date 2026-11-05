@@ -3,7 +3,7 @@
 **Purpose:** Give a local coding agent enough verified context to continue Rocksoul safely without relying on chat history.
 **Repository:** `bjo163/rocksoul`
 **Canonical branch:** `main`
-**Last reviewed:** 2026-11-05
+**Last reviewed:** 2026-11-06
 **Product principle:** **One Core. Infinite Evolution.**
 
 > This document is a working handoff, not permission to bypass repository governance. The latest `origin/main` is always authoritative.
