@@ -830,10 +830,11 @@ fn render_memory(frame: &mut Frame<'_>, area: Rect, app: &App) {
                 if records.is_empty() {
                     lines.push(Line::from("No active memory records match these filters."));
                 }
+                let selected_index = app.memory_selected.min(records.len().saturating_sub(1));
                 for (index, record) in records.iter().take(max_records).enumerate() {
                     lines.push(Line::from(format!(
                         "{} {:<12} {:<10} {:<24} {:<26} {}",
-                        if index == app.memory_selected { "▸" } else { " " },
+                        if index == selected_index { "▸" } else { " " },
                         clip_text(&record.id, 12),
                         record.kind,
                         record.claim_status,
@@ -851,7 +852,7 @@ fn render_memory(frame: &mut Frame<'_>, area: Rect, app: &App) {
                 }
                 if app.memory_detail_open {
                     if let Some(record) =
-                        records.get(app.memory_selected.min(records.len().saturating_sub(1)))
+                        records.get(selected_index)
                     {
                         push_memory_detail(&mut lines, &record.content);
                     }
@@ -884,10 +885,11 @@ fn render_memory(frame: &mut Frame<'_>, area: Rect, app: &App) {
                 if results.is_empty() {
                     lines.push(Line::from("No active records matched this local search."));
                 }
+                let selected_index = app.memory_selected.min(results.len().saturating_sub(1));
                 for (index, record) in results.iter().enumerate() {
                     lines.push(Line::from(format!(
                         "{} {:<12} {:<10} {:<24} {:<26} {}",
-                        if index == app.memory_selected { "▸" } else { " " },
+                        if index == selected_index { "▸" } else { " " },
                         clip_text(&record.record_id, 12),
                         record.kind,
                         record.claim_status,
