@@ -65,7 +65,7 @@ Mutable configuration and runtime state belong under the executable/install root
 
 - Canonical taxonomy file: `data/rid/universal_stats.v2.json`, catalogue version `2.3.3`.
 - Exactly 99 first-class independent universal capability domains, each linked to exactly one stat. There is no mandatory parent-domain hierarchy and no nine-domain × eleven-stat grouping. Never double-count one observed outcome across multiple stats; multi-stat evaluation requires distinct outcome evidence and separate rubric checks. Domain IDs are `rid_domain:01`–`rid_domain:99`; stat IDs are `rid_stat:01`–`rid_stat:99`.
-- Every domain has a unique key, name, primary measurement target, inclusion/exclusion criteria, adjacent-overlap IDs, and a unique domain-specific separation rule; each linked stat's evaluation protocol embeds that rule. Domain definitions and linked stat slots are one-to-one representations of the same 99 constructs, not 198 capabilities: domain = construct definition; stat = per-profile measurement slot. The graph contains 322 directed overlap guards / 161 reciprocal pairs. The JSON includes 161 canonical pairwise contrast records (`rid_overlap:001`–`rid_overlap:149`) with both constructs' measurement targets and explicit separate-outcome rules. Runtime validation enforces exact graph/registry parity, case-insensitive uniqueness, normalized keys, sorted unique reciprocal edges, graph counts, and domain/stat metadata parity. The former v1 nine-by-eleven taxonomy is historical/superseded. Taxonomy overlap boundaries are explicit and structurally validated; independent psychometric validation and trusted evaluator integration remain separate implementation tasks. Correlation is expected; double-counting is prohibited.
+- Every domain has a unique key, name, primary measurement target, inclusion/exclusion criteria, adjacent-overlap IDs, and a unique domain-specific separation rule; each linked stat's evaluation protocol embeds that rule. Domain definitions and linked stat slots are one-to-one representations of the same 99 constructs, not 198 capabilities: domain = construct definition; stat = per-profile measurement slot. The graph contains 322 directed overlap guards / 161 reciprocal pairs. The JSON includes 161 canonical pairwise contrast records (`rid_overlap:001`–`rid_overlap:161`) with both constructs' measurement targets and explicit separate-outcome rules. Runtime validation enforces exact graph/registry parity, case-insensitive uniqueness, normalized keys, sorted unique reciprocal edges, graph counts, and domain/stat metadata parity. The former v1 nine-by-eleven taxonomy is historical/superseded. Taxonomy overlap boundaries are explicit and structurally validated; independent psychometric validation and trusted evaluator integration remain separate implementation tasks. Correlation is expected; double-counting is prohibited.
 - The new catalogue IDs are `rid_stat:01` through `rid_stat:99`. Rust runtime now uses `rid_stat:01` through `rid_stat:99` and embeds universal catalogue v2.3.3. Schema-v1 profiles migrate by preserving exact original bytes in `profile.json.v1.bak`, retaining all 99 legacy records in an immutable archive, preserving identity/XP, and initializing new universal stats as unrated. Never map legacy scores by ordinal position. Migration and tests are on main; verify CI before declaring completion.
 - Migration must be explicit, versioned, backed up, reversible/recoverable, and tested with legacy profile fixtures. Update Rust domain, persistence, CLI, Cockpit, docs, and tests as one coherent slice.
 - Keep all scores unrated until trusted evidence exists. `not_applicable` is not score zero. XP, level, and age are not proxies for stat capability.
@@ -274,9 +274,9 @@ A task is complete only when:
 6. Related issue is closed with the merge evidence.
 7. The next task is recorded with dependencies and acceptance criteria.
 
-## 10. Next task selected — Issue #8 independent catalogue review
+## 10. Next task selected — Issue #13 technical evaluation harness
 
-Issue #35 and Issue #9 are complete. Issue #9's Cognitive Cockpit was merged by PR #65 as `6474cd130bd8146f03dcacb757d9c341d4b1161a`, and Issue #9 is closed. The next dependency gate is an independent human religious/language review of the existing 99-entry catalogue in [Issue #8](https://github.com/bjo163/rocksoul/issues/8). AI self-review must not be used as religious or language approval.
+Issue #35 and Issue #9 are complete. Issue #9's Cognitive Cockpit was merged by PR #65 as `6474cd130bd8146f03dcacb757d9c341d4b1161a`, and Issue #9 is closed. The next engineering task is [Issue #13](https://github.com/bjo163/rocksoul/issues/13): make evaluation runs reproducible, source-identifiable, and auditable across deterministic and model-dependent suites. The separate [Issue #8](https://github.com/bjo163/rocksoul/issues/8) religious/language review remains a human-expert governance task and is not a technical prerequisite for the evaluation harness; no AI self-approval is allowed for that review.
 
 Completed execution record: [Issue #9 spec](plans/issue-9/spec.md), [design](plans/issue-9/design.md), [task ledger](plans/issue-9/task.md), and [agent rules](plans/issue-9/rules.md).
 
@@ -290,7 +290,7 @@ Audit findings from main:
 - Only two TUI navigation tests exist; add read-model, privacy, error, responsive and preference tests.
 - The Memory screen still displays `store.v1.json`; the actual store is `store.v4.json`.
 
-Issue #13 owns the broader AGI-oriented evaluation harness and explicitly depends on #4, #5, #8 and #9. Do not duplicate or start that full harness before dependencies are audited. Issue #8 already has a 99-entry catalogue but remains open for independent religious/language review; AI self-review is not sufficient. Keep memory context injection disabled until separate policy, contamination, privacy, forgetting/deletion and regression gates are reviewed.
+Issue #13 depends technically on the Cognitive Kernel (#4), RID implementation/validation (#5), and Cognitive Cockpit read-only integration (#9). Issue #8 is deliberately decoupled: its religious/language expert review does not block technical benchmark infrastructure because the Asmaul Husna reference is not part of the scoring taxonomy. Keep memory context injection disabled until separate policy, contamination, privacy, forgetting/deletion and regression gates are reviewed.
 
 For every new task, write/update an execution plan with:
 - Goal and explicit non-goals.
@@ -336,7 +336,7 @@ For every new task, write/update an execution plan with:
 
 ### Next dependency-safe task
 
-Issue #8 requires independent human religious/language review of the 99-entry catalogue. Do not self-approve this review with an AI model. Issue #13's evaluation harness remains blocked until dependencies #4, #5, #8 and #9 are audited and closed.
+Issue #8 still requires independent human religious/language review of the optional reference catalogue; do not self-approve this review with an AI model. Issue #13's technical evaluation work can proceed independently of #8, but trusted RID score publication remains gated on #5 passing exact-head CI and on independent evaluator validation.
 
 ## 11. Known deferred work (do not mark complete prematurely)
 
