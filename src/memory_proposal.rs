@@ -938,6 +938,10 @@ mod tests {
         assert_eq!(record.claim_status, crate::memory::MemoryClaimStatus::VerifiedTaskOutcome);
         assert_eq!(record.verification_receipt_id.as_deref(), Some("verify-task-exact"));
         assert!(record.evidence_hash.as_deref().is_some_and(|hash| hash.len() == 64));
+        super::revoke_receipt(&receipts, &directory, "verify-task-exact", 10_003, "operator_review").unwrap();
+        let downgraded = crate::memory::MemoryStore::load(&directory).unwrap();
+        let record = downgraded.records.iter().find(|record| record.id == memory_id).unwrap();
+        assert_eq!(record.claim_status, crate::memory::MemoryClaimStatus::UnverifiedTaskOutcome);
         fs::remove_dir_all(directory).unwrap();
     }
 
