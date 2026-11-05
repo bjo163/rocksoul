@@ -211,6 +211,9 @@ struct App {
 
 impl App {
     fn new(snapshot: Snapshot) -> Self {
+        let preferences = snapshot.preferences.clone().unwrap_or_default();
+        let preferences_error = snapshot.preferences.is_err();
+        let palette = Palette::for_theme(preferences.theme);
         let mut rid_state = ListState::default();
         rid_state.select(Some(0));
         Self {
