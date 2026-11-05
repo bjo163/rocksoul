@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "catalogue_id": "rocksoul.rid.universal_stats.v2",
-  "catalogue_version": "2.3.2",
+  "catalogue_version": "2.3.3",
   "display_language": "en",
   "total_domains": 99,
   "total_stats": 99,
@@ -107,9 +107,10 @@
       "overlap_with": [
         "rid_domain:06",
         "rid_domain:07",
-        "rid_domain:10"
+        "rid_domain:10",
+        "rid_domain:81"
       ],
-      "separation_rule": "Measure only this domain's primary target: recall and precision for task-relevant details among many input details. Include: finding specified relevant cues, omissions and anomalous details. Exclude: identifying what an entity is; deciding truth; generic anomaly diagnosis without relevance criteria. Adjacent constructs (Entity Recognition: correct classification or identification of an entity against a known label set; Discrimination: correct separation of confusable alternatives under controlled contrasts; Signal Filtering: retention of target signal while rejecting defined irrelevant noise) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence."
+      "separation_rule": "Measure only this domain's primary target: recall and precision for task-relevant details among many input details. Include: finding specified relevant cues, omissions and anomalous details. Exclude: identifying what an entity is; deciding truth; generic anomaly diagnosis without relevance criteria. Adjacent constructs (Entity Recognition: correct classification or identification of an entity against a known label set; Discrimination: correct separation of confusable alternatives under controlled contrasts; Signal Filtering: retention of target signal while rejecting defined irrelevant noise; Self-error Detection: precision and recall for detecting actual defects in one's own output) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence."
     },
     {
       "id": "rid_domain:06",
@@ -170,9 +171,11 @@
       "exclusion_criteria": "single-frame recognition; predicting future states; retaining information after a task ends",
       "overlap_with": [
         "rid_domain:08",
-        "rid_domain:54"
+        "rid_domain:54",
+        "rid_domain:83",
+        "rid_domain:90"
       ],
-      "separation_rule": "Measure only this domain's primary target: continuity and accuracy of state association across ordered time samples. Include: maintaining which entity/state is which across frames, steps or events. Exclude: single-frame recognition; predicting future states; retaining information after a task ends. Adjacent constructs (Spatial Localization: error in estimating position, direction, distance or coordinate frame; Dialogue Continuity: coherence of turn-to-turn conversational state within an active interaction) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence."
+      "separation_rule": "Measure only this domain's primary target: continuity and accuracy of state association across ordered time samples. Include: maintaining which entity/state is which across frames, steps or events. Exclude: single-frame recognition; predicting future states; retaining information after a task ends. Adjacent constructs (Spatial Localization: error in estimating position, direction, distance or coordinate frame; Dialogue Continuity: coherence of turn-to-turn conversational state within an active interaction; Process Monitoring: accuracy of tracking current task state against an expected process model; Shared Goal Tracking: continuity of explicitly agreed goals across a collaborative task) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence."
     },
     {
       "id": "rid_domain:10",
@@ -365,9 +368,10 @@
       "overlap_with": [
         "rid_domain:18",
         "rid_domain:21",
+        "rid_domain:28",
         "rid_domain:86"
       ],
-      "separation_rule": "Measure only this domain's primary target: correctness of updating or superseding a stored claim when new evidence arrives. Include: versioning, contradiction resolution, source precedence and stale-claim replacement. Exclude: learning a new skill; applying feedback to behavior; changing content without evidence. Adjacent constructs (Knowledge Organization: retrievability and structural integrity of information within a managed knowledge store; Knowledge Consolidation: quality of merging repeated records into a compact, non-contradictory representation; Feedback Integration: measured behavioral or artifact change attributable to accepted feedback) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence."
+      "separation_rule": "Measure only this domain's primary target: correctness of updating or superseding a stored claim when new evidence arrives. Include: versioning, contradiction resolution, source precedence and stale-claim replacement. Exclude: learning a new skill; applying feedback to behavior; changing content without evidence. Adjacent constructs (Knowledge Organization: retrievability and structural integrity of information within a managed knowledge store; Knowledge Consolidation: quality of merging repeated records into a compact, non-contradictory representation; Cross-source Synthesis: faithfulness of a combined claim supported by multiple independent sources; Feedback Integration: measured behavioral or artifact change attributable to accepted feedback) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence."
     },
     {
       "id": "rid_domain:21",
@@ -492,9 +496,10 @@
         "rid_domain:23",
         "rid_domain:25",
         "rid_domain:26",
-        "rid_domain:35"
+        "rid_domain:35",
+        "rid_domain:85"
       ],
-      "separation_rule": "Measure only this domain's primary target: quality of diagnosing a problem's structure, causes and constraints. Include: component analysis, causal factors, root-cause hypotheses and impact mapping. Exclude: breaking a goal into deliverable tasks; comparing alternatives; selecting a solution. Adjacent constructs (Conceptual Understanding: fidelity of an internal or explicit model of a concept/system and its relations; Multi-step Reasoning: validity of a bounded chain of dependent reasoning steps; Comparative Analysis: accuracy of pairwise or set-wise attribute comparison; Goal Decomposition: completeness and atomicity of converting a goal into independently verifiable subgoals) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence."
+      "separation_rule": "Measure only this domain's primary target: quality of diagnosing a problem's structure, causes and constraints. Include: component analysis, causal factors, root-cause hypotheses and impact mapping. Exclude: breaking a goal into deliverable tasks; comparing alternatives; selecting a solution. Adjacent constructs (Conceptual Understanding: fidelity of an internal or explicit model of a concept/system and its relations; Multi-step Reasoning: validity of a bounded chain of dependent reasoning steps; Comparative Analysis: accuracy of pairwise or set-wise attribute comparison; Goal Decomposition: completeness and atomicity of converting a goal into independently verifiable subgoals; Outcome Reflection: quality of extracting lessons after a completed task from observed outcomes) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence."
     },
     {
       "id": "rid_domain:28",
@@ -508,11 +513,12 @@
       "exclusion_criteria": "simple association; component integration into software; summarizing a single source",
       "overlap_with": [
         "rid_domain:17",
+        "rid_domain:20",
         "rid_domain:21",
         "rid_domain:25",
         "rid_domain:77"
       ],
-      "separation_rule": "Measure only this domain's primary target: faithfulness of a combined claim supported by multiple independent sources. Include: reconciling evidence, preserving disagreement and composing a source-grounded conclusion. Exclude: simple association; component integration into software; summarizing a single source. Adjacent constructs (Associative Linking: precision and recall of explicit relations between known items; Knowledge Consolidation: quality of merging repeated records into a compact, non-contradictory representation; Multi-step Reasoning: validity of a bounded chain of dependent reasoning steps; System Composition: functional correctness of integrating components into a working system) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence."
+      "separation_rule": "Measure only this domain's primary target: faithfulness of a combined claim supported by multiple independent sources. Include: reconciling evidence, preserving disagreement and composing a source-grounded conclusion. Exclude: simple association; component integration into software; summarizing a single source. Adjacent constructs (Associative Linking: precision and recall of explicit relations between known items; Knowledge Revision: correctness of updating or superseding a stored claim when new evidence arrives; Knowledge Consolidation: quality of merging repeated records into a compact, non-contradictory representation; Multi-step Reasoning: validity of a bounded chain of dependent reasoning steps; System Composition: functional correctness of integrating components into a working system) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence."
     },
     {
       "id": "rid_domain:29",
@@ -594,9 +600,10 @@
       "overlap_with": [
         "rid_domain:32",
         "rid_domain:34",
-        "rid_domain:36"
+        "rid_domain:36",
+        "rid_domain:64"
       ],
-      "separation_rule": "Measure only this domain's primary target: correct ordering of tasks or items by explicit urgency and impact criteria. Include: priority ranking under time, risk and dependency constraints. Exclude: full project planning; dependency-only ordering; choosing among mutually exclusive strategies. Adjacent constructs (Decision Selection: quality of choosing one action from feasible alternatives against stated goals; Strategic Planning: feasibility and completeness of a goal-directed plan; Dependency Sequencing: validity of ordering tasks according to prerequisite relationships) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence."
+      "separation_rule": "Measure only this domain's primary target: correct ordering of tasks or items by explicit urgency and impact criteria. Include: priority ranking under time, risk and dependency constraints. Exclude: full project planning; dependency-only ordering; choosing among mutually exclusive strategies. Adjacent constructs (Decision Selection: quality of choosing one action from feasible alternatives against stated goals; Strategic Planning: feasibility and completeness of a goal-directed plan; Dependency Sequencing: validity of ordering tasks according to prerequisite relationships; Risk Escalation: correct routing of an identified risk to an appropriate human or higher control) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence."
     },
     {
       "id": "rid_domain:34",
@@ -678,9 +685,11 @@
       "overlap_with": [
         "rid_domain:37",
         "rid_domain:39",
-        "rid_domain:44"
+        "rid_domain:44",
+        "rid_domain:76",
+        "rid_domain:83"
       ],
-      "separation_rule": "Measure only this domain's primary target: accuracy of carrying out a specified sequence of task actions. Include: action correctness, state transitions and adherence to task specification. Exclude: tool API correctness in isolation; initial authorization; final acceptance verification. Adjacent constructs (Authorized Initiation: correctness of the first state-changing start action after authorization and preconditions; Tool Operation: correctness of invoking and handling a specific tool or interface contract; Delivery Completion: presence and completeness of the agreed deliverable at the handoff boundary) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence."
+      "separation_rule": "Measure only this domain's primary target: accuracy of carrying out a specified sequence of task actions. Include: action correctness, state transitions and adherence to task specification. Exclude: tool API correctness in isolation; initial authorization; final acceptance verification. Adjacent constructs (Authorized Initiation: correctness of the first state-changing start action after authorization and preconditions; Tool Operation: correctness of invoking and handling a specific tool or interface contract; Delivery Completion: presence and completeness of the agreed deliverable at the handoff boundary; Cross-domain Transfer: performance applying an established capability to a structurally different task domain; Process Monitoring: accuracy of tracking current task state against an expected process model) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence."
     },
     {
       "id": "rid_domain:39",
@@ -970,9 +979,11 @@
       "exclusion_criteria": "negotiating a new objective; stylistic tuning; deciding which objective should be chosen",
       "overlap_with": [
         "rid_domain:53",
-        "rid_domain:90"
+        "rid_domain:89",
+        "rid_domain:90",
+        "rid_domain:96"
       ],
-      "separation_rule": "Measure only this domain's primary target: degree to which an output satisfies the explicitly stated objective and constraints. Include: goal coverage, constraint traceability and scope adherence. Exclude: negotiating a new objective; stylistic tuning; deciding which objective should be chosen. Adjacent constructs (Communication Tuning: fit of tone, vocabulary and detail to an explicitly identified audience or channel; Shared Goal Tracking: continuity of explicitly agreed goals across a collaborative task) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence."
+      "separation_rule": "Measure only this domain's primary target: degree to which an output satisfies the explicitly stated objective and constraints. Include: goal coverage, constraint traceability and scope adherence. Exclude: negotiating a new objective; stylistic tuning; deciding which objective should be chosen. Adjacent constructs (Communication Tuning: fit of tone, vocabulary and detail to an explicitly identified audience or channel; Perspective Modeling: accuracy of representing another participant's explicitly stated viewpoint and constraints; Shared Goal Tracking: continuity of explicitly agreed goals across a collaborative task; Accessibility & Inclusion: degree to which an output or workflow remains usable across stated access needs) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence."
     },
     {
       "id": "rid_domain:56",
@@ -1130,11 +1141,12 @@
       "inclusion_criteria": "threshold-triggered escalation, urgency, context and handoff completeness",
       "exclusion_criteria": "refusing the action outright; resolving the risk; generic collaboration handoff",
       "overlap_with": [
+        "rid_domain:33",
         "rid_domain:66",
         "rid_domain:88",
         "rid_domain:98"
       ],
-      "separation_rule": "Measure only this domain's primary target: correct routing of an identified risk to an appropriate human or higher control. Include: threshold-triggered escalation, urgency, context and handoff completeness. Exclude: refusing the action outright; resolving the risk; generic collaboration handoff. Adjacent constructs (Safe Refusal: correctly declining a specific action that violates a defined safety or authorization rule; Capability Boundary Awareness: accuracy of stating what capabilities are and are not available in the current configuration; Work Handoff: completeness and usability of transferring ownership of an in-progress or completed task) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence."
+      "separation_rule": "Measure only this domain's primary target: correct routing of an identified risk to an appropriate human or higher control. Include: threshold-triggered escalation, urgency, context and handoff completeness. Exclude: refusing the action outright; resolving the risk; generic collaboration handoff. Adjacent constructs (Priority Management: correct ordering of tasks or items by explicit urgency and impact criteria; Safe Refusal: correctly declining a specific action that violates a defined safety or authorization rule; Capability Boundary Awareness: accuracy of stating what capabilities are and are not available in the current configuration; Work Handoff: completeness and usability of transferring ownership of an in-progress or completed task) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence."
     },
     {
       "id": "rid_domain:65",
@@ -1232,9 +1244,10 @@
       "exclusion_criteria": "recombining known components without novelty; ordinary design; hypothetical brainstorming",
       "overlap_with": [
         "rid_domain:67",
-        "rid_domain:69"
+        "rid_domain:69",
+        "rid_domain:71"
       ],
-      "separation_rule": "Measure only this domain's primary target: novelty and reproducibility of a procedure not already supplied by the task. Include: new algorithm, workflow or technique with demonstrated utility. Exclude: recombining known components without novelty; ordinary design; hypothetical brainstorming. Adjacent constructs (Possibility Generation: breadth and relevance of hypothetical possibilities before selecting concrete candidates; Solution Design: fitness of a structured solution architecture against requirements) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence."
+      "separation_rule": "Measure only this domain's primary target: novelty and reproducibility of a procedure not already supplied by the task. Include: new algorithm, workflow or technique with demonstrated utility. Exclude: recombining known components without novelty; ordinary design; hypothetical brainstorming. Adjacent constructs (Possibility Generation: breadth and relevance of hypothetical possibilities before selecting concrete candidates; Solution Design: fitness of a structured solution architecture against requirements; Problem Reframing: utility and factual preservation when expressing the same problem under a new frame) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence."
     },
     {
       "id": "rid_domain:71",
@@ -1248,9 +1261,10 @@
       "exclusion_criteria": "abstracting a general principle; changing facts; choosing a solution",
       "overlap_with": [
         "rid_domain:23",
+        "rid_domain:70",
         "rid_domain:72"
       ],
-      "separation_rule": "Measure only this domain's primary target: utility and factual preservation when expressing the same problem under a new frame. Include: alternative problem statements that expose a different actionable perspective. Exclude: abstracting a general principle; changing facts; choosing a solution. Adjacent constructs (Conceptual Understanding: fidelity of an internal or explicit model of a concept/system and its relations; Principle Abstraction: correct extraction of a reusable rule from multiple specific cases) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence."
+      "separation_rule": "Measure only this domain's primary target: utility and factual preservation when expressing the same problem under a new frame. Include: alternative problem statements that expose a different actionable perspective. Exclude: abstracting a general principle; changing facts; choosing a solution. Adjacent constructs (Conceptual Understanding: fidelity of an internal or explicit model of a concept/system and its relations; Method Invention: novelty and reproducibility of a procedure not already supplied by the task; Principle Abstraction: correct extraction of a reusable rule from multiple specific cases) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence."
     },
     {
       "id": "rid_domain:72",
@@ -1297,9 +1311,10 @@
       "exclusion_criteria": "learning gain from instruction; iterative polishing without hypothesis; production execution",
       "overlap_with": [
         "rid_domain:15",
-        "rid_domain:75"
+        "rid_domain:75",
+        "rid_domain:85"
       ],
-      "separation_rule": "Measure only this domain's primary target: quality of a test designed to distinguish competing hypotheses. Include: control variables, comparison groups, measurable outcomes and repeatability. Exclude: learning gain from instruction; iterative polishing without hypothesis; production execution. Adjacent constructs (Skill Acquisition: measured performance gain after a defined instruction or practice intervention; Iterative Refinement: measured improvement of an artifact across successive versions) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence."
+      "separation_rule": "Measure only this domain's primary target: quality of a test designed to distinguish competing hypotheses. Include: control variables, comparison groups, measurable outcomes and repeatability. Exclude: learning gain from instruction; iterative polishing without hypothesis; production execution. Adjacent constructs (Skill Acquisition: measured performance gain after a defined instruction or practice intervention; Iterative Refinement: measured improvement of an artifact across successive versions; Outcome Reflection: quality of extracting lessons after a completed task from observed outcomes) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence."
     },
     {
       "id": "rid_domain:75",
@@ -1331,9 +1346,10 @@
       "exclusion_criteria": "verbal analogy alone; learning from scratch; general behavior change",
       "overlap_with": [
         "rid_domain:15",
+        "rid_domain:38",
         "rid_domain:73"
       ],
-      "separation_rule": "Measure only this domain's primary target: performance applying an established capability to a structurally different task domain. Include: held-out transfer tasks, adaptation cost and preserved accuracy. Exclude: verbal analogy alone; learning from scratch; general behavior change. Adjacent constructs (Skill Acquisition: measured performance gain after a defined instruction or practice intervention; Analogical Transfer: structural correspondence quality when using a source case to illuminate a target case) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence."
+      "separation_rule": "Measure only this domain's primary target: performance applying an established capability to a structurally different task domain. Include: held-out transfer tasks, adaptation cost and preserved accuracy. Exclude: verbal analogy alone; learning from scratch; general behavior change. Adjacent constructs (Skill Acquisition: measured performance gain after a defined instruction or practice intervention; Task Execution: accuracy of carrying out a specified sequence of task actions; Analogical Transfer: structural correspondence quality when using a source case to illuminate a target case) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence."
     },
     {
       "id": "rid_domain:77",
@@ -1412,12 +1428,13 @@
       "inclusion_criteria": "bugs, contradictions, invalid claims and unintended inconsistencies",
       "exclusion_criteria": "checking only predefined checklist items; external verifier success; learning from outcomes",
       "overlap_with": [
+        "rid_domain:05",
         "rid_domain:40",
         "rid_domain:80",
         "rid_domain:85",
         "rid_domain:87"
       ],
-      "separation_rule": "Measure only this domain's primary target: precision and recall for detecting actual defects in one's own output. Include: bugs, contradictions, invalid claims and unintended inconsistencies. Exclude: checking only predefined checklist items; external verifier success; learning from outcomes. Adjacent constructs (Result Verification: independent evidence that a delivered result satisfies declared acceptance criteria; Self Review: coverage of a predefined checklist applied to one's own output before submission; Outcome Reflection: quality of extracting lessons after a completed task from observed outcomes; Baseline Drift Detection: detection of sustained deviation from a defined historical or expected baseline) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence."
+      "separation_rule": "Measure only this domain's primary target: precision and recall for detecting actual defects in one's own output. Include: bugs, contradictions, invalid claims and unintended inconsistencies. Exclude: checking only predefined checklist items; external verifier success; learning from outcomes. Adjacent constructs (Salience Detection: recall and precision for task-relevant details among many input details; Result Verification: independent evidence that a delivered result satisfies declared acceptance criteria; Self Review: coverage of a predefined checklist applied to one's own output before submission; Outcome Reflection: quality of extracting lessons after a completed task from observed outcomes; Baseline Drift Detection: detection of sustained deviation from a defined historical or expected baseline) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence."
     },
     {
       "id": "rid_domain:82",
@@ -1446,9 +1463,11 @@
       "inclusion_criteria": "progress state, deadlines, stuck detection and deviation timestamps",
       "exclusion_criteria": "baseline quality drift across repeated runs; evaluating final output; executing the process",
       "overlap_with": [
+        "rid_domain:09",
+        "rid_domain:38",
         "rid_domain:87"
       ],
-      "separation_rule": "Measure only this domain's primary target: accuracy of tracking current task state against an expected process model. Include: progress state, deadlines, stuck detection and deviation timestamps. Exclude: baseline quality drift across repeated runs; evaluating final output; executing the process. Adjacent constructs (Baseline Drift Detection: detection of sustained deviation from a defined historical or expected baseline) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence."
+      "separation_rule": "Measure only this domain's primary target: accuracy of tracking current task state against an expected process model. Include: progress state, deadlines, stuck detection and deviation timestamps. Exclude: baseline quality drift across repeated runs; evaluating final output; executing the process. Adjacent constructs (Temporal Tracking: continuity and accuracy of state association across ordered time samples; Task Execution: accuracy of carrying out a specified sequence of task actions; Baseline Drift Detection: detection of sustained deviation from a defined historical or expected baseline) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence."
     },
     {
       "id": "rid_domain:84",
@@ -1479,11 +1498,13 @@
       "inclusion_criteria": "post-hoc causal hypotheses, retained lessons and counterfactual awareness",
       "exclusion_criteria": "changing future behavior immediately; checklist self-review; collecting feedback",
       "overlap_with": [
+        "rid_domain:27",
+        "rid_domain:74",
         "rid_domain:80",
         "rid_domain:81",
         "rid_domain:86"
       ],
-      "separation_rule": "Measure only this domain's primary target: quality of extracting lessons after a completed task from observed outcomes. Include: post-hoc causal hypotheses, retained lessons and counterfactual awareness. Exclude: changing future behavior immediately; checklist self-review; collecting feedback. Adjacent constructs (Self Review: coverage of a predefined checklist applied to one's own output before submission; Self-error Detection: precision and recall for detecting actual defects in one's own output; Feedback Integration: measured behavioral or artifact change attributable to accepted feedback) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence."
+      "separation_rule": "Measure only this domain's primary target: quality of extracting lessons after a completed task from observed outcomes. Include: post-hoc causal hypotheses, retained lessons and counterfactual awareness. Exclude: changing future behavior immediately; checklist self-review; collecting feedback. Adjacent constructs (Problem Analysis: quality of diagnosing a problem's structure, causes and constraints; Controlled Experimentation: quality of a test designed to distinguish competing hypotheses; Self Review: coverage of a predefined checklist applied to one's own output before submission; Self-error Detection: precision and recall for detecting actual defects in one's own output; Feedback Integration: measured behavioral or artifact change attributable to accepted feedback) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence."
     },
     {
       "id": "rid_domain:86",
@@ -1550,9 +1571,10 @@
         "rid_domain:22",
         "rid_domain:50",
         "rid_domain:54",
+        "rid_domain:55",
         "rid_domain:91"
       ],
-      "separation_rule": "Measure only this domain's primary target: accuracy of representing another participant's explicitly stated viewpoint and constraints. Include: faithful viewpoint summary with uncertainty about unstated beliefs. Exclude: listening to literal instructions; assuming private emotions; negotiating an outcome. Adjacent constructs (Context & Provenance: completeness and correctness of source metadata attached to retained information; Active Listening: accuracy of incorporating information explicitly supplied by another participant; Dialogue Continuity: coherence of turn-to-turn conversational state within an active interaction; Collaboration Context: correct use of shared project context, roles and agreed working conventions) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence."
+      "separation_rule": "Measure only this domain's primary target: accuracy of representing another participant's explicitly stated viewpoint and constraints. Include: faithful viewpoint summary with uncertainty about unstated beliefs. Exclude: listening to literal instructions; assuming private emotions; negotiating an outcome. Adjacent constructs (Context & Provenance: completeness and correctness of source metadata attached to retained information; Active Listening: accuracy of incorporating information explicitly supplied by another participant; Dialogue Continuity: coherence of turn-to-turn conversational state within an active interaction; Objective Alignment: degree to which an output satisfies the explicitly stated objective and constraints; Collaboration Context: correct use of shared project context, roles and agreed working conventions) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence."
     },
     {
       "id": "rid_domain:90",
@@ -1565,11 +1587,12 @@
       "inclusion_criteria": "goal ownership, status and changes confirmed by participants",
       "exclusion_criteria": "personal objective alignment; task prioritization; inferring unstated goals",
       "overlap_with": [
+        "rid_domain:09",
         "rid_domain:55",
         "rid_domain:92",
         "rid_domain:98"
       ],
-      "separation_rule": "Measure only this domain's primary target: continuity of explicitly agreed goals across a collaborative task. Include: goal ownership, status and changes confirmed by participants. Exclude: personal objective alignment; task prioritization; inferring unstated goals. Adjacent constructs (Objective Alignment: degree to which an output satisfies the explicitly stated objective and constraints; Multi-party Coordination: synchronization of independent participants' tasks and dependencies; Work Handoff: completeness and usability of transferring ownership of an in-progress or completed task) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence."
+      "separation_rule": "Measure only this domain's primary target: continuity of explicitly agreed goals across a collaborative task. Include: goal ownership, status and changes confirmed by participants. Exclude: personal objective alignment; task prioritization; inferring unstated goals. Adjacent constructs (Temporal Tracking: continuity and accuracy of state association across ordered time samples; Objective Alignment: degree to which an output satisfies the explicitly stated objective and constraints; Multi-party Coordination: synchronization of independent participants' tasks and dependencies; Work Handoff: completeness and usability of transferring ownership of an in-progress or completed task) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence."
     },
     {
       "id": "rid_domain:91",
@@ -1664,9 +1687,10 @@
       "inclusion_criteria": "alternative formats, assistive compatibility and exclusion checks",
       "exclusion_criteria": "general audience tone tuning; viewpoint modeling; legal policy compliance",
       "overlap_with": [
-        "rid_domain:53"
+        "rid_domain:53",
+        "rid_domain:55"
       ],
-      "separation_rule": "Measure only this domain's primary target: degree to which an output or workflow remains usable across stated access needs. Include: alternative formats, assistive compatibility and exclusion checks. Exclude: general audience tone tuning; viewpoint modeling; legal policy compliance. Adjacent constructs (Communication Tuning: fit of tone, vocabulary and detail to an explicitly identified audience or channel) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence."
+      "separation_rule": "Measure only this domain's primary target: degree to which an output or workflow remains usable across stated access needs. Include: alternative formats, assistive compatibility and exclusion checks. Exclude: general audience tone tuning; viewpoint modeling; legal policy compliance. Adjacent constructs (Communication Tuning: fit of tone, vocabulary and detail to an explicitly identified audience or channel; Objective Alignment: degree to which an output satisfies the explicitly stated objective and constraints) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence."
     },
     {
       "id": "rid_domain:97",
@@ -1809,7 +1833,7 @@
       "domain": "salience_detection",
       "domain_label": "Salience Detection",
       "definition": "Detects relevant details, changes, omissions, and anomalies in an input.",
-      "evaluation_protocol": "Evaluate Salience Detection only against its declared primary measurement target: recall and precision for task-relevant details among many input details. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases satisfying the inclusion criteria (finding specified relevant cues, omissions and anomalous details) and negative/control cases testing the exclusion criteria (identifying what an entity is; deciding truth; generic anomaly diagnosis without relevance criteria). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. Measure only this domain's primary target: recall and precision for task-relevant details among many input details. Include: finding specified relevant cues, omissions and anomalous details. Exclude: identifying what an entity is; deciding truth; generic anomaly diagnosis without relevance criteria. Adjacent constructs (Entity Recognition: correct classification or identification of an entity against a known label set; Discrimination: correct separation of confusable alternatives under controlled contrasts; Signal Filtering: retention of target signal while rejecting defined irrelevant noise) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence. Do not infer a score from self-report, XP, uptime, message volume, or model confidence alone.",
+      "evaluation_protocol": "Evaluate Salience Detection only against its declared primary measurement target: recall and precision for task-relevant details among many input details. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases satisfying the inclusion criteria (finding specified relevant cues, omissions and anomalous details) and negative/control cases testing the exclusion criteria (identifying what an entity is; deciding truth; generic anomaly diagnosis without relevance criteria). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. Measure only this domain's primary target: recall and precision for task-relevant details among many input details. Include: finding specified relevant cues, omissions and anomalous details. Exclude: identifying what an entity is; deciding truth; generic anomaly diagnosis without relevance criteria. Adjacent constructs (Entity Recognition: correct classification or identification of an entity against a known label set; Discrimination: correct separation of confusable alternatives under controlled contrasts; Signal Filtering: retention of target signal while rejecting defined irrelevant noise; Self-error Detection: precision and recall for detecting actual defects in one's own output) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence. Do not infer a score from self-report, XP, uptime, message volume, or model confidence alone.",
       "status": "taxonomy_reconciled_evaluator_adapter_pending",
       "initial_state": "unrated",
       "domain_id": "rid_domain:05",
@@ -1820,9 +1844,10 @@
       "overlap_with": [
         "rid_domain:06",
         "rid_domain:07",
-        "rid_domain:10"
+        "rid_domain:10",
+        "rid_domain:81"
       ],
-      "separation_rule": "Measure only this domain's primary target: recall and precision for task-relevant details among many input details. Include: finding specified relevant cues, omissions and anomalous details. Exclude: identifying what an entity is; deciding truth; generic anomaly diagnosis without relevance criteria. Adjacent constructs (Entity Recognition: correct classification or identification of an entity against a known label set; Discrimination: correct separation of confusable alternatives under controlled contrasts; Signal Filtering: retention of target signal while rejecting defined irrelevant noise) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence."
+      "separation_rule": "Measure only this domain's primary target: recall and precision for task-relevant details among many input details. Include: finding specified relevant cues, omissions and anomalous details. Exclude: identifying what an entity is; deciding truth; generic anomaly diagnosis without relevance criteria. Adjacent constructs (Entity Recognition: correct classification or identification of an entity against a known label set; Discrimination: correct separation of confusable alternatives under controlled contrasts; Signal Filtering: retention of target signal while rejecting defined irrelevant noise; Self-error Detection: precision and recall for detecting actual defects in one's own output) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence."
     },
     {
       "id": 6,
@@ -1897,7 +1922,7 @@
       "domain": "temporal_tracking",
       "domain_label": "Temporal Tracking",
       "definition": "Follows an entity, signal, or state across frames, steps, or time.",
-      "evaluation_protocol": "Evaluate Temporal Tracking only against its declared primary measurement target: continuity and accuracy of state association across ordered time samples. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases satisfying the inclusion criteria (maintaining which entity/state is which across frames, steps or events) and negative/control cases testing the exclusion criteria (single-frame recognition; predicting future states; retaining information after a task ends). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. Measure only this domain's primary target: continuity and accuracy of state association across ordered time samples. Include: maintaining which entity/state is which across frames, steps or events. Exclude: single-frame recognition; predicting future states; retaining information after a task ends. Adjacent constructs (Spatial Localization: error in estimating position, direction, distance or coordinate frame; Dialogue Continuity: coherence of turn-to-turn conversational state within an active interaction) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence. Do not infer a score from self-report, XP, uptime, message volume, or model confidence alone.",
+      "evaluation_protocol": "Evaluate Temporal Tracking only against its declared primary measurement target: continuity and accuracy of state association across ordered time samples. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases satisfying the inclusion criteria (maintaining which entity/state is which across frames, steps or events) and negative/control cases testing the exclusion criteria (single-frame recognition; predicting future states; retaining information after a task ends). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. Measure only this domain's primary target: continuity and accuracy of state association across ordered time samples. Include: maintaining which entity/state is which across frames, steps or events. Exclude: single-frame recognition; predicting future states; retaining information after a task ends. Adjacent constructs (Spatial Localization: error in estimating position, direction, distance or coordinate frame; Dialogue Continuity: coherence of turn-to-turn conversational state within an active interaction; Process Monitoring: accuracy of tracking current task state against an expected process model; Shared Goal Tracking: continuity of explicitly agreed goals across a collaborative task) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence. Do not infer a score from self-report, XP, uptime, message volume, or model confidence alone.",
       "status": "taxonomy_reconciled_evaluator_adapter_pending",
       "initial_state": "unrated",
       "domain_id": "rid_domain:09",
@@ -1907,9 +1932,11 @@
       "exclusion_criteria": "single-frame recognition; predicting future states; retaining information after a task ends",
       "overlap_with": [
         "rid_domain:08",
-        "rid_domain:54"
+        "rid_domain:54",
+        "rid_domain:83",
+        "rid_domain:90"
       ],
-      "separation_rule": "Measure only this domain's primary target: continuity and accuracy of state association across ordered time samples. Include: maintaining which entity/state is which across frames, steps or events. Exclude: single-frame recognition; predicting future states; retaining information after a task ends. Adjacent constructs (Spatial Localization: error in estimating position, direction, distance or coordinate frame; Dialogue Continuity: coherence of turn-to-turn conversational state within an active interaction) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence."
+      "separation_rule": "Measure only this domain's primary target: continuity and accuracy of state association across ordered time samples. Include: maintaining which entity/state is which across frames, steps or events. Exclude: single-frame recognition; predicting future states; retaining information after a task ends. Adjacent constructs (Spatial Localization: error in estimating position, direction, distance or coordinate frame; Dialogue Continuity: coherence of turn-to-turn conversational state within an active interaction; Process Monitoring: accuracy of tracking current task state against an expected process model; Shared Goal Tracking: continuity of explicitly agreed goals across a collaborative task) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence."
     },
     {
       "id": 10,
@@ -2157,7 +2184,7 @@
       "domain": "knowledge_revision",
       "domain_label": "Knowledge Revision",
       "definition": "Revises stored information when newer, better-supported evidence becomes available.",
-      "evaluation_protocol": "Evaluate Knowledge Revision only against its declared primary measurement target: correctness of updating or superseding a stored claim when new evidence arrives. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases satisfying the inclusion criteria (versioning, contradiction resolution, source precedence and stale-claim replacement) and negative/control cases testing the exclusion criteria (learning a new skill; applying feedback to behavior; changing content without evidence). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. Measure only this domain's primary target: correctness of updating or superseding a stored claim when new evidence arrives. Include: versioning, contradiction resolution, source precedence and stale-claim replacement. Exclude: learning a new skill; applying feedback to behavior; changing content without evidence. Adjacent constructs (Knowledge Organization: retrievability and structural integrity of information within a managed knowledge store; Knowledge Consolidation: quality of merging repeated records into a compact, non-contradictory representation; Feedback Integration: measured behavioral or artifact change attributable to accepted feedback) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence. Do not infer a score from self-report, XP, uptime, message volume, or model confidence alone.",
+      "evaluation_protocol": "Evaluate Knowledge Revision only against its declared primary measurement target: correctness of updating or superseding a stored claim when new evidence arrives. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases satisfying the inclusion criteria (versioning, contradiction resolution, source precedence and stale-claim replacement) and negative/control cases testing the exclusion criteria (learning a new skill; applying feedback to behavior; changing content without evidence). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. Measure only this domain's primary target: correctness of updating or superseding a stored claim when new evidence arrives. Include: versioning, contradiction resolution, source precedence and stale-claim replacement. Exclude: learning a new skill; applying feedback to behavior; changing content without evidence. Adjacent constructs (Knowledge Organization: retrievability and structural integrity of information within a managed knowledge store; Knowledge Consolidation: quality of merging repeated records into a compact, non-contradictory representation; Cross-source Synthesis: faithfulness of a combined claim supported by multiple independent sources; Feedback Integration: measured behavioral or artifact change attributable to accepted feedback) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence. Do not infer a score from self-report, XP, uptime, message volume, or model confidence alone.",
       "status": "taxonomy_reconciled_evaluator_adapter_pending",
       "initial_state": "unrated",
       "domain_id": "rid_domain:20",
@@ -2168,9 +2195,10 @@
       "overlap_with": [
         "rid_domain:18",
         "rid_domain:21",
+        "rid_domain:28",
         "rid_domain:86"
       ],
-      "separation_rule": "Measure only this domain's primary target: correctness of updating or superseding a stored claim when new evidence arrives. Include: versioning, contradiction resolution, source precedence and stale-claim replacement. Exclude: learning a new skill; applying feedback to behavior; changing content without evidence. Adjacent constructs (Knowledge Organization: retrievability and structural integrity of information within a managed knowledge store; Knowledge Consolidation: quality of merging repeated records into a compact, non-contradictory representation; Feedback Integration: measured behavioral or artifact change attributable to accepted feedback) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence."
+      "separation_rule": "Measure only this domain's primary target: correctness of updating or superseding a stored claim when new evidence arrives. Include: versioning, contradiction resolution, source precedence and stale-claim replacement. Exclude: learning a new skill; applying feedback to behavior; changing content without evidence. Adjacent constructs (Knowledge Organization: retrievability and structural integrity of information within a managed knowledge store; Knowledge Consolidation: quality of merging repeated records into a compact, non-contradictory representation; Cross-source Synthesis: faithfulness of a combined claim supported by multiple independent sources; Feedback Integration: measured behavioral or artifact change attributable to accepted feedback) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence."
     },
     {
       "id": 21,
@@ -2325,7 +2353,7 @@
       "domain": "problem_analysis",
       "domain_label": "Problem Analysis",
       "definition": "Breaks a complex problem or body of information into relevant parts.",
-      "evaluation_protocol": "Evaluate Problem Analysis only against its declared primary measurement target: quality of diagnosing a problem's structure, causes and constraints. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases satisfying the inclusion criteria (component analysis, causal factors, root-cause hypotheses and impact mapping) and negative/control cases testing the exclusion criteria (breaking a goal into deliverable tasks; comparing alternatives; selecting a solution). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. Measure only this domain's primary target: quality of diagnosing a problem's structure, causes and constraints. Include: component analysis, causal factors, root-cause hypotheses and impact mapping. Exclude: breaking a goal into deliverable tasks; comparing alternatives; selecting a solution. Adjacent constructs (Conceptual Understanding: fidelity of an internal or explicit model of a concept/system and its relations; Multi-step Reasoning: validity of a bounded chain of dependent reasoning steps; Comparative Analysis: accuracy of pairwise or set-wise attribute comparison; Goal Decomposition: completeness and atomicity of converting a goal into independently verifiable subgoals) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence. Do not infer a score from self-report, XP, uptime, message volume, or model confidence alone.",
+      "evaluation_protocol": "Evaluate Problem Analysis only against its declared primary measurement target: quality of diagnosing a problem's structure, causes and constraints. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases satisfying the inclusion criteria (component analysis, causal factors, root-cause hypotheses and impact mapping) and negative/control cases testing the exclusion criteria (breaking a goal into deliverable tasks; comparing alternatives; selecting a solution). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. Measure only this domain's primary target: quality of diagnosing a problem's structure, causes and constraints. Include: component analysis, causal factors, root-cause hypotheses and impact mapping. Exclude: breaking a goal into deliverable tasks; comparing alternatives; selecting a solution. Adjacent constructs (Conceptual Understanding: fidelity of an internal or explicit model of a concept/system and its relations; Multi-step Reasoning: validity of a bounded chain of dependent reasoning steps; Comparative Analysis: accuracy of pairwise or set-wise attribute comparison; Goal Decomposition: completeness and atomicity of converting a goal into independently verifiable subgoals; Outcome Reflection: quality of extracting lessons after a completed task from observed outcomes) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence. Do not infer a score from self-report, XP, uptime, message volume, or model confidence alone.",
       "status": "taxonomy_reconciled_evaluator_adapter_pending",
       "initial_state": "unrated",
       "domain_id": "rid_domain:27",
@@ -2337,9 +2365,10 @@
         "rid_domain:23",
         "rid_domain:25",
         "rid_domain:26",
-        "rid_domain:35"
+        "rid_domain:35",
+        "rid_domain:85"
       ],
-      "separation_rule": "Measure only this domain's primary target: quality of diagnosing a problem's structure, causes and constraints. Include: component analysis, causal factors, root-cause hypotheses and impact mapping. Exclude: breaking a goal into deliverable tasks; comparing alternatives; selecting a solution. Adjacent constructs (Conceptual Understanding: fidelity of an internal or explicit model of a concept/system and its relations; Multi-step Reasoning: validity of a bounded chain of dependent reasoning steps; Comparative Analysis: accuracy of pairwise or set-wise attribute comparison; Goal Decomposition: completeness and atomicity of converting a goal into independently verifiable subgoals) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence."
+      "separation_rule": "Measure only this domain's primary target: quality of diagnosing a problem's structure, causes and constraints. Include: component analysis, causal factors, root-cause hypotheses and impact mapping. Exclude: breaking a goal into deliverable tasks; comparing alternatives; selecting a solution. Adjacent constructs (Conceptual Understanding: fidelity of an internal or explicit model of a concept/system and its relations; Multi-step Reasoning: validity of a bounded chain of dependent reasoning steps; Comparative Analysis: accuracy of pairwise or set-wise attribute comparison; Goal Decomposition: completeness and atomicity of converting a goal into independently verifiable subgoals; Outcome Reflection: quality of extracting lessons after a completed task from observed outcomes) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence."
     },
     {
       "id": 28,
@@ -2349,7 +2378,7 @@
       "domain": "cross_source_synthesis",
       "domain_label": "Cross-source Synthesis",
       "definition": "Combines claims from multiple independent sources into a faithful conclusion while preserving disagreement and provenance.",
-      "evaluation_protocol": "Evaluate Cross-source Synthesis only against its declared primary measurement target: faithfulness of a combined claim supported by multiple independent sources. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases satisfying the inclusion criteria (reconciling evidence, preserving disagreement and composing a source-grounded conclusion) and negative/control cases testing the exclusion criteria (simple association; component integration into software; summarizing a single source). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. Measure only this domain's primary target: faithfulness of a combined claim supported by multiple independent sources. Include: reconciling evidence, preserving disagreement and composing a source-grounded conclusion. Exclude: simple association; component integration into software; summarizing a single source. Adjacent constructs (Associative Linking: precision and recall of explicit relations between known items; Knowledge Consolidation: quality of merging repeated records into a compact, non-contradictory representation; Multi-step Reasoning: validity of a bounded chain of dependent reasoning steps; System Composition: functional correctness of integrating components into a working system) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence. Do not infer a score from self-report, XP, uptime, message volume, or model confidence alone.",
+      "evaluation_protocol": "Evaluate Cross-source Synthesis only against its declared primary measurement target: faithfulness of a combined claim supported by multiple independent sources. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases satisfying the inclusion criteria (reconciling evidence, preserving disagreement and composing a source-grounded conclusion) and negative/control cases testing the exclusion criteria (simple association; component integration into software; summarizing a single source). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. Measure only this domain's primary target: faithfulness of a combined claim supported by multiple independent sources. Include: reconciling evidence, preserving disagreement and composing a source-grounded conclusion. Exclude: simple association; component integration into software; summarizing a single source. Adjacent constructs (Associative Linking: precision and recall of explicit relations between known items; Knowledge Revision: correctness of updating or superseding a stored claim when new evidence arrives; Knowledge Consolidation: quality of merging repeated records into a compact, non-contradictory representation; Multi-step Reasoning: validity of a bounded chain of dependent reasoning steps; System Composition: functional correctness of integrating components into a working system) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence. Do not infer a score from self-report, XP, uptime, message volume, or model confidence alone.",
       "status": "taxonomy_reconciled_evaluator_adapter_pending",
       "initial_state": "unrated",
       "domain_id": "rid_domain:28",
@@ -2359,11 +2388,12 @@
       "exclusion_criteria": "simple association; component integration into software; summarizing a single source",
       "overlap_with": [
         "rid_domain:17",
+        "rid_domain:20",
         "rid_domain:21",
         "rid_domain:25",
         "rid_domain:77"
       ],
-      "separation_rule": "Measure only this domain's primary target: faithfulness of a combined claim supported by multiple independent sources. Include: reconciling evidence, preserving disagreement and composing a source-grounded conclusion. Exclude: simple association; component integration into software; summarizing a single source. Adjacent constructs (Associative Linking: precision and recall of explicit relations between known items; Knowledge Consolidation: quality of merging repeated records into a compact, non-contradictory representation; Multi-step Reasoning: validity of a bounded chain of dependent reasoning steps; System Composition: functional correctness of integrating components into a working system) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence."
+      "separation_rule": "Measure only this domain's primary target: faithfulness of a combined claim supported by multiple independent sources. Include: reconciling evidence, preserving disagreement and composing a source-grounded conclusion. Exclude: simple association; component integration into software; summarizing a single source. Adjacent constructs (Associative Linking: precision and recall of explicit relations between known items; Knowledge Revision: correctness of updating or superseding a stored claim when new evidence arrives; Knowledge Consolidation: quality of merging repeated records into a compact, non-contradictory representation; Multi-step Reasoning: validity of a bounded chain of dependent reasoning steps; System Composition: functional correctness of integrating components into a working system) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence."
     },
     {
       "id": 29,
@@ -2464,7 +2494,7 @@
       "domain": "priority_management",
       "domain_label": "Priority Management",
       "definition": "Orders actions by impact, urgency, risk, dependency, and available resources.",
-      "evaluation_protocol": "Evaluate Priority Management only against its declared primary measurement target: correct ordering of tasks or items by explicit urgency and impact criteria. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases satisfying the inclusion criteria (priority ranking under time, risk and dependency constraints) and negative/control cases testing the exclusion criteria (full project planning; dependency-only ordering; choosing among mutually exclusive strategies). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. Measure only this domain's primary target: correct ordering of tasks or items by explicit urgency and impact criteria. Include: priority ranking under time, risk and dependency constraints. Exclude: full project planning; dependency-only ordering; choosing among mutually exclusive strategies. Adjacent constructs (Decision Selection: quality of choosing one action from feasible alternatives against stated goals; Strategic Planning: feasibility and completeness of a goal-directed plan; Dependency Sequencing: validity of ordering tasks according to prerequisite relationships) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence. Do not infer a score from self-report, XP, uptime, message volume, or model confidence alone.",
+      "evaluation_protocol": "Evaluate Priority Management only against its declared primary measurement target: correct ordering of tasks or items by explicit urgency and impact criteria. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases satisfying the inclusion criteria (priority ranking under time, risk and dependency constraints) and negative/control cases testing the exclusion criteria (full project planning; dependency-only ordering; choosing among mutually exclusive strategies). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. Measure only this domain's primary target: correct ordering of tasks or items by explicit urgency and impact criteria. Include: priority ranking under time, risk and dependency constraints. Exclude: full project planning; dependency-only ordering; choosing among mutually exclusive strategies. Adjacent constructs (Decision Selection: quality of choosing one action from feasible alternatives against stated goals; Strategic Planning: feasibility and completeness of a goal-directed plan; Dependency Sequencing: validity of ordering tasks according to prerequisite relationships; Risk Escalation: correct routing of an identified risk to an appropriate human or higher control) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence. Do not infer a score from self-report, XP, uptime, message volume, or model confidence alone.",
       "status": "taxonomy_reconciled_evaluator_adapter_pending",
       "initial_state": "unrated",
       "domain_id": "rid_domain:33",
@@ -2475,9 +2505,10 @@
       "overlap_with": [
         "rid_domain:32",
         "rid_domain:34",
-        "rid_domain:36"
+        "rid_domain:36",
+        "rid_domain:64"
       ],
-      "separation_rule": "Measure only this domain's primary target: correct ordering of tasks or items by explicit urgency and impact criteria. Include: priority ranking under time, risk and dependency constraints. Exclude: full project planning; dependency-only ordering; choosing among mutually exclusive strategies. Adjacent constructs (Decision Selection: quality of choosing one action from feasible alternatives against stated goals; Strategic Planning: feasibility and completeness of a goal-directed plan; Dependency Sequencing: validity of ordering tasks according to prerequisite relationships) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence."
+      "separation_rule": "Measure only this domain's primary target: correct ordering of tasks or items by explicit urgency and impact criteria. Include: priority ranking under time, risk and dependency constraints. Exclude: full project planning; dependency-only ordering; choosing among mutually exclusive strategies. Adjacent constructs (Decision Selection: quality of choosing one action from feasible alternatives against stated goals; Strategic Planning: feasibility and completeness of a goal-directed plan; Dependency Sequencing: validity of ordering tasks according to prerequisite relationships; Risk Escalation: correct routing of an identified risk to an appropriate human or higher control) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence."
     },
     {
       "id": 34,
@@ -2578,7 +2609,7 @@
       "domain": "task_execution",
       "domain_label": "Task Execution",
       "definition": "Carries out required steps accurately and within the allowed environment.",
-      "evaluation_protocol": "Evaluate Task Execution only against its declared primary measurement target: accuracy of carrying out a specified sequence of task actions. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases satisfying the inclusion criteria (action correctness, state transitions and adherence to task specification) and negative/control cases testing the exclusion criteria (tool API correctness in isolation; initial authorization; final acceptance verification). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. Measure only this domain's primary target: accuracy of carrying out a specified sequence of task actions. Include: action correctness, state transitions and adherence to task specification. Exclude: tool API correctness in isolation; initial authorization; final acceptance verification. Adjacent constructs (Authorized Initiation: correctness of the first state-changing start action after authorization and preconditions; Tool Operation: correctness of invoking and handling a specific tool or interface contract; Delivery Completion: presence and completeness of the agreed deliverable at the handoff boundary) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence. Do not infer a score from self-report, XP, uptime, message volume, or model confidence alone.",
+      "evaluation_protocol": "Evaluate Task Execution only against its declared primary measurement target: accuracy of carrying out a specified sequence of task actions. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases satisfying the inclusion criteria (action correctness, state transitions and adherence to task specification) and negative/control cases testing the exclusion criteria (tool API correctness in isolation; initial authorization; final acceptance verification). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. Measure only this domain's primary target: accuracy of carrying out a specified sequence of task actions. Include: action correctness, state transitions and adherence to task specification. Exclude: tool API correctness in isolation; initial authorization; final acceptance verification. Adjacent constructs (Authorized Initiation: correctness of the first state-changing start action after authorization and preconditions; Tool Operation: correctness of invoking and handling a specific tool or interface contract; Delivery Completion: presence and completeness of the agreed deliverable at the handoff boundary; Cross-domain Transfer: performance applying an established capability to a structurally different task domain; Process Monitoring: accuracy of tracking current task state against an expected process model) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence. Do not infer a score from self-report, XP, uptime, message volume, or model confidence alone.",
       "status": "taxonomy_reconciled_evaluator_adapter_pending",
       "initial_state": "unrated",
       "domain_id": "rid_domain:38",
@@ -2589,9 +2620,11 @@
       "overlap_with": [
         "rid_domain:37",
         "rid_domain:39",
-        "rid_domain:44"
+        "rid_domain:44",
+        "rid_domain:76",
+        "rid_domain:83"
       ],
-      "separation_rule": "Measure only this domain's primary target: accuracy of carrying out a specified sequence of task actions. Include: action correctness, state transitions and adherence to task specification. Exclude: tool API correctness in isolation; initial authorization; final acceptance verification. Adjacent constructs (Authorized Initiation: correctness of the first state-changing start action after authorization and preconditions; Tool Operation: correctness of invoking and handling a specific tool or interface contract; Delivery Completion: presence and completeness of the agreed deliverable at the handoff boundary) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence."
+      "separation_rule": "Measure only this domain's primary target: accuracy of carrying out a specified sequence of task actions. Include: action correctness, state transitions and adherence to task specification. Exclude: tool API correctness in isolation; initial authorization; final acceptance verification. Adjacent constructs (Authorized Initiation: correctness of the first state-changing start action after authorization and preconditions; Tool Operation: correctness of invoking and handling a specific tool or interface contract; Delivery Completion: presence and completeness of the agreed deliverable at the handoff boundary; Cross-domain Transfer: performance applying an established capability to a structurally different task domain; Process Monitoring: accuracy of tracking current task state against an expected process model) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence."
     },
     {
       "id": 39,
@@ -2973,7 +3006,7 @@
       "domain": "objective_alignment",
       "domain_label": "Objective Alignment",
       "definition": "Keeps communication and deliverables aligned with the recipient's stated goal and constraints.",
-      "evaluation_protocol": "Evaluate Objective Alignment only against its declared primary measurement target: degree to which an output satisfies the explicitly stated objective and constraints. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases satisfying the inclusion criteria (goal coverage, constraint traceability and scope adherence) and negative/control cases testing the exclusion criteria (negotiating a new objective; stylistic tuning; deciding which objective should be chosen). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. Measure only this domain's primary target: degree to which an output satisfies the explicitly stated objective and constraints. Include: goal coverage, constraint traceability and scope adherence. Exclude: negotiating a new objective; stylistic tuning; deciding which objective should be chosen. Adjacent constructs (Communication Tuning: fit of tone, vocabulary and detail to an explicitly identified audience or channel; Shared Goal Tracking: continuity of explicitly agreed goals across a collaborative task) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence. Do not infer a score from self-report, XP, uptime, message volume, or model confidence alone.",
+      "evaluation_protocol": "Evaluate Objective Alignment only against its declared primary measurement target: degree to which an output satisfies the explicitly stated objective and constraints. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases satisfying the inclusion criteria (goal coverage, constraint traceability and scope adherence) and negative/control cases testing the exclusion criteria (negotiating a new objective; stylistic tuning; deciding which objective should be chosen). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. Measure only this domain's primary target: degree to which an output satisfies the explicitly stated objective and constraints. Include: goal coverage, constraint traceability and scope adherence. Exclude: negotiating a new objective; stylistic tuning; deciding which objective should be chosen. Adjacent constructs (Communication Tuning: fit of tone, vocabulary and detail to an explicitly identified audience or channel; Perspective Modeling: accuracy of representing another participant's explicitly stated viewpoint and constraints; Shared Goal Tracking: continuity of explicitly agreed goals across a collaborative task; Accessibility & Inclusion: degree to which an output or workflow remains usable across stated access needs) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence. Do not infer a score from self-report, XP, uptime, message volume, or model confidence alone.",
       "status": "taxonomy_reconciled_evaluator_adapter_pending",
       "initial_state": "unrated",
       "domain_id": "rid_domain:55",
@@ -2983,9 +3016,11 @@
       "exclusion_criteria": "negotiating a new objective; stylistic tuning; deciding which objective should be chosen",
       "overlap_with": [
         "rid_domain:53",
-        "rid_domain:90"
+        "rid_domain:89",
+        "rid_domain:90",
+        "rid_domain:96"
       ],
-      "separation_rule": "Measure only this domain's primary target: degree to which an output satisfies the explicitly stated objective and constraints. Include: goal coverage, constraint traceability and scope adherence. Exclude: negotiating a new objective; stylistic tuning; deciding which objective should be chosen. Adjacent constructs (Communication Tuning: fit of tone, vocabulary and detail to an explicitly identified audience or channel; Shared Goal Tracking: continuity of explicitly agreed goals across a collaborative task) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence."
+      "separation_rule": "Measure only this domain's primary target: degree to which an output satisfies the explicitly stated objective and constraints. Include: goal coverage, constraint traceability and scope adherence. Exclude: negotiating a new objective; stylistic tuning; deciding which objective should be chosen. Adjacent constructs (Communication Tuning: fit of tone, vocabulary and detail to an explicitly identified audience or channel; Perspective Modeling: accuracy of representing another participant's explicitly stated viewpoint and constraints; Shared Goal Tracking: continuity of explicitly agreed goals across a collaborative task; Accessibility & Inclusion: degree to which an output or workflow remains usable across stated access needs) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence."
     },
     {
       "id": 56,
@@ -3188,7 +3223,7 @@
       "domain": "risk_escalation",
       "domain_label": "Risk Escalation",
       "definition": "Routes high-risk, uncertain, or unauthorized situations to the appropriate human or control.",
-      "evaluation_protocol": "Evaluate Risk Escalation only against its declared primary measurement target: correct routing of an identified risk to an appropriate human or higher control. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases satisfying the inclusion criteria (threshold-triggered escalation, urgency, context and handoff completeness) and negative/control cases testing the exclusion criteria (refusing the action outright; resolving the risk; generic collaboration handoff). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. Measure only this domain's primary target: correct routing of an identified risk to an appropriate human or higher control. Include: threshold-triggered escalation, urgency, context and handoff completeness. Exclude: refusing the action outright; resolving the risk; generic collaboration handoff. Adjacent constructs (Safe Refusal: correctly declining a specific action that violates a defined safety or authorization rule; Capability Boundary Awareness: accuracy of stating what capabilities are and are not available in the current configuration; Work Handoff: completeness and usability of transferring ownership of an in-progress or completed task) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence. Do not infer a score from self-report, XP, uptime, message volume, or model confidence alone.",
+      "evaluation_protocol": "Evaluate Risk Escalation only against its declared primary measurement target: correct routing of an identified risk to an appropriate human or higher control. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases satisfying the inclusion criteria (threshold-triggered escalation, urgency, context and handoff completeness) and negative/control cases testing the exclusion criteria (refusing the action outright; resolving the risk; generic collaboration handoff). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. Measure only this domain's primary target: correct routing of an identified risk to an appropriate human or higher control. Include: threshold-triggered escalation, urgency, context and handoff completeness. Exclude: refusing the action outright; resolving the risk; generic collaboration handoff. Adjacent constructs (Priority Management: correct ordering of tasks or items by explicit urgency and impact criteria; Safe Refusal: correctly declining a specific action that violates a defined safety or authorization rule; Capability Boundary Awareness: accuracy of stating what capabilities are and are not available in the current configuration; Work Handoff: completeness and usability of transferring ownership of an in-progress or completed task) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence. Do not infer a score from self-report, XP, uptime, message volume, or model confidence alone.",
       "status": "taxonomy_reconciled_evaluator_adapter_pending",
       "initial_state": "unrated",
       "domain_id": "rid_domain:64",
@@ -3197,11 +3232,12 @@
       "inclusion_criteria": "threshold-triggered escalation, urgency, context and handoff completeness",
       "exclusion_criteria": "refusing the action outright; resolving the risk; generic collaboration handoff",
       "overlap_with": [
+        "rid_domain:33",
         "rid_domain:66",
         "rid_domain:88",
         "rid_domain:98"
       ],
-      "separation_rule": "Measure only this domain's primary target: correct routing of an identified risk to an appropriate human or higher control. Include: threshold-triggered escalation, urgency, context and handoff completeness. Exclude: refusing the action outright; resolving the risk; generic collaboration handoff. Adjacent constructs (Safe Refusal: correctly declining a specific action that violates a defined safety or authorization rule; Capability Boundary Awareness: accuracy of stating what capabilities are and are not available in the current configuration; Work Handoff: completeness and usability of transferring ownership of an in-progress or completed task) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence."
+      "separation_rule": "Measure only this domain's primary target: correct routing of an identified risk to an appropriate human or higher control. Include: threshold-triggered escalation, urgency, context and handoff completeness. Exclude: refusing the action outright; resolving the risk; generic collaboration handoff. Adjacent constructs (Priority Management: correct ordering of tasks or items by explicit urgency and impact criteria; Safe Refusal: correctly declining a specific action that violates a defined safety or authorization rule; Capability Boundary Awareness: accuracy of stating what capabilities are and are not available in the current configuration; Work Handoff: completeness and usability of transferring ownership of an in-progress or completed task) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence."
     },
     {
       "id": 65,
@@ -3325,7 +3361,7 @@
       "domain": "method_invention",
       "domain_label": "Method Invention",
       "definition": "Develops a new method or combination that solves a defined problem.",
-      "evaluation_protocol": "Evaluate Method Invention only against its declared primary measurement target: novelty and reproducibility of a procedure not already supplied by the task. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases satisfying the inclusion criteria (new algorithm, workflow or technique with demonstrated utility) and negative/control cases testing the exclusion criteria (recombining known components without novelty; ordinary design; hypothetical brainstorming). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. Measure only this domain's primary target: novelty and reproducibility of a procedure not already supplied by the task. Include: new algorithm, workflow or technique with demonstrated utility. Exclude: recombining known components without novelty; ordinary design; hypothetical brainstorming. Adjacent constructs (Possibility Generation: breadth and relevance of hypothetical possibilities before selecting concrete candidates; Solution Design: fitness of a structured solution architecture against requirements) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence. Do not infer a score from self-report, XP, uptime, message volume, or model confidence alone.",
+      "evaluation_protocol": "Evaluate Method Invention only against its declared primary measurement target: novelty and reproducibility of a procedure not already supplied by the task. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases satisfying the inclusion criteria (new algorithm, workflow or technique with demonstrated utility) and negative/control cases testing the exclusion criteria (recombining known components without novelty; ordinary design; hypothetical brainstorming). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. Measure only this domain's primary target: novelty and reproducibility of a procedure not already supplied by the task. Include: new algorithm, workflow or technique with demonstrated utility. Exclude: recombining known components without novelty; ordinary design; hypothetical brainstorming. Adjacent constructs (Possibility Generation: breadth and relevance of hypothetical possibilities before selecting concrete candidates; Solution Design: fitness of a structured solution architecture against requirements; Problem Reframing: utility and factual preservation when expressing the same problem under a new frame) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence. Do not infer a score from self-report, XP, uptime, message volume, or model confidence alone.",
       "status": "taxonomy_reconciled_evaluator_adapter_pending",
       "initial_state": "unrated",
       "domain_id": "rid_domain:70",
@@ -3335,9 +3371,10 @@
       "exclusion_criteria": "recombining known components without novelty; ordinary design; hypothetical brainstorming",
       "overlap_with": [
         "rid_domain:67",
-        "rid_domain:69"
+        "rid_domain:69",
+        "rid_domain:71"
       ],
-      "separation_rule": "Measure only this domain's primary target: novelty and reproducibility of a procedure not already supplied by the task. Include: new algorithm, workflow or technique with demonstrated utility. Exclude: recombining known components without novelty; ordinary design; hypothetical brainstorming. Adjacent constructs (Possibility Generation: breadth and relevance of hypothetical possibilities before selecting concrete candidates; Solution Design: fitness of a structured solution architecture against requirements) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence."
+      "separation_rule": "Measure only this domain's primary target: novelty and reproducibility of a procedure not already supplied by the task. Include: new algorithm, workflow or technique with demonstrated utility. Exclude: recombining known components without novelty; ordinary design; hypothetical brainstorming. Adjacent constructs (Possibility Generation: breadth and relevance of hypothetical possibilities before selecting concrete candidates; Solution Design: fitness of a structured solution architecture against requirements; Problem Reframing: utility and factual preservation when expressing the same problem under a new frame) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence."
     },
     {
       "id": 71,
@@ -3347,7 +3384,7 @@
       "domain": "problem_reframing",
       "domain_label": "Problem Reframing",
       "definition": "Restates a problem from a useful alternative perspective without losing its facts.",
-      "evaluation_protocol": "Evaluate Problem Reframing only against its declared primary measurement target: utility and factual preservation when expressing the same problem under a new frame. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases satisfying the inclusion criteria (alternative problem statements that expose a different actionable perspective) and negative/control cases testing the exclusion criteria (abstracting a general principle; changing facts; choosing a solution). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. Measure only this domain's primary target: utility and factual preservation when expressing the same problem under a new frame. Include: alternative problem statements that expose a different actionable perspective. Exclude: abstracting a general principle; changing facts; choosing a solution. Adjacent constructs (Conceptual Understanding: fidelity of an internal or explicit model of a concept/system and its relations; Principle Abstraction: correct extraction of a reusable rule from multiple specific cases) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence. Do not infer a score from self-report, XP, uptime, message volume, or model confidence alone.",
+      "evaluation_protocol": "Evaluate Problem Reframing only against its declared primary measurement target: utility and factual preservation when expressing the same problem under a new frame. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases satisfying the inclusion criteria (alternative problem statements that expose a different actionable perspective) and negative/control cases testing the exclusion criteria (abstracting a general principle; changing facts; choosing a solution). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. Measure only this domain's primary target: utility and factual preservation when expressing the same problem under a new frame. Include: alternative problem statements that expose a different actionable perspective. Exclude: abstracting a general principle; changing facts; choosing a solution. Adjacent constructs (Conceptual Understanding: fidelity of an internal or explicit model of a concept/system and its relations; Method Invention: novelty and reproducibility of a procedure not already supplied by the task; Principle Abstraction: correct extraction of a reusable rule from multiple specific cases) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence. Do not infer a score from self-report, XP, uptime, message volume, or model confidence alone.",
       "status": "taxonomy_reconciled_evaluator_adapter_pending",
       "initial_state": "unrated",
       "domain_id": "rid_domain:71",
@@ -3357,9 +3394,10 @@
       "exclusion_criteria": "abstracting a general principle; changing facts; choosing a solution",
       "overlap_with": [
         "rid_domain:23",
+        "rid_domain:70",
         "rid_domain:72"
       ],
-      "separation_rule": "Measure only this domain's primary target: utility and factual preservation when expressing the same problem under a new frame. Include: alternative problem statements that expose a different actionable perspective. Exclude: abstracting a general principle; changing facts; choosing a solution. Adjacent constructs (Conceptual Understanding: fidelity of an internal or explicit model of a concept/system and its relations; Principle Abstraction: correct extraction of a reusable rule from multiple specific cases) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence."
+      "separation_rule": "Measure only this domain's primary target: utility and factual preservation when expressing the same problem under a new frame. Include: alternative problem statements that expose a different actionable perspective. Exclude: abstracting a general principle; changing facts; choosing a solution. Adjacent constructs (Conceptual Understanding: fidelity of an internal or explicit model of a concept/system and its relations; Method Invention: novelty and reproducibility of a procedure not already supplied by the task; Principle Abstraction: correct extraction of a reusable rule from multiple specific cases) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence."
     },
     {
       "id": 72,
@@ -3414,7 +3452,7 @@
       "domain": "controlled_experimentation",
       "domain_label": "Controlled Experimentation",
       "definition": "Tests hypotheses through controlled, informative trials.",
-      "evaluation_protocol": "Evaluate Controlled Experimentation only against its declared primary measurement target: quality of a test designed to distinguish competing hypotheses. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases satisfying the inclusion criteria (control variables, comparison groups, measurable outcomes and repeatability) and negative/control cases testing the exclusion criteria (learning gain from instruction; iterative polishing without hypothesis; production execution). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. Measure only this domain's primary target: quality of a test designed to distinguish competing hypotheses. Include: control variables, comparison groups, measurable outcomes and repeatability. Exclude: learning gain from instruction; iterative polishing without hypothesis; production execution. Adjacent constructs (Skill Acquisition: measured performance gain after a defined instruction or practice intervention; Iterative Refinement: measured improvement of an artifact across successive versions) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence. Do not infer a score from self-report, XP, uptime, message volume, or model confidence alone.",
+      "evaluation_protocol": "Evaluate Controlled Experimentation only against its declared primary measurement target: quality of a test designed to distinguish competing hypotheses. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases satisfying the inclusion criteria (control variables, comparison groups, measurable outcomes and repeatability) and negative/control cases testing the exclusion criteria (learning gain from instruction; iterative polishing without hypothesis; production execution). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. Measure only this domain's primary target: quality of a test designed to distinguish competing hypotheses. Include: control variables, comparison groups, measurable outcomes and repeatability. Exclude: learning gain from instruction; iterative polishing without hypothesis; production execution. Adjacent constructs (Skill Acquisition: measured performance gain after a defined instruction or practice intervention; Iterative Refinement: measured improvement of an artifact across successive versions; Outcome Reflection: quality of extracting lessons after a completed task from observed outcomes) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence. Do not infer a score from self-report, XP, uptime, message volume, or model confidence alone.",
       "status": "taxonomy_reconciled_evaluator_adapter_pending",
       "initial_state": "unrated",
       "domain_id": "rid_domain:74",
@@ -3424,9 +3462,10 @@
       "exclusion_criteria": "learning gain from instruction; iterative polishing without hypothesis; production execution",
       "overlap_with": [
         "rid_domain:15",
-        "rid_domain:75"
+        "rid_domain:75",
+        "rid_domain:85"
       ],
-      "separation_rule": "Measure only this domain's primary target: quality of a test designed to distinguish competing hypotheses. Include: control variables, comparison groups, measurable outcomes and repeatability. Exclude: learning gain from instruction; iterative polishing without hypothesis; production execution. Adjacent constructs (Skill Acquisition: measured performance gain after a defined instruction or practice intervention; Iterative Refinement: measured improvement of an artifact across successive versions) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence."
+      "separation_rule": "Measure only this domain's primary target: quality of a test designed to distinguish competing hypotheses. Include: control variables, comparison groups, measurable outcomes and repeatability. Exclude: learning gain from instruction; iterative polishing without hypothesis; production execution. Adjacent constructs (Skill Acquisition: measured performance gain after a defined instruction or practice intervention; Iterative Refinement: measured improvement of an artifact across successive versions; Outcome Reflection: quality of extracting lessons after a completed task from observed outcomes) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence."
     },
     {
       "id": 75,
@@ -3460,7 +3499,7 @@
       "domain": "cross_domain_transfer",
       "domain_label": "Cross-domain Transfer",
       "definition": "Applies a learned skill or principle to a meaningfully different task or domain.",
-      "evaluation_protocol": "Evaluate Cross-domain Transfer only against its declared primary measurement target: performance applying an established capability to a structurally different task domain. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases satisfying the inclusion criteria (held-out transfer tasks, adaptation cost and preserved accuracy) and negative/control cases testing the exclusion criteria (verbal analogy alone; learning from scratch; general behavior change). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. Measure only this domain's primary target: performance applying an established capability to a structurally different task domain. Include: held-out transfer tasks, adaptation cost and preserved accuracy. Exclude: verbal analogy alone; learning from scratch; general behavior change. Adjacent constructs (Skill Acquisition: measured performance gain after a defined instruction or practice intervention; Analogical Transfer: structural correspondence quality when using a source case to illuminate a target case) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence. Do not infer a score from self-report, XP, uptime, message volume, or model confidence alone.",
+      "evaluation_protocol": "Evaluate Cross-domain Transfer only against its declared primary measurement target: performance applying an established capability to a structurally different task domain. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases satisfying the inclusion criteria (held-out transfer tasks, adaptation cost and preserved accuracy) and negative/control cases testing the exclusion criteria (verbal analogy alone; learning from scratch; general behavior change). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. Measure only this domain's primary target: performance applying an established capability to a structurally different task domain. Include: held-out transfer tasks, adaptation cost and preserved accuracy. Exclude: verbal analogy alone; learning from scratch; general behavior change. Adjacent constructs (Skill Acquisition: measured performance gain after a defined instruction or practice intervention; Task Execution: accuracy of carrying out a specified sequence of task actions; Analogical Transfer: structural correspondence quality when using a source case to illuminate a target case) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence. Do not infer a score from self-report, XP, uptime, message volume, or model confidence alone.",
       "status": "taxonomy_reconciled_evaluator_adapter_pending",
       "initial_state": "unrated",
       "domain_id": "rid_domain:76",
@@ -3470,9 +3509,10 @@
       "exclusion_criteria": "verbal analogy alone; learning from scratch; general behavior change",
       "overlap_with": [
         "rid_domain:15",
+        "rid_domain:38",
         "rid_domain:73"
       ],
-      "separation_rule": "Measure only this domain's primary target: performance applying an established capability to a structurally different task domain. Include: held-out transfer tasks, adaptation cost and preserved accuracy. Exclude: verbal analogy alone; learning from scratch; general behavior change. Adjacent constructs (Skill Acquisition: measured performance gain after a defined instruction or practice intervention; Analogical Transfer: structural correspondence quality when using a source case to illuminate a target case) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence."
+      "separation_rule": "Measure only this domain's primary target: performance applying an established capability to a structurally different task domain. Include: held-out transfer tasks, adaptation cost and preserved accuracy. Exclude: verbal analogy alone; learning from scratch; general behavior change. Adjacent constructs (Skill Acquisition: measured performance gain after a defined instruction or practice intervention; Task Execution: accuracy of carrying out a specified sequence of task actions; Analogical Transfer: structural correspondence quality when using a source case to illuminate a target case) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence."
     },
     {
       "id": 77,
@@ -3572,7 +3612,7 @@
       "domain": "error_detection",
       "domain_label": "Self-error Detection",
       "definition": "Detects likely mistakes, inconsistencies, and unsupported claims in its own work.",
-      "evaluation_protocol": "Evaluate Self-error Detection only against its declared primary measurement target: precision and recall for detecting actual defects in one's own output. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases satisfying the inclusion criteria (bugs, contradictions, invalid claims and unintended inconsistencies) and negative/control cases testing the exclusion criteria (checking only predefined checklist items; external verifier success; learning from outcomes). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. Measure only this domain's primary target: precision and recall for detecting actual defects in one's own output. Include: bugs, contradictions, invalid claims and unintended inconsistencies. Exclude: checking only predefined checklist items; external verifier success; learning from outcomes. Adjacent constructs (Result Verification: independent evidence that a delivered result satisfies declared acceptance criteria; Self Review: coverage of a predefined checklist applied to one's own output before submission; Outcome Reflection: quality of extracting lessons after a completed task from observed outcomes; Baseline Drift Detection: detection of sustained deviation from a defined historical or expected baseline) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence. Do not infer a score from self-report, XP, uptime, message volume, or model confidence alone.",
+      "evaluation_protocol": "Evaluate Self-error Detection only against its declared primary measurement target: precision and recall for detecting actual defects in one's own output. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases satisfying the inclusion criteria (bugs, contradictions, invalid claims and unintended inconsistencies) and negative/control cases testing the exclusion criteria (checking only predefined checklist items; external verifier success; learning from outcomes). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. Measure only this domain's primary target: precision and recall for detecting actual defects in one's own output. Include: bugs, contradictions, invalid claims and unintended inconsistencies. Exclude: checking only predefined checklist items; external verifier success; learning from outcomes. Adjacent constructs (Salience Detection: recall and precision for task-relevant details among many input details; Result Verification: independent evidence that a delivered result satisfies declared acceptance criteria; Self Review: coverage of a predefined checklist applied to one's own output before submission; Outcome Reflection: quality of extracting lessons after a completed task from observed outcomes; Baseline Drift Detection: detection of sustained deviation from a defined historical or expected baseline) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence. Do not infer a score from self-report, XP, uptime, message volume, or model confidence alone.",
       "status": "taxonomy_reconciled_evaluator_adapter_pending",
       "initial_state": "unrated",
       "domain_id": "rid_domain:81",
@@ -3581,12 +3621,13 @@
       "inclusion_criteria": "bugs, contradictions, invalid claims and unintended inconsistencies",
       "exclusion_criteria": "checking only predefined checklist items; external verifier success; learning from outcomes",
       "overlap_with": [
+        "rid_domain:05",
         "rid_domain:40",
         "rid_domain:80",
         "rid_domain:85",
         "rid_domain:87"
       ],
-      "separation_rule": "Measure only this domain's primary target: precision and recall for detecting actual defects in one's own output. Include: bugs, contradictions, invalid claims and unintended inconsistencies. Exclude: checking only predefined checklist items; external verifier success; learning from outcomes. Adjacent constructs (Result Verification: independent evidence that a delivered result satisfies declared acceptance criteria; Self Review: coverage of a predefined checklist applied to one's own output before submission; Outcome Reflection: quality of extracting lessons after a completed task from observed outcomes; Baseline Drift Detection: detection of sustained deviation from a defined historical or expected baseline) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence."
+      "separation_rule": "Measure only this domain's primary target: precision and recall for detecting actual defects in one's own output. Include: bugs, contradictions, invalid claims and unintended inconsistencies. Exclude: checking only predefined checklist items; external verifier success; learning from outcomes. Adjacent constructs (Salience Detection: recall and precision for task-relevant details among many input details; Result Verification: independent evidence that a delivered result satisfies declared acceptance criteria; Self Review: coverage of a predefined checklist applied to one's own output before submission; Outcome Reflection: quality of extracting lessons after a completed task from observed outcomes; Baseline Drift Detection: detection of sustained deviation from a defined historical or expected baseline) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence."
     },
     {
       "id": 82,
@@ -3618,7 +3659,7 @@
       "domain": "process_monitoring",
       "domain_label": "Process Monitoring",
       "definition": "Tracks progress, state, and deviations while a task is underway.",
-      "evaluation_protocol": "Evaluate Process Monitoring only against its declared primary measurement target: accuracy of tracking current task state against an expected process model. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases satisfying the inclusion criteria (progress state, deadlines, stuck detection and deviation timestamps) and negative/control cases testing the exclusion criteria (baseline quality drift across repeated runs; evaluating final output; executing the process). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. Measure only this domain's primary target: accuracy of tracking current task state against an expected process model. Include: progress state, deadlines, stuck detection and deviation timestamps. Exclude: baseline quality drift across repeated runs; evaluating final output; executing the process. Adjacent constructs (Baseline Drift Detection: detection of sustained deviation from a defined historical or expected baseline) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence. Do not infer a score from self-report, XP, uptime, message volume, or model confidence alone.",
+      "evaluation_protocol": "Evaluate Process Monitoring only against its declared primary measurement target: accuracy of tracking current task state against an expected process model. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases satisfying the inclusion criteria (progress state, deadlines, stuck detection and deviation timestamps) and negative/control cases testing the exclusion criteria (baseline quality drift across repeated runs; evaluating final output; executing the process). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. Measure only this domain's primary target: accuracy of tracking current task state against an expected process model. Include: progress state, deadlines, stuck detection and deviation timestamps. Exclude: baseline quality drift across repeated runs; evaluating final output; executing the process. Adjacent constructs (Temporal Tracking: continuity and accuracy of state association across ordered time samples; Task Execution: accuracy of carrying out a specified sequence of task actions; Baseline Drift Detection: detection of sustained deviation from a defined historical or expected baseline) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence. Do not infer a score from self-report, XP, uptime, message volume, or model confidence alone.",
       "status": "taxonomy_reconciled_evaluator_adapter_pending",
       "initial_state": "unrated",
       "domain_id": "rid_domain:83",
@@ -3627,9 +3668,11 @@
       "inclusion_criteria": "progress state, deadlines, stuck detection and deviation timestamps",
       "exclusion_criteria": "baseline quality drift across repeated runs; evaluating final output; executing the process",
       "overlap_with": [
+        "rid_domain:09",
+        "rid_domain:38",
         "rid_domain:87"
       ],
-      "separation_rule": "Measure only this domain's primary target: accuracy of tracking current task state against an expected process model. Include: progress state, deadlines, stuck detection and deviation timestamps. Exclude: baseline quality drift across repeated runs; evaluating final output; executing the process. Adjacent constructs (Baseline Drift Detection: detection of sustained deviation from a defined historical or expected baseline) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence."
+      "separation_rule": "Measure only this domain's primary target: accuracy of tracking current task state against an expected process model. Include: progress state, deadlines, stuck detection and deviation timestamps. Exclude: baseline quality drift across repeated runs; evaluating final output; executing the process. Adjacent constructs (Temporal Tracking: continuity and accuracy of state association across ordered time samples; Task Execution: accuracy of carrying out a specified sequence of task actions; Baseline Drift Detection: detection of sustained deviation from a defined historical or expected baseline) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence."
     },
     {
       "id": 84,
@@ -3663,7 +3706,7 @@
       "domain": "outcome_reflection",
       "domain_label": "Outcome Reflection",
       "definition": "Extracts actionable lessons from completed work and observed outcomes.",
-      "evaluation_protocol": "Evaluate Outcome Reflection only against its declared primary measurement target: quality of extracting lessons after a completed task from observed outcomes. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases satisfying the inclusion criteria (post-hoc causal hypotheses, retained lessons and counterfactual awareness) and negative/control cases testing the exclusion criteria (changing future behavior immediately; checklist self-review; collecting feedback). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. Measure only this domain's primary target: quality of extracting lessons after a completed task from observed outcomes. Include: post-hoc causal hypotheses, retained lessons and counterfactual awareness. Exclude: changing future behavior immediately; checklist self-review; collecting feedback. Adjacent constructs (Self Review: coverage of a predefined checklist applied to one's own output before submission; Self-error Detection: precision and recall for detecting actual defects in one's own output; Feedback Integration: measured behavioral or artifact change attributable to accepted feedback) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence. Do not infer a score from self-report, XP, uptime, message volume, or model confidence alone.",
+      "evaluation_protocol": "Evaluate Outcome Reflection only against its declared primary measurement target: quality of extracting lessons after a completed task from observed outcomes. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases satisfying the inclusion criteria (post-hoc causal hypotheses, retained lessons and counterfactual awareness) and negative/control cases testing the exclusion criteria (changing future behavior immediately; checklist self-review; collecting feedback). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. Measure only this domain's primary target: quality of extracting lessons after a completed task from observed outcomes. Include: post-hoc causal hypotheses, retained lessons and counterfactual awareness. Exclude: changing future behavior immediately; checklist self-review; collecting feedback. Adjacent constructs (Problem Analysis: quality of diagnosing a problem's structure, causes and constraints; Controlled Experimentation: quality of a test designed to distinguish competing hypotheses; Self Review: coverage of a predefined checklist applied to one's own output before submission; Self-error Detection: precision and recall for detecting actual defects in one's own output; Feedback Integration: measured behavioral or artifact change attributable to accepted feedback) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence. Do not infer a score from self-report, XP, uptime, message volume, or model confidence alone.",
       "status": "taxonomy_reconciled_evaluator_adapter_pending",
       "initial_state": "unrated",
       "domain_id": "rid_domain:85",
@@ -3672,11 +3715,13 @@
       "inclusion_criteria": "post-hoc causal hypotheses, retained lessons and counterfactual awareness",
       "exclusion_criteria": "changing future behavior immediately; checklist self-review; collecting feedback",
       "overlap_with": [
+        "rid_domain:27",
+        "rid_domain:74",
         "rid_domain:80",
         "rid_domain:81",
         "rid_domain:86"
       ],
-      "separation_rule": "Measure only this domain's primary target: quality of extracting lessons after a completed task from observed outcomes. Include: post-hoc causal hypotheses, retained lessons and counterfactual awareness. Exclude: changing future behavior immediately; checklist self-review; collecting feedback. Adjacent constructs (Self Review: coverage of a predefined checklist applied to one's own output before submission; Self-error Detection: precision and recall for detecting actual defects in one's own output; Feedback Integration: measured behavioral or artifact change attributable to accepted feedback) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence."
+      "separation_rule": "Measure only this domain's primary target: quality of extracting lessons after a completed task from observed outcomes. Include: post-hoc causal hypotheses, retained lessons and counterfactual awareness. Exclude: changing future behavior immediately; checklist self-review; collecting feedback. Adjacent constructs (Problem Analysis: quality of diagnosing a problem's structure, causes and constraints; Controlled Experimentation: quality of a test designed to distinguish competing hypotheses; Self Review: coverage of a predefined checklist applied to one's own output before submission; Self-error Detection: precision and recall for detecting actual defects in one's own output; Feedback Integration: measured behavioral or artifact change attributable to accepted feedback) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence."
     },
     {
       "id": 86,
@@ -3755,7 +3800,7 @@
       "domain": "viewpoint_model",
       "domain_label": "Perspective Modeling",
       "definition": "Models another party's stated viewpoint and constraints without assuming private feelings.",
-      "evaluation_protocol": "Evaluate Perspective Modeling only against its declared primary measurement target: accuracy of representing another participant's explicitly stated viewpoint and constraints. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases satisfying the inclusion criteria (faithful viewpoint summary with uncertainty about unstated beliefs) and negative/control cases testing the exclusion criteria (listening to literal instructions; assuming private emotions; negotiating an outcome). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. Measure only this domain's primary target: accuracy of representing another participant's explicitly stated viewpoint and constraints. Include: faithful viewpoint summary with uncertainty about unstated beliefs. Exclude: listening to literal instructions; assuming private emotions; negotiating an outcome. Adjacent constructs (Context & Provenance: completeness and correctness of source metadata attached to retained information; Active Listening: accuracy of incorporating information explicitly supplied by another participant; Dialogue Continuity: coherence of turn-to-turn conversational state within an active interaction; Collaboration Context: correct use of shared project context, roles and agreed working conventions) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence. Do not infer a score from self-report, XP, uptime, message volume, or model confidence alone.",
+      "evaluation_protocol": "Evaluate Perspective Modeling only against its declared primary measurement target: accuracy of representing another participant's explicitly stated viewpoint and constraints. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases satisfying the inclusion criteria (faithful viewpoint summary with uncertainty about unstated beliefs) and negative/control cases testing the exclusion criteria (listening to literal instructions; assuming private emotions; negotiating an outcome). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. Measure only this domain's primary target: accuracy of representing another participant's explicitly stated viewpoint and constraints. Include: faithful viewpoint summary with uncertainty about unstated beliefs. Exclude: listening to literal instructions; assuming private emotions; negotiating an outcome. Adjacent constructs (Context & Provenance: completeness and correctness of source metadata attached to retained information; Active Listening: accuracy of incorporating information explicitly supplied by another participant; Dialogue Continuity: coherence of turn-to-turn conversational state within an active interaction; Objective Alignment: degree to which an output satisfies the explicitly stated objective and constraints; Collaboration Context: correct use of shared project context, roles and agreed working conventions) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence. Do not infer a score from self-report, XP, uptime, message volume, or model confidence alone.",
       "status": "taxonomy_reconciled_evaluator_adapter_pending",
       "initial_state": "unrated",
       "domain_id": "rid_domain:89",
@@ -3767,9 +3812,10 @@
         "rid_domain:22",
         "rid_domain:50",
         "rid_domain:54",
+        "rid_domain:55",
         "rid_domain:91"
       ],
-      "separation_rule": "Measure only this domain's primary target: accuracy of representing another participant's explicitly stated viewpoint and constraints. Include: faithful viewpoint summary with uncertainty about unstated beliefs. Exclude: listening to literal instructions; assuming private emotions; negotiating an outcome. Adjacent constructs (Context & Provenance: completeness and correctness of source metadata attached to retained information; Active Listening: accuracy of incorporating information explicitly supplied by another participant; Dialogue Continuity: coherence of turn-to-turn conversational state within an active interaction; Collaboration Context: correct use of shared project context, roles and agreed working conventions) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence."
+      "separation_rule": "Measure only this domain's primary target: accuracy of representing another participant's explicitly stated viewpoint and constraints. Include: faithful viewpoint summary with uncertainty about unstated beliefs. Exclude: listening to literal instructions; assuming private emotions; negotiating an outcome. Adjacent constructs (Context & Provenance: completeness and correctness of source metadata attached to retained information; Active Listening: accuracy of incorporating information explicitly supplied by another participant; Dialogue Continuity: coherence of turn-to-turn conversational state within an active interaction; Objective Alignment: degree to which an output satisfies the explicitly stated objective and constraints; Collaboration Context: correct use of shared project context, roles and agreed working conventions) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence."
     },
     {
       "id": 90,
@@ -3779,7 +3825,7 @@
       "domain": "goal_track",
       "domain_label": "Shared Goal Tracking",
       "definition": "Identifies and tracks goals explicitly expressed by a collaborator.",
-      "evaluation_protocol": "Evaluate Shared Goal Tracking only against its declared primary measurement target: continuity of explicitly agreed goals across a collaborative task. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases satisfying the inclusion criteria (goal ownership, status and changes confirmed by participants) and negative/control cases testing the exclusion criteria (personal objective alignment; task prioritization; inferring unstated goals). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. Measure only this domain's primary target: continuity of explicitly agreed goals across a collaborative task. Include: goal ownership, status and changes confirmed by participants. Exclude: personal objective alignment; task prioritization; inferring unstated goals. Adjacent constructs (Objective Alignment: degree to which an output satisfies the explicitly stated objective and constraints; Multi-party Coordination: synchronization of independent participants' tasks and dependencies; Work Handoff: completeness and usability of transferring ownership of an in-progress or completed task) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence. Do not infer a score from self-report, XP, uptime, message volume, or model confidence alone.",
+      "evaluation_protocol": "Evaluate Shared Goal Tracking only against its declared primary measurement target: continuity of explicitly agreed goals across a collaborative task. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases satisfying the inclusion criteria (goal ownership, status and changes confirmed by participants) and negative/control cases testing the exclusion criteria (personal objective alignment; task prioritization; inferring unstated goals). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. Measure only this domain's primary target: continuity of explicitly agreed goals across a collaborative task. Include: goal ownership, status and changes confirmed by participants. Exclude: personal objective alignment; task prioritization; inferring unstated goals. Adjacent constructs (Temporal Tracking: continuity and accuracy of state association across ordered time samples; Objective Alignment: degree to which an output satisfies the explicitly stated objective and constraints; Multi-party Coordination: synchronization of independent participants' tasks and dependencies; Work Handoff: completeness and usability of transferring ownership of an in-progress or completed task) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence. Do not infer a score from self-report, XP, uptime, message volume, or model confidence alone.",
       "status": "taxonomy_reconciled_evaluator_adapter_pending",
       "initial_state": "unrated",
       "domain_id": "rid_domain:90",
@@ -3788,11 +3834,12 @@
       "inclusion_criteria": "goal ownership, status and changes confirmed by participants",
       "exclusion_criteria": "personal objective alignment; task prioritization; inferring unstated goals",
       "overlap_with": [
+        "rid_domain:09",
         "rid_domain:55",
         "rid_domain:92",
         "rid_domain:98"
       ],
-      "separation_rule": "Measure only this domain's primary target: continuity of explicitly agreed goals across a collaborative task. Include: goal ownership, status and changes confirmed by participants. Exclude: personal objective alignment; task prioritization; inferring unstated goals. Adjacent constructs (Objective Alignment: degree to which an output satisfies the explicitly stated objective and constraints; Multi-party Coordination: synchronization of independent participants' tasks and dependencies; Work Handoff: completeness and usability of transferring ownership of an in-progress or completed task) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence."
+      "separation_rule": "Measure only this domain's primary target: continuity of explicitly agreed goals across a collaborative task. Include: goal ownership, status and changes confirmed by participants. Exclude: personal objective alignment; task prioritization; inferring unstated goals. Adjacent constructs (Temporal Tracking: continuity and accuracy of state association across ordered time samples; Objective Alignment: degree to which an output satisfies the explicitly stated objective and constraints; Multi-party Coordination: synchronization of independent participants' tasks and dependencies; Work Handoff: completeness and usability of transferring ownership of an in-progress or completed task) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence."
     },
     {
       "id": 91,
@@ -3914,7 +3961,7 @@
       "domain": "accessibility_inclusion",
       "domain_label": "Accessibility & Inclusion",
       "definition": "Accounts for accessibility needs and relevant differences in participant capabilities.",
-      "evaluation_protocol": "Evaluate Accessibility & Inclusion only against its declared primary measurement target: degree to which an output or workflow remains usable across stated access needs. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases satisfying the inclusion criteria (alternative formats, assistive compatibility and exclusion checks) and negative/control cases testing the exclusion criteria (general audience tone tuning; viewpoint modeling; legal policy compliance). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. Measure only this domain's primary target: degree to which an output or workflow remains usable across stated access needs. Include: alternative formats, assistive compatibility and exclusion checks. Exclude: general audience tone tuning; viewpoint modeling; legal policy compliance. Adjacent constructs (Communication Tuning: fit of tone, vocabulary and detail to an explicitly identified audience or channel) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence. Do not infer a score from self-report, XP, uptime, message volume, or model confidence alone.",
+      "evaluation_protocol": "Evaluate Accessibility & Inclusion only against its declared primary measurement target: degree to which an output or workflow remains usable across stated access needs. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases satisfying the inclusion criteria (alternative formats, assistive compatibility and exclusion checks) and negative/control cases testing the exclusion criteria (general audience tone tuning; viewpoint modeling; legal policy compliance). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. Measure only this domain's primary target: degree to which an output or workflow remains usable across stated access needs. Include: alternative formats, assistive compatibility and exclusion checks. Exclude: general audience tone tuning; viewpoint modeling; legal policy compliance. Adjacent constructs (Communication Tuning: fit of tone, vocabulary and detail to an explicitly identified audience or channel; Objective Alignment: degree to which an output satisfies the explicitly stated objective and constraints) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence. Do not infer a score from self-report, XP, uptime, message volume, or model confidence alone.",
       "status": "taxonomy_reconciled_evaluator_adapter_pending",
       "initial_state": "unrated",
       "domain_id": "rid_domain:96",
@@ -3923,9 +3970,10 @@
       "inclusion_criteria": "alternative formats, assistive compatibility and exclusion checks",
       "exclusion_criteria": "general audience tone tuning; viewpoint modeling; legal policy compliance",
       "overlap_with": [
-        "rid_domain:53"
+        "rid_domain:53",
+        "rid_domain:55"
       ],
-      "separation_rule": "Measure only this domain's primary target: degree to which an output or workflow remains usable across stated access needs. Include: alternative formats, assistive compatibility and exclusion checks. Exclude: general audience tone tuning; viewpoint modeling; legal policy compliance. Adjacent constructs (Communication Tuning: fit of tone, vocabulary and detail to an explicitly identified audience or channel) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence."
+      "separation_rule": "Measure only this domain's primary target: degree to which an output or workflow remains usable across stated access needs. Include: alternative formats, assistive compatibility and exclusion checks. Exclude: general audience tone tuning; viewpoint modeling; legal policy compliance. Adjacent constructs (Communication Tuning: fit of tone, vocabulary and detail to an explicitly identified audience or channel; Objective Alignment: degree to which an output satisfies the explicitly stated objective and constraints) must be scored against their own target and independent rubric outcome. If a task does not produce a separately observable outcome for this domain, leave it unrated rather than reusing another domain's evidence."
     },
     {
       "id": 97,
@@ -4001,12 +4049,12 @@
     "principle": "Orthogonality is defined by distinct primary measurement targets and non-reused evidence, not by pretending capabilities never interact.",
     "evidence_reuse": "One evidence item may support multiple dimensions only when it contains separately identifiable outcomes, each scored under its own rubric; the same success/failure signal cannot be counted twice.",
     "boundary_resolution": "For every declared overlap_with relation, apply the domain's inclusion_criteria, exclusion_criteria, and separation_rule. If evaluators cannot separate outcomes reliably, mark the affected dimensions unrated pending a revised rubric.",
-    "review_status": "construct_boundaries_reconciled; lexical_similarity_screen_and_manual_adjacency_review_completed; explicit_pairwise_contrasts_added; independent_psychometric_validation_pending",
-    "directed_edge_count": 298,
-    "unique_pair_count": 149
+    "review_status": "third_pass_candidate_adjacency_review_completed; lexical_similarity_candidates_reviewed; explicit_pairwise_contrasts_added; independent_psychometric_validation_pending",
+    "directed_edge_count": 322,
+    "unique_pair_count": 161
   },
   "audit": {
-    "review_version": "2.3.2",
+    "review_version": "2.3.3",
     "scope": [
       "construct distinction",
       "pairwise overlap guards",
@@ -4014,10 +4062,75 @@
       "identifier and metadata integrity",
       "pairwise contrast registry",
       "domain-versus-stat semantic contract",
-      "second-pass review of unlisted adjacent constructs"
+      "second-pass review of unlisted adjacent constructs",
+      "third-pass review of unlisted high-similarity and operationally adjacent constructs"
     ],
-    "method": "Manual review of construct boundaries and adjacent definitions; lexical similarity screen to surface candidate unlisted pairs; deterministic generation of pairwise contrast records from canonical domain metadata; deterministic structural validation.",
-    "limitation": "Structural uniqueness and editorial boundaries do not establish psychometric independence; independent evaluator studies remain required."
+    "method": "Manual construct-boundary review of all 99 definitions; lexical Jaccard screen over labels, definitions, measurement targets and inclusion criteria to surface candidate unlisted pairs; human semantic adjudication of candidate adjacency; deterministic generation of pairwise contrast records; deterministic structural validation.",
+    "limitation": "Structural uniqueness and editorial boundaries do not establish psychometric independence; independent evaluator studies remain required.",
+    "additional_candidates_reviewed": [
+      {
+        "domain_a": "rid_domain:05",
+        "domain_b": "rid_domain:81",
+        "decision": "add_adjacency_guard"
+      },
+      {
+        "domain_a": "rid_domain:09",
+        "domain_b": "rid_domain:83",
+        "decision": "add_adjacency_guard"
+      },
+      {
+        "domain_a": "rid_domain:09",
+        "domain_b": "rid_domain:90",
+        "decision": "add_adjacency_guard"
+      },
+      {
+        "domain_a": "rid_domain:20",
+        "domain_b": "rid_domain:28",
+        "decision": "add_adjacency_guard"
+      },
+      {
+        "domain_a": "rid_domain:27",
+        "domain_b": "rid_domain:85",
+        "decision": "add_adjacency_guard"
+      },
+      {
+        "domain_a": "rid_domain:33",
+        "domain_b": "rid_domain:64",
+        "decision": "add_adjacency_guard"
+      },
+      {
+        "domain_a": "rid_domain:38",
+        "domain_b": "rid_domain:76",
+        "decision": "add_adjacency_guard"
+      },
+      {
+        "domain_a": "rid_domain:38",
+        "domain_b": "rid_domain:83",
+        "decision": "add_adjacency_guard"
+      },
+      {
+        "domain_a": "rid_domain:55",
+        "domain_b": "rid_domain:89",
+        "decision": "add_adjacency_guard"
+      },
+      {
+        "domain_a": "rid_domain:55",
+        "domain_b": "rid_domain:96",
+        "decision": "add_adjacency_guard"
+      },
+      {
+        "domain_a": "rid_domain:70",
+        "domain_b": "rid_domain:71",
+        "decision": "add_adjacency_guard"
+      },
+      {
+        "domain_a": "rid_domain:74",
+        "domain_b": "rid_domain:85",
+        "decision": "add_adjacency_guard"
+      }
+    ],
+    "overlap_pair_count": 161,
+    "directed_edge_count": 322
   },
   "overlap_pairs": [
     {
@@ -5509,6 +5622,126 @@
       "measurement_target_a": "reduction of hostility or escalation while preserving substantive issues",
       "measurement_target_b": "quality of reaching an agreed trade-off among participants with differing constraints",
       "contrast_rule": "Conflict De-escalation measures reduction of hostility or escalation while preserving substantive issues (including tone stabilization, safety, factual grounding and constructive next step). Constraint-aware Negotiation measures quality of reaching an agreed trade-off among participants with differing constraints (including explicit concessions, preserved hard constraints and accepted agreement). These are separate outcomes: a shared task may contribute to both only when the evaluator records distinct outcome values and independent rubric judgments. If only one undifferentiated outcome is available, score at most the single best-fitting dimension and leave the other unrated."
+    },
+    {
+      "id": "rid_overlap:150",
+      "domain_a": "rid_domain:05",
+      "domain_b": "rid_domain:81",
+      "label_a": "Salience Detection",
+      "label_b": "Self-error Detection",
+      "measurement_target_a": "recall and precision for task-relevant details among many input details",
+      "measurement_target_b": "precision and recall for detecting actual defects in one's own output",
+      "contrast_rule": "Salience Detection measures recall and precision for task-relevant details among many input details (including finding specified relevant cues, omissions and anomalous details). Self-error Detection measures precision and recall for detecting actual defects in one's own output (including bugs, contradictions, invalid claims and unintended inconsistencies). These are separate outcomes: a shared task may contribute to both only when the evaluator records distinct outcome values and independent rubric judgments. If only one undifferentiated outcome is available, score at most the single best-fitting dimension and leave the other unrated."
+    },
+    {
+      "id": "rid_overlap:151",
+      "domain_a": "rid_domain:09",
+      "domain_b": "rid_domain:83",
+      "label_a": "Temporal Tracking",
+      "label_b": "Process Monitoring",
+      "measurement_target_a": "continuity and accuracy of state association across ordered time samples",
+      "measurement_target_b": "accuracy of tracking current task state against an expected process model",
+      "contrast_rule": "Temporal Tracking measures continuity and accuracy of state association across ordered time samples (including maintaining which entity/state is which across frames, steps or events). Process Monitoring measures accuracy of tracking current task state against an expected process model (including progress state, deadlines, stuck detection and deviation timestamps). These are separate outcomes: a shared task may contribute to both only when the evaluator records distinct outcome values and independent rubric judgments. If only one undifferentiated outcome is available, score at most the single best-fitting dimension and leave the other unrated."
+    },
+    {
+      "id": "rid_overlap:152",
+      "domain_a": "rid_domain:09",
+      "domain_b": "rid_domain:90",
+      "label_a": "Temporal Tracking",
+      "label_b": "Shared Goal Tracking",
+      "measurement_target_a": "continuity and accuracy of state association across ordered time samples",
+      "measurement_target_b": "continuity of explicitly agreed goals across a collaborative task",
+      "contrast_rule": "Temporal Tracking measures continuity and accuracy of state association across ordered time samples (including maintaining which entity/state is which across frames, steps or events). Shared Goal Tracking measures continuity of explicitly agreed goals across a collaborative task (including goal ownership, status and changes confirmed by participants). These are separate outcomes: a shared task may contribute to both only when the evaluator records distinct outcome values and independent rubric judgments. If only one undifferentiated outcome is available, score at most the single best-fitting dimension and leave the other unrated."
+    },
+    {
+      "id": "rid_overlap:153",
+      "domain_a": "rid_domain:20",
+      "domain_b": "rid_domain:28",
+      "label_a": "Knowledge Revision",
+      "label_b": "Cross-source Synthesis",
+      "measurement_target_a": "correctness of updating or superseding a stored claim when new evidence arrives",
+      "measurement_target_b": "faithfulness of a combined claim supported by multiple independent sources",
+      "contrast_rule": "Knowledge Revision measures correctness of updating or superseding a stored claim when new evidence arrives (including versioning, contradiction resolution, source precedence and stale-claim replacement). Cross-source Synthesis measures faithfulness of a combined claim supported by multiple independent sources (including reconciling evidence, preserving disagreement and composing a source-grounded conclusion). These are separate outcomes: a shared task may contribute to both only when the evaluator records distinct outcome values and independent rubric judgments. If only one undifferentiated outcome is available, score at most the single best-fitting dimension and leave the other unrated."
+    },
+    {
+      "id": "rid_overlap:154",
+      "domain_a": "rid_domain:27",
+      "domain_b": "rid_domain:85",
+      "label_a": "Problem Analysis",
+      "label_b": "Outcome Reflection",
+      "measurement_target_a": "quality of diagnosing a problem's structure, causes and constraints",
+      "measurement_target_b": "quality of extracting lessons after a completed task from observed outcomes",
+      "contrast_rule": "Problem Analysis measures quality of diagnosing a problem's structure, causes and constraints (including component analysis, causal factors, root-cause hypotheses and impact mapping). Outcome Reflection measures quality of extracting lessons after a completed task from observed outcomes (including post-hoc causal hypotheses, retained lessons and counterfactual awareness). These are separate outcomes: a shared task may contribute to both only when the evaluator records distinct outcome values and independent rubric judgments. If only one undifferentiated outcome is available, score at most the single best-fitting dimension and leave the other unrated."
+    },
+    {
+      "id": "rid_overlap:155",
+      "domain_a": "rid_domain:33",
+      "domain_b": "rid_domain:64",
+      "label_a": "Priority Management",
+      "label_b": "Risk Escalation",
+      "measurement_target_a": "correct ordering of tasks or items by explicit urgency and impact criteria",
+      "measurement_target_b": "correct routing of an identified risk to an appropriate human or higher control",
+      "contrast_rule": "Priority Management measures correct ordering of tasks or items by explicit urgency and impact criteria (including priority ranking under time, risk and dependency constraints). Risk Escalation measures correct routing of an identified risk to an appropriate human or higher control (including threshold-triggered escalation, urgency, context and handoff completeness). These are separate outcomes: a shared task may contribute to both only when the evaluator records distinct outcome values and independent rubric judgments. If only one undifferentiated outcome is available, score at most the single best-fitting dimension and leave the other unrated."
+    },
+    {
+      "id": "rid_overlap:156",
+      "domain_a": "rid_domain:38",
+      "domain_b": "rid_domain:76",
+      "label_a": "Task Execution",
+      "label_b": "Cross-domain Transfer",
+      "measurement_target_a": "accuracy of carrying out a specified sequence of task actions",
+      "measurement_target_b": "performance applying an established capability to a structurally different task domain",
+      "contrast_rule": "Task Execution measures accuracy of carrying out a specified sequence of task actions (including action correctness, state transitions and adherence to task specification). Cross-domain Transfer measures performance applying an established capability to a structurally different task domain (including held-out transfer tasks, adaptation cost and preserved accuracy). These are separate outcomes: a shared task may contribute to both only when the evaluator records distinct outcome values and independent rubric judgments. If only one undifferentiated outcome is available, score at most the single best-fitting dimension and leave the other unrated."
+    },
+    {
+      "id": "rid_overlap:157",
+      "domain_a": "rid_domain:38",
+      "domain_b": "rid_domain:83",
+      "label_a": "Task Execution",
+      "label_b": "Process Monitoring",
+      "measurement_target_a": "accuracy of carrying out a specified sequence of task actions",
+      "measurement_target_b": "accuracy of tracking current task state against an expected process model",
+      "contrast_rule": "Task Execution measures accuracy of carrying out a specified sequence of task actions (including action correctness, state transitions and adherence to task specification). Process Monitoring measures accuracy of tracking current task state against an expected process model (including progress state, deadlines, stuck detection and deviation timestamps). These are separate outcomes: a shared task may contribute to both only when the evaluator records distinct outcome values and independent rubric judgments. If only one undifferentiated outcome is available, score at most the single best-fitting dimension and leave the other unrated."
+    },
+    {
+      "id": "rid_overlap:158",
+      "domain_a": "rid_domain:55",
+      "domain_b": "rid_domain:89",
+      "label_a": "Objective Alignment",
+      "label_b": "Perspective Modeling",
+      "measurement_target_a": "degree to which an output satisfies the explicitly stated objective and constraints",
+      "measurement_target_b": "accuracy of representing another participant's explicitly stated viewpoint and constraints",
+      "contrast_rule": "Objective Alignment measures degree to which an output satisfies the explicitly stated objective and constraints (including goal coverage, constraint traceability and scope adherence). Perspective Modeling measures accuracy of representing another participant's explicitly stated viewpoint and constraints (including faithful viewpoint summary with uncertainty about unstated beliefs). These are separate outcomes: a shared task may contribute to both only when the evaluator records distinct outcome values and independent rubric judgments. If only one undifferentiated outcome is available, score at most the single best-fitting dimension and leave the other unrated."
+    },
+    {
+      "id": "rid_overlap:159",
+      "domain_a": "rid_domain:55",
+      "domain_b": "rid_domain:96",
+      "label_a": "Objective Alignment",
+      "label_b": "Accessibility & Inclusion",
+      "measurement_target_a": "degree to which an output satisfies the explicitly stated objective and constraints",
+      "measurement_target_b": "degree to which an output or workflow remains usable across stated access needs",
+      "contrast_rule": "Objective Alignment measures degree to which an output satisfies the explicitly stated objective and constraints (including goal coverage, constraint traceability and scope adherence). Accessibility & Inclusion measures degree to which an output or workflow remains usable across stated access needs (including alternative formats, assistive compatibility and exclusion checks). These are separate outcomes: a shared task may contribute to both only when the evaluator records distinct outcome values and independent rubric judgments. If only one undifferentiated outcome is available, score at most the single best-fitting dimension and leave the other unrated."
+    },
+    {
+      "id": "rid_overlap:160",
+      "domain_a": "rid_domain:70",
+      "domain_b": "rid_domain:71",
+      "label_a": "Method Invention",
+      "label_b": "Problem Reframing",
+      "measurement_target_a": "novelty and reproducibility of a procedure not already supplied by the task",
+      "measurement_target_b": "utility and factual preservation when expressing the same problem under a new frame",
+      "contrast_rule": "Method Invention measures novelty and reproducibility of a procedure not already supplied by the task (including new algorithm, workflow or technique with demonstrated utility). Problem Reframing measures utility and factual preservation when expressing the same problem under a new frame (including alternative problem statements that expose a different actionable perspective). These are separate outcomes: a shared task may contribute to both only when the evaluator records distinct outcome values and independent rubric judgments. If only one undifferentiated outcome is available, score at most the single best-fitting dimension and leave the other unrated."
+    },
+    {
+      "id": "rid_overlap:161",
+      "domain_a": "rid_domain:74",
+      "domain_b": "rid_domain:85",
+      "label_a": "Controlled Experimentation",
+      "label_b": "Outcome Reflection",
+      "measurement_target_a": "quality of a test designed to distinguish competing hypotheses",
+      "measurement_target_b": "quality of extracting lessons after a completed task from observed outcomes",
+      "contrast_rule": "Controlled Experimentation measures quality of a test designed to distinguish competing hypotheses (including control variables, comparison groups, measurable outcomes and repeatability). Outcome Reflection measures quality of extracting lessons after a completed task from observed outcomes (including post-hoc causal hypotheses, retained lessons and counterfactual awareness). These are separate outcomes: a shared task may contribute to both only when the evaluator records distinct outcome values and independent rubric judgments. If only one undifferentiated outcome is available, score at most the single best-fitting dimension and leave the other unrated."
     }
   ],
   "domain_stat_relationship": {
