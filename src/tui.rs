@@ -452,16 +452,23 @@ fn panel(title: &'static str, palette: &Palette) -> Block<'static> {
 }
 
 fn render_header(frame: &mut Frame<'_>, area: Rect, app: &App) {
+    let english = app.preferences.locale == LocaleMode::English;
     let rid = app
         .snapshot
         .rid_profile
         .as_ref()
         .map(|profile| format!("RID L{} · {} XP", profile.level(), profile.total_xp()))
-        .unwrap_or_else(|| "RID NOT INITIALIZED".to_owned());
+        .unwrap_or_else(|| {
+            if english {
+                "RID NOT INITIALIZED".to_owned()
+            } else {
+                "RID BELUM DIINISIALISASI".to_owned()
+            }
+        });
     let status = if app.snapshot.rid_error.is_some() {
-        ("DEGRADED", app.palette.error)
+        (if english { "DEGRADED" } else { "TERGANGGU" }, app.palette.error)
     } else {
-        ("LOCAL RUNTIME", app.palette.success)
+        (if english { "LOCAL RUNTIME" } else { "RUNTIME LOKAL" }, app.palette.success)
     };
     let line = Line::from(vec![
         Span::styled(
@@ -469,7 +476,7 @@ fn render_header(frame: &mut Frame<'_>, area: Rect, app: &App) {
             Style::default().fg(app.palette.text).add_modifier(Modifier::BOLD),
         ),
         Span::styled(
-            "/ COGNITIVE COCKPIT ",
+            if english { "/ COGNITIVE COCKPIT " } else { "/ KOKPIT KOGNITIF " },
             Style::default().fg(app.palette.accent).add_modifier(Modifier::BOLD),
         ),
         Span::styled(status.0, Style::default().fg(status.1)),
@@ -1337,10 +1344,17 @@ fn rid_detail(entry: &CatalogueEntry, profile: Option<&RuhProfile>) -> Vec<Line<
 }
 
 fn render_footer(frame: &mut Frame<'_>, area: Rect, app: &App) {
+    let english = app.preferences.locale == LocaleMode::English;
     let text = if app.screen == Screen::Rid {
-        "↑/↓ Browse stats   1-8 Navigate   Ctrl+K Palette   ? Help   q Exit"
-    } else {
+        if english {
+            "↑/↓ Browse stats   1-8 Navigate   Ctrl+K Palette   ? Help   q Exit"
+        } else {
+            "↑/↓ Jelajah statistik   1-8 Navigasi   Ctrl+K Palet   ? Bantuan   q Keluar"
+        }
+    } else if english {
         "1-8 Navigate   / Search   f Kind   c Claim   ↑/↓ Select   Enter/Esc Close Search   q Exit"
+    } else {
+        "1-8 Navigasi   / Cari   f Jenis   c Klaim   ↑/↓ Pilih   Enter/Esc Tutup Pencarian   q Keluar"
     };
     frame.render_widget(
         Paragraph::new(text)
@@ -1349,7 +1363,7 @@ fn render_footer(frame: &mut Frame<'_>, area: Rect, app: &App) {
             .block(
                 Block::default()
                     .borders(Borders::TOP)
-                    .border_style(Style::default().fg(palette.border)),
+                    .border_style(Style::default().fg(app.palette.border)),
             ),
         area,
     );
