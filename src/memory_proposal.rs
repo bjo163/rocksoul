@@ -577,7 +577,9 @@ mod tests {
         time::{SystemTime, UNIX_EPOCH},
     };
 
-    use super::{ProposalStatus, approve, cancel, create, deny, get_pending, list};
+    use super::{
+        MemoryProposalCandidate, ProposalStatus, approve, cancel, create, deny, get_pending, list,
+    };
 
     fn temp_dir() -> PathBuf {
         let nanos = SystemTime::now()
@@ -589,15 +591,29 @@ mod tests {
         path
     }
 
+    fn candidate(
+        kind: crate::memory::MemoryKind,
+        content: &str,
+        source_turn_reference: &str,
+    ) -> MemoryProposalCandidate {
+        MemoryProposalCandidate {
+            kind,
+            content: content.into(),
+            tags: vec!["project".into()],
+            source_turn_reference: source_turn_reference.into(),
+            provenance: "test-model".into(),
+            expires_at_unix: None,
+        }
+    }
+
     fn create_one(directory: &std::path::Path) -> super::MemoryProposal {
         create(
             directory,
-            crate::memory::MemoryKind::Semantic,
-            "The project uses a single main branch".into(),
-            vec!["project".into()],
-            "turn-42".into(),
-            "test-model".into(),
-            None,
+            candidate(
+                crate::memory::MemoryKind::Semantic,
+                "The project uses a single main branch",
+                "turn-42",
+            ),
             100,
         )
         .unwrap()
@@ -628,12 +644,11 @@ mod tests {
         deny(&directory, &denied.id, 101).unwrap();
         let cancelled = create(
             &directory,
-            crate::memory::MemoryKind::Episodic,
-            "A cancelled candidate".into(),
-            vec![],
-            "turn-43".into(),
-            "test-model".into(),
-            None,
+            candidate(
+                crate::memory::MemoryKind::Episodic,
+                "A cancelled candidate",
+                "turn-43",
+            ),
             100,
         )
         .unwrap();
@@ -664,12 +679,11 @@ mod tests {
         assert!(
             create(
                 &directory,
-                crate::memory::MemoryKind::Semantic,
-                "The project uses a single main branch".into(),
-                vec!["project".into()],
-                "turn-42".into(),
-                "test-model".into(),
-                None,
+                candidate(
+                    crate::memory::MemoryKind::Semantic,
+                    "The project uses a single main branch",
+                    "turn-42",
+                ),
                 100,
             )
             .is_err()
@@ -708,12 +722,11 @@ mod tests {
             assert!(
                 create(
                     &directory,
-                    crate::memory::MemoryKind::Semantic,
-                    content.into(),
-                    vec![],
-                    "turn-secret".into(),
-                    "test-model".into(),
-                    None,
+                    candidate(
+                        crate::memory::MemoryKind::Semantic,
+                        content,
+                        "turn-secret",
+                    ),
                     100,
                 )
                 .is_err()
