@@ -620,7 +620,8 @@ mod tests {
             "test-model".into(),
             None,
             100,
-        ).unwrap();
+        )
+        .unwrap();
         cancel(&directory, &cancelled.id, 101).unwrap();
         assert_eq!(
             crate::memory::MemoryStore::load(&directory)
@@ -645,7 +646,19 @@ mod tests {
     fn duplicate_candidates_are_rejected() {
         let directory = temp_dir();
         create_one(&directory);
-        assert!(create_one(&directory).is_err());
+        assert!(
+            create(
+                &directory,
+                crate::memory::MemoryKind::Semantic,
+                "The project uses a single main branch".into(),
+                vec!["project".into()],
+                "turn-42".into(),
+                "test-model".into(),
+                None,
+                100,
+            )
+            .is_err()
+        );
         fs::remove_dir_all(directory).unwrap();
     }
 
@@ -660,7 +673,13 @@ mod tests {
             serde_json::Value::String("edited after proposal".into());
         fs::write(&path, serde_json::to_vec(&store).unwrap()).unwrap();
         assert!(approve(&directory, &proposal.id, &proposal.approval_phrase(), 101).is_err());
-        assert_eq!(crate::memory::MemoryStore::load(&directory).unwrap().records.len(), 0);
+        assert_eq!(
+            crate::memory::MemoryStore::load(&directory)
+                .unwrap()
+                .records
+                .len(),
+            0
+        );
         fs::remove_dir_all(directory).unwrap();
     }
 
