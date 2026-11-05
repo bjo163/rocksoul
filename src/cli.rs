@@ -111,6 +111,11 @@ pub enum MemoryCommand {
         #[arg(long)]
         confirm: bool,
     },
-    /// Export memory to data/memory/exports/latest.json.
+    /// Preview expired records; pass --apply to permanently forget them.
+    PruneExpired {
+        #[arg(long)]
+        apply: bool,
+    },
+    /// Export active memory to data/memory/exports/latest.json.
     Export,
 }
