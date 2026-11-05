@@ -26,7 +26,7 @@ The initial increment is intentionally incomplete:
 - Memory screen is summary-only; no searchable record browser or detail inspector.
 - Brains has no specialist registry; do not invent assignments or measured hardware data.
 - Tools has no capability registry or invocation surface; do not invent permissions or fake tool rows.
-- Diagnostics does not yet present a structured health snapshot or latest evaluation report.
+- Diagnostics already shows version/platform, portable config/data paths, model-configured state, RID validity/catalogue version, and a basic latest Core Integrity pass/fail plus passed/total count. It does not show memory-store health, sanitized RID error details, suite/commit metadata, or failed check IDs; it also reads the latest report during rendering rather than from a shared refreshable snapshot.
 - Settings are not persisted and do not provide a real dark/light/locale preference model.
 - The test suite does not yet cover memory/task/diagnostic read models, settings persistence, redaction, or responsive breakpoints.
 - `render_memory` still displays `store.v1.json`; the merged memory store is schema v4 and the displayed path must be corrected.
