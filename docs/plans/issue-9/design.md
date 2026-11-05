@@ -46,7 +46,8 @@ Prefer private types/functions in `tui.rs` initially. Extract a module only if i
 
 ## Diagnostics and evaluation
 
-- Read the existing Core Integrity latest JSON report; do not run evaluations automatically on every render.
+- Current diagnostics already show a basic Core Integrity latest-report status and passed/total count. Extend the view model with suite version, commit if recorded, and failed check IDs.
+- Read the existing Core Integrity latest JSON report once per snapshot refresh; do not run evaluations automatically on every render.
 - Show suite version, commit if recorded, pass/fail, passed/total checks, and failed check IDs.
 - If report is missing, show “Not run”; if corrupt or unsupported, show “Unavailable / invalid report”.
 - Never convert absent model latency, token usage, resource usage, specialist health or permission state into fabricated metrics.
