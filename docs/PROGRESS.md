@@ -1,6 +1,6 @@
 # Rocksoul Project Progress
 
-**Last updated:** 2026-11-05 (Asia/Jakarta, Issue #9 merged and closed)  
+**Last updated:** 2026-11-06 (Asia/Jakarta, Universal 99 Stats taxonomy published)  
 **Repository:** [bjo163/rocksoul](https://github.com/bjo163/rocksoul)  
 **Canonical branch:** `main`  
 **Current principle:** One Core. Infinite Evolution.
@@ -200,6 +200,8 @@ Never label an in-progress workflow as passed. Never close an issue because a br
 
 
 ## RID Universal 99 Stats — taxonomy finalized (runtime migration pending)
+
+Human-readable catalogue: [docs/rid-universal-stats.md](rid-universal-stats.md).
 
 **Canonical taxonomy:** `data/rid/universal_stats.v1.json`  
 **Version:** `1.0.0`  
