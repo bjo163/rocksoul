@@ -84,12 +84,7 @@ pub fn append(
 }
 
 /// Read the append-only JSONL trace for local inspection.
-pub fn read(path: &Path) -> Result<Vec<serde_json::Value>> {
-    if !path.exists() {
-        return Ok(Vec::new());
-    }
-    let content = fs::read_to_string(path)
-        .with_context(|| format!("could not read task trace {}", path.display()))?;
+fn parse_records(content: &str) -> Result<Vec<serde_json::Value>> {
     let complete_end = content.rfind('\n').map_or(0, |index| index + 1);
     content[..complete_end]
         .lines()
@@ -124,6 +119,43 @@ pub fn read(path: &Path) -> Result<Vec<serde_json::Value>> {
         .collect()
 }
 
+pub fn read(path: &Path) -> Result<Vec<serde_json::Value>> {
+    if !path.exists() {
+        return Ok(Vec::new());
+    }
+    let content = fs::read_to_string(path)
+        .with_context(|| format!("could not read task trace {}", path.display()))?;
+    parse_records(&content)
+}
+
+/// Read a bounded newest-first window for interactive inspectors.
+/// The byte limit is enforced while reading, not only by a racy metadata pre-check.
+pub fn read_recent(
+    path: &Path,
+    max_bytes: u64,
+    max_records: usize,
+) -> Result<Vec<serde_json::Value>> {
+    if !path.exists() {
+        return Ok(Vec::new());
+    }
+    let byte_limit = max_bytes.min(1_048_576);
+    let file = fs::File::open(path)
+        .with_context(|| format!("could not open task trace {}", path.display()))?;
+    let mut bytes = Vec::new();
+    file.take(byte_limit.saturating_add(1))
+        .read_to_end(&mut bytes)
+        .with_context(|| "could not read bounded task trace")?;
+    anyhow::ensure!(
+        bytes.len() as u64 <= byte_limit,
+        "task trace exceeds the interactive read limit"
+    );
+    let content = String::from_utf8(bytes).context("task trace is not valid UTF-8")?;
+    let mut records = parse_records(&content)?;
+    records.reverse();
+    records.truncate(max_records.min(1_000));
+    Ok(records)
+}
+
 #[cfg(test)]
 mod tests {
     use std::{
@@ -131,7 +163,47 @@ mod tests {
         time::{SystemTime, UNIX_EPOCH},
     };
 
-    use super::{TaskTraceEvent, append, read};
+    use super::{TaskTraceEvent, append, read, read_recent};
+
+    #[test]
+    fn read_recent_returns_newest_records_first_and_respects_limit() {
+        let path = std::env::temp_dir().join(format!(
+            "rocksoul-trace-recent-{}.jsonl",
+            SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        for index in 0..3 {
+            append(
+                &path,
+                &format!("op-{index}"),
+                TaskTraceEvent::Proposed,
+                "note.txt",
+                "safe metadata",
+            )
+            .unwrap();
+        }
+        let records = read_recent(&path, 16_384, 2).unwrap();
+        assert_eq!(records.len(), 2);
+        assert_eq!(records[0]["operation_id"], "op-2");
+        assert_eq!(records[1]["operation_id"], "op-1");
+        fs::remove_file(path).unwrap();
+    }
+
+    #[test]
+    fn read_recent_rejects_oversized_trace_before_reading() {
+        let path = std::env::temp_dir().join(format!(
+            "rocksoul-trace-large-{}.jsonl",
+            SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        fs::write(&path, vec![b'x'; 32]).unwrap();
+        assert!(read_recent(&path, 16, 10).is_err());
+        fs::remove_file(path).unwrap();
+    }
 
     #[test]
     fn ignores_incomplete_trailing_record_and_refuses_to_append_after_it() {

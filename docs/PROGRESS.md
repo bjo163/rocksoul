@@ -1,6 +1,6 @@
 # Rocksoul Project Progress
 
-**Last updated:** 2026-11-05 (Asia/Jakarta, after PR #53 merge; preparing Issue #9 handoff)  
+**Last updated:** 2026-11-05 (Asia/Jakarta, Issue #9 final cross-platform validation)  
 **Repository:** [bjo163/rocksoul](https://github.com/bjo163/rocksoul)  
 **Canonical branch:** `main`  
 **Current principle:** One Core. Infinite Evolution.
@@ -24,6 +24,29 @@ This is the durable progress snapshot for maintainers and delegated/local AI age
 | Stage 7 — Additional interfaces | **Not started** | CLI remains primary; do not add web/desktop/server prematurely |
 
 > A badge describes the progress snapshot, not a guarantee that a live workflow is currently green. Check the linked PR and CI before merging.
+
+## Active implementation — Issue #9 Cognitive Cockpit
+
+**Task branch:** feat/tui-cockpit-completion  
+**Latest validated implementation/documentation head:** `e6cac1fbee4f99bbbdef3f7190161c0e9a8941f1`  
+**Target:** main (no Cockpit completion changes merged yet)
+
+Delivered on the task branch:
+- Typed snapshot projections load bounded persisted task trace and memory store once; render functions consume read-only in-memory projections. Task history supports newest-first selection/detail and safe metadata-only rendering.
+- Memory browser with local search, kind/claim/source filters, provenance/approval/expiry metadata, and explicit Enter-to-reveal through the shared sensitive-content guard.
+- Snapshot-based memory store health, Core Integrity and memory retrieval report diagnostics, plus sanitized RID error details.
+- Versioned portable TUI preferences for dark/light theme, compact/comfortable density and English/Indonesian locale; unknown or malformed preference files are preserved rather than overwritten.
+- Semantic palette tokens applied to screens and overlays; locale applied to navigation, header, footer, settings and command palette.
+- TestBackend coverage for all eight screens across 80×24, 120×40 and 60×20, both themes/locales, and palette/help overlays.
+- Updated task plan and product/technical handoff documents.
+
+Exact-head validation:
+- CI [#42070438679](https://github.com/bjo163/rocksoul/actions/runs/42070438679) passed on `e6cac1fbee4f99bbbdef3f7190161c0e9a8941f1` for both Linux and Windows.
+- Linux: `cargo fmt --check`, Clippy, 130 tests, Core Integrity 23/23, memory retrieval precision@2 1.000 / recall@2 1.000.
+- Windows: release build, 129 tests, Core Integrity 22/22, memory retrieval precision@2 1.000 / recall@2 1.000, installer and portable ZIP packaging, clean portable smoke, installer install/init/uninstall-preservation smoke; artifacts uploaded.
+- Full eight-file PR diff and safety boundaries reviewed. No model calls, tool dispatch, remote egress, task execution, memory writes/deletes or context injection were added to the Cockpit.
+
+Remaining: merge PR #65 to main, verify main contains the merge SHA, and close Issue #9 with exact evidence.
 
 ## 1. Accepted baseline on main
 
@@ -147,7 +170,7 @@ This progress snapshot was refreshed after PR #53 merged and `main` was verified
 
 ### Immediate
 
-1. Start [Issue #9 — Cognitive Cockpit completion](https://github.com/bjo163/rocksoul/issues/9) from the latest `main`; use [spec](plans/issue-9/spec.md), [design](plans/issue-9/design.md), [task list](plans/issue-9/task.md), and [agent rules](plans/issue-9/rules.md).
+1. Continue the active [Issue #9 — Cognitive Cockpit completion](https://github.com/bjo163/rocksoul/issues/9) work in [active draft PR](https://github.com/bjo163/rocksoul/pulls); refresh its head and CI before making changes.
 2. Audit the existing eight-screen TUI before editing; preserve the one-core/read-only boundary and the current terminal lifecycle.
 3. Implement real read models for persisted task trace, memory browsing, diagnostics/evaluation report, and truthful Brains/Tools status.
 4. Add portable presentation preferences, accessibility/responsive tests, and correct the stale memory store path shown in the cockpit.
@@ -156,7 +179,7 @@ This progress snapshot was refreshed after PR #53 merged and `main` was verified
 
 ### Current next task: #9 — Cognitive Cockpit completion
 
-Issue #9 is the next selected implementation task. The initial TUI increment already exists but its task timeline, memory browser, diagnostics/evaluation view, persisted preferences and test coverage remain incomplete. The detailed plan is in `docs/plans/issue-9/`.
+Issue #9 is actively implemented in active draft PR. Typed task/memory snapshot projections, guarded memory detail, diagnostics/evaluation reporting, portable preferences, semantic dark/light palettes, density, locale and responsive TestBackend coverage are on the branch but not yet merged. Final-head CI and merge gates remain open. The detailed plan is in `docs/plans/issue-9/`.
 
 Issue #13 owns the broader AGI-oriented evaluation harness and explicitly depends on #4, #5, #8 and #9. Do not start or duplicate that harness before its dependencies are audited/closed. Issue #8's catalogue is implemented but still requires independent religious/language review; do not mark it complete through AI self-review. Stage 2 umbrella #36 and work packages #37–#41 plus follow-up #44 are closed. Do not start automatic memory injection until separate policy, privacy/contamination, forgetting/deletion and regression gates are reviewed.
 

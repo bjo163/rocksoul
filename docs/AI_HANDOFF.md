@@ -285,6 +285,41 @@ For every new task, write/update an execution plan with:
 - Rollback/recovery notes.
 - Handoff summary for the next agent.
 
+## 12. Active handoff — Issue #9 final integration
+
+**Issue:** [#9 Cognitive Cockpit](https://github.com/bjo163/rocksoul/issues/9)  
+**PR:** [#65 — feat(tui): complete Rocksoul Cognitive Cockpit](https://github.com/bjo163/rocksoul/pull/65)  
+**Task branch:** `feat/tui-cockpit-completion`  
+**PR base SHA:** `0e89bcec834880d3e6aca3f066507c44834c2eb7`  
+**Validated head:** `e6cac1fbee4f99bbbdef3f7190161c0e9a8941f1`  
+**Validation:** [CI #42070438679](https://github.com/bjo163/rocksoul/actions/runs/42070438679) — Linux and Windows both passed.
+
+### Implemented on the PR branch (not yet on main)
+
+- Typed snapshot projections load RID, model configuration presence, memory store/health, bounded task history, Core Integrity and memory retrieval reports, and presentation preferences once; render functions are read-only.
+- Task Monitor reads a bounded content-free JSONL trace (1 MiB ceiling), newest-first, with keyboard selection/detail and sanitized metadata only.
+- Memory browser supports bounded local search and kind/claim/source filters, provenance/approval/expiry metadata, and explicit Enter-to-reveal through the shared sensitive-content guard. Content remains hidden by default and is clipped/sanitized when revealed.
+- Diagnostics report memory-store health and latest offline evaluation states without executing evaluations during render; errors are sanitized.
+- Versioned portable preferences support dark/light theme, compact/comfortable density and English/Indonesian locale. Missing files use defaults; malformed and unknown schemas are preserved rather than overwritten.
+- Semantic palettes and locale are applied across screens/overlays. TestBackend covers all eight screens at 80×24, 120×40 and 60×20, both themes/locales, overlays and keyboard transitions.
+- No model/backend calls, tool invocation, remote egress, task execution, memory mutation, automatic capture or context injection originates from the Cockpit.
+
+### Exact-head validation evidence
+
+- Linux CI #42070438679: formatting and Clippy passed; 130 tests passed; Core Integrity 23/23; memory retrieval precision@2 1.000 and recall@2 1.000.
+- Windows CI #42070438679: release build and 129 tests passed; Core Integrity 22/22; memory retrieval precision@2 1.000 and recall@2 1.000; installer/portable packaging, clean portable smoke, installer install/init/uninstall-preservation smoke and artifact uploads passed.
+- Full eight-file diff reviewed against Issue #9 and safety invariants. Earlier CI defects (rustfmt, missing Palette argument, unused/recursive tool-registry helper) were fixed before this validated head.
+
+### Remaining integration actions
+
+1. Confirm PR #65 is still open and its head remains the validated SHA above.
+2. Mark the PR ready for review and merge into `main` only after confirming required checks remain green.
+3. Fetch `main`; record the merge commit SHA and verify all eight PR files are present on main.
+4. Close Issue #9 with the merge SHA and CI #42070438679 evidence.
+5. Update this handoff and progress snapshot with the actual post-merge main SHA and select the next dependency-safe task.
+
+Do not claim Issue #9 complete until steps 2–5 are verified on GitHub.
+
 ## 11. Known deferred work (do not mark complete prematurely)
 
 - Full planner/turn/reflection conversation resume across process restarts.

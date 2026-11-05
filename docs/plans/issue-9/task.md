@@ -13,61 +13,67 @@
 - [x] A5. Record the existing memory path bug (`store.v1.json` display vs schema v4) and all misleading/static status strings.
 - [x] A6. Freeze non-goals: no model calls, tools, memory mutations, arbitrary execution or invented telemetry.
 
+## Incremental implementation notes
+
+The current task branch includes bounded persisted task history, the read-only task monitor, metadata-first searchable memory browser with guarded explicit detail, snapshot-based diagnostics/evaluation, and portable theme/density/locale preferences. Formatting, Clippy, full tests, Core Integrity and memory retrieval evaluation passed on exact validated head `e6cac1fbee4f99bbbdef3f7190161c0e9a8941f1` in CI #42070438679. Linux: 130 tests, Core Integrity 23/23, precision@2 1.000 and recall@2 1.000. Windows: 129 tests, Core Integrity 22/22, precision@2 1.000 and recall@2 1.000; release build, installer/portable packaging, clean portable smoke and installer install/init/uninstall-preservation smoke all passed. The earlier format, missing-palette and Clippy helper defects were corrected before this run.
+
+The exact-head validation gates G2 and G3 and full diff/safety audit G6 are complete with evidence above. Remaining: merge PR #65 into main (G7), then verify main ancestry/content and close Issue #9 with the merge SHA and CI evidence (G8). Until those integration checks finish, Issue #9 remains open.
+
 ## Phase A — Audit findings recorded
 
 The initial audit confirms the current TUI has eight screens and two navigation tests. The terminal lifecycle is guarded by the interactive-terminal check and `ratatui::run`. Tasks are static rather than a live queue; Memory is a summary only; Brains/Tools lack registries; Diagnostics has no evaluation report; Settings have no persisted preferences. The memory screen still prints the obsolete `store.v1.json` path even though the actual schema is v4. No fake capability or live metric may be added to fill these gaps.
 
 ## Phase B — Shared read models and truthful snapshots
 
-- [ ] B1. Add small typed read models for overview, memory metadata, task history, diagnostics and evaluation.
-- [ ] B2. Keep all projections pure where possible and source values only from existing services/stores.
-- [ ] B3. Bound all lists, text previews, filters and query sizes.
-- [ ] B4. Sanitize diagnostics and ensure secrets/credentials never enter UI view models.
-- [ ] B5. Correct portable memory path to `store.v4.json`; ensure schema version is shown from loaded data.
-- [ ] B6. Test missing/corrupt/future-version stores and unavailable values.
+- [x] B1. Add typed snapshot projections for overview state, memory store/metadata, task history, diagnostics and evaluation.
+- [x] B2. Load projections once in Snapshot::load; keep render functions read-only and free of filesystem/store I/O.
+- [x] B3. Bound task trace reads, memory result counts, query length, metadata/content previews and density limits.
+- [x] B4. Sanitize task metadata and RID/report errors; memory detail uses the shared sensitive-content guard and bounded clipping.
+- [x] B5. Correct portable memory path to `store.v4.json`; ensure schema version is shown from loaded data.
+- [x] B6. Reuse memory-store corruption/future-schema recovery tests and add preference missing/malformed/future-schema preservation tests.
 
 ## Phase C — Task history / trace screen
 
-- [ ] C1. Project persisted JSONL task trace using the existing reader.
-- [ ] C2. Show event chronology, operation ID, event kind, timestamp and safe target metadata.
-- [ ] C3. Add bounded selection/detail navigation and a truthful empty state.
-- [ ] C4. Display malformed/unsupported trace as a sanitized diagnostic; never crash.
-- [ ] C5. Test valid, empty, malformed, unsupported and large trace fixtures.
+- [x] C1. Project persisted JSONL task trace using the existing reader.
+- [x] C2. Show event chronology, operation ID, event kind, timestamp and safe target metadata.
+- [x] C3. Add bounded selection/detail navigation and a truthful empty state.
+- [x] C4. Display malformed/unsupported trace as a sanitized diagnostic; never crash.
+- [x] C5. Test valid, empty, malformed, unsupported and large trace fixtures.
 
 ## Phase D — Memory browser
 
-- [ ] D1. Add bounded memory list with kind, claim status, provenance, approval, created/expiry metadata.
-- [ ] D2. Add local search/filter by kind, claim status and source; cap query and results.
-- [ ] D3. Add explicit detail reveal; metadata remains the default view.
-- [ ] D4. Reuse existing privacy guard for secret-like content; do not add mutation actions.
-- [ ] D5. Test filters, search, empty results, expiry, revoked/superseded claims and sensitive content.
+- [x] D1. Add bounded memory list with kind, claim status, provenance, approval, created/expiry metadata.
+- [x] D2. Add local search/filter by kind, claim status and source; cap query and results.
+- [x] D3. Add explicit Enter-to-reveal detail; metadata remains the default view and the shared sensitive-content guard blocks credential/personal-category matches.
+- [x] D4. Keep memory content hidden in the TUI, search locally without rendering content, and expose no mutation actions.
+- [x] D5. Cover search/filter/empty/expiry/forgetting/supersession in the memory service tests; add TUI filter-cycle, explicit-detail privacy-guard and content-clipping tests.
 
 ## Phase E — Diagnostics, evaluation and capability truthfulness
 
-- [ ] E1. Extend the existing runtime snapshot (model configuration, RID validity, portable paths) with memory-store health and sanitized RID error detail.
-- [ ] E2. Move the current latest Core Integrity summary lookup into the refreshable snapshot; never run the suite during render.
-- [ ] E3. Show suite/version/commit/pass state and failed check IDs; distinguish missing from corrupt reports.
-- [ ] E4. Ensure Brains and Tools show only known adapters/registries; unknown specialist roles remain unassigned.
-- [ ] E5. Remove stale/fake status labels; use explicit “not implemented”, “not configured”, “not run” or “unavailable”.
-- [ ] E6. Test report parsing, invalid JSON, redaction, missing config and empty registries.
+- [x] E1. Extend the existing runtime snapshot with memory-store health and sanitized RID error detail.
+- [x] E2. Move the latest Core Integrity summary lookup into the refreshable snapshot; never run the suite during render.
+- [x] E3. Show suite/version/pass state and failed check IDs; distinguish not-run from unreadable reports. The current report contract does not expose a tested commit SHA.
+- [x] E4. Ensure Brains and Tools show only the known legacy adapter and empty tool registry; unknown specialist roles remain unassigned.
+- [x] E5. Replace misleading active-task and automatic-specialist labels with explicit not-implemented/unassigned states.
+- [x] E6. Test report parsing/invalid JSON redaction, missing-vs-unreadable report states, RID path redaction, missing model configuration and empty tool registry states.
 
 ## Phase F — Preferences, accessibility and responsive behavior
 
-- [ ] F1. Add versioned portable TUI preferences for dark/light theme, density and locale.
-- [ ] F2. Apply semantic theme tokens consistently to every screen and overlay.
-- [ ] F3. Preserve safe defaults and never overwrite unknown future preference schemas.
-- [ ] F4. Add visible focus state and keyboard-only access to all new controls.
-- [ ] F5. Test 80×24, narrow terminal fallback, resize, overlays and focus transitions.
-- [ ] F6. Ensure preferences do not modify model routing, egress, secrets or security policy.
+- [x] F1. Add versioned portable TUI preferences for dark/light theme, density and locale.
+- [x] F2. Apply semantic theme tokens consistently to every screen and overlay.
+- [x] F3. Preserve safe defaults and never overwrite unknown future preference schemas.
+- [x] F4. Add visible selected/active states for navigation, task and memory selection, search input and explicit detail; verify keyboard-only transitions.
+- [x] F5. Test 80×24, wide and narrow fallback, all screens, palette/help overlays, dark/light themes and English/Indonesian navigation.
+- [x] F6. Keep preferences local to the portable config directory; settings do not alter model routing, egress, secrets or security policy.
 
 ## Phase G — Validation and handoff
 
-- [ ] G1. Add TestBackend coverage for all read models, navigation and screen empty/error states.
-- [ ] G2. Run fmt, Clippy, all tests, Core Integrity and memory retrieval evaluation.
-- [ ] G3. Verify Windows build/tests/portable smoke/installer smoke.
-- [ ] G4. Verify no model/backend calls, tool invocations or memory mutations originate from widgets.
-- [ ] G5. Update terminal-ui.md, README, architecture, roadmap, progress and AI handoff.
-- [ ] G6. Inspect complete diff and compare it with Issue #9 acceptance criteria.
+- [x] G1. Add TestBackend rendering coverage for all eight screens, navigation, empty/error states, overlays and responsive terminal sizes.
+- [x] G2. Run fmt, Clippy, all tests, Core Integrity and memory retrieval evaluation on exact head `e6cac1f` (CI #42070438679, Linux passed).
+- [x] G3. Verify Windows build/tests/portable smoke/installer smoke on exact head `e6cac1f` (CI #42070438679, Windows passed).
+- [x] G4. Verify the Cockpit remains read-only: no model/backend calls, tool invocation, task execution or memory mutation originates from widgets.
+- [x] G5. Update terminal-ui.md, README, Cognitive Cockpit architecture, roadmap, progress and AI handoff.
+- [x] G6. Inspect complete eight-file diff and compare it with Issue #9 acceptance criteria; no model/tool/egress/memory mutation authority added to the TUI.
 - [ ] G7. Open PR to main; merge only after CI passes.
 - [ ] G8. Verify main SHA, close issue #9 with evidence, and update handoff with the next dependency-safe task.
 

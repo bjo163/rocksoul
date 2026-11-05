@@ -1013,6 +1013,10 @@ fn persist_memory_retrieval_report(report: &MemoryRetrievalEvaluationReport) -> 
     Ok(())
 }
 
+fn parse_report<T: serde::de::DeserializeOwned>(bytes: &[u8]) -> Result<T> {
+    serde_json::from_slice(bytes).context("invalid evaluation report data")
+}
+
 pub fn latest_memory_retrieval() -> Result<Option<MemoryRetrievalEvaluationReport>> {
     let path = AppPaths::discover()?
         .data_dir
@@ -1023,9 +1027,7 @@ pub fn latest_memory_retrieval() -> Result<Option<MemoryRetrievalEvaluationRepor
         return Ok(None);
     }
     let bytes = fs::read(&path).with_context(|| format!("could not read {}", path.display()))?;
-    Ok(Some(serde_json::from_slice(&bytes).with_context(|| {
-        format!("invalid memory retrieval report at {}", path.display())
-    })?))
+    Ok(Some(parse_report(&bytes)?))
 }
 
 pub fn print_memory_retrieval_report(report: &MemoryRetrievalEvaluationReport) {
@@ -1059,8 +1061,7 @@ pub fn latest() -> Result<Option<EvaluationReport>> {
         return Ok(None);
     }
     let bytes = fs::read(&path).with_context(|| format!("could not read {}", path.display()))?;
-    let report = serde_json::from_slice(&bytes)
-        .with_context(|| format!("invalid evaluation report at {}", path.display()))?;
+    let report = parse_report(&bytes)?;
     Ok(Some(report))
 }
 
@@ -1148,6 +1149,16 @@ pub fn print_report(report: &EvaluationReport) {
 #[cfg(test)]
 mod tests {
     use super::EvaluationReport;
+
+    #[test]
+    fn report_parser_rejects_invalid_json_without_echoing_payload_or_path() {
+        let payload = b"api_key=do-not-echo";
+        let error = super::parse_report::<EvaluationReport>(payload).unwrap_err();
+        let message = format!("{error:#}");
+        assert!(message.contains("invalid evaluation report data"));
+        assert!(!message.contains("do-not-echo"));
+        assert!(!message.contains("api_key"));
+    }
 
     #[test]
     fn offline_memory_retrieval_fixture_meets_quality_and_privacy_gates() {

@@ -617,7 +617,7 @@ fn validate_candidate(
     Ok(())
 }
 
-fn sensitive_content_reason(content: &str) -> Option<&'static str> {
+pub(crate) fn sensitive_content_reason(content: &str) -> Option<&'static str> {
     let normalized = content.to_ascii_lowercase();
     let secret_markers = [
         "-----begin private key-----",

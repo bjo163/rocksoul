@@ -47,6 +47,14 @@ The current seed runtime includes:
 
 The current release does **not** provide unrestricted shell execution, autonomous filesystem mutation, automatic code execution, multi-agent orchestration, or automatic self-modification. These are deliberate boundaries, not hidden capabilities.
 
+### Cognitive Cockpit completion — active PR
+
+The initial cockpit is being extended on the feat/tui-cockpit-completion task branch. The current implementation remains **unmerged and unreleased** until final-head Linux and Windows CI and the remaining acceptance gates pass.
+
+The branch adds bounded persisted task-trace navigation, a searchable/filterable memory browser with explicit privacy-guarded detail reveal, snapshot-based diagnostics/evaluation reporting, versioned portable theme/density/locale preferences, semantic dark/light palettes, and localized navigation. It remains read-only and does not invoke models, tools, or memory mutations.
+
+Track implementation and remaining acceptance criteria in [the Issue #9 task plan](docs/plans/issue-9/task.md) and [Cognitive Cockpit architecture](docs/COGNITIVE_COCKPIT_ARCHITECTURE.md).
+
 ## Download for Windows
 
 <sub>Latest published release: v0.2.0</sub>
