@@ -95,6 +95,7 @@ struct Snapshot {
     rid_profile: Option<RuhProfile>,
     rid_error: Option<String>,
     catalogue: Option<RidCatalogue>,
+    evaluation: std::result::Result<Option<crate::eval::EvaluationReport>, String>,
 }
 
 impl Snapshot {
@@ -114,6 +115,7 @@ impl Snapshot {
             rid_profile,
             rid_error,
             catalogue: RidCatalogue::embedded().ok(),
+            evaluation: crate::eval::latest().map_err(|_| "evaluation report is unreadable".to_owned()),
         })
     }
 
@@ -801,18 +803,29 @@ fn render_diagnostics(frame: &mut Frame<'_>, area: Rect, app: &App) {
         )),
         Line::from(format!(
             "Latest eval   {}",
-            match crate::eval::latest() {
+            match &app.snapshot.evaluation {
                 Ok(Some(report)) => format!(
-                    "{} ({}/{})",
+                    "{} · {} v{} · {}/{}",
                     if report.passed { "PASS" } else { "FAIL" },
+                    report.suite_id,
+                    report.suite_version,
                     report.passed_count(),
                     report.checks.len()
                 ),
                 Ok(None) => "not run".to_owned(),
-                Err(_) => "report unavailable".to_owned(),
+                Err(_) => "corrupt / unavailable".to_owned(),
             }
         )),
         Line::from(""),
+        Line::from(match &app.snapshot.evaluation {
+            Ok(Some(report)) if !report.passed => format!(
+                "Failed checks: {}",
+                report.checks.iter().filter(|check| !check.passed).map(|check| check.id.as_str()).collect::<Vec<_>>().join(", ")
+            ),
+            Ok(Some(_)) => "Failed checks: none".to_owned(),
+            Ok(None) => "Evaluation report: not run".to_owned(),
+            Err(_) => "Evaluation report: corrupt or unavailable".to_owned(),
+        }),
         Line::from("No synthetic latency, token, GPU, RAM or activity telemetry is shown."),
     ];
     frame.render_widget(
