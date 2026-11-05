@@ -217,6 +217,7 @@ Delivered:
 - Sharpened adjacent definitions: event reconstruction vs. direct recall vs. delayed retention; spatial localization; rubric evaluation vs. independent verification; task completion vs. ownership handoff; interruption resume vs. long-run reliability; and other high-risk pairs.
 - Stat 42 label refined from PERSIST to RESUME; stable stat ID retained.
 - Runtime embeds v2.3.0; schema-v1 archival migration preserves exact original bytes, legacy records, identity, and XP while initializing all universal scores as unrated.
+- Benchmark manifest v1.1.0 now binds evaluation adapters to RID v2.3.0 and declares benchmark families as navigation tags only.
 - Religious inspiration data remains separate from technical capability taxonomy.
 
 Audit conclusions and remaining gates:
