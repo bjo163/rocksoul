@@ -80,8 +80,19 @@ fn migrate_v1_profile(path: &Path, original_bytes: &[u8], value: Value) -> Resul
             "existing legacy RID archive differs from current v1 profile; refusing overwrite"
         );
     } else {
-        fs::write(&archive_path, original_bytes)
-            .with_context(|| format!("could not preserve legacy RID profile at {}", archive_path.display()))?;
+        let temporary = temporary_path(&archive_path)?;
+        let mut archive_file = OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(&temporary)
+            .with_context(|| format!("could not create legacy archive staging file {}", temporary.display()))?;
+        archive_file.write_all(original_bytes)
+            .with_context(|| format!("could not write legacy archive staging file {}", temporary.display()))?;
+        archive_file.sync_all()
+            .with_context(|| format!("could not sync legacy archive staging file {}", temporary.display()))?;
+        drop(archive_file);
+        fs::rename(&temporary, &archive_path)
+            .with_context(|| format!("could not atomically preserve legacy RID profile at {}", archive_path.display()))?;
         File::open(&archive_path)?.sync_all()?;
     }
 
