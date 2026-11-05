@@ -932,6 +932,7 @@ async fn run_memory(command: MemoryCommand) -> Result<()> {
         MemoryCommand::RevokeReceipt { verification_id, reason_code } => {
             memory_proposal::revoke_receipt(
                 &paths.logs_dir.join("receipts"),
+                &paths.memory_dir,
                 &verification_id,
                 now_unix()?,
                 &reason_code,
