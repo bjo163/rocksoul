@@ -295,7 +295,9 @@ impl MemoryStore {
     #[cfg(test)]
     fn save(&self, directory: &Path) -> Result<()> {
         self.validate()?;
-        fs::create_dir_all(directory).with_context(|| format!("could not create memory directory {}", directory.display()))?;
+        fs::create_dir_all(directory).with_context(|| {
+            format!("could not create memory directory {}", directory.display())
+        })?;
         let _lock = acquire_store_lock(directory)?;
         self.save_unlocked(directory)
     }
@@ -328,7 +330,9 @@ impl MemoryStore {
 
     pub fn export(&self, directory: &Path) -> Result<PathBuf> {
         self.validate()?;
-        fs::create_dir_all(directory).with_context(|| format!("could not create memory directory {}", directory.display()))?;
+        fs::create_dir_all(directory).with_context(|| {
+            format!("could not create memory directory {}", directory.display())
+        })?;
         let _lock = acquire_store_lock(directory)?;
         self.export_unlocked(directory)
     }
@@ -369,7 +373,11 @@ pub fn now_unix() -> Result<u64> {
 fn acquire_store_lock(directory: &Path) -> Result<File> {
     fs::create_dir_all(directory)?;
     let lock_path = directory.join(LOCK_FILE);
-    let file = OpenOptions::new().create(true).read(true).write(true).open(&lock_path)
+    let file = OpenOptions::new()
+        .create(true)
+        .read(true)
+        .write(true)
+        .open(&lock_path)
         .with_context(|| format!("could not open memory lock {}", lock_path.display()))?;
     let started = Instant::now();
     loop {
