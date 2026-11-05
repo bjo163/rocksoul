@@ -12,6 +12,7 @@ permissions:
 
 env:
   CARGO_TERM_COLOR: always
+  ROCKSOUL_GIT_SHA: ${{ github.sha }}
 
 jobs:
   quality:
