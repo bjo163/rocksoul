@@ -1,9 +1,14 @@
 use std::{
     collections::HashSet,
     fs,
+    fs::{File, OpenOptions},
+    io::ErrorKind,
     path::{Path, PathBuf},
-    time::{SystemTime, UNIX_EPOCH},
+    thread,
+    time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
+
+use fs2::FileExt;
 
 use anyhow::{Context, Result, anyhow, bail};
 use clap::ValueEnum;
@@ -12,6 +17,9 @@ use serde::{Deserialize, Serialize};
 pub const MEMORY_SCHEMA_VERSION: u16 = 2;
 const STORE_FILE: &str = "store.v2.json";
 const LEGACY_STORE_FILE: &str = "store.v1.json";
+const LOCK_FILE: &str = ".memory.lock";
+const LOCK_TIMEOUT: Duration = Duration::from_secs(5);
+const LOCK_RETRY_INTERVAL: Duration = Duration::from_millis(25);
 
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize, ValueEnum)]
 #[serde(rename_all = "snake_case")]
@@ -71,19 +79,26 @@ impl MemoryStore {
         fs::create_dir_all(directory).with_context(|| {
             format!("could not create memory directory {}", directory.display())
         })?;
+        let _lock = acquire_store_lock(directory)?;
         let path = store_path(directory);
         let legacy = legacy_store_path(directory);
         if path.exists() || backup_path(&path).exists() || legacy.exists() {
-            return Ok((Self::load(directory)?, false));
+            return Ok((Self::load_unlocked(directory)?, false));
         }
         let store = Self::default();
-        store.save(directory)?;
+        store.save_unlocked(directory)?;
         Ok((store, true))
     }
 
     /// Load the current store, recover its last known-good backup when needed,
     /// or migrate the legacy v1 document without modifying the original file.
     pub fn load(directory: &Path) -> Result<Self> {
+        fs::create_dir_all(directory).with_context(|| format!("could not create memory directory {}", directory.display()))?;
+        let _lock = acquire_store_lock(directory)?;
+        Self::load_unlocked(directory)
+    }
+
+    fn load_unlocked(directory: &Path) -> Result<Self> {
         let path = store_path(directory);
         let backup = backup_path(&path);
         if path.exists() {
@@ -145,7 +160,7 @@ impl MemoryStore {
             // so future schema changes can add typed transformations here.
             store.schema_version = MEMORY_SCHEMA_VERSION;
             store.validate()?;
-            store.save(directory)?;
+            store.save_unlocked(directory)?;
             eprintln!(
                 "Migrated memory store schema v1 to v{}; original retained at {}",
                 MEMORY_SCHEMA_VERSION,
@@ -277,14 +292,36 @@ impl MemoryStore {
 
     pub fn save(&self, directory: &Path) -> Result<()> {
         self.validate()?;
-        fs::create_dir_all(directory).with_context(|| {
-            format!("could not create memory directory {}", directory.display())
-        })?;
+        fs::create_dir_all(directory).with_context(|| format!("could not create memory directory {}", directory.display()))?;
+        let _lock = acquire_store_lock(directory)?;
+        self.save_unlocked(directory)
+    }
+
+    fn save_unlocked(&self, directory: &Path) -> Result<()> {
+        self.validate()?;
+        write_json_atomic(&store_path(directory), self)
+    }
+
+    pub fn transact<T>(directory: &Path, operation: impl FnOnce(&mut Self) -> Result<T>) -> Result<T> {
+        fs::create_dir_all(directory).with_context(|| format!("could not create memory directory {}", directory.display()))?;
+        let _lock = acquire_store_lock(directory)?;
         let path = store_path(directory);
-        write_json_atomic(&path, self)
+        let existed = path.is_file() || backup_path(&path).is_file() || legacy_store_path(directory).is_file();
+        let mut store = Self::load_unlocked(directory)?;
+        let previous_revision = store.revision;
+        let output = operation(&mut store)?;
+        if !existed || store.revision != previous_revision { store.save_unlocked(directory)?; }
+        Ok(output)
     }
 
     pub fn export(&self, directory: &Path) -> Result<PathBuf> {
+        self.validate()?;
+        fs::create_dir_all(directory).with_context(|| format!("could not create memory directory {}", directory.display()))?;
+        let _lock = acquire_store_lock(directory)?;
+        self.export_unlocked(directory)
+    }
+
+    fn export_unlocked(&self, directory: &Path) -> Result<PathBuf> {
         self.validate()?;
         let export_dir = directory.join("exports");
         fs::create_dir_all(&export_dir).with_context(|| {
@@ -315,6 +352,26 @@ pub fn now_unix() -> Result<u64> {
         .duration_since(UNIX_EPOCH)
         .context("system clock is before the Unix epoch")?
         .as_secs())
+}
+
+fn acquire_store_lock(directory: &Path) -> Result<File> {
+    fs::create_dir_all(directory)?;
+    let lock_path = directory.join(LOCK_FILE);
+    let file = OpenOptions::new().create(true).read(true).write(true).open(&lock_path)
+        .with_context(|| format!("could not open memory lock {}", lock_path.display()))?;
+    let started = Instant::now();
+    loop {
+        match file.try_lock_exclusive() {
+            Ok(()) => return Ok(file),
+            Err(error) if error.kind() == ErrorKind::WouldBlock => {
+                if started.elapsed() >= LOCK_TIMEOUT {
+                    bail!("memory store is busy; could not acquire {} within {} seconds. Close other Rocksoul operations and retry", lock_path.display(), LOCK_TIMEOUT.as_secs());
+                }
+                thread::sleep(LOCK_RETRY_INTERVAL);
+            }
+            Err(error) => return Err(error).with_context(|| format!("could not lock memory store {}", lock_path.display())),
+        }
+    }
 }
 
 fn store_path(directory: &Path) -> PathBuf {
