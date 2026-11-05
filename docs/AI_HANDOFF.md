@@ -71,7 +71,7 @@ Mutable configuration and runtime state belong under the executable/install root
 - Keep all scores unrated until trusted evidence exists. `not_applicable` is not score zero. XP, level, and age are not proxies for stat capability.
 - Do not close the religious/language review gate for the separate Asmaul Husna catalogue without qualified independent reviewers.
 
-- Current catalogue refinement: v2.3.0; stat 42 is RESUME (stable ID retained) to distinguish interruption recovery from long-run reliability. The ten cognitive families in the evaluation plan are benchmark coverage tags only, never parent domains or extra RID scores.
+- Current catalogue refinement: v2.3.0; stat 42 is RESUME (stable ID retained) to distinguish interruption recovery from long-run reliability. The ten cognitive families in the evaluation plan are benchmark coverage tags only, never parent domains or extra RID scores. `data/evaluation/benchmark-manifest.v1.json` v1.1.0 binds adapters to the RID v2.3.0 registry and carries the no-double-counting rule.
 
 ## 3. Current repository shape
 
