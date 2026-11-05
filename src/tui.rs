@@ -694,6 +694,8 @@ fn render_memory(frame: &mut Frame<'_>, area: Rect, app: &App) {
                 if let Some(record) = records.get(app.memory_selected.min(records.len().saturating_sub(1))) {
                     push_memory_detail(&mut lines, &record.content);
                 }
+            } else if !records.is_empty() {
+                lines.push(Line::from("Press Enter to reveal the selected record after the privacy guard."));
             }
             if records.len() > MAX_RECORDS {
                 lines.push(Line::from(format!("Showing newest {MAX_RECORDS} of {} active records.", records.len())));
