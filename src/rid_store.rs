@@ -9,7 +9,7 @@ use anyhow::{Context, Result, anyhow, ensure};
 use serde::Deserialize;
 use serde_json::Value;
 
-use crate::rid::{LegacyStatArchive, RuhIdentity, RuhProfile, XpLedger, STAT_COUNT};
+use crate::rid::{LegacyStatArchive, RuhIdentity, RuhProfile, STAT_COUNT, XpLedger};
 
 #[derive(Deserialize)]
 struct LegacyRuhProfile {
@@ -53,20 +53,33 @@ pub fn load(path: &Path) -> Result<RuhProfile> {
 }
 
 fn migrate_v1_profile(path: &Path, original_bytes: &[u8], value: Value) -> Result<RuhProfile> {
-    let legacy: LegacyRuhProfile = serde_json::from_value(value)
-        .context("legacy RID v1 profile could not be decoded")?;
+    let legacy: LegacyRuhProfile =
+        serde_json::from_value(value).context("legacy RID v1 profile could not be decoded")?;
     ensure!(legacy.schema_version == 1, "legacy RID schema mismatch");
-    ensure!(legacy.level_curve_version == 1, "unsupported legacy RID level curve");
-    ensure!(!legacy.identity.instance_id.trim().is_empty(), "legacy RID identity is empty");
-    ensure!(legacy.identity.created_at_unix > 0, "legacy RID creation timestamp is invalid");
-    ensure!(legacy.stats.len() == STAT_COUNT, "legacy RID profile must contain exactly 99 stat records");
+    ensure!(
+        legacy.level_curve_version == 1,
+        "unsupported legacy RID level curve"
+    );
+    ensure!(
+        !legacy.identity.instance_id.trim().is_empty(),
+        "legacy RID identity is empty"
+    );
+    ensure!(
+        legacy.identity.created_at_unix > 0,
+        "legacy RID creation timestamp is invalid"
+    );
+    ensure!(
+        legacy.stats.len() == STAT_COUNT,
+        "legacy RID profile must contain exactly 99 stat records"
+    );
 
     for (index, record) in legacy.stats.iter().enumerate() {
         let expected = index as u64 + 1;
         let expected_id = format!("asmaul_husna:{expected:02}");
         ensure!(
             record.get("id").and_then(Value::as_u64) == Some(expected)
-                && record.get("catalogue_entry_id").and_then(Value::as_str) == Some(expected_id.as_str()),
+                && record.get("catalogue_entry_id").and_then(Value::as_str)
+                    == Some(expected_id.as_str()),
             "legacy RID stat slot {expected} is invalid"
         );
     }
@@ -85,14 +98,31 @@ fn migrate_v1_profile(path: &Path, original_bytes: &[u8], value: Value) -> Resul
             .write(true)
             .create_new(true)
             .open(&temporary)
-            .with_context(|| format!("could not create legacy archive staging file {}", temporary.display()))?;
-        archive_file.write_all(original_bytes)
-            .with_context(|| format!("could not write legacy archive staging file {}", temporary.display()))?;
-        archive_file.sync_all()
-            .with_context(|| format!("could not sync legacy archive staging file {}", temporary.display()))?;
+            .with_context(|| {
+                format!(
+                    "could not create legacy archive staging file {}",
+                    temporary.display()
+                )
+            })?;
+        archive_file.write_all(original_bytes).with_context(|| {
+            format!(
+                "could not write legacy archive staging file {}",
+                temporary.display()
+            )
+        })?;
+        archive_file.sync_all().with_context(|| {
+            format!(
+                "could not sync legacy archive staging file {}",
+                temporary.display()
+            )
+        })?;
         drop(archive_file);
-        fs::rename(&temporary, &archive_path)
-            .with_context(|| format!("could not atomically preserve legacy RID profile at {}", archive_path.display()))?;
+        fs::rename(&temporary, &archive_path).with_context(|| {
+            format!(
+                "could not atomically preserve legacy RID profile at {}",
+                archive_path.display()
+            )
+        })?;
         File::open(&archive_path)?.sync_all()?;
     }
 
@@ -278,7 +308,7 @@ mod tests {
                     "score": if id == 1 { Some(88_u8) } else { None },
                     "confidence": if id == 1 { Some(95_u8) } else { None },
                     "sample_count": if id == 1 { Some(20_u32) } else { None },
-                    "evidence_refs": if id == 1 { vec!["legacy://evidence/1"] } else { Vec::<String>::new() },
+                    "evidence_refs": if id == 1 { vec!["legacy://evidence/1".to_owned()] } else { Vec::<String>::new() },
                     "last_evaluated_at_unix": if id == 1 { Some(1_800_000_100_u64) } else { None },
                     "rubric_version": if id == 1 { Some("legacy-v1".to_owned()) } else { None }
                 })
@@ -306,7 +336,8 @@ mod tests {
 
         let archive = super::legacy_archive_path(&path);
         assert_eq!(fs::read(&archive).unwrap(), bytes);
-        let archived: serde_json::Value = serde_json::from_slice(&fs::read(archive).unwrap()).unwrap();
+        let archived: serde_json::Value =
+            serde_json::from_slice(&fs::read(archive).unwrap()).unwrap();
         assert_eq!(archived["stats"][0]["score"], 88);
         let current: serde_json::Value = serde_json::from_slice(&fs::read(&path).unwrap()).unwrap();
         assert_eq!(current["schema_version"], 2);
