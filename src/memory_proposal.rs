@@ -9,6 +9,7 @@ use std::{
 
 use fs2::FileExt;
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 
 use anyhow::{Context, Result, bail};
 
@@ -315,6 +316,10 @@ fn sensitive_content_reason(content: &str) -> Option<&'static str> {
         "api-key=",
         "password=",
         "password:",
+        "password is ",
+        "api key is ",
+        "access token",
+        "secret key",
         "secret=",
         "authorization: bearer",
         "bearer ",
@@ -364,11 +369,8 @@ fn fingerprint(proposal: &MemoryProposal) -> String {
         proposal.expires_at_unix,
     ))
     .expect("serializing a memory proposal payload cannot fail");
-    // Stable FNV-1a fingerprint for accidental/local payload-edit detection, not cryptographic authentication.
-    let hash = payload.iter().fold(0xcbf29ce484222325_u64, |hash, byte| {
-        (hash ^ u64::from(*byte)).wrapping_mul(0x100000001b3)
-    });
-    format!("{hash:016x}")
+    let digest = Sha256::digest(payload);
+    format!("{digest:x}")
 }
 
 fn normalize_tags(tags: Vec<String>) -> Vec<String> {
