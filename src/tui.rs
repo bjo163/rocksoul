@@ -600,9 +600,9 @@ fn render_overview(frame: &mut Frame<'_>, area: Rect, app: &App) {
         .margin(1)
         .split(area);
     let model = if app.snapshot.model_configured {
-        ("CONFIGURED", app.palette.success)
+        (model_configuration_label(true).to_uppercase(), app.palette.success)
     } else {
-        ("NOT CONFIGURED", app.palette.accent)
+        (model_configuration_label(false).to_uppercase(), app.palette.accent)
     };
     let rid = if app.snapshot.rid_profile.is_some() {
         ("INITIALIZED", app.palette.success)
@@ -754,6 +754,46 @@ fn render_tasks(frame: &mut Frame<'_>, area: Rect, app: &mut App) {
             .block(panel("TASK / TURN MONITOR", &app.palette)),
         area,
     );
+}
+
+fn model_configuration_label(configured: bool) -> &'static str {
+    if configured {
+        "configured"
+    } else {
+        "not configured"
+    }
+}
+
+fn tool_registry_status(registered_tools: usize) -> &'static str {
+    if registered_tools == 0 {
+        tool_registry_status(0)
+    } else {
+        "Tool adapters are registered."
+    }
+}
+
+fn safe_rid_error(error: &str) -> &'static str {
+    let normalized = error.to_ascii_lowercase();
+    if normalized.contains("unsupported") || normalized.contains("schema") {
+        "unsupported schema/version"
+    } else if normalized.contains("json")
+        || normalized.contains("parse")
+        || normalized.contains("malformed")
+    {
+        "invalid profile data"
+    } else if normalized.contains("permission") || normalized.contains("access denied") {
+        "profile inaccessible"
+    } else {
+        "profile invalid; details withheld"
+    }
+}
+
+fn report_state<T>(report: &std::result::Result<Option<T>, String>) -> &'static str {
+    match report {
+        Ok(Some(_)) => "available",
+        Ok(None) => "not run",
+        Err(_) => "corrupt / unavailable",
+    }
 }
 
 fn safe_trace_text(value: Option<&serde_json::Value>, limit: usize) -> String {
@@ -1586,6 +1626,16 @@ mod tests {
                 }
             }
         }
+    }
+
+    #[test]
+    fn diagnostics_report_missing_model_configuration_and_empty_tool_registry() {
+        assert_eq!(super::model_configuration_label(false), "not configured");
+        assert_eq!(
+            super::tool_registry_status(0),
+            "No tools are registered for execution in this seed runtime."
+        );
+        assert_eq!(super::tool_registry_status(1), "Tool adapters are registered.");
     }
 
     #[test]
