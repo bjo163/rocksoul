@@ -47,7 +47,6 @@ impl std::fmt::Display for MemoryKind {
     }
 }
 
-
 #[derive(Clone, Copy, Debug, Default, Deserialize, Eq, PartialEq, Serialize, ValueEnum)]
 #[serde(rename_all = "snake_case")]
 pub enum MemoryClaimStatus {
@@ -334,16 +333,25 @@ impl MemoryStore {
             }
             if record.claim_status == MemoryClaimStatus::VerifiedTaskOutcome
                 && (!record.user_approved
-                    || record.verification_receipt_id.as_deref().is_none_or(str::is_empty)
+                    || record
+                        .verification_receipt_id
+                        .as_deref()
+                        .is_none_or(str::is_empty)
                     || record.evidence_hash.as_deref().is_none_or(str::is_empty))
             {
-                bail!("verified task-outcome memory requires explicit approval, a verifier receipt, and an evidence hash");
+                bail!(
+                    "verified task-outcome memory requires explicit approval, a verifier receipt, and an evidence hash"
+                );
             }
-            if record.verification_receipt_id.as_ref().is_some_and(|receipt_id| {
-                receipt_id.trim().is_empty()
-                    || receipt_id.len() > 256
-                    || receipt_id.chars().any(char::is_control)
-            }) {
+            if record
+                .verification_receipt_id
+                .as_ref()
+                .is_some_and(|receipt_id| {
+                    receipt_id.trim().is_empty()
+                        || receipt_id.len() > 256
+                        || receipt_id.chars().any(char::is_control)
+                })
+            {
                 bail!("memory verification receipt ID is invalid");
             }
             if let Some(receipt_id) = &record.verification_receipt_id {
@@ -805,7 +813,10 @@ fn claim_status_ledger_path(directory: &Path) -> PathBuf {
 fn append_claim_status_event(directory: &Path, event: &ClaimStatusEvent) -> Result<()> {
     use std::io::Write as _;
     let path = claim_status_ledger_path(directory);
-    let mut file = OpenOptions::new().create(true).append(true).open(&path)
+    let mut file = OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(&path)
         .with_context(|| format!("could not append claim status ledger {}", path.display()))?;
     serde_json::to_writer(&mut file, event)?;
     file.write_all(&[10])?;
@@ -826,7 +837,10 @@ fn apply_claim_status_ledger(directory: &Path, store: &mut MemoryStore) -> Resul
             continue;
         }
         let event: ClaimStatusEvent = serde_json::from_str(line).with_context(|| {
-            format!("claim status ledger has invalid event on line {}", index + 1)
+            format!(
+                "claim status ledger has invalid event on line {}",
+                index + 1
+            )
         })?;
         if event.record_id.trim().is_empty()
             || event.occurred_at_unix == 0
@@ -837,9 +851,16 @@ fn apply_claim_status_ledger(directory: &Path, store: &mut MemoryStore) -> Resul
                     | MemoryClaimStatus::ContradictedSuperseded
             )
         {
-            bail!("claim status ledger contains an invalid event on line {}", index + 1);
+            bail!(
+                "claim status ledger contains an invalid event on line {}",
+                index + 1
+            );
         }
-        if let Some(record) = store.records.iter_mut().find(|record| record.id == event.record_id) {
+        if let Some(record) = store
+            .records
+            .iter_mut()
+            .find(|record| record.id == event.record_id)
+        {
             if record.claim_status != event.status {
                 record.claim_status = event.status;
                 record.updated_at_unix = record.updated_at_unix.max(event.occurred_at_unix);
@@ -860,18 +881,28 @@ pub fn supersede_claim(directory: &Path, record_id: &str, now: u64) -> Result<()
     fs::create_dir_all(directory)?;
     let _lock = acquire_store_lock(directory)?;
     let mut store = MemoryStore::load_unlocked(directory)?;
-    let record = store.records.iter().find(|record| record.id == record_id)
+    let record = store
+        .records
+        .iter()
+        .find(|record| record.id == record_id)
         .with_context(|| format!("memory record not found: {record_id}"))?;
     if record.claim_status == MemoryClaimStatus::ContradictedSuperseded {
         bail!("memory claim {record_id} is already superseded");
     }
-    append_claim_status_event(directory, &ClaimStatusEvent {
-        record_id: record_id.to_owned(),
-        occurred_at_unix: now,
-        status: MemoryClaimStatus::ContradictedSuperseded,
-        reason_code: "explicit_user_correction".to_owned(),
-    })?;
-    let record = store.records.iter_mut().find(|record| record.id == record_id).unwrap();
+    append_claim_status_event(
+        directory,
+        &ClaimStatusEvent {
+            record_id: record_id.to_owned(),
+            occurred_at_unix: now,
+            status: MemoryClaimStatus::ContradictedSuperseded,
+            reason_code: "explicit_user_correction".to_owned(),
+        },
+    )?;
+    let record = store
+        .records
+        .iter_mut()
+        .find(|record| record.id == record_id)
+        .unwrap();
     record.claim_status = MemoryClaimStatus::ContradictedSuperseded;
     record.updated_at_unix = now.max(record.updated_at_unix);
     store.revision = store.revision.saturating_add(1);
@@ -889,7 +920,9 @@ pub fn downgrade_revoked_receipt_claims(
     fs::create_dir_all(directory)?;
     let _lock = acquire_store_lock(directory)?;
     let mut store = MemoryStore::load_unlocked(directory)?;
-    let ids = store.records.iter()
+    let ids = store
+        .records
+        .iter()
         .filter(|record| {
             record.verification_receipt_id.as_deref() == Some(verification_id)
                 && record.claim_status == MemoryClaimStatus::VerifiedTaskOutcome
@@ -897,13 +930,20 @@ pub fn downgrade_revoked_receipt_claims(
         .map(|record| record.id.clone())
         .collect::<Vec<_>>();
     for record_id in &ids {
-        append_claim_status_event(directory, &ClaimStatusEvent {
-            record_id: record_id.clone(),
-            occurred_at_unix: now,
-            status: MemoryClaimStatus::UnverifiedTaskOutcome,
-            reason_code: "verification_receipt_revoked".to_owned(),
-        })?;
-        if let Some(record) = store.records.iter_mut().find(|record| &record.id == record_id) {
+        append_claim_status_event(
+            directory,
+            &ClaimStatusEvent {
+                record_id: record_id.clone(),
+                occurred_at_unix: now,
+                status: MemoryClaimStatus::UnverifiedTaskOutcome,
+                reason_code: "verification_receipt_revoked".to_owned(),
+            },
+        )?;
+        if let Some(record) = store
+            .records
+            .iter_mut()
+            .find(|record| &record.id == record_id)
+        {
             record.claim_status = MemoryClaimStatus::UnverifiedTaskOutcome;
             record.updated_at_unix = now.max(record.updated_at_unix);
         }
@@ -1251,9 +1291,20 @@ mod tests {
 
         let migrated = MemoryStore::load(&directory).unwrap();
         assert_eq!(migrated.schema_version, MEMORY_SCHEMA_VERSION);
-        assert_eq!(migrated.records[0].claim_status, MemoryClaimStatus::Inference);
-        assert_eq!(migrated.records[1].claim_status, MemoryClaimStatus::UserAssertion);
-        assert!(migrated.records.iter().all(|record| record.verification_receipt_id.is_none()));
+        assert_eq!(
+            migrated.records[0].claim_status,
+            MemoryClaimStatus::Inference
+        );
+        assert_eq!(
+            migrated.records[1].claim_status,
+            MemoryClaimStatus::UserAssertion
+        );
+        assert!(
+            migrated
+                .records
+                .iter()
+                .all(|record| record.verification_receipt_id.is_none())
+        );
         assert!(legacy_path.is_file());
         assert!(store_path(&directory).is_file());
         fs::remove_dir_all(directory).unwrap();
@@ -1661,12 +1712,20 @@ mod tests {
                 100,
             )?;
             Ok(())
-        }).unwrap();
+        })
+        .unwrap();
 
         super::supersede_claim(&directory, &id, 200).unwrap();
         let loaded = MemoryStore::load(&directory).unwrap();
-        let record = loaded.records.iter().find(|record| record.id == id).unwrap();
-        assert_eq!(record.claim_status, MemoryClaimStatus::ContradictedSuperseded);
+        let record = loaded
+            .records
+            .iter()
+            .find(|record| record.id == id)
+            .unwrap();
+        assert_eq!(
+            record.claim_status,
+            MemoryClaimStatus::ContradictedSuperseded
+        );
         let ledger = fs::read_to_string(directory.join("claim-status.jsonl")).unwrap();
         assert!(ledger.contains("explicit_user_correction"));
         assert!(super::supersede_claim(&directory, &id, 201).is_err());
