@@ -17,7 +17,7 @@
 
 The current task branch now includes a bounded persisted task-trace reader and read-only TUI projection, a metadata-only searchable memory browser, the corrected schema-v4 memory path, and a refreshable evaluation-report snapshot. Linux CI has passed for the first implementation slice (111 tests, Clippy, Core Integrity 23/23, memory retrieval precision@2/recall@2 1.000); Windows validation is being repeated against the latest branch head.
 
-The following remain intentionally open: explicit memory content detail reveal (D3), focused UI tests for memory (D5), diagnostic parsing/redaction tests (E6), persisted preferences and responsive/focus tests (Phase F), and complete TestBackend/Windows validation against the final head (Phase G). This is not Issue #9 completion.
+The following remain intentionally open: focused UI tests for memory (D5), diagnostic parsing/redaction tests (E6), persisted preferences and responsive/focus tests (Phase F), and complete TestBackend/Windows validation against the final head (Phase G). This is not Issue #9 completion.
 
 ## Phase A — Audit findings recorded
 
@@ -44,7 +44,7 @@ The initial audit confirms the current TUI has eight screens and two navigation 
 
 - [x] D1. Add bounded memory list with kind, claim status, provenance, approval, created/expiry metadata.
 - [x] D2. Add local search/filter by kind, claim status and source; cap query and results.
-- [ ] D3. Add explicit detail reveal; metadata remains the default view.
+- [x] D3. Add explicit Enter-to-reveal detail; metadata remains the default view and the shared sensitive-content guard blocks credential/personal-category matches.
 - [x] D4. Keep memory content hidden in the TUI, search locally without rendering content, and expose no mutation actions.
 - [ ] D5. Test filters, search, empty results, expiry, revoked/superseded claims and sensitive content.
 
