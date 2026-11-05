@@ -929,6 +929,10 @@ async fn run_memory(command: MemoryCommand) -> Result<()> {
             memory_proposal::cancel(&paths.memory_dir, &id, now_unix()?)?;
             println!("Cancelled memory proposal {id}; no memory record was written.");
         }
+        MemoryCommand::Supersede { id } => {
+            crate::memory::supersede_claim(&paths.memory_dir, &id, now_unix()?)?;
+            println!("Memory claim {id} marked contradicted/superseded; correction history was appended.");
+        }
         MemoryCommand::RevokeReceipt { verification_id, reason_code } => {
             memory_proposal::revoke_receipt(
                 &paths.logs_dir.join("receipts"),
@@ -1053,6 +1057,7 @@ async fn run_memory(command: MemoryCommand) -> Result<()> {
                     | MemoryCommand::Approve { .. }
                     | MemoryCommand::Deny { .. }
                     | MemoryCommand::CancelProposal { .. }
+                    | MemoryCommand::Supersede { .. }
                     | MemoryCommand::RevokeReceipt { .. } => {
                         unreachable!(
                             "proposal and export commands are handled outside the memory transaction"
