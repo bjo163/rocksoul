@@ -149,8 +149,7 @@ pub fn read_recent(
         bytes.len() as u64 <= byte_limit,
         "task trace exceeds the interactive read limit"
     );
-    let content =
-        String::from_utf8(bytes).context("task trace is not valid UTF-8")?;
+    let content = String::from_utf8(bytes).context("task trace is not valid UTF-8")?;
     let mut records = parse_records(&content)?;
     records.reverse();
     records.truncate(max_records.min(1_000));
