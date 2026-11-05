@@ -99,7 +99,7 @@ impl RidCatalogue {
             self.catalogue_id == "rocksoul.rid.universal_stats.v2",
             "unexpected universal RID catalogue identifier"
         );
-        ensure!(self.catalogue_version == "2.2.0", "unexpected universal RID catalogue version");
+        ensure!(self.catalogue_version == "2.2.1", "unexpected universal RID catalogue version");
         ensure!(self.total_domains == 99 && self.total_stats == 99, "catalogue totals must both equal 99");
         ensure!(self.domains.len() == 99, "RID catalogue must contain exactly 99 domains");
         ensure!(self.entries.len() == 99, "RID catalogue must contain exactly 99 stats");
