@@ -985,7 +985,9 @@ fn run_eval(command: EvalCommand) -> Result<()> {
         EvalCommand::MemoryLatest => {
             match crate::eval::latest_memory_retrieval()? {
                 Some(report) => crate::eval::print_memory_retrieval_report(&report),
-                None => println!("No memory retrieval report yet. Run: rocksoul eval run memory-retrieval"),
+                None => println!(
+                    "No memory retrieval report yet. Run: rocksoul eval run memory-retrieval"
+                ),
             }
             Ok(())
         }
