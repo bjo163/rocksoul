@@ -112,9 +112,9 @@ The receipt digest is tamper-evident integrity metadata, not a digital signature
 The PR branch now includes:
 - `docs/AI_HANDOFF.md` — local-agent onboarding, architecture map, mandatory workflow, build/test commands, safety invariants, active PR state, next-task selection and known deferred work.
 - `docs/PROGRESS.md` — this progress snapshot.
-- `docs/ARCHITECTURE.md` — distinguishes merged schema v3 baseline from proposed schema v4 work.
-- `docs/COGNITIVE_CORE.md` — distinguishes model-only planner/reflection from trusted verification and labels PR #51 as proposed until merged.
-- `docs/ROADMAP.md` — corrected Stage 2 status and kept the claim-gate task incomplete until merged.
+- `docs/ARCHITECTURE.md` — describes the merged schema v4 baseline and task-bound receipt policy.
+- `docs/COGNITIVE_CORE.md` — distinguishes model-only planner/reflection from trusted verification and documents the merged claim-provenance gate.
+- `docs/ROADMAP.md` — marks schema v4 claim provenance and task-bound receipt gating complete while keeping context injection gated.
 - `README.md` — links to the handoff and progress documents.
 
 This progress snapshot was refreshed after PR #51 merged. Keep it synchronized with future merges, CI evidence, issue state and the next selected task.
