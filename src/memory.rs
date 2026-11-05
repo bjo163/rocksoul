@@ -1192,6 +1192,62 @@ mod tests {
     }
 
     #[test]
+    fn migrates_v3_claims_without_promoting_model_proposals_to_verified() {
+        let directory = temp_dir();
+        fs::create_dir_all(&directory).unwrap();
+        let mut legacy = MemoryStore {
+            schema_version: 3,
+            revision: 9,
+            ..MemoryStore::default()
+        };
+        legacy.records.push(super::MemoryRecord {
+            id: "legacy-model-proposal".into(),
+            kind: MemoryKind::Episodic,
+            content: "A model-proposed task outcome".into(),
+            tags: vec![],
+            source: "model_proposal:old-proposal".into(),
+            user_approved: true,
+            confidence: None,
+            created_at_unix: 10,
+            updated_at_unix: 10,
+            expires_at_unix: None,
+            retention_policy_version: RETENTION_POLICY_VERSION,
+            retention_policy: RetentionPolicy::KeepUntilDeleted,
+            claim_status: MemoryClaimStatus::Inference,
+            verification_receipt_id: None,
+            evidence_hash: None,
+        });
+        legacy.records.push(super::MemoryRecord {
+            id: "legacy-user-assertion".into(),
+            kind: MemoryKind::Semantic,
+            content: "A user-provided preference".into(),
+            tags: vec![],
+            source: "user_explicit".into(),
+            user_approved: true,
+            confidence: None,
+            created_at_unix: 11,
+            updated_at_unix: 11,
+            expires_at_unix: None,
+            retention_policy_version: RETENTION_POLICY_VERSION,
+            retention_policy: RetentionPolicy::KeepUntilDeleted,
+            claim_status: MemoryClaimStatus::UserAssertion,
+            verification_receipt_id: None,
+            evidence_hash: None,
+        });
+        let legacy_path = legacy_v3_store_path(&directory);
+        fs::write(&legacy_path, serde_json::to_vec_pretty(&legacy).unwrap()).unwrap();
+
+        let migrated = MemoryStore::load(&directory).unwrap();
+        assert_eq!(migrated.schema_version, MEMORY_SCHEMA_VERSION);
+        assert_eq!(migrated.records[0].claim_status, MemoryClaimStatus::Inference);
+        assert_eq!(migrated.records[1].claim_status, MemoryClaimStatus::UserAssertion);
+        assert!(migrated.records.iter().all(|record| record.verification_receipt_id.is_none()));
+        assert!(legacy_path.is_file());
+        assert!(store_path(&directory).is_file());
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
     fn migrates_v2_store_to_v4_and_derives_retention_policy() {
         let directory = temp_dir();
         fs::create_dir_all(&directory).unwrap();
