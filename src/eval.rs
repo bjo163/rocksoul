@@ -8,6 +8,7 @@ use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 
 use crate::{
+    commands::{complete_workspace_operation_with_hook, persist_workspace_receipt},
     core::{
         CancellationToken, TurnEvent, TurnPhase, TurnState, VerificationEvidence,
         VerificationOutcome, VerificationRequest, verify_turn_and_award_xp,
