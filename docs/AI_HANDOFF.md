@@ -107,7 +107,7 @@ PR #34 merged at `0f5ca4bc4d1c65322cb02963fcc23c53fa990f5d`; Linux/Windows CI #2
 
 ### Stage 2 — persistent memory (merged main baseline)
 
-The main baseline now includes local memory schema v4 and migrations from v1/v2/v3, cross-process locking, retention/forgetting, ranked lexical retrieval and offline evaluation, human-reviewed model proposals, structured claim provenance, task-bound kernel receipt verification, receipt revocation, and append-only claim supersession. Stage 2 memory implementation was extended by PR #51 (merge commit `260d29852bb30f2f63129271a07cd368fafccc3f`). Issue #44 is closed. Automatic conversation capture and automatic memory context injection remain disabled.
+The main baseline now includes local memory schema v4 and migrations from v1/v2/v3, cross-process locking, retention/forgetting, ranked lexical retrieval and offline evaluation, human-reviewed model proposals, structured claim provenance, task-bound kernel receipt verification, receipt revocation, and append-only claim supersession. Stage 2 memory implementation was extended by PR #51 (merge commit `260d29852bb30f2f63129271a07cd368fafccc3f`). Issues #37–#41, follow-up #44, and umbrella #36 are closed. Automatic conversation capture and automatic memory context injection remain disabled.
 
 - Model proposals are staged separately and cannot silently write memory.
 - Exact interactive approval binds the candidate fingerprint.
