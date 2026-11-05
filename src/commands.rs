@@ -12,6 +12,7 @@ use crate::{
         TurnEvent, TurnState, VerificationEvidence, VerificationRequest, verify_turn_and_award_xp,
     },
     memory::{MemoryKind, MemoryRecord, MemorySearchFilters, MemoryStore},
+    memory_proposal,
     model::ModelConfig,
     paths::AppPaths,
     rid::{RuhIdentity, RuhProfile},
@@ -58,6 +59,7 @@ ROCKSOUL_API_KEY=
 pub async fn run(command: Command) -> Result<()> {
     match command {
         Command::Workspace { command } => run_workspace(command).await,
+        Command::Memory { command } => run_memory(command).await,
         command => run_non_workspace(command),
     }
 }
@@ -70,7 +72,7 @@ fn run_non_workspace(command: Command) -> Result<()> {
         Command::Tui => crate::tui::run(),
         Command::Rid { command } => run_rid(command),
         Command::Eval { command } => run_eval(command),
-        Command::Memory { command } => run_memory(command),
+        Command::Memory { .. } => unreachable!("memory commands use the async dispatcher"),
         Command::Workspace { .. } => unreachable!("workspace commands use the async dispatcher"),
     }
 }
@@ -794,9 +796,108 @@ pub fn memory_status() -> Result<()> {
     Ok(())
 }
 
-fn run_memory(command: MemoryCommand) -> Result<()> {
+async fn run_memory(command: MemoryCommand) -> Result<()> {
     let paths = AppPaths::discover()?;
     match command {
+        MemoryCommand::Propose {
+            kind,
+            content,
+            tags,
+            source_turn_reference,
+            provenance,
+            expires_in_hours,
+        } => {
+            let now = now_unix()?;
+            let expires_at = expires_in_hours
+                .map(|hours| {
+                    anyhow::ensure!(hours > 0, "--expires-in-hours must be greater than zero");
+                    let seconds = hours.checked_mul(3_600)
+                        .context("working-memory expiry is too large")?;
+                    now.checked_add(seconds).context("working-memory expiry timestamp overflow")
+                })
+                .transpose()?;
+            let proposal = memory_proposal::create(
+                &paths.memory_dir,
+                kind,
+                content,
+                tags,
+                source_turn_reference,
+                provenance,
+                expires_at,
+                now,
+            )?;
+            println!("Memory proposal saved for review; no memory record was written.");
+            println!("Proposal: {}", proposal.id);
+            println!("Kind: {}", proposal.kind);
+            println!("Source turn: {}", proposal.source_turn_reference);
+            println!("Provenance: {}", proposal.provenance);
+            println!("Fingerprint: {}", proposal.fingerprint);
+            println!("Review with: rocksoul memory approve {}", proposal.id);
+        }
+        MemoryCommand::Proposals => {
+            let proposals = memory_proposal::list(&paths.memory_dir)?;
+            if proposals.is_empty() {
+                println!("No memory proposals yet.");
+            }
+            for proposal in proposals {
+                println!(
+                    "{} [{} · {}] source={} fingerprint={}",
+                    proposal.id,
+                    proposal.kind,
+                    proposal.status,
+                    proposal.source_turn_reference,
+                    proposal.fingerprint
+                );
+                if let Some(memory_id) = proposal.memory_record_id {
+                    println!("  memory record: {memory_id}");
+                }
+            }
+        }
+        MemoryCommand::Approve { id } => {
+            let proposal = memory_proposal::get_pending(&paths.memory_dir, &id)?;
+            println!("Review exact model-proposed memory candidate:");
+            println!("Proposal: {}", proposal.id);
+            println!("Kind: {}", proposal.kind);
+            println!("Source turn: {}", proposal.source_turn_reference);
+            println!("Provenance: {}", proposal.provenance);
+            println!("Tags: {}", proposal.tags.join(", "));
+            println!("Content: {}", proposal.content);
+            println!(
+                "Expiry: {}",
+                proposal.expires_at_unix.map_or_else(|| "none".to_owned(), |value| value.to_string())
+            );
+            println!("To persist this exact candidate, type: {}", proposal.approval_phrase());
+            print!("Approval: ");
+            std::io::Write::flush(&mut std::io::stdout())?;
+            use tokio::io::AsyncBufReadExt as _;
+            let mut confirmation = String::new();
+            let mut stdin = tokio::io::BufReader::new(tokio::io::stdin());
+            tokio::select! {
+                result = stdin.read_line(&mut confirmation) => {
+                    result.context("could not read memory proposal approval")?;
+                }
+                signal = tokio::signal::ctrl_c() => {
+                    memory_proposal::cancel(&paths.memory_dir, &id, now_unix()?)?;
+                    signal.context("could not receive Ctrl+C during memory proposal approval")?;
+                    anyhow::bail!("memory proposal approval cancelled; no memory was written");
+                }
+            }
+            let memory_id = memory_proposal::approve(
+                &paths.memory_dir,
+                &id,
+                confirmation.trim_end(),
+                now_unix()?,
+            )?;
+            println!("Approved exact proposal and persisted memory record {memory_id}.");
+        }
+        MemoryCommand::Deny { id } => {
+            memory_proposal::deny(&paths.memory_dir, &id, now_unix()?)?;
+            println!("Denied memory proposal {id}; no memory record was written.");
+        }
+        MemoryCommand::CancelProposal { id } => {
+            memory_proposal::cancel(&paths.memory_dir, &id, now_unix()?)?;
+            println!("Cancelled memory proposal {id}; no memory record was written.");
+        }
         MemoryCommand::Export => {
             let store = MemoryStore::load(&paths.memory_dir)?;
             let path = store.export(&paths.memory_dir)?;
