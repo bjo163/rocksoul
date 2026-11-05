@@ -279,6 +279,7 @@ pub fn get_pending(directory: &Path, id: &str) -> Result<MemoryProposal> {
     Ok(proposal.clone())
 }
 
+#[cfg(test)]
 pub fn approve(directory: &Path, id: &str, confirmation: &str, now: u64) -> Result<String> {
     approve_with_receipts(directory, None, id, confirmation, now)
 }
