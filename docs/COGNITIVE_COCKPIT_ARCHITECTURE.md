@@ -1,6 +1,6 @@
 # Rocksoul Cognitive Cockpit Architecture
 
-Status: **Implemented increment on task branch; final-head validation and merge pending.**
+Status: **Implemented and cross-platform validated on PR #65 head `e6cac1f`; merge to main pending.**
 Scope: opt-in Ratatui presentation in src/tui.rs and portable preferences in src/tui_preferences.rs.
 
 ## Boundaries
@@ -47,4 +47,4 @@ Keyboard interactions are explicit:
 
 The TestBackend suite renders all eight screens at 80×24, 120×40 and 60×20, in dark/light themes and English/Indonesian locales, including command-palette and help overlays. Keyboard selection/search/detail transitions, privacy guard behavior, preference round-trip/default/future-schema/malformed-file handling and bounded trace reads have focused tests.
 
-Final formatting, Clippy, full test suite, Core Integrity, retrieval evaluation and Windows packaging/smoke tests must be rerun on the exact final PR head before merge.
+Exact-head validation passed in CI #42070438679: Linux formatting/Clippy, 130 tests, Core Integrity 23/23 and retrieval precision/recall 1.000; Windows release build, 129 tests, Core Integrity 22/22, retrieval precision/recall 1.000, installer/portable packaging and both smoke tests. Merge to main remains the only integration gate.
