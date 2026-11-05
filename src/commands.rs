@@ -811,9 +811,11 @@ async fn run_memory(command: MemoryCommand) -> Result<()> {
             let expires_at = expires_in_hours
                 .map(|hours| {
                     anyhow::ensure!(hours > 0, "--expires-in-hours must be greater than zero");
-                    let seconds = hours.checked_mul(3_600)
+                    let seconds = hours
+                        .checked_mul(3_600)
                         .context("working-memory expiry is too large")?;
-                    now.checked_add(seconds).context("working-memory expiry timestamp overflow")
+                    now.checked_add(seconds)
+                        .context("working-memory expiry timestamp overflow")
                 })
                 .transpose()?;
             let proposal = memory_proposal::create(
@@ -864,9 +866,14 @@ async fn run_memory(command: MemoryCommand) -> Result<()> {
             println!("Content: {}", proposal.content);
             println!(
                 "Expiry: {}",
-                proposal.expires_at_unix.map_or_else(|| "none".to_owned(), |value| value.to_string())
+                proposal
+                    .expires_at_unix
+                    .map_or_else(|| "none".to_owned(), |value| value.to_string())
             );
-            println!("To persist this exact candidate, type: {}", proposal.approval_phrase());
+            println!(
+                "To persist this exact candidate, type: {}",
+                proposal.approval_phrase()
+            );
             print!("Approval: ");
             std::io::Write::flush(&mut std::io::stdout())?;
             use tokio::io::AsyncBufReadExt as _;
@@ -1011,7 +1018,9 @@ async fn run_memory(command: MemoryCommand) -> Result<()> {
                     | MemoryCommand::Approve { .. }
                     | MemoryCommand::Deny { .. }
                     | MemoryCommand::CancelProposal { .. } => {
-                        unreachable!("proposal and export commands are handled outside the memory transaction")
+                        unreachable!(
+                            "proposal and export commands are handled outside the memory transaction"
+                        )
                     }
                 }
                 Ok(())
