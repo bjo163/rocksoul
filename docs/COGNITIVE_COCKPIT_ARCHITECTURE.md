@@ -7,8 +7,8 @@ Scope: opt-in Ratatui presentation in src/tui.rs and portable preferences in src
 
 The Cognitive Cockpit is a read-only local presentation layer over existing Rocksoul Core stores and reports. It does not own cognition, model routing, tool execution, memory writes, task execution, XP, or verification.
 
-- Snapshot::load resolves AppPaths, reads the RID profile, model-configuration presence, memory-store health, latest Core Integrity report, latest memory-retrieval report, and presentation preferences.
-- Render functions consume the snapshot and read-only store projections. Evaluation suites are never executed during rendering.
+- Snapshot::load resolves AppPaths and builds typed in-memory projections for RID, model-configuration presence, memory store/health, bounded task history, latest Core Integrity report, latest memory-retrieval report, and presentation preferences.
+- Render functions consume the snapshot and read-only in-memory projections; screen rendering performs no filesystem or store reads. Evaluation suites are never executed during rendering.
 - The task monitor reads the existing content-free JSONL workspace trace through task_trace::read_recent, with a 1 MiB file ceiling and density-bounded newest-first record count.
 - The memory browser reads schema-v4 memory metadata and uses the existing ranked local search implementation. Content is hidden by default. Explicit Enter-to-reveal passes through the shared memory_proposal::sensitive_content_reason guard and clips/sanitizes displayed text.
 - Diagnostics render generic safe states for missing, corrupt or unsupported reports and sanitize RID error details rather than exposing raw filesystem/parser errors.

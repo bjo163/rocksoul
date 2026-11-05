@@ -28,11 +28,11 @@ This is the durable progress snapshot for maintainers and delegated/local AI age
 ## Active implementation — Issue #9 Cognitive Cockpit
 
 **Task branch:** feat/tui-cockpit-completion  
-**Latest implementation/documentation head:** 0654a8ecf95ef168de58f374425606d306c78bf4  
+**Latest implementation/documentation head:** 100d99cd2c7b223b2547e0d1dd0ec335dfb5fb01  
 **Target:** main (no Cockpit completion changes merged yet)
 
 Delivered on the task branch:
-- Bounded persisted task trace with newest-first selection/detail and safe metadata-only rendering.
+- Typed snapshot projections load bounded persisted task trace and memory store once; render functions consume read-only in-memory projections. Task history supports newest-first selection/detail and safe metadata-only rendering.
 - Memory browser with local search, kind/claim/source filters, provenance/approval/expiry metadata, and explicit Enter-to-reveal through the shared sensitive-content guard.
 - Snapshot-based memory store health, Core Integrity and memory retrieval report diagnostics, plus sanitized RID error details.
 - Versioned portable TUI preferences for dark/light theme, compact/comfortable density and English/Indonesian locale; unknown or malformed preference files are preserved rather than overwritten.
@@ -45,7 +45,7 @@ Previously verified code slice:
 - Windows CI #42060471515 passed release build/tests, installer and portable packaging, portable smoke and install/init/uninstall-preservation smoke.
 - The task branch has since added preference persistence, semantic theme application, localization and more tests. Final-head CI must be rerun; earlier green CI is not evidence for the current head.
 
-Remaining: E6 missing-config/empty-registry diagnostics tests; final-head fmt/Clippy/tests/Core Integrity/retrieval evaluation; final Windows build/installer/portable smoke; full diff audit; PR refresh/merge; main SHA and issue closure verification.
+Remaining: final-head fmt/Clippy/tests/Core Integrity/retrieval evaluation; final Windows build/installer/portable smoke; full diff audit; refreshed PR/merge; main SHA and issue closure verification.
 
 ## 1. Accepted baseline on main
 

@@ -291,11 +291,11 @@ For every new task, write/update an execution plan with:
 **PR:** Refresh after final task-branch head validation (earlier draft PR #55 was superseded)  
 **Task branch:** `feat/tui-cockpit-completion`  
 **PR base SHA:** `0e89bcec834880d3e6aca3f066507c44834c2eb7`  
-**Current task branch head:** 0654a8ecf95ef168de58f374425606d306c78bf4 (final-head CI pending)
+**Current task branch head:** 100d99cd2c7b223b2547e0d1dd0ec335dfb5fb01 (final-head CI pending)
 
 ### Implemented on the PR branch (not yet on main)
 
-- Bounded newest-first reader for the existing content-free task JSONL trace (1 MiB hard cap, 12 UI records).
+- Typed Snapshot::load projections for task history and the memory store; bounded newest-first task JSONL trace (1 MiB hard cap, density-limited UI records).
 - Task Monitor event selection and detail navigation; no live queue or active task is fabricated.
 - Sanitized metadata rendering; event detail never displays trace detail/body fields.
 - Memory browser with bounded metadata-only records, local search, kind/claim filters and exact `source:<value>` filter.
