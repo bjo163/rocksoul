@@ -1,6 +1,6 @@
 # Rocksoul Project Progress
 
-**Last updated:** 2026-11-05 (Asia/Jakarta, Issue #9 final cross-platform validation)  
+**Last updated:** 2026-11-05 (Asia/Jakarta, Issue #9 merged and closed)  
 **Repository:** [bjo163/rocksoul](https://github.com/bjo163/rocksoul)  
 **Canonical branch:** `main`  
 **Current principle:** One Core. Infinite Evolution.
@@ -25,13 +25,15 @@ This is the durable progress snapshot for maintainers and delegated/local AI age
 
 > A badge describes the progress snapshot, not a guarantee that a live workflow is currently green. Check the linked PR and CI before merging.
 
-## Active implementation — Issue #9 Cognitive Cockpit
+## Completed implementation — Issue #9 Cognitive Cockpit
 
 **Task branch:** feat/tui-cockpit-completion  
-**Latest validated implementation/documentation head:** `e6cac1fbee4f99bbbdef3f7190161c0e9a8941f1`  
-**Target:** main (no Cockpit completion changes merged yet)
+**Validated PR head:** `383d8cfa3998105d34f6897b93bc14bce5329a55`  
+**PR:** [#65](https://github.com/bjo163/rocksoul/pull/65) — merged  
+**Main merge SHA:** `6474cd130bd8146f03dcacb757d9c341d4b1161a`  
+**Issue:** [#9](https://github.com/bjo163/rocksoul/issues/9) — closed
 
-Delivered on the task branch:
+Merged to main:
 - Typed snapshot projections load bounded persisted task trace and memory store once; render functions consume read-only in-memory projections. Task history supports newest-first selection/detail and safe metadata-only rendering.
 - Memory browser with local search, kind/claim/source filters, provenance/approval/expiry metadata, and explicit Enter-to-reveal through the shared sensitive-content guard.
 - Snapshot-based memory store health, Core Integrity and memory retrieval report diagnostics, plus sanitized RID error details.
@@ -41,18 +43,18 @@ Delivered on the task branch:
 - Updated task plan and product/technical handoff documents.
 
 Exact-head validation:
-- CI [#42070438679](https://github.com/bjo163/rocksoul/actions/runs/42070438679) passed on `e6cac1fbee4f99bbbdef3f7190161c0e9a8941f1` for both Linux and Windows.
+- CI [#42071047960](https://github.com/bjo163/rocksoul/actions/runs/42071047960) passed on validated PR head `383d8cfa3998105d34f6897b93bc14bce5329a55` for both Linux and Windows.
 - Linux: `cargo fmt --check`, Clippy, 130 tests, Core Integrity 23/23, memory retrieval precision@2 1.000 / recall@2 1.000.
 - Windows: release build, 129 tests, Core Integrity 22/22, memory retrieval precision@2 1.000 / recall@2 1.000, installer and portable ZIP packaging, clean portable smoke, installer install/init/uninstall-preservation smoke; artifacts uploaded.
-- Full eight-file PR diff and safety boundaries reviewed. No model calls, tool dispatch, remote egress, task execution, memory writes/deletes or context injection were added to the Cockpit.
+- Full 13-file PR diff and safety boundaries reviewed. No model calls, tool dispatch, remote egress, task execution, memory writes/deletes or context injection were added to the Cockpit.
 
-Remaining: merge PR #65 to main, verify main contains the merge SHA, and close Issue #9 with exact evidence.
+Integration complete: PR #65 merged; `main` verified at `6474cd130bd8146f03dcacb757d9c341d4b1161a`; Issue #9 closed. No further Issue #9 work remains.
 
 ## 1. Accepted baseline on main
 
-Verified `main` SHA after PR #53 merge:
+Verified `main` SHA after PR #65 merge:
 
-`458df81f87ae0b328dbc12c2b2829ca3a0ff75d9`
+`6474cd130bd8146f03dcacb757d9c341d4b1161a`
 
 Refresh the remote ref before every new task; this is the handoff baseline, not a permanent pointer.
 
@@ -170,16 +172,15 @@ This progress snapshot was refreshed after PR #53 merged and `main` was verified
 
 ### Immediate
 
-1. Continue the active [Issue #9 — Cognitive Cockpit completion](https://github.com/bjo163/rocksoul/issues/9) work in [active draft PR](https://github.com/bjo163/rocksoul/pulls); refresh its head and CI before making changes.
-2. Audit the existing eight-screen TUI before editing; preserve the one-core/read-only boundary and the current terminal lifecycle.
-3. Implement real read models for persisted task trace, memory browsing, diagnostics/evaluation report, and truthful Brains/Tools status.
-4. Add portable presentation preferences, accessibility/responsive tests, and correct the stale memory store path shown in the cockpit.
-5. Run Linux and Windows CI, update docs, merge through a PR to main, verify main and close issue #9.
-6. Keep arbitrary shell, generic tool execution, automatic memory capture and memory context injection out of scope.
+1. Keep Issue #9's merged Cockpit behavior stable; any follow-up must be a new, narrowly scoped issue.
+2. Next dependency gate: [Issue #8](https://github.com/bjo163/rocksoul/issues/8) requires independent human religious/language review of the 99-entry catalogue.
+3. Do not let an AI model self-approve religious/language correctness; record reviewer scope, findings, disagreements and accepted corrections.
+4. After Issue #8 review is complete, reassess [Issue #13](https://github.com/bjo163/rocksoul/issues/13), whose evaluation-harness dependencies include #4, #5, #8 and #9.
+5. Keep arbitrary shell, generic tool execution, automatic memory capture and memory context injection out of scope until separately designed and gated.
 
-### Current next task: #9 — Cognitive Cockpit completion
+### Current next task: Issue #8 — independent catalogue review
 
-Issue #9 is actively implemented in active draft PR. Typed task/memory snapshot projections, guarded memory detail, diagnostics/evaluation reporting, portable preferences, semantic dark/light palettes, density, locale and responsive TestBackend coverage are on the branch but not yet merged. Final-head CI and merge gates remain open. The detailed plan is in `docs/plans/issue-9/`.
+Issue #9 is merged and closed. The next dependency is not another UI implementation: it is an independent human review of the existing 99-entry catalogue's religious and language presentation. AI self-review is not an acceptable substitute. Issue #13 must remain blocked until #4, #5, #8 and #9 are all audited and closed.
 
 Issue #13 owns the broader AGI-oriented evaluation harness and explicitly depends on #4, #5, #8 and #9. Do not start or duplicate that harness before its dependencies are audited/closed. Issue #8's catalogue is implemented but still requires independent religious/language review; do not mark it complete through AI self-review. Stage 2 umbrella #36 and work packages #37–#41 plus follow-up #44 are closed. Do not start automatic memory injection until separate policy, privacy/contamination, forgetting/deletion and regression gates are reviewed.
 
