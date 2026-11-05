@@ -45,7 +45,7 @@ The suite is offline and deterministic apart from report timestamp/platform meta
 - Conflicting immutable receipts and malformed receipt JSON fail closed without overwriting evidence.
 - Versioned acceptance checks reject unsupported versions, missing required evidence, duplicate/blank IDs, oversized fields and more than 64 checks before XP mutation.
 - RID initializes 99 unrated stat slots.
-- The embedded RID v2.3.1 catalogue contains 99 independent domains, 99 linked stat dimensions, and 137 explicit pairwise contrast records whose endpoints exactly match the overlap graph. Domain/stat IDs, keys, labels, measurement targets, and separation rules are validated for uniqueness.
+- The embedded RID v2.3.2 catalogue contains 99 independent domains, 99 linked stat dimensions, and 137 explicit pairwise contrast records whose endpoints exactly match the overlap graph. Domain/stat IDs, keys, labels, measurement targets, and separation rules are validated for uniqueness.
 - Level thresholds match the deterministic v1 curve.
 - Memory defaults to a valid empty schema and entries are explicitly user-approved.
 
@@ -57,11 +57,11 @@ CI runs Rust unit tests, the offline Core Integrity evaluation, and Windows rele
 
 ## Capability taxonomy and RID mapping
 
-RID Universal 99 v2.3.1 is the canonical measurement registry, referenced by `data/evaluation/benchmark-manifest.v1.json` (manifest version 1.1.1). Future adapters must emit explicit `rid_domain:NN` and `rid_stat:NN` references and preserve all 99 dimensions. Never create a second competing 99-stat taxonomy or aggregate scores into a replacement family score.
+RID Universal 99 v2.3.2 is the canonical measurement registry, referenced by `data/evaluation/benchmark-manifest.v1.json` (manifest version 1.1.2). Future adapters must emit explicit `rid_domain:NN` and `rid_stat:NN` references and preserve all 99 dimensions. Never create a second competing 99-stat taxonomy or aggregate scores into a replacement family score.
 
 The ten families are benchmark coverage/navigation tags only: perception, generation, attention, learning, memory, reasoning, metacognition, executive functions, problem solving, and social cognition. They are not parent domains and are not additional RID scores. Cross-cutting tags include safety, robustness, calibration, recovery, retention, transfer, long-horizon consistency, latency, tokens, cost, and resource usage; tags describe test coverage, not new capability dimensions.
 
-One task may score multiple RID dimensions only when it yields distinct observable outcomes, separate rubric judgments, and separate evidence references. The 137-pair contrast registry is authoritative for adjacent-construct separation. If the outcomes cannot be separated, leave the affected dimension(s) unrated rather than double-counting.
+One task may score multiple RID dimensions only when it yields distinct observable outcomes, separate rubric judgments, and separate evidence references. The 149-pair contrast registry is authoritative for adjacent-construct separation. If the outcomes cannot be separated, leave the affected dimension(s) unrated rather than double-counting.
 
 ## Evidence record required for future adapters
 
