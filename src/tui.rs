@@ -460,7 +460,10 @@ pub fn run() -> Result<()> {
 
 fn render(frame: &mut Frame<'_>, app: &mut App) {
     let area = frame.area();
-    frame.render_widget(Block::default().style(Style::default().bg(app.palette.background)), area);
+    frame.render_widget(
+        Block::default().style(Style::default().bg(app.palette.background)),
+        area,
+    );
     if area.width < 80 || area.height < 24 {
         render_small(frame, area, app);
         return;
@@ -491,7 +494,9 @@ fn panel(title: &'static str, palette: &Palette) -> Block<'static> {
     Block::default()
         .title(Span::styled(
             format!(" {title} "),
-            Style::default().fg(palette.accent).add_modifier(Modifier::BOLD),
+            Style::default()
+                .fg(palette.accent)
+                .add_modifier(Modifier::BOLD),
         ))
         .borders(Borders::ALL)
         .border_style(Style::default().fg(palette.border))
@@ -513,17 +518,33 @@ fn render_header(frame: &mut Frame<'_>, area: Rect, app: &App) {
             }
         });
     let status = if app.snapshot.rid_error.is_some() {
-        (if english { "DEGRADED" } else { "TERGANGGU" }, app.palette.error)
+        (
+            if english { "DEGRADED" } else { "TERGANGGU" },
+            app.palette.error,
+        )
     } else {
-        (if english { "LOCAL RUNTIME" } else { "RUNTIME LOKAL" }, app.palette.success)
+        (
+            if english {
+                "LOCAL RUNTIME"
+            } else {
+                "RUNTIME LOKAL"
+            },
+            app.palette.success,
+        )
     };
     let line = Line::from(vec![
         Span::styled(
             " ROCKSOUL ",
-            Style::default().fg(app.palette.text).add_modifier(Modifier::BOLD),
+            Style::default()
+                .fg(app.palette.text)
+                .add_modifier(Modifier::BOLD),
         ),
         Span::styled(
-            if english { "/ COGNITIVE COCKPIT " } else { "/ KOKPIT KOGNITIF " },
+            if english {
+                "/ COGNITIVE COCKPIT "
+            } else {
+                "/ KOKPIT KOGNITIF "
+            },
             Style::default()
                 .fg(app.palette.accent)
                 .add_modifier(Modifier::BOLD),
@@ -600,9 +621,15 @@ fn render_overview(frame: &mut Frame<'_>, area: Rect, app: &App) {
         .margin(1)
         .split(area);
     let model = if app.snapshot.model_configured {
-        (model_configuration_label(true).to_uppercase(), app.palette.success)
+        (
+            model_configuration_label(true).to_uppercase(),
+            app.palette.success,
+        )
     } else {
-        (model_configuration_label(false).to_uppercase(), app.palette.accent)
+        (
+            model_configuration_label(false).to_uppercase(),
+            app.palette.accent,
+        )
     };
     let rid = if app.snapshot.rid_profile.is_some() {
         ("INITIALIZED", app.palette.success)
@@ -628,7 +655,9 @@ fn render_overview(frame: &mut Frame<'_>, area: Rect, app: &App) {
     let lines = vec![
         Line::from(Span::styled(
             "RUNTIME MAP",
-            Style::default().fg(app.palette.accent).add_modifier(Modifier::BOLD),
+            Style::default()
+                .fg(app.palette.accent)
+                .add_modifier(Modifier::BOLD),
         )),
         Line::from("• One local-first runtime; CLI, REPL and TUI share application services."),
         Line::from("• Verified task lifecycle: Planning → Executing → Verifying → Completed."),
@@ -636,7 +665,9 @@ fn render_overview(frame: &mut Frame<'_>, area: Rect, app: &App) {
         Line::from(""),
         Line::from(Span::styled(
             "NOT IMPLEMENTED YET",
-            Style::default().fg(app.palette.accent).add_modifier(Modifier::BOLD),
+            Style::default()
+                .fg(app.palette.accent)
+                .add_modifier(Modifier::BOLD),
         )),
         Line::from(
             "• Persistent task queue, full Memory OS, tool registry and specialist model routing.",
@@ -660,7 +691,9 @@ fn render_brains(frame: &mut Frame<'_>, area: Rect, app: &App) {
     let lines = vec![
         Line::from(Span::styled(
             "SPECIALIST ASSIGNMENTS",
-            Style::default().fg(app.palette.accent).add_modifier(Modifier::BOLD),
+            Style::default()
+                .fg(app.palette.accent)
+                .add_modifier(Modifier::BOLD),
         )),
         Line::from(
             "Local-first is fixed runtime policy; backend choice is not a top-level user mode.",
@@ -692,7 +725,9 @@ fn render_tasks(frame: &mut Frame<'_>, area: Rect, app: &mut App) {
             vec![
                 Line::from(Span::styled(
                     "NO TASK EVENTS RECORDED",
-                    Style::default().fg(app.palette.muted).add_modifier(Modifier::BOLD),
+                    Style::default()
+                        .fg(app.palette.muted)
+                        .add_modifier(Modifier::BOLD),
                 )),
                 Line::from("Verified workspace operations will appear here after execution."),
                 Line::from("No queue or active task is inferred from an empty trace."),
@@ -703,7 +738,9 @@ fn render_tasks(frame: &mut Frame<'_>, area: Rect, app: &mut App) {
             let mut lines = vec![
                 Line::from(Span::styled(
                     format!("PERSISTED TASK TRACE · {} RECENT EVENTS", records.len()),
-                    Style::default().fg(app.palette.accent).add_modifier(Modifier::BOLD),
+                    Style::default()
+                .fg(app.palette.accent)
+                .add_modifier(Modifier::BOLD),
                 )),
                 Line::from("Newest events first · ↑/↓ select · content-free metadata only"),
                 Line::from(""),
@@ -715,7 +752,11 @@ fn render_tasks(frame: &mut Frame<'_>, area: Rect, app: &mut App) {
                     .unwrap_or_else(|| "time n/a".to_owned());
                 lines.push(Line::from(format!(
                     "{} {timestamp}  {:<18}  {:<12}  {}",
-                    if index == app.task_selected { "▸" } else { " " },
+                    if index == app.task_selected {
+                        "▸"
+                    } else {
+                        " "
+                    },
                     record.event,
                     clip_text(&record.operation_id, 12),
                     record.target_name
@@ -725,7 +766,9 @@ fn render_tasks(frame: &mut Frame<'_>, area: Rect, app: &mut App) {
             lines.push(Line::from(""));
             lines.push(Line::from(Span::styled(
                 "SELECTED EVENT",
-                Style::default().fg(app.palette.accent).add_modifier(Modifier::BOLD),
+                Style::default()
+                .fg(app.palette.accent)
+                .add_modifier(Modifier::BOLD),
             )));
             lines.push(Line::from(format!("Event       {}", selected.event)));
             lines.push(Line::from(format!("Operation   {}", selected.operation_id)));
@@ -742,7 +785,9 @@ fn render_tasks(frame: &mut Frame<'_>, area: Rect, app: &mut App) {
         Err(_) => vec![
             Line::from(Span::styled(
                 "TASK TRACE UNAVAILABLE",
-                Style::default().fg(app.palette.error).add_modifier(Modifier::BOLD),
+                Style::default()
+                    .fg(app.palette.error)
+                    .add_modifier(Modifier::BOLD),
             )),
             Line::from("The trace is malformed, unsupported, oversized or inaccessible."),
             Line::from("No task state is inferred from invalid records."),
@@ -819,14 +864,21 @@ fn render_memory(frame: &mut Frame<'_>, area: Rect, app: &App) {
             let store = &memory.store;
             let active = store.active_records(now_unix());
             let mut lines = vec![
-                Line::from(format!("Store schema         v{}", memory.health.schema_version)),
+                Line::from(format!(
+                    "Store schema         v{}",
+                    memory.health.schema_version
+                )),
                 Line::from(format!(
                     "Active records       {}/{}",
                     memory.health.active_records, memory.health.total_records
                 )),
                 Line::from(format!(
                     "Store                {}",
-                    app.snapshot.paths.memory_dir.join("store.v4.json").display()
+                    app.snapshot
+                        .paths
+                        .memory_dir
+                        .join("store.v4.json")
+                        .display()
                 )),
                 Line::from(format!(
                     "Search               {}{}",
@@ -842,7 +894,9 @@ fn render_memory(frame: &mut Frame<'_>, area: Rect, app: &App) {
                     app.memory_kind_filter, app.memory_claim_filter
                 )),
                 Line::from(""),
-                Line::from("ID             KIND       CLAIM STATUS             SOURCE                       ACCESS"),
+                Line::from(
+                    "ID             KIND       CLAIM STATUS             SOURCE                       ACCESS",
+                ),
             ];
             let source_filter = app
                 .memory_query
@@ -858,7 +912,8 @@ fn render_memory(frame: &mut Frame<'_>, area: Rect, app: &App) {
                 let mut records = active
                     .into_iter()
                     .filter(|record| {
-                        app.memory_kind_filter.is_none_or(|kind| record.kind == kind)
+                        app.memory_kind_filter
+                            .is_none_or(|kind| record.kind == kind)
                             && app
                                 .memory_claim_filter
                                 .is_none_or(|status| record.claim_status == status)
@@ -880,7 +935,11 @@ fn render_memory(frame: &mut Frame<'_>, area: Rect, app: &App) {
                         record.kind,
                         record.claim_status,
                         clip_text(&record.source, 26),
-                        if record.user_approved { "approved" } else { "unapproved" }
+                        if record.user_approved {
+                            "approved"
+                        } else {
+                            "unapproved"
+                        }
                     )));
                     lines.push(Line::from(format!(
                         "  created={} · expires={}",
@@ -892,9 +951,7 @@ fn render_memory(frame: &mut Frame<'_>, area: Rect, app: &App) {
                     )));
                 }
                 if app.memory_detail_open {
-                    if let Some(record) =
-                        records.get(selected_index)
-                    {
+                    if let Some(record) = records.get(selected_index) {
                         push_memory_detail(&mut lines, &record.content);
                     }
                 } else if !records.is_empty() {
@@ -954,8 +1011,8 @@ fn render_memory(frame: &mut Frame<'_>, area: Rect, app: &App) {
                     )));
                 }
                 if app.memory_detail_open {
-                    if let Some(record) = results
-                        .get(app.memory_selected.min(results.len().saturating_sub(1)))
+                    if let Some(record) =
+                        results.get(app.memory_selected.min(results.len().saturating_sub(1)))
                     {
                         push_memory_detail(&mut lines, &record.content);
                     }
@@ -969,25 +1026,27 @@ fn render_memory(frame: &mut Frame<'_>, area: Rect, app: &App) {
                 ));
             }
             lines.push(Line::from(""));
-            lines.push(Line::from("Read-only inspector · no memory writes or forgetting actions."));
+            lines.push(Line::from(
+                "Read-only inspector · no memory writes or forgetting actions.",
+            ));
             lines
         }
         Err(_) => vec![
             Line::from(Span::styled(
                 "MEMORY STORE UNAVAILABLE",
-                Style::default().fg(app.palette.error).add_modifier(Modifier::BOLD),
+                Style::default()
+                    .fg(app.palette.error)
+                    .add_modifier(Modifier::BOLD),
             )),
             Line::from("The store is missing, corrupt, unsupported, or inaccessible."),
             Line::from("No memory content is exposed in this error state."),
         ],
     };
     frame.render_widget(
-        Paragraph::new(lines)
-            .wrap(Wrap { trim: true })
-            .block(panel(
-                "MEMORY / EXPERIENCE · ↑/↓ SELECT · / SEARCH · f KIND · c CLAIM",
-                &app.palette,
-            )),
+        Paragraph::new(lines).wrap(Wrap { trim: true }).block(panel(
+            "MEMORY / EXPERIENCE · ↑/↓ SELECT · / SEARCH · f KIND · c CLAIM",
+            &app.palette,
+        )),
         area,
     );
 }
@@ -996,7 +1055,9 @@ fn push_memory_detail(lines: &mut Vec<Line<'static>>, content: &str) {
     lines.push(Line::from(""));
     lines.push(Line::from(Span::styled(
         "SELECTED MEMORY CONTENT",
-        Style::default().fg(app.palette.accent).add_modifier(Modifier::BOLD),
+        Style::default()
+                .fg(app.palette.accent)
+                .add_modifier(Modifier::BOLD),
     )));
     match memory_detail_display(content) {
         Ok(content) => {
@@ -1093,10 +1154,16 @@ fn render_rid(frame: &mut Frame<'_>, area: Rect, app: &mut App) {
                 ),
                 Span::raw("   "),
                 Span::styled("LEVEL ", Style::default().fg(app.palette.muted)),
-                Span::styled(profile.level().to_string(), Style::default().fg(app.palette.accent)),
+                Span::styled(
+                    profile.level().to_string(),
+                    Style::default().fg(app.palette.accent),
+                ),
                 Span::raw("   "),
                 Span::styled("XP ", Style::default().fg(app.palette.muted)),
-                Span::styled(profile.total_xp().to_string(), Style::default().fg(app.palette.text)),
+                Span::styled(
+                    profile.total_xp().to_string(),
+                    Style::default().fg(app.palette.text),
+                ),
             ]),
             Line::from(format!(
                 "RATED {}/99 · CATALOGUE {} · UNRATED IS UNKNOWN, NOT ZERO",
@@ -1129,7 +1196,10 @@ fn render_rid(frame: &mut Frame<'_>, area: Rect, app: &mut App) {
                 .map(|value| format!("{value:>3}/100"))
                 .unwrap_or_else(|| "unrated".to_owned());
             ListItem::new(Line::from(vec![
-                Span::styled(format!("{:02} ", entry.slot_id), Style::default().fg(app.palette.muted)),
+                Span::styled(
+                    format!("{:02} ", entry.slot_id),
+                    Style::default().fg(app.palette.muted),
+                ),
                 Span::styled(
                     format!("{:<18}", entry.name.transliteration),
                     Style::default().fg(app.palette.text),
@@ -1158,7 +1228,9 @@ fn render_tools(frame: &mut Frame<'_>, area: Rect, app: &App) {
     let lines = vec![
         Line::from(Span::styled(
             "TOOL REGISTRY",
-            Style::default().fg(app.palette.accent).add_modifier(Modifier::BOLD),
+            Style::default()
+                .fg(app.palette.accent)
+                .add_modifier(Modifier::BOLD),
         )),
         Line::from("No tools are registered for execution in this seed runtime."),
         Line::from("Shell execution     disabled"),
@@ -1357,10 +1429,15 @@ fn render_inspector(frame: &mut Frame<'_>, area: Rect, app: &App) {
     let mut lines = vec![
         Line::from(Span::styled(
             "INSPECTOR",
-            Style::default().fg(app.palette.accent).add_modifier(Modifier::BOLD),
+            Style::default()
+                .fg(app.palette.accent)
+                .add_modifier(Modifier::BOLD),
         )),
         Line::from(""),
-        Line::from(format!("SCREEN  {}", app.screen.label(app.preferences.locale))),
+        Line::from(format!(
+            "SCREEN  {}",
+            app.screen.label(app.preferences.locale)
+        )),
         Line::from(format!(
             "MODEL   {}",
             if app.snapshot.model_configured {
@@ -1396,7 +1473,9 @@ fn rid_detail(entry: &CatalogueEntry, profile: Option<&RuhProfile>) -> Vec<Line<
         Line::from(""),
         Line::from(Span::styled(
             entry.name.transliteration.clone(),
-            Style::default().fg(app.palette.text).add_modifier(Modifier::BOLD),
+            Style::default()
+                .fg(app.palette.text)
+                .add_modifier(Modifier::BOLD),
         )),
         Line::from(entry.name.arabic.clone()),
         Line::from(entry.name.gloss.id.clone()),
@@ -1480,7 +1559,11 @@ fn render_palette(frame: &mut Frame<'_>, area: Rect, app: &App) {
     let rows = Screen::ALL
         .iter()
         .enumerate()
-        .map(|(i, screen)| ListItem::new(format!("{}  {}", i + 1, screen.title(app.preferences.locale))))
+        .map(|(i, screen)| ListItem::new(format!(
+                "{}  {}",
+                i + 1,
+                screen.title(app.preferences.locale)
+            )))
         .collect::<Vec<_>>();
     frame.render_widget(
         List::new(rows).block(panel("COMMAND PALETTE · PRESS 1-8", &app.palette)),
@@ -1635,7 +1718,10 @@ mod tests {
             super::tool_registry_status(0),
             "No tools are registered for execution in this seed runtime."
         );
-        assert_eq!(super::tool_registry_status(1), "Tool adapters are registered.");
+        assert_eq!(
+            super::tool_registry_status(1),
+            "Tool adapters are registered."
+        );
     }
 
     #[test]
