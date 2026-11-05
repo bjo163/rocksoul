@@ -102,7 +102,8 @@ struct Snapshot {
     rid_error: Option<String>,
     catalogue: Option<RidCatalogue>,
     evaluation: std::result::Result<Option<crate::eval::EvaluationReport>, String>,
-    memory_evaluation: std::result::Result<Option<crate::eval::MemoryRetrievalEvaluationReport>, String>,
+    memory_evaluation:
+        std::result::Result<Option<crate::eval::MemoryRetrievalEvaluationReport>, String>,
     memory_store_health: std::result::Result<MemoryStoreHealth, String>,
 }
 
@@ -1364,9 +1365,14 @@ mod tests {
 
     #[test]
     fn report_state_distinguishes_missing_from_unreadable_without_leaking_errors() {
-        assert_eq!(super::report_state(&Ok::<Option<u8>, String>(None)), "not run");
         assert_eq!(
-            super::report_state(&Err::<Option<u8>, _>("C:/private/path/secret.json".to_owned())),
+            super::report_state(&Ok::<Option<u8>, String>(None)),
+            "not run"
+        );
+        assert_eq!(
+            super::report_state(&Err::<Option<u8>, _>(
+                "C:/private/path/secret.json".to_owned()
+            )),
             "corrupt / unavailable"
         );
         assert_eq!(
