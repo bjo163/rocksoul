@@ -586,7 +586,11 @@ mod tests {
                     true,
                 ),
             ],
-        );
+        )
+        .with_claim(format!(
+            "Created workspace artifact {} with exact approved content.",
+            item.filename
+        ));
         let verification = verify_turn_and_award_xp(&mut turn, &mut profile, request).unwrap();
         assert!(matches!(
             verification,
