@@ -375,6 +375,7 @@ fn acquire_store_lock(directory: &Path) -> Result<File> {
     let lock_path = directory.join(LOCK_FILE);
     let file = OpenOptions::new()
         .create(true)
+        .truncate(false)
         .read(true)
         .write(true)
         .open(&lock_path)
@@ -643,6 +644,7 @@ mod tests {
         let lock_path = directory.join(super::LOCK_FILE);
         let held = fs::OpenOptions::new()
             .create(true)
+            .truncate(false)
             .read(true)
             .write(true)
             .open(&lock_path)
