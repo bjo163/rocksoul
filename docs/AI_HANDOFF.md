@@ -81,9 +81,9 @@ One Rust Cargo package (`Cargo.toml`, Rust 1.85 MSRV, edition 2024). Important m
 
 Do not split crates or add layers just for theoretical future extensibility. Extract only when real ownership, compile-time, or reuse pressure justifies it.
 
-## 4. Implemented baseline on main (before PR #51)
+## 4. Implemented baseline on main and active PR work
 
-The verified main SHA at this handoff refresh is `260d29852bb30f2f63129271a07cd368fafccc3f` (PR #51 squash merge). Re-check latest main before relying on it; main may have advanced.
+PR #51 merged at `260d29852bb30f2f63129271a07cd368fafccc3f`. The current Issue #35 branch was based on `main` SHA `b76bf36740056e41933f8510c22a8376f49d997a`. This is a historical base reference; always fetch the latest `origin/main` before starting a new task.
 
 ### Stage 0 — seed CLI
 
@@ -103,7 +103,8 @@ PR #34 merged at `0f5ca4bc4d1c65322cb02963fcc23c53fa990f5d`; Linux/Windows CI #2
 - Create-only UTF-8 `.txt` artifact publication and independent read-back verification.
 - Bounded retries, cancellation checkpoints, content-free traces and persisted verification receipts.
 - XP only after trusted verification; replay idempotency.
-- Not implemented: generalized acceptance-check orchestration across arbitrary typed services; complete planner/turn/reflection conversation recovery across restart; arbitrary shell or unrestricted tool access.
+- Issue #35 / PR #53 adds a bounded versioned `AcceptanceCheckSet` schema v1 and crash-window recovery tests; until PR #53 is merged, treat those changes as proposed branch behavior, not accepted main behavior.
+- Still not implemented: full planner/turn/reflection conversation recovery across restart, acceptance-check adapters for additional typed services, arbitrary shell or unrestricted tool access.
 
 ### Stage 2 — persistent memory (merged main baseline)
 
@@ -153,7 +154,35 @@ The final validated head passed:
 - Receipt digest is an integrity check, not a digital signature against a local actor with write access to the runtime root.
 - Automatic conversation capture and memory context injection remain disabled.
 
-## 6. Build, test and validate
+## 6. Active implementation checkpoint — issue #35 / PR #53
+
+**PR:** https://github.com/bjo163/rocksoul/pull/53 (draft; not merged at this checkpoint)  
+**Issue:** https://github.com/bjo163/rocksoul/issues/35 (open)  
+**Base:** `b76bf36740056e41933f8510c22a8376f49d997a`  
+**Branch head at documentation checkpoint:** `205d07526cb1191b43f69dee828197ae9e6de48e`
+
+The PR branch contains:
+- A private, test-only post-read-back failpoint; production passes a no-op and there is no CLI/environment/config switch.
+- A shared workspace completion path that reloads RID after the failpoint, validates actual filesystem state, verifies evidence, persists XP, writes a receipt and appends the trace.
+- Real-filesystem crash/replay coverage: artifact remains exact, XP is unchanged after injected process loss, replay returns AlreadyPresent, one XP event and one receipt are written, and a later replay is idempotent.
+- Fail-closed immutable receipt conflict and malformed/truncated receipt preservation tests.
+- `AcceptanceCheckSet` schema v1: max 64 checks; at least one required check; unique non-empty bounded IDs; bounded values/evidence references; unsupported versions rejected before XP mutation.
+- Core Integrity v1.3.0 machine-readable checks for the new crash boundary, replay/XP/receipt/trace idempotency, receipt conflicts and corruption.
+- Updated architecture, cognitive-core, roadmap, README, progress and plan documents on the PR branch.
+
+First CI run [#42012045477](https://github.com/bjo163/rocksoul/actions/runs/42012045477): Windows release build/tests/package/smoke passed; Linux stopped at formatting due to an extra blank line in `src/workspace_artifact.rs`. That defect was corrected, and additional tests/evaluation/docs were committed afterward. **The current PR head still requires a fresh full CI run.** Do not merge or close issue #35 until Linux and Windows jobs pass on the latest head.
+
+Optional temp-file/rename interruption injection was reviewed but not added: the current receipt publication uses create-only temporary file + sync + hard-link and has no existing deterministic seam. Do not introduce a production failpoint or broad filesystem abstraction solely for this optional subcase.
+
+### Next actions for the local agent
+1. Fetch PR #53 and current branch head; compare against the exact PR base.
+2. Run/inspect fresh Linux and Windows CI for the latest head. Fix formatting, Clippy, tests, Core Integrity, memory retrieval, Windows packaging or smoke failures.
+3. Inspect all PR diffs and verify the new evaluation check IDs appear in the generated Core Integrity report.
+4. Update PR #53 body with the exact validated head and CI run ID; mark ready only after checks pass.
+5. Merge PR #53 to main, verify the merge commit is on latest main, then close issue #35 with evidence.
+6. Update this handoff and progress snapshot with the actual merge SHA and CI run IDs. Never mark issue #35 complete before merge and main verification.
+
+## 7. Build, test and validate
 
 Run from the repository root. Use the committed lockfile; do not silently update dependencies.
 
@@ -163,6 +192,7 @@ cargo clippy --locked --all-targets -- -D warnings
 cargo test --locked --all-targets
 cargo build --locked --release
 cargo run --locked -- eval run core
+cargo run --locked -- eval latest
 ```
 
 For a fast focused test during development:
@@ -178,7 +208,7 @@ Before merge, require both CI paths:
 
 A local green test is not a substitute for CI. A successful compile is not proof of correct behavior. Never merge while any required check is pending or failing.
 
-## 7. Portable layout and configuration
+## 8. Portable layout and configuration
 
 The runtime resolves mutable state beside the executable. The initialized layout includes:
 
@@ -207,7 +237,7 @@ ROCKSOUL_API_KEY=
 
 Use HTTPS for remote endpoints; plain HTTP is reserved for loopback model servers. Process environment values take precedence over root-local `.env`. Never add real credentials to fixtures, test output, docs, or commits.
 
-## 8. GitHub workflow and handoff completion criteria
+## 9. GitHub workflow and handoff completion criteria
 
 - `main` is the sole source of truth.
 - Branch from latest `main`; never stack branches or target a feature branch.
@@ -227,9 +257,9 @@ A task is complete only when:
 6. Related issue is closed with the merge evidence.
 7. The next task is recorded with dependencies and acceptance criteria.
 
-## 9. Next task selected — issue #35
+## 10. Next task selected — finish issue #35
 
-PR #51 is merged and issue #44 is closed. The next unblocked reliability task is [#35 — crash-window recovery and generalized acceptance gates](https://github.com/bjo163/rocksoul/issues/35). Start from the latest `main` SHA; do not continue the old PR #51 branch.
+PR #51 is merged and issue #44 is closed. Issue #35 is already being implemented in [PR #53](https://github.com/bjo163/rocksoul/pull/53). Continue that active PR only; do not create a duplicate branch or restart the task. Do not treat PR #53 as accepted until merged to main.
 
 Execution plan: [spec](plans/issue-35/spec.md), [design notes](plans/issue-35/design.md), [small autonomous tasks](plans/issue-35/task.md), and [agent rules](plans/issue-35/rules.md).
 
@@ -253,11 +283,11 @@ For every new task, write/update an execution plan with:
 - Rollback/recovery notes.
 - Handoff summary for the next agent.
 
-## 10. Known deferred work (do not mark complete prematurely)
+## 11. Known deferred work (do not mark complete prematurely)
 
 - Complete planner/turn/reflection persistence and conversation resume.
-- Crash injection after workspace artifact publication but before XP persistence.
-- Generalized independent acceptance verification across multiple typed services.
+- Full planner/turn/reflection conversation resume across process restarts.
+- Independent acceptance-check adapters for additional typed services; schema v1 contract alone does not implement those services.
 - Broader memory injection policy and contamination/regression evaluation.
 - Manual clean-device Windows install/upgrade verification.
 - Typed read-only tool registry, sandboxing and permission/audit model.
