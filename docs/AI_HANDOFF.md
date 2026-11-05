@@ -130,7 +130,7 @@ PR #51 proposes:
 
 - Structured provenance states: user assertion, observed evidence, inference, unverified task outcome, verified task outcome, and contradicted/superseded.
 - Memory schema v4 migration from v1/v2/v3 without falsely promoting prior proposals.
-- Exact normalized claim binding to a kernel-issued verification receipt.
+- Exact normalized claim binding to a kernel-issued verification receipt, plus an expected task/operation ID included in the proposal fingerprint and matched against both the receipt task ID and persisted operation ID.
 - Freshness window (seven days), verifier identity/version, evidence digest, outcome, timestamp and receipt integrity validation.
 - Single-use receipt semantics, revocation ledger and downgrade of revoked verified claims.
 - Append-only claim-status history for explicit correction/supersession.
@@ -138,6 +138,8 @@ PR #51 proposes:
 - Proposal store v2 migration without weakening the exact human approval boundary.
 
 ### CI history and diagnosis
+
+A further review found that a valid receipt for the same text claim could otherwise be attached to a proposal from a different task because the proposal did not carry its expected task ID. The candidate now requires `--verification-task-id` together with `--verification-receipt-id`; the expected ID is included in the exact approval fingerprint and must match the receipt's integrity-bound `task_id` and its persisted `operation_id`. A dedicated cross-task replay test covers this boundary.
 
 Previous CI run #309 (run ID `41982853154`) failed on both Linux and Windows tests: two receipt-gating tests remained `UnverifiedTaskOutcome` instead of becoming `VerifiedTaskOutcome`. Formatting and Clippy had passed.
 
@@ -149,7 +151,7 @@ Root cause found during follow-up: receipt lookup iterated every file in the rec
 
 - Model output cannot mint receipts or call the trusted verifier.
 - User assertions do not need task receipts and must retain user-assertion status.
-- Missing, stale, mismatched, tampered, replayed or revoked receipts remain unverified.
+- Missing, stale, mismatched-claim, mismatched-task/operation, tampered, replayed or revoked receipts remain unverified.
 - One receipt can verify at most one memory claim.
 - Revocation is append-only and downgrades claims.
 - A receipt hash is not a digital signature. State this limitation in docs.
