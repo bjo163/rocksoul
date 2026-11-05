@@ -853,6 +853,10 @@ async fn run_memory(command: MemoryCommand) -> Result<()> {
                     .as_deref()
                     .unwrap_or("none")
             );
+            println!(
+                "Verification task: {}",
+                proposal.verification_task_id.as_deref().unwrap_or("none")
+            );
             println!("Fingerprint: {}", proposal.fingerprint);
             println!("Review with: rocksoul memory approve {}", proposal.id);
         }
@@ -863,7 +867,7 @@ async fn run_memory(command: MemoryCommand) -> Result<()> {
             }
             for proposal in proposals {
                 println!(
-                    "{} [{} · {} · claim={}] source={} receipt={} fingerprint={}",
+                    "{} [{} · {} · claim={}] source={} receipt={} task={} fingerprint={}",
                     proposal.id,
                     proposal.kind,
                     proposal.status,
@@ -871,6 +875,10 @@ async fn run_memory(command: MemoryCommand) -> Result<()> {
                     proposal.source_turn_reference,
                     proposal
                         .verification_receipt_id
+                        .as_deref()
+                        .unwrap_or("none"),
+                    proposal
+                        .verification_task_id
                         .as_deref()
                         .unwrap_or("none"),
                     proposal.fingerprint
