@@ -101,6 +101,8 @@ impl RidCatalogue {
 
         let mut domain_ids = HashSet::with_capacity(99);
         let mut domain_keys = HashSet::with_capacity(99);
+        let mut domain_labels = HashSet::with_capacity(99);
+        let mut measurement_targets = HashSet::with_capacity(99);
         let mut stat_ids = HashSet::with_capacity(99);
         let mut stat_keys = HashSet::with_capacity(99);
         for (index, domain) in self.domains.iter().enumerate() {
@@ -120,6 +122,8 @@ impl RidCatalogue {
             );
             ensure!(domain_ids.insert(domain.id.as_str()), "duplicate RID domain ID: {}", domain.id);
             ensure!(domain_keys.insert(domain.key.as_str()), "duplicate RID domain key: {}", domain.key);
+            ensure!(domain_labels.insert(domain.label.as_str()), "duplicate RID domain label: {}", domain.label);
+            ensure!(measurement_targets.insert(domain.measurement_target.as_str()), "duplicate RID measurement target at slot {slot}");
         }
 
         for (index, entry) in self.entries.iter().enumerate() {
@@ -150,6 +154,9 @@ impl RidCatalogue {
             for adjacent in &entry.overlap_with {
                 ensure!(domain_ids.contains(adjacent.as_str()), "unknown overlap domain {adjacent} at stat {slot}");
                 ensure!(adjacent != &entry.domain_id, "domain cannot overlap itself at stat {slot}");
+                let reverse = self.domains.iter().find(|candidate| candidate.id == *adjacent)
+                    .is_some_and(|candidate| candidate.overlap_with.contains(&entry.domain_id));
+                ensure!(reverse, "overlap relation must be symmetric: {} ↔ {adjacent}", entry.domain_id);
             }
         }
 
