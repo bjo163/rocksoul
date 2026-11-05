@@ -442,9 +442,11 @@ mod tests {
     fn migrates_v1_store_to_v2_without_modifying_legacy_file() {
         let directory = temp_dir();
         fs::create_dir_all(&directory).unwrap();
-        let mut legacy = MemoryStore::default();
-        legacy.schema_version = 1;
-        legacy.revision = 7;
+        let legacy = MemoryStore {
+            schema_version: 1,
+            revision: 7,
+            ..MemoryStore::default()
+        };
         legacy.records.push(super::MemoryRecord {
             id: "legacy-id".into(),
             kind: MemoryKind::Semantic,
