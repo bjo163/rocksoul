@@ -722,11 +722,7 @@ mod tests {
             assert!(
                 create(
                     &directory,
-                    candidate(
-                        crate::memory::MemoryKind::Semantic,
-                        content,
-                        "turn-secret",
-                    ),
+                    candidate(crate::memory::MemoryKind::Semantic, content, "turn-secret",)
                     100,
                 )
                 .is_err()
