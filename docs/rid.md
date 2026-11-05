@@ -20,27 +20,35 @@ CLI:
 
 The domain model and persistence layer are local-first. HTTP API exposure will be added through the same core contracts later.
 
-## 99 Asmaul Husna-inspired stat slots
+## 99 Universal Stats
 
-The domain model creates exactly 99 stable slots, linked by IDs `asmaul_husna:01` through `asmaul_husna:99`. The versioned display catalogue now lives at data/rid/asmaul_husna.v1.json. It contains 99 Arabic labels, transliterations, Indonesian/English draft glosses, and 99 unique technical dimensions grouped into nine domains. Each dimension has an operational definition, an evaluation protocol, a minimum sample requirement (20 by default; 30 for safety/governance), and a scoring-rubric ID. The Rust domain refuses a score below the catalogue's sample threshold. Glosses and technical pairings remain editorial drafts pending independent review. A slot remains unrated until a trusted evaluator produces reproducible evidence.
+The canonical technical taxonomy is `data/rid/universal_stats.v1.json` (catalogue ID `rocksoul.rid.universal_stats.v1`, version `1.0.0`). It defines exactly 99 stable universal capability dimensions in nine domains, with eleven stats per domain. Each stat has a stable `rid_stat:NN` ID, a concise action-word label (such as `SEE`, `HEAR`, `REMEMBER`, `REASON`, `CREATE`, and `TRUST`), an operational definition, and an evidence-oriented evaluation protocol.
 
-The nine technical groups are:
-1. Perception & Input Understanding
+The nine domains are:
+1. Perception
 2. Memory & Learning
-3. Reasoning & Decision
-4. Execution & Reliability
-5. Language & Interaction
-6. Safety & Governance
+3. Reasoning
+4. Execution
+5. Communication
+6. Safety & Integrity
 7. Creativity & Transfer
-8. Metacognition & Calibration
-9. Social Cognition & Collaboration
+8. Metacognition
+9. Collaboration
 
-Asmaul Husna is an inspirational naming layer only. Rocksoul does not possess, embody, or measure divine attributes. A stat is an engineering metric with an operational definition, evidence, confidence, sample count, and rubric version.
+The labels are universal capability vocabulary, not a claim that every entity or runtime supports every modality. A score requires a versioned held-out evaluation, explicit acceptance criteria or ground truth, sufficient samples, confidence, evidence references, evaluator identity, timestamp, and rubric version. Initial state is `unrated`; `not_applicable` must remain distinct from zero. XP, level, age, consciousness, personhood, and spiritual worth are independent concepts and must never be used as proxies for stat scores.
 
-The selected sequence is the popular enumeration reproduced in Jami at-Tirmidhi 3507, whose grading is displayed as Da'if (Darussalam) on Sunnah.com. Jami at-Tirmidhi 3508 is displayed as Sahih (Darussalam), but explicitly does not enumerate the names. The catalogue records both references and does not claim that its chosen ordering is the only undisputed enumeration. See:
+### Religious inspiration catalogue — separate reference layer
+
+`data/rid/asmaul_husna.v1.json` is retained as a separate religious/inspirational reference catalogue. It is not the source of universal stat identities, labels, scores, or evaluation. Its Arabic names, transliterations, glosses, enumeration variant, and editorial associations remain subject to independent qualified religious and language review. The former one-to-one ordinal pairing must not be interpreted as semantic or theological equivalence. No technical stat represents or measures a divine attribute.
+
+The selected legacy sequence is the popular enumeration reproduced in Jami at-Tirmidhi 3507, whose grading is displayed as Da'if (Darussalam) on Sunnah.com. Jami at-Tirmidhi 3508 is displayed as Sahih (Darussalam), but explicitly does not enumerate the names. This is a documented catalogue variant, not a claim that its ordering is the only undisputed enumeration. References:
 - Sahih Muslim 2677: https://sunnah.com/muslim/48/5
 - Bulugh al-Maram 1382: https://sunnah.com/bulugh:1382
 - Indonesian context on the number and enumeration: https://islamqa.info/id/answers/41003
+
+### Compatibility and migration
+
+Existing RID profiles and the current Rust domain still use legacy slot identifiers `asmaul_husna:01` through `asmaul_husna:99`. Preserve those records and their history. The new catalogue reserves stable universal IDs `rid_stat:01` through `rid_stat:99`; runtime migration must be explicit, versioned, tested against real profile fixtures, and must not silently reinterpret old scores. Until that migration is implemented and verified, the new catalogue is the canonical product taxonomy while the legacy catalogue remains the runtime compatibility source.
 
 ## XP integrity
 
