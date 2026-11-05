@@ -1,6 +1,6 @@
 # Rocksoul Project Progress
 
-**Last updated:** 2026-11-05 (Asia/Jakarta)  
+**Last updated:** 2026-11-05 (Asia/Jakarta, after PR #51 merge)  
 **Repository:** [bjo163/rocksoul](https://github.com/bjo163/rocksoul)  
 **Canonical branch:** `main`  
 **Current principle:** One Core. Infinite Evolution.
@@ -16,7 +16,7 @@ This is the durable progress snapshot for maintainers and delegated/local AI age
 | Stage 1 — Reliable cognition | **Vertical slice merged** | PR #34, merge commit `0f5ca4bc4d1c65322cb02963fcc23c53fa990f5d`; CI #248 passed |
 | Stage 1 follow-through | **Open** | Issue #35: crash injection after artifact publication/before XP persistence and generalized typed acceptance checks |
 | Stage 2 — Persistent memory | **Core baseline merged** | Schema v3, locking, retention/forgetting, retrieval evaluation and human-reviewed proposals merged through PRs #43/#46/#47/#49/#50 |
-| Stage 2 claim integrity | **Validation in progress** | PR #51 proposes schema v4, claim provenance, kernel receipt gate, revocation and supersession for issue #44 |
+| Stage 2 claim integrity | **Merged** | PR #51 merged as `260d29852bb30f2f63129271a07cd368fafccc3f`; issue #44 closed; CI #42008862735 passed on Linux and Windows |
 | Stage 3 — Skills/tools | **Not started** | No general tool registry or arbitrary tool execution |
 | Stage 4 — Application builder | **Not started** | Future bounded project-generation workflow |
 | Stage 5 — Evaluation/evolution | **Partial foundation** | Offline Core Integrity exists; candidate benchmarking, isolated evolution and promotion/rollback remain |
@@ -27,9 +27,9 @@ This is the durable progress snapshot for maintainers and delegated/local AI age
 
 ## 1. Accepted baseline on main
 
-At the start of this progress update, the main SHA observed was:
+Verified main SHA after PR #51 merge:
 
-`3489b9641083530c6e6d4a4f3bc554c17e10a638`
+`260d29852bb30f2f63129271a07cd368fafccc3f`
 
 Re-check latest main before using this as a base.
 
@@ -66,12 +66,13 @@ Remaining in issue #35:
 ### Stage 2 — Persistent memory
 
 Merged baseline:
-- Root-local versioned JSON memory and migrations through schema v3.
+- Root-local versioned JSON memory and migrations through schema v4 (v1/v2/v3 -> v4).
 - Backup recovery and cross-process OS locking.
 - Typed episodic, semantic, procedural, working and derived records.
 - Retention/expiry, append-only content-free forgetting tombstones and managed backup/export scrubbing.
 - Deterministic lexical retrieval, provenance filters and offline retrieval evaluation.
 - Human-reviewed model proposals with sensitive-data guard, exact fingerprint approval and post-decision candidate scrubbing.
+- Structured claim provenance and exact task-bound receipt verification; fresh single-use receipts are required for verified task outcomes, revocation downgrades claims, and correction history is append-only.
 
 Still disabled by design:
 - Automatic conversation capture.
@@ -79,83 +80,60 @@ Still disabled by design:
 - Automatic memory context injection.
 - Automatic training from conversation history.
 
-## 2. Active pull request — #51
+## 2. Completed pull request — #51
 
-**Title:** `feat(memory): require kernel receipts for verified task outcomes`  
-**URL:** https://github.com/bjo163/rocksoul/pull/51  
-**Branch:** `feat/verified-task-outcome-claims`  
-**Issue:** #44  
-**Latest branch head observed during this update:** `1e2cd107b50bf55ac99f90b366eb54379169ce70`  
-**Latest code fix:** `b29dc8136013ebf3bfcf1fbdbfef116b1aaf6e28`  
-**Latest observed workflow for current branch head:** [run #42007687101](https://github.com/bjo163/rocksoul/actions/runs/42007687101)  
-**State at snapshot:** PR open; current head's CI still running. Not merged.
+**PR:** https://github.com/bjo163/rocksoul/pull/51  
+**Issue:** #44 — closed after merge  
+**Merge commit:** `260d29852bb30f2f63129271a07cd368fafccc3f`  
+**Validated PR head:** `817c651f23e3e74bd59c25c94585a7e2d3bf108b`  
+**CI:** [run #42008862735](https://github.com/bjo163/rocksoul/actions/runs/42008862735) — all Linux and Windows jobs succeeded.
 
-Scope proposed:
-1. Add structured claim statuses: user assertion, observed evidence, inference, unverified task outcome, verified task outcome, contradicted/superseded.
-2. Migrate memory schema v3 to v4 without promoting old model proposals to verified status.
-3. Bind exact normalized task-outcome claims and expected task/operation IDs to kernel-issued receipts; the expected ID must match the receipt's integrity-bound task ID.
-4. Require a fresh (seven-day), exact, unused and non-revoked receipt.
-5. Keep invalid/missing/stale/mismatched-claim/mismatched-task/tampered/replayed/revoked receipts unverified.
-6. Keep ordinary user assertions receipt-free and explicitly labeled.
-7. Add append-only claim-status history for correction/supersession.
-8. Add append-only receipt revocation and downgrade revoked verified claims.
-9. Expose claim status/receipt provenance in CLI and memory retrieval.
-10. Migrate proposal store v1 to v2 without weakening exact human approval.
+Delivered:
+1. Schema v4 claim provenance and v1/v2/v3 migration without promoting legacy model proposals.
+2. User assertion, observed evidence, inference, unverified task outcome, verified task outcome and contradicted/superseded statuses.
+3. Exact normalized claim and expected task/operation ID bound to a kernel-issued receipt.
+4. Receipt-bearing proposals require both receipt ID and expected task ID; the ID is bound by the proposal fingerprint and must match the receipt's task ID and persisted operation ID.
+5. Seven-day freshness, one-time use, revocation ledger and downgrade of revoked claims.
+6. Append-only correction/supersession history.
+7. CLI/search visibility for claim status and receipt provenance.
+8. Proposal store v1-to-v2 migration preserving exact human approval.
 
-### CI diagnosis and current evidence
+CI evidence:
+- Linux formatting and Clippy passed.
+- 105 Linux tests passed.
+- Offline Core Integrity and memory retrieval evaluation passed.
+- Windows release build and tests passed.
+- Windows installer/portable packaging, clean portable smoke test, and installer install/init/uninstall-preservation smoke test passed.
 
-Earlier run #41982853154 failed on Linux and Windows because two receipt-gating tests remained unverified. Formatting and Clippy had passed.
+The receipt digest is tamper-evident integrity metadata, not a digital signature against a local actor with write access to the executable root. Automatic conversation capture and memory context injection remain disabled.
 
-Root cause identified: receipt lookup attempted to parse every file in the receipt directory, including OS lock files and unrelated non-receipt files. The lookup now accepts only `.json` receipt files. A second review added an expected task ID to each receipt-bearing proposal; the approval fingerprint binds it, and it must match the receipt's integrity-bound task ID and persisted operation ID. Regression tests cover a different task and modified operation metadata. The lookup fix was committed as `b29dc813...`; task-binding work followed in commits after it.
+## 3. Documentation included in this update
 
-Observed after fix:
-- Workflow run #42007315585 for code fix commit `b29dc813...`: Linux formatting, Clippy, tests, Core Integrity and memory retrieval evaluation all passed.
-- Windows build and tests passed at the time of the last poll, but Windows packaging/portable/installer smoke steps were still running.
-- Subsequent documentation commits triggered fresh CI. Latest branch head at this snapshot is `1e2cd107...`, with run #42007687101 still in progress. The latest-head run must be fully green before merge.
-
-**Do not merge based only on the older green Linux run.** Check the workflow attached to the exact latest PR head and require every required job to complete successfully.
-
-### PR #51 safety boundaries
-
-- A model cannot mint receipts or call the trusted verifier.
-- Receipt integrity digest is not a digital signature against a local actor with write access to the runtime root.
-- A receipt proves only a bounded verification event, not broad real-world truth.
-- One receipt cannot verify multiple claims.
-- Revocation downgrades previously verified claims.
-- Automatic conversation capture and memory context injection remain disabled.
-
-## 3. Documentation updated in active branch
-
-The PR branch now includes:
+This documentation update reconciles:
 - `docs/AI_HANDOFF.md` — local-agent onboarding, architecture map, mandatory workflow, build/test commands, safety invariants, active PR state, next-task selection and known deferred work.
 - `docs/PROGRESS.md` — this progress snapshot.
-- `docs/ARCHITECTURE.md` — distinguishes merged schema v3 baseline from proposed schema v4 work.
-- `docs/COGNITIVE_CORE.md` — distinguishes model-only planner/reflection from trusted verification and labels PR #51 as proposed until merged.
-- `docs/ROADMAP.md` — corrected Stage 2 status and kept the claim-gate task incomplete until merged.
+- `docs/plans/issue-35/` — execution specification, design notes, small autonomous task breakdown, and agent safety rules for the next issue.
+- `docs/ARCHITECTURE.md` — describes the merged schema v4 baseline and task-bound receipt policy.
+- `docs/COGNITIVE_CORE.md` — distinguishes model-only planner/reflection from trusted verification and documents the merged claim-provenance gate.
+- `docs/ROADMAP.md` — marks schema v4 claim provenance and task-bound receipt gating complete while keeping context injection gated.
 - `README.md` — links to the handoff and progress documents.
 
-When PR #51 merges, refresh this file and the handoff document to record the actual merge SHA, CI run IDs, closed issue state, and next selected task. Do not leave the current pending status in docs after merge.
+This progress snapshot was refreshed after PR #51 merged. Keep it synchronized with future merges, CI evidence, issue state and the next selected task.
 
 ## 4. Next execution order
 
 ### Immediate
 
-1. Poll workflow run #42007687101 and any newer workflow attached to the latest PR #51 head.
-2. If Linux or Windows fails, inspect full job logs, isolate the root cause, add regression coverage, and push a focused fix.
-3. If both required jobs pass on the latest head, inspect the final PR diff and mergeability.
-4. Merge PR #51 into `main`.
-5. Verify PR merged state, merge commit SHA, latest main contents and required CI.
-6. Close issue #44 only after the merge is verified.
-7. Update `docs/PROGRESS.md`, `docs/AI_HANDOFF.md`, README, architecture, cognitive core and roadmap so all say the same thing.
+1. Start issue #35 from latest `main` (refresh main first); use the [spec](plans/issue-35/spec.md), [design](plans/issue-35/design.md), [task list](plans/issue-35/task.md), and [agent rules](plans/issue-35/rules.md).
+2. Add deterministic crash injection after artifact publication but before XP persistence; prove artifact and XP replay are idempotent and durable.
+3. Add conflicting/corrupt receipt recovery fixtures and a typed, versioned acceptance-check contract for future services.
+4. Update evaluation, architecture, cognitive-core, roadmap, README and AI handoff docs.
+5. Run Linux and Windows CI, then merge through a PR to main.
+6. Keep arbitrary shell, unrestricted tools, automatic memory capture and memory context injection out of scope.
 
-### After #51
+### Current next task: #35
 
-Refresh all open issues and choose based on dependencies, not guessed issue numbers:
-
-- **First reliability candidate:** issue #35 (crash-window recovery and generalized acceptance gates). Its scope is independent of memory injection and is already specified with deterministic offline tests.
-- **Stage 2 parent:** issue #36 is the memory umbrella. Verify its checklist and close only when all child scopes and evidence are complete.
-- **Evaluation:** issue #13 owns the AGI-oriented evaluation harness. Keep synthetic memory failure fixtures and capability evaluation there rather than creating a duplicate evaluation subsystem.
-- **Do not start automatic memory injection** until a separate policy, privacy/contamination test matrix, forgetting/deletion behavior and regression gates are reviewed.
+Issue #35 is the next selected implementation task. Stage 2 umbrella issue #36 was reconciled and closed after all work packages #37–#41 and follow-up #44 were completed. Issue #13 remains the owner of the AGI-oriented evaluation harness; do not create a duplicate evaluation subsystem. Do not start automatic memory injection until a separate policy, privacy/contamination test matrix, forgetting/deletion behavior and regression gates are reviewed.
 
 ## 5. Release and merge gates
 
