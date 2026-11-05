@@ -238,17 +238,22 @@ pub fn run_core() -> Result<EvaluationReport> {
         .and_then(|catalogue| {
             catalogue.validate()?;
             anyhow::ensure!(
-                catalogue.entries.len() == 99,
-                "expected 99 catalogue entries"
+                catalogue.entries.len() == 99 && catalogue.domains.len() == 99,
+                "expected 99 independent domains and 99 linked stat entries"
             );
             let unique_keys = catalogue
                 .entries
                 .iter()
-                .map(|entry| entry.technical_stat.key.as_str())
+                .map(|entry| entry.key.as_str())
+                .collect::<std::collections::HashSet<_>>();
+            let unique_domain_ids = catalogue
+                .domains
+                .iter()
+                .map(|domain| domain.id.as_str())
                 .collect::<std::collections::HashSet<_>>();
             anyhow::ensure!(
-                unique_keys.len() == 99,
-                "technical stat keys are not unique"
+                unique_keys.len() == 99 && unique_domain_ids.len() == 99,
+                "universal domain IDs or stat keys are not unique"
             );
             Ok(())
         })
@@ -256,7 +261,7 @@ pub fn run_core() -> Result<EvaluationReport> {
     checks.push(check(
         "rid.catalogue_integrity",
         catalogue_ok,
-        "Embedded catalogue contains 99 valid entries and unique technical keys",
+        "Embedded catalogue contains 99 independent domains, unique IDs/keys, and validated overlap boundaries",
     ));
 
     let level_ok = level_for_xp(0) == 1
