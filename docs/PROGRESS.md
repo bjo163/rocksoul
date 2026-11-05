@@ -1,6 +1,6 @@
 # Rocksoul Project Progress
 
-**Last updated:** 2026-11-06 (Asia/Jakarta, Universal 99 domains measurement-model reconciliation v2.3.1 published)  
+**Last updated:** 2026-11-06 (Asia/Jakarta, Universal 99 domains second-pass overlap reconciliation v2.3.2 published)  
 **Repository:** [bjo163/rocksoul](https://github.com/bjo163/rocksoul)  
 **Canonical branch:** `main`  
 **Current principle:** One Core. Infinite Evolution.
@@ -199,35 +199,36 @@ A feature is complete only when:
 Never label an in-progress workflow as passed. Never close an issue because a branch or PR merely exists.
 
 
-## RID Universal 99 Domains & Stats — pairwise contrast and measurement-model reconciliation v2.3.1 (runtime migration implemented; CI pending)
+## RID Universal 99 Domains & Stats — second-pass overlap reconciliation v2.3.2 (runtime migration implemented; CI pending)
 
 **Canonical taxonomy:** `data/rid/universal_stats.v2.json`  
-**Version:** `2.3.1`  
-**Domain/stat model commit:** `54c273bbd3221a94378afa24be89caf8ae402821`  
-**Runtime validator commit:** `2c994a9bb776eb6cfbb058c4eae9ba126e1394a8`  
+**Version:** `2.3.2`  
+**Second-pass taxonomy commit:** `653fc83cf2f087ee81431840fa48c459ff30710f`  
+**Runtime validator commit:** `af7d4d9c831f7960ad9516214dd0d6bcdcce6ada`  
 **Human-readable audit:** [docs/rid-universal-stats.md](rid-universal-stats.md)
 
 Delivered:
-- Exactly 99 independent first-class domains and 99 linked stat slots. This is **99 capability dimensions, not 198**: domains define constructs; linked stats store per-profile measurements.
-- Exactly 99 unique domain IDs, keys, labels, measurement targets, stat IDs, stat keys, and stat labels.
-- **274 directed overlap guards / 137 reciprocal pairs** and 137 canonical pairwise contrast records (`rid_overlap:001`–`rid_overlap:137`).
-- Every pair record names both constructs, both measurement targets, and an explicit separate-outcome rule; runtime validates exact graph/registry parity.
-- All 99 domain separation rules are distinct and state primary target, inclusion, exclusion, adjacent construct targets, and no-double-counting requirements.
-- Runtime validator checks unique metadata, normalized keys, sorted/unique reciprocal adjacency, exact graph counts, pairwise contrast IDs and targets, domain/stat metadata parity, and the one-to-one domain/stat measurement contract.
-- Sharpened adjacent definitions: event reconstruction vs. direct recall vs. delayed retention; spatial localization; rubric evaluation vs. independent verification; task completion vs. ownership handoff; interruption resume vs. long-run reliability; and other high-risk pairs.
-- Stat 42 label refined from PERSIST to RESUME; stable stat ID retained.
-- Runtime embeds v2.3.1; schema-v1 archival migration preserves exact original bytes, legacy records, identity, and XP while initializing all universal scores as unrated.
-- Evaluation manifest v1.1.1 binds future adapters to the canonical RID taxonomy; benchmark families are navigation tags only, not additional scores.
+- Exactly 99 independent first-class domains and 99 linked stat slots: **99 capability dimensions, not 198**.
+- Exactly 99 unique domain IDs, keys, labels, measurement targets, stat IDs, stat keys, stat labels, and domain-specific separation rules.
+- **298 directed overlap guards / 149 reciprocal pairs**, plus 149 canonical pairwise contrast records (`rid_overlap:001`–`rid_overlap:149`).
+- Second-pass review added 12 missing adjacency guards: READ/UNDERSTAND, READ/TRANSLATE, TRACK/DIALOGUE, RETAIN/ADAPT, LEARN/INTEGRATE, OPTIMIZE/ITERATE, COMPLETE/SELF_CHECK, EXPRESS/STRUCTURE, TRANSLATE/TUNE, BOUNDARY/SECURE, SECURE/RESIST, and GOAL_TRACK/HANDOFF.
+- Each pair record names both constructs, both measurement targets, and an explicit separate-outcome rule; runtime validates exact graph/registry parity.
+- All 99 domain separation rules state primary target, inclusion, exclusion, adjacent construct targets, and no-double-counting requirements.
+- Runtime validator checks unique metadata, normalized keys, sorted/unique reciprocal adjacency, exact graph counts, pairwise contrast IDs and targets, domain/stat metadata parity, and the one-to-one measurement contract.
+- Stat 42 remains RESUME (stable ID retained) to distinguish interruption recovery from long-run reliability.
+- Runtime embeds v2.3.2; schema-v1 archival migration preserves exact original bytes, legacy records, identity, and XP while initializing all universal scores as unrated.
+- Evaluation manifest v1.1.2 binds adapters to RID v2.3.2; benchmark families are navigation tags only, not additional scores.
 - Religious inspiration data remains separate from technical capability taxonomy.
 
 Audit conclusions and remaining gates:
 - No duplicate IDs, keys, labels, primary measurement targets, or separation rules were found in the current 99-entry catalogue.
+- A lexical similarity screen found no unlisted domain pair above the review threshold; the second-pass manual review nevertheless added the 12 adjacent pairs listed above.
 - Correlation between capabilities is expected; the control is distinct measurement targets and non-reused outcome evidence, not a claim that capabilities are statistically independent.
 - Structural validation and editorial boundary review do **not** constitute independent psychometric validation. Trusted evaluator design, held-out benchmark quality, inter-rater reliability, and empirical discriminant validity remain pending.
 - Exact-head Linux/Windows CI must be green before claiming verified completion.
 
 Next:
-1. Verify exact-head Linux and Windows CI for v2.3.1 and fix any failures.
+1. Verify exact-head Linux and Windows CI for v2.3.2 and fix any failures.
 2. Design trusted per-domain evaluator adapters with held-out benchmark suites, negative controls, calibrated confidence, and auditable evidence.
 3. Run independent expert review and empirical discriminant-validity studies before treating scores as comparable capability measurements.
 4. Keep all 99 dimensions `unrated` until trusted evidence exists; do not map historical Asmaul Husna scores by ordinal slot.
