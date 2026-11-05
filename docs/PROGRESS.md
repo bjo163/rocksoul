@@ -1,6 +1,6 @@
 # Rocksoul Project Progress
 
-**Last updated:** 2026-11-06 (Asia/Jakarta, Universal 99 domains deep overlap reconciliation v2.2.1 published)  
+**Last updated:** 2026-11-06 (Asia/Jakarta, Universal 99 domains pairwise contrast reconciliation v2.3.0 published)  
 **Repository:** [bjo163/rocksoul](https://github.com/bjo163/rocksoul)  
 **Canonical branch:** `main`  
 **Current principle:** One Core. Infinite Evolution.
@@ -199,34 +199,34 @@ A feature is complete only when:
 Never label an in-progress workflow as passed. Never close an issue because a branch or PR merely exists.
 
 
-## RID Universal 99 Domains & Stats — deep overlap reconciliation v2.2.1 (runtime migration implemented; CI pending)
+## RID Universal 99 Domains & Stats — pairwise contrast reconciliation v2.3.0 (runtime migration implemented; CI pending)
 
 **Canonical taxonomy:** `data/rid/universal_stats.v2.json`  
-**Version:** `2.2.1`  
-**Taxonomy refinement commit:** `55d4bb68727f691b5558cd37155a5ae2a144ac9b`  
-**Runtime validator commit:** `1f943cc15aead7112f9cbda3cf4bcfa132bfd7ee`  
+**Version:** `2.3.0`  
+**Pairwise registry commit:** `20eeafdc7b830529a0cbca02de8e0b491ef40a7f`  
+**Runtime validator commit:** `4cb4195e40171d12fcca2b6db150774acca9482d`  
 **Human-readable audit:** [docs/rid-universal-stats.md](rid-universal-stats.md)
 
 Delivered:
 - Exactly 99 independent first-class domains and 99 linked stat dimensions; no nine-domain parent grouping.
 - Exactly 99 unique domain IDs, keys, labels, measurement targets, stat IDs, stat keys, and stat labels.
-- **274 directed overlap guards / 137 reciprocal pairs**, with sorted unique adjacency references and no self-links.
-- All 99 separation rules are distinct and explicitly state the primary target, inclusion boundary, exclusion boundary, adjacent constructs, and no-double-counting rule.
-- Evaluation protocols now embed their matching domain-specific separation rule.
-- Sharpened adjacent constructs: spatial localization vs. event memory; episodic encoding vs. direct recall vs. delayed retention; one-step inference vs. multi-step reasoning; rubric evaluation vs. independent verification; completion vs. handoff; interruption recovery vs. long-run reliability; and other high-risk pairs.
-- Stat 42 label refined from PERSIST to RESUME to make interruption recovery distinct from long-term commitment reliability; stable stat ID retained.
-- Runtime validator checks case-insensitive uniqueness, normalized keys, sorted/unique overlap lists, reciprocal edges, graph counts, domain/stat metadata parity, and unique separation rules.
-- Runtime embeds v2.2.1; schema-v1 profile archival migration preserves exact original bytes, legacy records, identity, and XP while initializing all universal scores as unrated.
+- **274 directed overlap guards / 137 reciprocal pairs**.
+- Added 137 canonical pairwise contrast records (`rid_overlap:001`–`rid_overlap:137`), each naming both constructs, both measurement targets, and a separate-outcome rule.
+- All 99 domain separation rules are distinct and state the primary target, inclusion boundary, exclusion boundary, adjacent construct targets, and no-double-counting rule.
+- Runtime validator checks the pairwise registry exactly matches the graph, in addition to reciprocal edges, unique IDs/keys/labels/targets/rules, sorted adjacency, and domain/stat metadata parity.
+- Sharpened adjacent definitions: event reconstruction vs. direct recall vs. delayed retention; spatial localization; rubric evaluation vs. independent verification; task completion vs. ownership handoff; interruption resume vs. long-run reliability; and other high-risk pairs.
+- Stat 42 label refined from PERSIST to RESUME; stable stat ID retained.
+- Runtime embeds v2.3.0; schema-v1 archival migration preserves exact original bytes, legacy records, identity, and XP while initializing all universal scores as unrated.
 - Religious inspiration data remains separate from technical capability taxonomy.
 
 Audit conclusions and remaining gates:
 - No duplicate IDs, keys, labels, primary measurement targets, or separation rules were found in the current 99-entry catalogue.
 - Correlation between capabilities is expected; the control is distinct measurement targets and non-reused outcome evidence, not a claim that capabilities are statistically independent.
 - Structural validation and editorial boundary review do **not** constitute independent psychometric validation. Trusted evaluator design, held-out benchmark quality, inter-rater reliability, and empirical discriminant validity remain pending.
-- Latest CI must be checked against the exact current `main` SHA before claiming green status. No issue is closed solely because implementation commits exist.
+- Exact-head Linux/Windows CI must be green before claiming verified completion.
 
 Next:
-1. Verify exact-head Linux and Windows CI for v2.2.1 and fix any failures.
+1. Verify exact-head Linux and Windows CI for v2.3.0 and fix any failures.
 2. Design trusted per-domain evaluator adapters with held-out benchmark suites, negative controls, calibrated confidence, and auditable evidence.
 3. Run independent expert review and empirical discriminant-validity studies before treating scores as comparable capability measurements.
 4. Keep all 99 dimensions `unrated` until trusted evidence exists; do not map historical Asmaul Husna scores by ordinal slot.
