@@ -49,7 +49,7 @@ The suite is offline and deterministic apart from report timestamp/platform meta
 - Level thresholds match the deterministic v1 curve.
 - Memory defaults to a valid empty schema and entries are explicitly user-approved.
 
-The latest report is stored under the portable executable root at `data/evaluations/core/latest.json`. This is not an OS per-user application-data path. Each Core Integrity report also records `rocksoul_commit`, populated from the CI-provided `ROCKSOUL_GIT_SHA`; builds without revision metadata explicitly record `unknown`. The field is backward-compatible when reading older schema-v1 reports.
+The latest report is stored under the portable executable root at `data/evaluations/core/latest.json`. This is not an OS per-user application-data path. Both deterministic Core Integrity and memory-retrieval reports record `rocksoul_commit`, populated from the CI-provided `ROCKSOUL_GIT_SHA`; builds without revision metadata explicitly record `unknown`. The field is backward-compatible when reading older schema-v1 reports.
 
 The verifier checks are exercised with synthetic evidence in the deterministic suite. The interactive planner is not yet connected to independent observed-effect verification. Passing this suite proves only the listed invariants, not real-world task competence or AGI.
 
