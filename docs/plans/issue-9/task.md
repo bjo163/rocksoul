@@ -17,7 +17,7 @@
 
 The current task branch now includes a bounded persisted task-trace reader and read-only TUI projection, a metadata-only searchable memory browser, the corrected schema-v4 memory path, and a refreshable evaluation-report snapshot. Linux CI has passed for the first implementation slice (111 tests, Clippy, Core Integrity 23/23, memory retrieval precision@2/recall@2 1.000); Windows validation is being repeated against the latest branch head.
 
-The following remain intentionally open: diagnostic parsing/redaction tests for missing model configuration and empty tool registry (E6), final-head fmt/Clippy/tests/Core Integrity/retrieval evaluation (G2), final-head Windows build/installer/portable smoke (G3), full diff audit (G6), PR merge (G7), and main/issue/handoff verification (G8). This is not Issue #9 completion.
+The following remain intentionally open: final-head fmt/Clippy/tests/Core Integrity/retrieval evaluation (G2), final-head Windows build/installer/portable smoke (G3), full diff audit (G6), PR merge (G7), and main/issue/handoff verification (G8). This is not Issue #9 completion.
 
 ## Phase A — Audit findings recorded
 
@@ -55,7 +55,7 @@ The initial audit confirms the current TUI has eight screens and two navigation 
 - [x] E3. Show suite/version/pass state and failed check IDs; distinguish not-run from unreadable reports. The current report contract does not expose a tested commit SHA.
 - [x] E4. Ensure Brains and Tools show only the known legacy adapter and empty tool registry; unknown specialist roles remain unassigned.
 - [x] E5. Replace misleading active-task and automatic-specialist labels with explicit not-implemented/unassigned states.
-- [ ] E6. Test report parsing, invalid JSON, redaction, missing config and empty registries.
+- [x] E6. Test report parsing/invalid JSON redaction, missing-vs-unreadable report states, RID path redaction, missing model configuration and empty tool registry states.
 
 ## Phase F — Preferences, accessibility and responsive behavior
 
