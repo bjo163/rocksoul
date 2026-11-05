@@ -435,7 +435,7 @@ impl MemoryStore {
                     .map(|term| {
                         all_terms
                             .iter()
-                            .filter(|candidate| *candidate == term)
+                            .filter(|candidate| **candidate == term)
                             .count() as u32
                     })
                     .sum::<u32>();
