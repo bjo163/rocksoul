@@ -1681,7 +1681,7 @@ fn now_unix() -> u64 {
 
 #[cfg(test)]
 mod tests {
-    use super::{App, LocaleMode, Palette, Screen, Snapshot, ThemeMode};
+    use super::{App, DensityMode, LocaleMode, Palette, Screen, Snapshot, ThemeMode};
 
     #[test]
     fn all_screens_render_at_standard_wide_and_narrow_sizes() {
