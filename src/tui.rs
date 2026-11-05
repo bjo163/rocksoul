@@ -492,7 +492,7 @@ fn render_tasks(frame: &mut Frame<'_>, area: Rect) {
             let event = safe_trace_text(record.get("event"), 18);
             let operation = safe_trace_text(record.get("operation_id"), 12);
             let target = safe_trace_text(record.get("target"), 96);
-            let target_name = target.rsplit(['/', '\\\\']).next().unwrap_or("target");
+            let target_name = target.rsplit('/').next().unwrap_or("target");
             let timestamp = record
                 .get("timestamp_unix_ms")
                 .and_then(serde_json::Value::as_u64)
