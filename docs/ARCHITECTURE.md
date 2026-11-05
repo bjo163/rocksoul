@@ -72,7 +72,7 @@ Rocksoul/
 │   ├── identity/
 │   │   └── rid.json
 │   ├── memory/
-│   │   ├── store.v1.json
+│   │   ├── store.v4.json
 │   │   └── exports/
 │   └── evaluations/
 │       └── core/
@@ -115,7 +115,7 @@ The following remain future work beyond the delivered Stage 1 workspace-artifact
 
 - Generalize independent plan acceptance verification across multiple typed application services; do not infer task success from model reflection.
 - Persist and resume complete planner/turn/reflection conversation state across process restarts; current durable recovery covers the bounded workspace operation and verification/XP receipt replay, not model conversation history.
-- Memory migrations, concurrency control, retention/forgetting, retrieval ranking, and evaluated context injection.
+- Automatic memory context injection, which remains disabled until separate policy, privacy, contamination, forgetting/deletion and regression gates are reviewed.
 - Read-only capability registry, sandboxed workspace tools, and human approval for side effects.
 - Project builder, isolated candidate evolution, benchmarked promotion/rollback.
 - Multi-agent workforce and desktop/web/API interfaces.
