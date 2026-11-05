@@ -1137,6 +1137,7 @@ pub fn print_report(report: &EvaluationReport) {
         "Runtime: {} / {} · Rocksoul {}",
         report.platform, report.architecture, report.rocksoul_version
     );
+    println!("Source commit: {}", report.rocksoul_commit);
     println!(
         "Result: {} ({}/{} passed, {} failed)",
         if report.passed { "PASS" } else { "FAIL" },
