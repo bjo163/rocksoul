@@ -311,7 +311,11 @@ where
             VerificationEvidence::new(
                 "artifact-is-regular-file",
                 "true",
-                if observed_regular_file { "true" } else { "false" },
+                if observed_regular_file {
+                    "true"
+                } else {
+                    "false"
+                },
                 format!("workspace-artifact:{operation_id}"),
                 true,
             ),
@@ -336,7 +340,11 @@ where
             "receipt={} xp={} xp_outcome={} checks={}/{} evidence={} receipt_path={}",
             receipt.verification_id(),
             receipt.xp_awarded(),
-            if newly_awarded { "recorded" } else { "duplicate" },
+            if newly_awarded {
+                "recorded"
+            } else {
+                "duplicate"
+            },
             receipt.required_checks_passed(),
             receipt.total_checks(),
             receipt.evidence_refs().join(","),
@@ -555,7 +563,11 @@ async fn run_workspace(command: WorkspaceCommand) -> Result<()> {
                 println!(
                     "Verification receipt: {} · {} XP {}",
                     receipt.verification_id(),
-                    if newly_awarded { receipt.xp_awarded() } else { 0 },
+                    if newly_awarded {
+                        receipt.xp_awarded()
+                    } else {
+                        0
+                    },
                     if newly_awarded {
                         "awarded"
                     } else {
@@ -1226,14 +1238,11 @@ mod tests {
         },
         paths::AppPaths,
         rid::{RuhIdentity, RuhProfile, XpRecordOutcome},
-        rid_store,
-        task_trace,
+        rid_store, task_trace,
         workspace_artifact::{UserApproval, WorkspaceArtifactProposal, WorkspaceArtifactService},
     };
 
-    use super::{
-        complete_workspace_operation_with_hook, format_age, persist_workspace_receipt,
-    };
+    use super::{complete_workspace_operation_with_hook, format_age, persist_workspace_receipt};
 
     #[test]
     fn crash_after_artifact_publication_before_xp_persistence_recovers_once() {
@@ -1303,10 +1312,10 @@ mod tests {
         ));
         assert!(first.profile.total_xp() > 0);
         assert_eq!(first.profile.xp_events().len(), 1);
-        let receipt_path = paths
-            .logs_dir
-            .join("receipts")
-            .join(format!("workspace-{}.json", proposal.operation_id().rsplit(':').next().unwrap()));
+        let receipt_path = paths.logs_dir.join("receipts").join(format!(
+            "workspace-{}.json",
+            proposal.operation_id().rsplit(':').next().unwrap()
+        ));
         assert!(receipt_path.is_file());
         let first_receipt_bytes = fs::read(&receipt_path).unwrap();
 
@@ -1423,9 +1432,7 @@ mod tests {
             1_700_000_104,
             "workspace-readback:def456",
         );
-        let corrupt_path = logs
-            .join("receipts")
-            .join("workspace-def456.json");
+        let corrupt_path = logs.join("receipts").join("workspace-def456.json");
         fs::write(&corrupt_path, b"{truncated").unwrap();
         let corrupt_bytes = fs::read(&corrupt_path).unwrap();
         assert!(persist_workspace_receipt(&logs, corrupt_operation, &corrupt_receipt).is_err());
