@@ -17,7 +17,7 @@
 
 The current task branch now includes a bounded persisted task-trace reader and read-only TUI projection, a metadata-only searchable memory browser, the corrected schema-v4 memory path, and a refreshable evaluation-report snapshot. Linux CI has passed for the first implementation slice (111 tests, Clippy, Core Integrity 23/23, memory retrieval precision@2/recall@2 1.000); Windows validation is being repeated against the latest branch head.
 
-The following remain intentionally open: focused UI tests for memory (D5), diagnostic parsing/redaction tests (E6), persisted preferences and responsive/focus tests (Phase F), and complete TestBackend/Windows validation against the final head (Phase G). This is not Issue #9 completion.
+The following remain intentionally open: diagnostic parsing/redaction tests for missing configuration and empty registries (E6), persisted preferences and responsive/focus tests (Phase F), and complete TestBackend/Windows validation against the final head (Phase G). This is not Issue #9 completion.
 
 ## Phase A — Audit findings recorded
 
@@ -46,11 +46,11 @@ The initial audit confirms the current TUI has eight screens and two navigation 
 - [x] D2. Add local search/filter by kind, claim status and source; cap query and results.
 - [x] D3. Add explicit Enter-to-reveal detail; metadata remains the default view and the shared sensitive-content guard blocks credential/personal-category matches.
 - [x] D4. Keep memory content hidden in the TUI, search locally without rendering content, and expose no mutation actions.
-- [ ] D5. Test filters, search, empty results, expiry, revoked/superseded claims and sensitive content.
+- [x] D5. Cover search/filter/empty/expiry/forgetting/supersession in the memory service tests; add TUI filter-cycle, explicit-detail privacy-guard and content-clipping tests.
 
 ## Phase E — Diagnostics, evaluation and capability truthfulness
 
-- [ ] E1. Extend the existing runtime snapshot (model configuration, RID validity, portable paths) with memory-store health and sanitized RID error detail.
+- [x] E1. Extend the existing runtime snapshot with memory-store health and sanitized RID error detail.
 - [x] E2. Move the latest Core Integrity summary lookup into the refreshable snapshot; never run the suite during render.
 - [x] E3. Show suite/version/pass state and failed check IDs; distinguish not-run from unreadable reports. The current report contract does not expose a tested commit SHA.
 - [x] E4. Ensure Brains and Tools show only the known legacy adapter and empty tool registry; unknown specialist roles remain unassigned.
