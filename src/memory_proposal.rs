@@ -13,7 +13,10 @@ use sha2::{Digest, Sha256};
 
 use anyhow::{Context, Result, bail};
 
-use crate::memory::{MemoryKind, MemoryStore};
+use crate::{
+    core::{VerificationReceipt, normalize_task_claim},
+    memory::{MemoryClaimStatus, MemoryKind, MemoryStore},
+};
 
 const PROPOSAL_SCHEMA_VERSION: u16 = 1;
 const PROPOSAL_FILE: &str = "proposals.v1.json";
@@ -55,6 +58,8 @@ pub struct MemoryProposal {
     pub status: ProposalStatus,
     pub decided_at_unix: Option<u64>,
     pub memory_record_id: Option<String>,
+    pub claim_status: MemoryClaimStatus,
+    pub verification_receipt_id: Option<String>,
 }
 
 impl MemoryProposal {
@@ -71,6 +76,8 @@ pub struct MemoryProposalCandidate {
     pub source_turn_reference: String,
     pub provenance: String,
     pub expires_at_unix: Option<u64>,
+    pub claim_status: MemoryClaimStatus,
+    pub verification_receipt_id: Option<String>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -172,6 +179,8 @@ pub fn create(
         source_turn_reference,
         provenance,
         expires_at_unix,
+        claim_status,
+        verification_receipt_id,
     } = candidate;
     validate_candidate(
         kind,
@@ -202,6 +211,8 @@ pub fn create(
         status: ProposalStatus::Pending,
         decided_at_unix: None,
         memory_record_id: None,
+        claim_status,
+        verification_receipt_id,
     };
     proposal.fingerprint = fingerprint(&proposal);
     if store
@@ -447,6 +458,8 @@ fn fingerprint(proposal: &MemoryProposal) -> String {
         &proposal.source_turn_reference,
         &proposal.provenance,
         proposal.expires_at_unix,
+        proposal.claim_status,
+        &proposal.verification_receipt_id,
     ))
     .expect("serializing a memory proposal payload cannot fail");
     let digest = Sha256::digest(payload);
