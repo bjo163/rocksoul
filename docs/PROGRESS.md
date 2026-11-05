@@ -1,6 +1,6 @@
 # Rocksoul Project Progress
 
-**Last updated:** 2026-11-05 (Asia/Jakarta, PR #53 validation passed; merge pending)  
+**Last updated:** 2026-11-05 (Asia/Jakarta, after PR #53 merge; preparing Issue #9 handoff)  
 **Repository:** [bjo163/rocksoul](https://github.com/bjo163/rocksoul)  
 **Canonical branch:** `main`  
 **Current principle:** One Core. Infinite Evolution.
@@ -14,7 +14,7 @@ This is the durable progress snapshot for maintainers and delegated/local AI age
 | Product foundation | **In place** | One Rust Cargo package, one portable native executable, CLI/REPL and optional Ratatui cockpit |
 | Stage 0 — Seed CLI | **Implemented** | Windows release build and automated installer/portable smoke tests; manual clean-device upgrade test remains |
 | Stage 1 — Reliable cognition | **Vertical slice merged** | PR #34, merge commit `0f5ca4bc4d1c65322cb02963fcc23c53fa990f5d`; CI #248 passed |
-| Stage 1 follow-through | **Implementation + CI complete; merge pending** | Issue #35 / PR #53: crash recovery, receipt integrity, versioned acceptance checks, Core Integrity v1.3.0; Linux and Windows CI #42043396826 passed |
+| Stage 1 follow-through | **Merged and verified** | PR #53 merged as `458df81f`; issue #35 closed; CI #42044132321 passed on Linux and Windows |
 | Stage 2 — Persistent memory | **Complete on main** | Schema v4, locking, retention/forgetting, evaluated retrieval and human-reviewed proposals; see PRs #43/#46/#47/#49/#50/#51 |
 | Stage 2 claim integrity | **Merged** | PR #51 merged as `260d29852bb30f2f63129271a07cd368fafccc3f`; issue #44 closed; CI #42008862735 passed on Linux and Windows |
 | Stage 3 — Skills/tools | **Not started** | No general tool registry or arbitrary tool execution |
@@ -27,11 +27,11 @@ This is the durable progress snapshot for maintainers and delegated/local AI age
 
 ## 1. Accepted baseline on main
 
-Verified `main` base SHA used for the current Issue #35 branch:
+Verified `main` SHA after PR #53 merge:
 
-`b76bf36740056e41933f8510c22a8376f49d997a`
+`458df81f87ae0b328dbc12c2b2829ca3a0ff75d9`
 
-This is the PR #53 base, not a promise that `main` has not advanced since. Refresh the remote ref before every new task.
+Refresh the remote ref before every new task; this is the handoff baseline, not a permanent pointer.
 
 ### Stage 0 — Seed CLI
 
@@ -57,7 +57,7 @@ PR #34 is merged. The bounded workspace-artifact slice includes:
 - Bounded retry/cancellation behavior and content-free JSONL traces.
 - XP award only after trusted verification, with replay idempotency.
 
-Issue #35 implementation is in draft PR #53. The branch now contains a private test-only crash seam after real artifact read-back, exact replay recovery with one XP event/receipt, immutable receipt conflict and malformed-receipt preservation tests, bounded `AcceptanceCheckSet` schema v1, and Core Integrity v1.3.0 machine-readable checks. Full planner/reflection conversation resume and independent acceptance adapters for additional typed services remain deferred. Do not call #35 complete until fresh Linux and Windows CI pass, PR #53 merges, `main` is verified, and the issue is closed.
+Issue #35 is complete. PR #53 merged to `main` as `458df81f87ae0b328dbc12c2b2829ca3a0ff75d9`; issue #35 is closed. The merged code contains a private test-only crash seam after real artifact read-back, exact replay recovery with one XP event/receipt, immutable receipt conflict and malformed-receipt preservation tests, bounded `AcceptanceCheckSet` schema v1, and Core Integrity v1.3.0 machine-readable checks. Full planner/reflection conversation resume and independent acceptance adapters for additional typed services remain deferred.
 
 ### Stage 2 — Persistent memory
 
@@ -103,24 +103,24 @@ CI evidence:
 
 The receipt digest is tamper-evident integrity metadata, not a digital signature against a local actor with write access to the executable root. Automatic conversation capture and memory context injection remain disabled.
 
-## 3. Active implementation — Issue #35 / PR #53
+## 3. Completed implementation — Issue #35 / PR #53
 
-**PR:** https://github.com/bjo163/rocksoul/pull/53 (ready for review; not merged)  
-**Issue:** https://github.com/bjo163/rocksoul/issues/35 (open)  
-**Base SHA:** `b76bf36740056e41933f8510c22a8376f49d997a`  
-**Latest branch head at this checkpoint:** `937b986fb54a0db82b3e3a2ee8519aaeee1fa2ad`  
-**Final CI:** [#42043396826](https://github.com/bjo163/rocksoul/actions/runs/42043396826) — all Linux and Windows jobs passed on source head `8a0876fe9a3020477f52de5bab7451754acc8f62`. Linux: formatting, Clippy, 108 tests, Core Integrity 23/23 and memory retrieval (precision@2 1.000, recall@2 1.000). Windows: release build, 107 tests, installer/portable packaging, clean portable smoke, installer install/init/uninstall-preservation smoke, and artifact uploads passed. The final `937b986f` branch commit only updates task-plan validation evidence; it does not change source code.
+**PR:** https://github.com/bjo163/rocksoul/pull/53 (merged)  
+**Issue:** https://github.com/bjo163/rocksoul/issues/35 (closed)  
+**Merge SHA:** `458df81f87ae0b328dbc12c2b2829ca3a0ff75d9`  
+**Validated PR head:** `c9c605d6896930e5a36f30bb8d3fbe2ecfdd5484`  
+**Final CI:** [#42044132321](https://github.com/bjo163/rocksoul/actions/runs/42044132321) — all Linux and Windows jobs passed on validated PR head `c9c605d6896930e5a36f30bb8d3fbe2ecfdd5484`. Linux: formatting, Clippy, 108 tests, Core Integrity 23/23 and memory retrieval (precision@2 1.000, recall@2 1.000). Windows: release build, 107 tests, installer/portable packaging, clean portable smoke, installer install/init/uninstall-preservation smoke, and artifact uploads passed. Squash merge verified on main as `458df81f87ae0b328dbc12c2b2829ca3a0ff75d9`; issue #35 closed.
 
 Earlier CI diagnosis: run #42012045477 found a formatting issue, which was fixed. Run #42042937489 passed Linux but exposed a Windows-only collision in the existing memory v1 migration test: the helper named temporary roots with PID + timestamp, and Windows clock precision allowed parallel tests to reuse a path. `src/memory.rs` now adds a per-process atomic sequence to guarantee unique test roots. The final Windows run #42043396826 passed after that fix.
 
-### Implemented on the PR branch (not yet accepted by main)
+### Merged implementation
 
 - `src/commands.rs`: shared workspace completion boundary, private test-only post-read-back hook, create-only receipt persistence exposed internally to offline evaluation.
 - `src/core.rs`: bounded `AcceptanceCheckSet` schema v1 (max 64 checks, required-check presence, unique/non-empty IDs, bounded values and evidence references, unsupported-version rejection); validation occurs before XP mutation.
 - `src/eval.rs`: Core Integrity v1.3.0 adds machine-readable checks for crash-after-publication/before-XP, replayed XP/receipt/trace idempotency, conflicting immutable receipts, and malformed receipt preservation.
 - `src/commands.rs` tests: process-loss simulation with real temporary filesystem, reload from portable RID store, exact replay, one XP event, stable receipt, conflict and corruption preservation.
 - `src/core.rs` tests: unsupported version, duplicate/blank IDs, missing evidence reference, optional-only/empty set, oversized values/references and more than 64 checks fail before XP.
-- `docs/plans/issue-35/task.md`: audit and implementation phases A–D plus evaluation checks E1–E2 recorded; documentation and final CI/merge tasks remain in progress.
+- `docs/plans/issue-35/task.md`: audit, implementation, evaluation, documentation and CI/merge tasks recorded with final evidence; issue #35 closed.
 
 ### Deferred by design
 
@@ -129,33 +129,36 @@ Earlier CI diagnosis: run #42012045477 found a formatting issue, which was fixed
 - A deterministic temp-file/rename interruption hook; current receipt publication uses create-only temp + sync + hard-link, and no production failpoint or extra abstraction was introduced just for this optional subcase.
 - Power-loss durability guarantees beyond the filesystem operations explicitly performed.
 
-## 4. Documentation included in this update
+## 4. Documentation and next-task handoff
 
 This documentation update reconciles:
-- `docs/AI_HANDOFF.md` — local-agent onboarding, architecture map, mandatory workflow, build/test commands, safety invariants, active PR state, next-task selection and known deferred work.
+- `docs/AI_HANDOFF.md` — local-agent onboarding, architecture map, mandatory workflow, build/test commands, safety invariants, completed PR state, next-task selection and known deferred work.
 - `docs/PROGRESS.md` — this progress snapshot.
-- `docs/plans/issue-35/` — execution specification, design notes, small autonomous task breakdown, and agent safety rules for the next issue.
+- `docs/plans/issue-35/` — completed execution specification, design notes, task breakdown, and agent safety rules.
+- `docs/plans/issue-9/` — next TUI completion specification, design boundaries, autonomous task breakdown, and local-agent rules.
 - `docs/ARCHITECTURE.md` — describes the merged schema v4 baseline and task-bound receipt policy.
 - `docs/COGNITIVE_CORE.md` — distinguishes model-only planner/reflection from trusted verification and documents the merged claim-provenance gate.
 - `docs/ROADMAP.md` — marks schema v4 claim provenance and task-bound receipt gating complete while keeping context injection gated.
 - `README.md` — links to the handoff and progress documents.
 
-This progress snapshot was refreshed after PR #51 merged. Keep it synchronized with future merges, CI evidence, issue state and the next selected task.
+This progress snapshot was refreshed after PR #53 merged and `main` was verified. Keep it synchronized with future merges, CI evidence, issue state and the next selected task.
 
 ## 5. Next execution order
 
 ### Immediate
 
-1. Continue the existing [PR #53](https://github.com/bjo163/rocksoul/pull/53); do not create a duplicate branch or PR.
-2. Re-run full CI on the latest PR head after the formatting and evaluation/documentation commits.
-3. Fix any Linux/Windows failures, inspect the full diff and review threads, and verify Core Integrity v1.3.0 reports all new checks.
-4. Update the PR body with exact current head and CI evidence; mark ready only after checks pass.
-5. Merge to `main`, verify the resulting main SHA, then close issue #35 with the evidence.
-6. Keep arbitrary shell, unrestricted tools, automatic memory capture and memory context injection out of scope.
+1. Start [Issue #9 — Cognitive Cockpit completion](https://github.com/bjo163/rocksoul/issues/9) from the latest `main`; use [spec](plans/issue-9/spec.md), [design](plans/issue-9/design.md), [task list](plans/issue-9/task.md), and [agent rules](plans/issue-9/rules.md).
+2. Audit the existing eight-screen TUI before editing; preserve the one-core/read-only boundary and the current terminal lifecycle.
+3. Implement real read models for persisted task trace, memory browsing, diagnostics/evaluation report, and truthful Brains/Tools status.
+4. Add portable presentation preferences, accessibility/responsive tests, and correct the stale memory store path shown in the cockpit.
+5. Run Linux and Windows CI, update docs, merge through a PR to main, verify main and close issue #9.
+6. Keep arbitrary shell, generic tool execution, automatic memory capture and memory context injection out of scope.
 
-### Current task: finish PR #53 / issue #35
+### Current next task: #9 — Cognitive Cockpit completion
 
-Issue #35 is already in progress through PR #53. Stage 2 umbrella issue #36 and its work packages #37–#41 plus follow-up #44 are closed. Issue #13 remains the owner of the AGI-oriented evaluation harness; do not create a duplicate evaluation subsystem. Do not start automatic memory injection until a separate policy, privacy/contamination test matrix, forgetting/deletion behavior and regression gates are reviewed.
+Issue #9 is the next selected implementation task. The initial TUI increment already exists but its task timeline, memory browser, diagnostics/evaluation view, persisted preferences and test coverage remain incomplete. The detailed plan is in `docs/plans/issue-9/`.
+
+Issue #13 owns the broader AGI-oriented evaluation harness and explicitly depends on #4, #5, #8 and #9. Do not start or duplicate that harness before its dependencies are audited/closed. Issue #8's catalogue is implemented but still requires independent religious/language review; do not mark it complete through AI self-review. Stage 2 umbrella #36 and work packages #37–#41 plus follow-up #44 are closed. Do not start automatic memory injection until separate policy, privacy/contamination, forgetting/deletion and regression gates are reviewed.
 
 ## 6. Release and merge gates
 
