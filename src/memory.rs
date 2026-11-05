@@ -72,6 +72,12 @@ pub struct MemoryRecord {
     pub retention_policy_version: u16,
     #[serde(default)]
     pub retention_policy: RetentionPolicy,
+    #[serde(default)]
+    pub source_turn_ref: Option<String>,
+    #[serde(default)]
+    pub approval_id: Option<String>,
+    #[serde(default)]
+    pub proposal_fingerprint: Option<String>,
 }
 
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -126,6 +132,7 @@ impl MemoryStore {
             || backup_path(&path).exists()
             || legacy.exists()
             || legacy_v2_store_path(directory).exists()
+            || legacy_v3_store_path(directory).exists()
         {
             return Ok((Self::load_unlocked(directory)?, false));
         }
@@ -329,6 +336,9 @@ impl MemoryStore {
             } else {
                 RetentionPolicy::KeepUntilDeleted
             },
+            source_turn_ref: None,
+            approval_id: None,
+            proposal_fingerprint: None,
         };
         self.records.push(record);
         self.revision = self.revision.saturating_add(1);
@@ -510,7 +520,8 @@ impl MemoryStore {
         let existed = path.is_file()
             || backup_path(&path).is_file()
             || legacy_store_path(directory).is_file()
-            || legacy_v2_store_path(directory).is_file();
+            || legacy_v2_store_path(directory).is_file()
+            || legacy_v3_store_path(directory).is_file();
         let mut store = Self::load_unlocked(directory)?;
         let previous = store.clone();
         let output = operation(&mut store)?;
