@@ -313,7 +313,7 @@ For every new task, write/update an execution plan with:
 ### Remaining work — continue in this order
 
 1. Add memory focused UI tests for empty/corrupt stores, search/filter results, expiry and claim states; keep content hidden by default.
-2. Add explicit, privacy-reviewed memory detail reveal only if the existing sensitive-content guard can be reused safely; otherwise keep it deferred and update the acceptance boundary.
+2. Add focused memory UI tests for empty/corrupt stores, search/filter results, expiry and claim states.
 3. Move diagnostics report parsing/redaction into typed snapshot projections and test missing, corrupt and failed reports.
 4. Implement versioned portable presentation preferences without overwriting unknown future schemas; actually apply theme, density and locale across all screens.
 5. Add TestBackend coverage for all eight screens, navigation, empty/error states, focus and 80×24/narrow layouts.

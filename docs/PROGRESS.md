@@ -35,7 +35,7 @@ This is the durable progress snapshot for maintainers and delegated/local AI age
 Delivered on the PR branch:
 - Bounded newest-first task trace reader and TUI event history with selection/detail navigation.
 - Control-character-safe, content-free task metadata presentation.
-- Metadata-only memory browser with local search, kind/claim filters and exact source filter.
+- Memory browser with local search, kind/claim filters and exact source filter; metadata is the default, while explicit Enter-to-reveal uses the shared sensitive-content guard.
 - Created/expiry metadata and schema-v4 memory path correction.
 - Evaluation report loaded once per snapshot rather than from the render function, including suite/version/pass state and failed check IDs.
 - Focused tests for bounded trace reading, sanitization, memory filter cycling and metadata clipping.

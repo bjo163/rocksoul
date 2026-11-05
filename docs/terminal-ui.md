@@ -243,7 +243,7 @@ The following behaviors are implemented on `feat/tui-cockpit-completion` and rem
 - Task Monitor reads the existing `logs/task-trace.v1.jsonl` records through a bounded reader (maximum 1 MiB and 12 newest events).
 - Events are selectable with Up/Down; the selected event shows only event type, operation ID, target filename and timestamp. Trace detail/body is never rendered.
 - Empty traces show a truthful empty state. Malformed, unsupported or inaccessible traces show a sanitized unavailable state.
-- Memory browser lists bounded metadata (kind, claim status, source, approval, creation and expiry); content stays hidden.
+- Memory browser lists bounded metadata (kind, claim status, source, approval, creation and expiry); Enter explicitly reveals selected content only after the shared sensitive-content guard approves it.
 - Memory search is local. Kind and claim filters are keyboard-controlled; exact source filtering uses `source:<value>`.
 - Memory path display uses `store.v4.json`.
 - Latest Core Integrity report is read into the refreshable snapshot, not loaded during rendering. Missing and unreadable reports are distinguished; failed check IDs are shown.
