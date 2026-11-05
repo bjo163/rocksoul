@@ -475,6 +475,12 @@ fn load_unlocked(directory: &Path) -> Result<ProposalStore> {
     let store: ProposalStore = serde_json::from_slice(&bytes)
         .with_context(|| format!("invalid memory proposal store {}", path.display()))?;
     store.validate()?;
+    let backup = directory.join(format!("{PROPOSAL_FILE}.bak"));
+    if backup.exists() {
+        fs::remove_file(&backup).with_context(|| {
+            format!("could not remove stale proposal backup {}", backup.display())
+        })?;
+    }
     Ok(store)
 }
 
@@ -518,6 +524,11 @@ fn save_unlocked(directory: &Path, store: &ProposalStore) -> Result<()> {
         let _ = fs::remove_file(&temporary);
         return Err(error)
             .with_context(|| format!("could not publish proposal store {}", path.display()));
+    }
+    if backup.exists() {
+        fs::remove_file(&backup).with_context(|| {
+            format!("could not scrub stale proposal backup {}", backup.display())
+        })?;
     }
     Ok(())
 }
@@ -649,6 +660,10 @@ mod tests {
         let audit = list(&directory).unwrap();
         assert!(audit[0].content.is_empty(), "approved proposal payload must be scrubbed");
         assert!(audit[0].tags.is_empty());
+        assert!(
+            !directory.join("proposals.v1.json.bak").exists(),
+            "old proposal backup must not retain the approved candidate payload"
+        );
         assert!(approve(&directory, &proposal.id, &proposal.approval_phrase(), 102).is_err());
         fs::remove_dir_all(directory).unwrap();
     }
