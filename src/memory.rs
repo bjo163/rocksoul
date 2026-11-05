@@ -1,5 +1,5 @@
 use std::{
-    collections::HashSet,
+    collections::{HashMap, HashSet},
     fs,
     fs::{File, OpenOptions},
     io::ErrorKind,
@@ -13,10 +13,12 @@ use fs2::FileExt;
 use anyhow::{Context, Result, anyhow, bail};
 use clap::ValueEnum;
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 
-pub const MEMORY_SCHEMA_VERSION: u16 = 3;
+pub const MEMORY_SCHEMA_VERSION: u16 = 4;
 pub const RETENTION_POLICY_VERSION: u16 = 1;
-const STORE_FILE: &str = "store.v3.json";
+const STORE_FILE: &str = "store.v4.json";
+const LEGACY_V3_STORE_FILE: &str = "store.v3.json";
 const LEGACY_V2_STORE_FILE: &str = "store.v2.json";
 const LEGACY_STORE_FILE: &str = "store.v1.json";
 const FORGETTING_LEDGER_FILE: &str = "forgetting.jsonl";
