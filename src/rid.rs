@@ -167,6 +167,7 @@ pub struct StatRecord {
     pub evidence_refs: Vec<String>,
     pub last_evaluated_at_unix: Option<u64>,
     pub rubric_version: Option<String>,
+    #[serde(default)]
     pub evaluator_id: Option<String>,
 }
 
