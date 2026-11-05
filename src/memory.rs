@@ -442,7 +442,7 @@ mod tests {
     fn migrates_v1_store_to_v2_without_modifying_legacy_file() {
         let directory = temp_dir();
         fs::create_dir_all(&directory).unwrap();
-        let legacy = MemoryStore {
+        let mut legacy = MemoryStore {
             schema_version: 1,
             revision: 7,
             ..MemoryStore::default()
