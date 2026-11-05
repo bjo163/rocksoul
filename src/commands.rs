@@ -1005,8 +1005,13 @@ async fn run_memory(command: MemoryCommand) -> Result<()> {
                             );
                         }
                     }
-                    MemoryCommand::Export => {
-                        unreachable!("export is handled outside the transaction")
+                    MemoryCommand::Export
+                    | MemoryCommand::Propose { .. }
+                    | MemoryCommand::Proposals
+                    | MemoryCommand::Approve { .. }
+                    | MemoryCommand::Deny { .. }
+                    | MemoryCommand::CancelProposal { .. } => {
+                        unreachable!("proposal and export commands are handled outside the memory transaction")
                     }
                 }
                 Ok(())
