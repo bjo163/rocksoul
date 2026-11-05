@@ -796,66 +796,68 @@ pub fn memory_status() -> Result<()> {
 
 fn run_memory(command: MemoryCommand) -> Result<()> {
     let paths = AppPaths::discover()?;
-    let (mut store, _) = MemoryStore::initialize(&paths.memory_dir)?;
     match command {
-        MemoryCommand::Add {
-            kind,
-            content,
-            tags,
-            expires_in_hours,
-        } => {
-            if expires_in_hours.is_some() && kind != MemoryKind::Working {
-                anyhow::bail!("--expires-in-hours is only valid for working memory");
-            }
-            let now = now_unix()?;
-            let expires_at = expires_in_hours
-                .map(|hours| {
-                    if hours == 0 {
-                        anyhow::bail!("--expires-in-hours must be greater than zero");
-                    }
-                    let seconds = hours
-                        .checked_mul(3_600)
-                        .context("working-memory expiry is too large")?;
-                    now.checked_add(seconds)
-                        .context("working-memory expiry timestamp overflow")
-                })
-                .transpose()?;
-            let id = store.add_user_entry(kind, content, tags, expires_at, now)?;
-            store.save(&paths.memory_dir)?;
-            println!("Memory saved with explicit user approval.");
-            println!("ID: {id}");
-            println!(
-                "Store: {}",
-                paths.memory_dir.join("store.v1.json").display()
-            );
-        }
-        MemoryCommand::List => {
-            print_memory_records(&store.active_records(now_unix()?), "Rocksoul memory");
-            println!("{} total records", store.records.len());
-        }
-        MemoryCommand::Search { query } => {
-            let matches = store.search(&query, now_unix()?);
-            print_memory_records(&matches, "Memory search");
-            println!("{} matching records", matches.len());
-        }
-        MemoryCommand::Delete { id } => {
-            if !store.delete(&id) {
-                anyhow::bail!("memory record not found: {id}");
-            }
-            store.save(&paths.memory_dir)?;
-            println!("Deleted memory record {id}.");
-        }
-        MemoryCommand::Clear { confirm } => {
-            if !confirm {
-                anyhow::bail!("this permanently deletes every memory; rerun with --confirm");
-            }
-            store.clear();
-            store.save(&paths.memory_dir)?;
-            println!("All memory records permanently deleted.");
-        }
         MemoryCommand::Export => {
+            let store = MemoryStore::load(&paths.memory_dir)?;
             let path = store.export(&paths.memory_dir)?;
             println!("Memory exported to {}", path.display());
+        }
+        command => {
+            MemoryStore::transact(&paths.memory_dir, |store| {
+                match command {
+                    MemoryCommand::Add {
+                        kind,
+                        content,
+                        tags,
+                        expires_in_hours,
+                    } => {
+                        if expires_in_hours.is_some() && kind != MemoryKind::Working {
+                            anyhow::bail!("--expires-in-hours is only valid for working memory");
+                        }
+                        let now = now_unix()?;
+                        let expires_at = expires_in_hours
+                            .map(|hours| {
+                                if hours == 0 {
+                                    anyhow::bail!("--expires-in-hours must be greater than zero");
+                                }
+                                let seconds = hours
+                                    .checked_mul(3_600)
+                                    .context("working-memory expiry is too large")?;
+                                now.checked_add(seconds)
+                                    .context("working-memory expiry timestamp overflow")
+                            })
+                            .transpose()?;
+                        let id = store.add_user_entry(kind, content, tags, expires_at, now)?;
+                        println!("Memory saved with explicit user approval.");
+                        println!("ID: {id}");
+                        println!("Store: {}", paths.memory_dir.join("store.v2.json").display());
+                    }
+                    MemoryCommand::List => {
+                        print_memory_records(&store.active_records(now_unix()?), "Rocksoul memory");
+                        println!("{} total records", store.records.len());
+                    }
+                    MemoryCommand::Search { query } => {
+                        let matches = store.search(&query, now_unix()?);
+                        print_memory_records(&matches, "Memory search");
+                        println!("{} matching records", matches.len());
+                    }
+                    MemoryCommand::Delete { id } => {
+                        if !store.delete(&id) {
+                            anyhow::bail!("memory record not found: {id}");
+                        }
+                        println!("Deleted memory record {id}.");
+                    }
+                    MemoryCommand::Clear { confirm } => {
+                        if !confirm {
+                            anyhow::bail!("this permanently deletes every memory; rerun with --confirm");
+                        }
+                        store.clear();
+                        println!("All memory records permanently deleted.");
+                    }
+                    MemoryCommand::Export => unreachable!("export is handled outside the transaction"),
+                }
+                Ok(())
+            })?;
         }
     }
     Ok(())
