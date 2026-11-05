@@ -126,7 +126,7 @@ impl RidCatalogue {
             "unexpected universal RID catalogue identifier"
         );
         ensure!(
-            self.catalogue_version == "2.3.2",
+            self.catalogue_version == "2.3.3",
             "unexpected universal RID catalogue version"
         );
         ensure!(
@@ -142,8 +142,8 @@ impl RidCatalogue {
             "RID catalogue must contain exactly 99 stats"
         );
         ensure!(
-            self.overlap_pairs.len() == 149,
-            "RID catalogue must contain exactly 149 unique overlap pairs"
+            self.overlap_pairs.len() == 161,
+            "RID catalogue must contain exactly 161 unique overlap pairs"
         );
         ensure!(
             self.domain_stat_relationship.relationship == "one_to_one"
@@ -478,9 +478,9 @@ mod tests {
     #[test]
     fn overlap_graph_counts_and_domain_specific_rules_are_pinned() {
         let catalogue = RidCatalogue::embedded().unwrap();
-        assert_eq!(catalogue.overlap_policy.directed_edge_count, 298);
-        assert_eq!(catalogue.overlap_policy.unique_pair_count, 149);
-        assert_eq!(catalogue.overlap_pairs.len(), 149);
+        assert_eq!(catalogue.overlap_policy.directed_edge_count, 322);
+        assert_eq!(catalogue.overlap_policy.unique_pair_count, 161);
+        assert_eq!(catalogue.overlap_pairs.len(), 161);
         assert!(catalogue.overlap_pairs.iter().all(|pair| {
             pair.contrast_rule
                 .contains(pair.measurement_target_a.as_str())
