@@ -236,7 +236,7 @@ The initial increment does not yet implement persistence for UI preferences, rea
 6. Brains / Memory / Tools: read-only inspectors with controlled action intents.
 7. Command palette and polish: search, confirmation flow, accessibility, Windows Terminal validation, and documentation.
 
-## 11.1 Current incremental delivery — draft PR #63
+## 11.1 Current incremental delivery — current draft PR
 
 The following behaviors are implemented on `feat/tui-cockpit-completion` and remain pending merge:
 
@@ -250,7 +250,7 @@ The following behaviors are implemented on `feat/tui-cockpit-completion` and rem
 
 The PR does not add a live task queue, tool registry, model registry, memory mutation actions, automatic memory capture, or memory context injection. These remain unavailable or explicitly deferred.
 
-Validation evidence and remaining tasks are tracked in [the Issue #9 execution plan](plans/issue-9/task.md) and [draft PR #63](https://github.com/bjo163/rocksoul/pull/63). Do not treat branch CI as a main release until the PR is merged.
+Validation evidence and remaining tasks are tracked in [the Issue #9 execution plan](plans/issue-9/task.md) and [current draft PR](https://github.com/bjo163/rocksoul/pulls). Do not treat branch CI as a main release until the PR is merged.
 
 ## 12. Acceptance criteria
 

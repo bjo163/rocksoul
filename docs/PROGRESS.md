@@ -169,7 +169,7 @@ This progress snapshot was refreshed after PR #53 merged and `main` was verified
 
 ### Immediate
 
-1. Continue the active [Issue #9 — Cognitive Cockpit completion](https://github.com/bjo163/rocksoul/issues/9) work in [draft PR #63](https://github.com/bjo163/rocksoul/pull/63); refresh its head and CI before making changes.
+1. Continue the active [Issue #9 — Cognitive Cockpit completion](https://github.com/bjo163/rocksoul/issues/9) work in [active draft PR](https://github.com/bjo163/rocksoul/pulls); refresh its head and CI before making changes.
 2. Audit the existing eight-screen TUI before editing; preserve the one-core/read-only boundary and the current terminal lifecycle.
 3. Implement real read models for persisted task trace, memory browsing, diagnostics/evaluation report, and truthful Brains/Tools status.
 4. Add portable presentation preferences, accessibility/responsive tests, and correct the stale memory store path shown in the cockpit.
@@ -178,7 +178,7 @@ This progress snapshot was refreshed after PR #53 merged and `main` was verified
 
 ### Current next task: #9 — Cognitive Cockpit completion
 
-Issue #9 is actively implemented in draft PR #63. Typed task/memory snapshot projections, guarded memory detail, diagnostics/evaluation reporting, portable preferences, semantic dark/light palettes, density, locale and responsive TestBackend coverage are on the branch but not yet merged. Final-head CI and merge gates remain open. The detailed plan is in `docs/plans/issue-9/`.
+Issue #9 is actively implemented in active draft PR. Typed task/memory snapshot projections, guarded memory detail, diagnostics/evaluation reporting, portable preferences, semantic dark/light palettes, density, locale and responsive TestBackend coverage are on the branch but not yet merged. Final-head CI and merge gates remain open. The detailed plan is in `docs/plans/issue-9/`.
 
 Issue #13 owns the broader AGI-oriented evaluation harness and explicitly depends on #4, #5, #8 and #9. Do not start or duplicate that harness before its dependencies are audited/closed. Issue #8's catalogue is implemented but still requires independent religious/language review; do not mark it complete through AI self-review. Stage 2 umbrella #36 and work packages #37–#41 plus follow-up #44 are closed. Do not start automatic memory injection until separate policy, privacy/contamination, forgetting/deletion and regression gates are reviewed.
 
