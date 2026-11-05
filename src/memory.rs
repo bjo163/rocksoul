@@ -480,8 +480,11 @@ mod tests {
     use std::{
         fs,
         path::PathBuf,
+        process::Command,
         time::{SystemTime, UNIX_EPOCH},
     };
+
+    use fs2::FileExt;
 
     use super::{
         MEMORY_SCHEMA_VERSION, MemoryKind, MemoryStore, backup_path, legacy_store_path, store_path,
@@ -561,6 +564,59 @@ mod tests {
         assert_eq!(recovered, previous);
         let on_disk = MemoryStore::load(&directory).unwrap();
         assert_eq!(on_disk, previous);
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn transaction_persists_only_committed_revision_changes() {
+        let directory = temp_dir();
+        MemoryStore::transact(&directory, |store| {
+            store.add_user_entry(
+                MemoryKind::Semantic,
+                "committed under lock".into(),
+                vec![],
+                None,
+                20,
+            )?;
+            Ok(())
+        })
+        .unwrap();
+
+        let loaded = MemoryStore::load(&directory).unwrap();
+        assert_eq!(loaded.revision, 1);
+        assert_eq!(loaded.records.len(), 1);
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn cross_process_lock_contention_has_bounded_timeout() {
+        if let Ok(directory) = std::env::var("ROCKSOUL_LOCK_CHILD_DIR") {
+            let error = MemoryStore::load(PathBuf::from(directory).as_path()).unwrap_err();
+            assert!(format!("{error:#}").contains("memory store is busy"));
+            return;
+        }
+
+        let directory = temp_dir();
+        fs::create_dir_all(&directory).unwrap();
+        let lock_path = directory.join(super::LOCK_FILE);
+        let held = fs::OpenOptions::new()
+            .create(true)
+            .read(true)
+            .write(true)
+            .open(&lock_path)
+            .unwrap();
+        held.try_lock_exclusive().unwrap();
+
+        let status = Command::new(std::env::current_exe().unwrap())
+            .arg("--exact")
+            .arg("memory::tests::cross_process_lock_contention_has_bounded_timeout")
+            .arg("--nocapture")
+            .env("ROCKSOUL_LOCK_CHILD_DIR", &directory)
+            .status()
+            .unwrap();
+        assert!(status.success(), "child process should report bounded lock timeout");
+        FileExt::unlock(&held).unwrap();
+        assert!(MemoryStore::load(&directory).is_ok(), "lock should be released after owner unlock");
         fs::remove_dir_all(directory).unwrap();
     }
 
