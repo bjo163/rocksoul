@@ -59,7 +59,7 @@ CI runs Rust unit tests, the offline Core Integrity evaluation, and Windows rele
 
 RID Universal 99 v2.3.0 is the canonical measurement registry. Future adapters must emit explicit `rid_domain:NN` and `rid_stat:NN` references and preserve all 99 dimensions. Never create a second competing 99-stat taxonomy or aggregate scores into a replacement family score.
 
-The ten families below are benchmark coverage/navigation tags only: perception, generation, attention, learning, memory, reasoning, metacognition, executive functions, problem solving, and social cognition. They are not parent domains and are not additional RID scores. Cross-cutting tags include safety, robustness, calibration, recovery, retention, transfer, long-horizon consistency, latency, tokens, cost, and resource usage; tags describe test coverage, not new capability dimensions.
+The ten families are benchmark coverage/navigation tags only: perception, generation, attention, learning, memory, reasoning, metacognition, executive functions, problem solving, and social cognition. They are not parent domains and are not additional RID scores. Cross-cutting tags include safety, robustness, calibration, recovery, retention, transfer, long-horizon consistency, latency, tokens, cost, and resource usage; tags describe test coverage, not new capability dimensions.
 
 One task may score multiple RID dimensions only when it yields distinct observable outcomes, separate rubric judgments, and separate evidence references. The 137-pair contrast registry is authoritative for adjacent-construct separation. If the outcomes cannot be separated, leave the affected dimension(s) unrated rather than double-counting.
 
