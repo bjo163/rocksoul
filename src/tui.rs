@@ -1497,12 +1497,20 @@ fn rid_detail(
         Line::from(format!("Exclude: {}", entry.exclusion_criteria)),
         Line::from(format!(
             "Overlap guards: {}",
-            if entry.overlap_with.is_empty() { "none".to_owned() } else { entry.overlap_with.join(", ") }
+            if entry.overlap_with.is_empty() {
+                "none".to_owned()
+            } else {
+                entry.overlap_with.join(", ")
+            }
         )),
         Line::from(format!("Boundary: {}", entry.separation_rule)),
         Line::from(format!(
             "Minimum samples: {}",
-            if (56..=66).contains(&entry.id) { 30 } else { 20 }
+            if (56..=66).contains(&entry.id) {
+                30
+            } else {
+                20
+            }
         )),
         Line::from("One evidence outcome must not be double-counted across stats."),
     ];
