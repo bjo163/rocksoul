@@ -892,10 +892,20 @@ mod tests {
             retention_policy: RetentionPolicy::ExpireAt,
         });
         let mut legacy_json = serde_json::to_value(&legacy).unwrap();
-        legacy_json["records"][0].as_object_mut().unwrap().remove("retention_policy_version");
-        legacy_json["records"][0].as_object_mut().unwrap().remove("retention_policy");
+        legacy_json["records"][0]
+            .as_object_mut()
+            .unwrap()
+            .remove("retention_policy_version");
+        legacy_json["records"][0]
+            .as_object_mut()
+            .unwrap()
+            .remove("retention_policy");
         let legacy_path = legacy_v2_store_path(&directory);
-        fs::write(&legacy_path, serde_json::to_vec_pretty(&legacy_json).unwrap()).unwrap();
+        fs::write(
+            &legacy_path,
+            serde_json::to_vec_pretty(&legacy_json).unwrap(),
+        )
+        .unwrap();
 
         let migrated = MemoryStore::load(&directory).unwrap();
         assert_eq!(migrated.schema_version, MEMORY_SCHEMA_VERSION);
@@ -925,7 +935,8 @@ mod tests {
         MemoryStore::transact(&directory, |store| {
             assert!(store.delete(&id));
             Ok(())
-        }).unwrap();
+        })
+        .unwrap();
         assert!(directory.join("forgetting.jsonl").is_file());
         assert!(!backup_path(&store_path(&directory)).exists());
 
@@ -951,20 +962,23 @@ mod tests {
                 10,
             )?;
             Ok(())
-        }).unwrap();
+        })
+        .unwrap();
         let id = MemoryStore::load(&directory).unwrap().records[0].id.clone();
 
         MemoryStore::transact(&directory, |store| {
             assert_eq!(store.expired_ids(20), vec![id.clone()]);
             assert_eq!(store.records.len(), 1);
             Ok(())
-        }).unwrap();
+        })
+        .unwrap();
         assert_eq!(MemoryStore::load(&directory).unwrap().records.len(), 1);
 
         MemoryStore::transact(&directory, |store| {
             assert_eq!(store.prune_expired(20), vec![id.clone()]);
             Ok(())
-        }).unwrap();
+        })
+        .unwrap();
         assert!(MemoryStore::load(&directory).unwrap().records.is_empty());
         let ledger = fs::read_to_string(directory.join("forgetting.jsonl")).unwrap();
         assert!(ledger.contains("retention_expired"));
@@ -1270,16 +1284,17 @@ mod tests {
                 10,
             )?;
             Ok(())
-        }).unwrap();
+        })
+        .unwrap();
         MemoryStore::transact(&directory, |store| {
             assert!(store.delete(&id));
             Ok(())
-        }).unwrap();
+        })
+        .unwrap();
 
         let (store, _) = MemoryStore::initialize(&directory).unwrap();
         let path = store.export(&directory).unwrap();
-        let export: serde_json::Value =
-            serde_json::from_slice(&fs::read(path).unwrap()).unwrap();
+        let export: serde_json::Value = serde_json::from_slice(&fs::read(path).unwrap()).unwrap();
         assert!(export["records"].as_array().unwrap().is_empty());
         assert!(
             export["forgotten_ids"]
