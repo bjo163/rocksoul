@@ -270,7 +270,7 @@ impl VerificationReceipt {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum VerificationOutcome {
     Verified {
-        receipt: VerificationReceipt,
+        receipt: Box<VerificationReceipt>,
         xp_record: XpRecordOutcome,
     },
     Rejected {
@@ -377,7 +377,7 @@ pub fn verify_turn_and_award_xp(
     .expect("verification receipt serialization cannot fail");
     let receipt_hash = format!("{:x}", Sha256::digest(receipt_hash_payload));
     Ok(VerificationOutcome::Verified {
-        receipt: VerificationReceipt {
+        receipt: Box::new(VerificationReceipt {
             verification_id: request.verification_id,
             task_id: request.task_id,
             required_checks_passed: passed_required,
@@ -392,7 +392,7 @@ pub fn verify_turn_and_award_xp(
             evidence_hash,
             receipt_hash,
             outcome,
-        },
+        }),
         xp_record,
     })
 }
