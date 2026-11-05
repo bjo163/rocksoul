@@ -2,7 +2,7 @@ use std::{collections::HashSet, fmt};
 
 use serde::{Deserialize, Serialize};
 
-pub const RID_SCHEMA_VERSION: u16 = 1;
+pub const RID_SCHEMA_VERSION: u16 = 2;
 pub const LEVEL_CURVE_VERSION: u16 = 1;
 pub const STAT_COUNT: usize = 99;
 pub const MAX_XP_PER_EVENT: u32 = 100;
@@ -25,7 +25,7 @@ impl StatId {
     }
 
     pub fn catalogue_entry_id(self) -> String {
-        format!("asmaul_husna:{:02}", self.0)
+        format!("rid_stat:{:02}", self.0)
     }
 }
 
@@ -263,12 +263,22 @@ impl StatRecord {
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+pub struct LegacyStatArchive {
+    pub source_schema_version: u16,
+    pub source_catalogue_id: String,
+    pub migrated_at_unix: u64,
+    pub records: Vec<serde_json::Value>,
+}
+
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct RuhProfile {
     schema_version: u16,
     level_curve_version: u16,
     identity: RuhIdentity,
     xp_ledger: XpLedger,
     stats: Vec<StatRecord>,
+    #[serde(default)]
+    legacy_stat_archive: Option<LegacyStatArchive>,
 }
 
 impl RuhProfile {
@@ -281,7 +291,20 @@ impl RuhProfile {
             stats: (1..=STAT_COUNT as u8)
                 .map(|value| StatRecord::unrated(StatId(value)))
                 .collect(),
+            legacy_stat_archive: None,
         };
+        profile.validate()?;
+        Ok(profile)
+    }
+
+    pub(crate) fn migrate_legacy(
+        identity: RuhIdentity,
+        xp_ledger: XpLedger,
+        archive: LegacyStatArchive,
+    ) -> Result<Self, RidError> {
+        let mut profile = Self::new(identity)?;
+        profile.xp_ledger = xp_ledger;
+        profile.legacy_stat_archive = Some(archive);
         profile.validate()?;
         Ok(profile)
     }
@@ -333,8 +356,7 @@ impl RuhProfile {
         let catalogue = crate::rid_catalogue::RidCatalogue::embedded()
             .map_err(|error| RidError(error.to_string()))?;
         let minimum_samples = catalogue
-            .by_slot(id.value())
-            .map(|entry| entry.technical_stat.minimum_samples)
+            .minimum_samples_for_slot(id.value())
             .ok_or_else(|| RidError(format!("unknown stat ID {}", id.value())))?;
 
         let stat = self
@@ -356,6 +378,24 @@ impl RuhProfile {
             return Err(RidError("invalid RID identity".into()));
         }
         self.xp_ledger.validate()?;
+        if let Some(archive) = &self.legacy_stat_archive {
+            if archive.source_schema_version != 1
+                || archive.source_catalogue_id != "rocksoul.rid.asmaul_husna_inspired.v1"
+                || archive.migrated_at_unix == 0
+                || archive.records.len() != STAT_COUNT
+            {
+                return Err(RidError("invalid legacy stat archive".into()));
+            }
+            for (index, record) in archive.records.iter().enumerate() {
+                let expected = index as u64 + 1;
+                if record.get("id").and_then(serde_json::Value::as_u64) != Some(expected)
+                    || record.get("catalogue_entry_id").and_then(serde_json::Value::as_str)
+                        != Some(&format!("asmaul_husna:{expected:02}"))
+                {
+                    return Err(RidError(format!("legacy stat archive slot mismatch at {expected}")));
+                }
+            }
+        }
         let catalogue = crate::rid_catalogue::RidCatalogue::embedded()
             .map_err(|error| RidError(error.to_string()))?;
         if self.stats.len() != STAT_COUNT {
@@ -366,8 +406,7 @@ impl RuhProfile {
             stat.validate()?;
             if let Some(sample_count) = stat.sample_count {
                 let minimum_samples = catalogue
-                    .by_slot(stat.id.value())
-                    .map(|entry| entry.technical_stat.minimum_samples)
+                    .minimum_samples_for_slot(stat.id.value())
                     .ok_or_else(|| {
                         RidError(format!("missing catalogue slot {}", stat.id.value()))
                     })?;
@@ -448,8 +487,8 @@ mod tests {
         let profile = profile();
         assert_eq!(profile.stats().len(), STAT_COUNT);
         assert!(profile.stats().iter().all(|stat| stat.score.is_none()));
-        assert_eq!(profile.stats()[0].catalogue_entry_id, "asmaul_husna:01");
-        assert_eq!(profile.stats()[98].catalogue_entry_id, "asmaul_husna:99");
+        assert_eq!(profile.stats()[0].catalogue_entry_id, "rid_stat:01");
+        assert_eq!(profile.stats()[98].catalogue_entry_id, "rid_stat:99");
         profile.validate().unwrap();
     }
 
