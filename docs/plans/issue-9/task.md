@@ -17,7 +17,7 @@
 
 The current task branch now includes a bounded persisted task-trace reader and read-only TUI projection, a metadata-only searchable memory browser, the corrected schema-v4 memory path, and a refreshable evaluation-report snapshot. Linux CI has passed for the first implementation slice (111 tests, Clippy, Core Integrity 23/23, memory retrieval precision@2/recall@2 1.000); Windows validation is being repeated against the latest branch head.
 
-The following remain intentionally open: diagnostic parsing/redaction tests for missing configuration and empty registries (E6), final-head fmt/Clippy/tests/Core Integrity/retrieval evaluation (G2), final-head Windows build/installer/portable smoke (G3), full diff audit (G6), PR merge (G7), and main/issue/handoff verification (G8). This is not Issue #9 completion.
+The following remain intentionally open: diagnostic parsing/redaction tests for missing model configuration and empty tool registry (E6), final-head fmt/Clippy/tests/Core Integrity/retrieval evaluation (G2), final-head Windows build/installer/portable smoke (G3), full diff audit (G6), PR merge (G7), and main/issue/handoff verification (G8). This is not Issue #9 completion.
 
 ## Phase A — Audit findings recorded
 
@@ -25,12 +25,12 @@ The initial audit confirms the current TUI has eight screens and two navigation 
 
 ## Phase B — Shared read models and truthful snapshots
 
-- [ ] B1. Add small typed read models for overview, memory metadata, task history, diagnostics and evaluation.
-- [ ] B2. Keep all projections pure where possible and source values only from existing services/stores.
-- [ ] B3. Bound all lists, text previews, filters and query sizes.
-- [ ] B4. Sanitize diagnostics and ensure secrets/credentials never enter UI view models.
+- [x] B1. Add typed snapshot projections for overview state, memory store/metadata, task history, diagnostics and evaluation.
+- [x] B2. Load projections once in Snapshot::load; keep render functions read-only and free of filesystem/store I/O.
+- [x] B3. Bound task trace reads, memory result counts, query length, metadata/content previews and density limits.
+- [x] B4. Sanitize task metadata and RID/report errors; memory detail uses the shared sensitive-content guard and bounded clipping.
 - [x] B5. Correct portable memory path to `store.v4.json`; ensure schema version is shown from loaded data.
-- [ ] B6. Test missing/corrupt/future-version stores and unavailable values.
+- [x] B6. Reuse memory-store corruption/future-schema recovery tests and add preference missing/malformed/future-schema preservation tests.
 
 ## Phase C — Task history / trace screen
 
@@ -54,7 +54,7 @@ The initial audit confirms the current TUI has eight screens and two navigation 
 - [x] E2. Move the latest Core Integrity summary lookup into the refreshable snapshot; never run the suite during render.
 - [x] E3. Show suite/version/pass state and failed check IDs; distinguish not-run from unreadable reports. The current report contract does not expose a tested commit SHA.
 - [x] E4. Ensure Brains and Tools show only the known legacy adapter and empty tool registry; unknown specialist roles remain unassigned.
-- [ ] E5. Remove stale/fake status labels; use explicit “not implemented”, “not configured”, “not run” or “unavailable”.
+- [x] E5. Replace misleading active-task and automatic-specialist labels with explicit not-implemented/unassigned states.
 - [ ] E6. Test report parsing, invalid JSON, redaction, missing config and empty registries.
 
 ## Phase F — Preferences, accessibility and responsive behavior
