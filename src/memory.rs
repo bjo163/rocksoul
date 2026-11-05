@@ -295,6 +295,7 @@ impl MemoryStore {
         }
 
         let mut ids = HashSet::with_capacity(self.records.len());
+        let mut receipt_ids = HashSet::new();
         for record in &self.records {
             if record.id.trim().is_empty()
                 || record.content.trim().is_empty()
@@ -336,6 +337,11 @@ impl MemoryStore {
                     || record.evidence_hash.as_deref().is_none_or(str::is_empty))
             {
                 bail!("verified task-outcome memory requires a verifier receipt and evidence hash");
+            }
+            if let Some(receipt_id) = &record.verification_receipt_id
+                && !receipt_ids.insert(receipt_id.as_str())
+            {
+                bail!("a kernel verification receipt may verify only one memory claim");
             }
             if record.evidence_hash.as_ref().is_some_and(|hash| {
                 hash.len() != 64 || !hash.bytes().all(|byte| byte.is_ascii_hexdigit())
@@ -1571,6 +1577,31 @@ mod tests {
         assert!(!store.delete(&id));
         store.clear();
         assert!(store.records.is_empty());
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn explicit_claim_supersession_is_append_only_and_survives_reload() {
+        let directory = temp_dir();
+        let mut id = String::new();
+        MemoryStore::transact(&directory, |store| {
+            id = store.add_user_entry(
+                MemoryKind::Semantic,
+                "The deployment succeeded".into(),
+                vec![],
+                None,
+                100,
+            )?;
+            Ok(())
+        }).unwrap();
+
+        super::supersede_claim(&directory, &id, 200).unwrap();
+        let loaded = MemoryStore::load(&directory).unwrap();
+        let record = loaded.records.iter().find(|record| record.id == id).unwrap();
+        assert_eq!(record.claim_status, MemoryClaimStatus::ContradictedSuperseded);
+        let ledger = fs::read_to_string(directory.join("claim-status.jsonl")).unwrap();
+        assert!(ledger.contains("explicit_user_correction"));
+        assert!(super::supersede_claim(&directory, &id, 201).is_err());
         fs::remove_dir_all(directory).unwrap();
     }
 
