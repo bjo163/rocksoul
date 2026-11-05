@@ -1321,8 +1321,19 @@ mod tests {
                 1_800_000_000,
             )
             .unwrap();
-        assert_eq!(store.search("CARGO", 1_800_000_001).len(), 1);
-        assert_eq!(store.search("rust", 1_800_000_001).len(), 1);
+        let filters = super::MemorySearchFilters::default();
+        assert_eq!(
+            store
+                .search_ranked("CARGO", &filters, 1_800_000_001, 10)
+                .len(),
+            1
+        );
+        assert_eq!(
+            store
+                .search_ranked("rust", &filters, 1_800_000_001, 10)
+                .len(),
+            1
+        );
         fs::remove_dir_all(directory).unwrap();
     }
 
