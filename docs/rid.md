@@ -24,7 +24,7 @@ The domain model and persistence layer are local-first. HTTP API exposure will b
 
 The canonical technical taxonomy is `data/rid/universal_stats.v1.json` (catalogue ID `rocksoul.rid.universal_stats.v1`, version `1.0.0`). It defines exactly 99 stable universal capability dimensions in nine domains, with eleven stats per domain. Each stat has a stable `rid_stat:NN` ID, a concise action-word label (such as `SEE`, `HEAR`, `REMEMBER`, `REASON`, `CREATE`, and `TRUST`), an operational definition, and an evidence-oriented evaluation protocol.
 
-The nine domains are:
+The complete human-readable catalogue is documented in [RID — Universal 99 Stats](rid-universal-stats.md). The nine domains are:
 1. Perception
 2. Memory & Learning
 3. Reasoning
