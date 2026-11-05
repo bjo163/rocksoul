@@ -84,12 +84,7 @@ pub fn append(
 }
 
 /// Read the append-only JSONL trace for local inspection.
-pub fn read(path: &Path) -> Result<Vec<serde_json::Value>> {
-    if !path.exists() {
-        return Ok(Vec::new());
-    }
-    let content = fs::read_to_string(path)
-        .with_context(|| format!("could not read task trace {}", path.display()))?;
+fn parse_records(content: &str) -> Result<Vec<serde_json::Value>> {
     let complete_end = content.rfind('\n').map_or(0, |index| index + 1);
     content[..complete_end]
         .lines()
@@ -124,8 +119,17 @@ pub fn read(path: &Path) -> Result<Vec<serde_json::Value>> {
         .collect()
 }
 
+pub fn read(path: &Path) -> Result<Vec<serde_json::Value>> {
+    if !path.exists() {
+        return Ok(Vec::new());
+    }
+    let content = fs::read_to_string(path)
+        .with_context(|| format!("could not read task trace {}", path.display()))?;
+    parse_records(&content)
+}
+
 /// Read a bounded newest-first window for interactive inspectors.
-/// Refuse oversized files rather than allocating without limit in the TUI.
+/// The byte limit is enforced while reading, not only by a racy metadata pre-check.
 pub fn read_recent(
     path: &Path,
     max_bytes: u64,
@@ -135,13 +139,19 @@ pub fn read_recent(
         return Ok(Vec::new());
     }
     let byte_limit = max_bytes.min(1_048_576);
-    let metadata = fs::metadata(path)
-        .with_context(|| format!("could not inspect task trace {}", path.display()))?;
+    let file = fs::File::open(path)
+        .with_context(|| format!("could not open task trace {}", path.display()))?;
+    let mut bytes = Vec::new();
+    file.take(byte_limit.saturating_add(1))
+        .read_to_end(&mut bytes)
+        .with_context(|| "could not read bounded task trace")?;
     anyhow::ensure!(
-        metadata.len() <= byte_limit,
+        bytes.len() as u64 <= byte_limit,
         "task trace exceeds the interactive read limit"
     );
-    let mut records = read(path)?;
+    let content =
+        String::from_utf8(bytes).context("task trace is not valid UTF-8")?;
+    let mut records = parse_records(&content)?;
     records.reverse();
     records.truncate(max_records.min(1_000));
     Ok(records)
