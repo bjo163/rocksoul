@@ -1374,7 +1374,13 @@ fn rid_detail(entry: &CatalogueEntry, profile: Option<&RuhProfile>) -> Vec<Line<
 
 fn render_footer(frame: &mut Frame<'_>, area: Rect, app: &App) {
     let english = app.preferences.locale == LocaleMode::English;
-    let text = if app.screen == Screen::Rid {
+    let text = if app.screen == Screen::Settings {
+        if english {
+            "t Theme   d Density   l Language   r Refresh   q Exit"
+        } else {
+            "t Tema   d Kepadatan   l Bahasa   r Segarkan   q Keluar"
+        }
+    } else if app.screen == Screen::Rid {
         if english {
             "↑/↓ Browse stats   1-8 Navigate   Ctrl+K Palette   ? Help   q Exit"
         } else {
