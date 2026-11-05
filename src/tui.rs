@@ -994,8 +994,9 @@ fn render_diagnostics(frame: &mut Frame<'_>, area: Rect, app: &App) {
             "Latest eval   {}",
             match &app.snapshot.evaluation {
                 Ok(Some(report)) => format!(
-                    "{} · {} v{} · {}/{}",
+                    "{} [{}] · {} v{} · {}/{}",
                     if report.passed { "PASS" } else { "FAIL" },
+                    report_state(&app.snapshot.evaluation),
                     report.suite_id,
                     report.suite_version,
                     report.passed_count(),
@@ -1025,8 +1026,9 @@ fn render_diagnostics(frame: &mut Frame<'_>, area: Rect, app: &App) {
             "Memory eval   {}",
             match &app.snapshot.memory_evaluation {
                 Ok(Some(report)) => format!(
-                    "{} · {} v{} · P@{} {:.3} · R@{} {:.3}",
+                    "{} [{}] · {} v{} · P@{} {:.3} · R@{} {:.3}",
                     if report.passed { "PASS" } else { "FAIL" },
+                    report_state(&app.snapshot.memory_evaluation),
                     report.suite_id,
                     report.suite_version,
                     report.top_k,
