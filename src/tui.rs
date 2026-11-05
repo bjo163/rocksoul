@@ -217,9 +217,7 @@ impl App {
             KeyCode::Down if self.screen == Screen::Memory => {
                 self.memory_selected = self.memory_selected.saturating_add(1).min(99)
             }
-            KeyCode::Char('/') if self.screen == Screen::Memory => {
-                self.memory_search_active = true
-            }
+            KeyCode::Char('/') if self.screen == Screen::Memory => self.memory_search_active = true,
             KeyCode::Char('k') if key.modifiers.contains(KeyModifiers::CONTROL) => {
                 self.palette_open = true
             }
