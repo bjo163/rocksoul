@@ -12,9 +12,7 @@ use crate::{
         CancellationToken, TurnEvent, TurnPhase, TurnState, VerificationEvidence,
         VerificationOutcome, VerificationRequest, verify_turn_and_award_xp,
     },
-    memory::{
-        MEMORY_SCHEMA_VERSION, MemoryKind, MemoryRecord, MemorySearchFilters, MemoryStore,
-    },
+    memory::{MEMORY_SCHEMA_VERSION, MemoryKind, MemoryRecord, MemorySearchFilters, MemoryStore},
     paths::AppPaths,
     rid::{RuhIdentity, RuhProfile, XpRecordOutcome, level_for_xp},
     rid_catalogue::RidCatalogue,
@@ -63,7 +61,9 @@ pub fn list() {
         "  Validates lifecycle, retry bounds, verified XP, workspace approval/read-back mismatch/replay, retry/cancellation boundaries, task trace, RID and catalogue invariants."
     );
     println!("rocksoul.memory-retrieval  v1.0.0  offline / deterministic");
-    println!("  Measures lexical precision/recall, stale ranking, expiry leakage, and forgetting leakage.");
+    println!(
+        "  Measures lexical precision/recall, stale ranking, expiry leakage, and forgetting leakage."
+    );
     println!("  External benchmark adapters: planned; no external datasets are downloaded.");
 }
 
@@ -671,8 +671,14 @@ fn evaluate_memory_retrieval_fixture() -> Result<MemoryRetrievalEvaluationReport
     let fixture: MemoryRetrievalFixture =
         serde_json::from_str(include_str!("../data/evaluation/memory-retrieval-v1.json"))
             .context("invalid embedded memory retrieval fixture")?;
-    anyhow::ensure!(fixture.schema_version == 1, "unsupported memory retrieval fixture schema");
-    anyhow::ensure!(fixture.top_k > 0, "memory retrieval fixture top_k must be positive");
+    anyhow::ensure!(
+        fixture.schema_version == 1,
+        "unsupported memory retrieval fixture schema"
+    );
+    anyhow::ensure!(
+        fixture.top_k > 0,
+        "memory retrieval fixture top_k must be positive"
+    );
 
     let now = SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -692,11 +698,28 @@ fn evaluate_memory_retrieval_fixture() -> Result<MemoryRetrievalEvaluationReport
             case.now_unix,
             fixture.top_k,
         );
-        let retrieved_ids = retrieved.iter().map(|item| item.record_id.clone()).collect::<Vec<_>>();
-        let expected = case.expected_ids.iter().cloned().collect::<std::collections::HashSet<_>>();
-        let stale = case.stale_ids.iter().cloned().collect::<std::collections::HashSet<_>>();
-        let expired = case.records.iter()
-            .filter(|record| record.expires_at_unix.is_some_and(|expires| expires <= case.now_unix))
+        let retrieved_ids = retrieved
+            .iter()
+            .map(|item| item.record_id.clone())
+            .collect::<Vec<_>>();
+        let expected = case
+            .expected_ids
+            .iter()
+            .cloned()
+            .collect::<std::collections::HashSet<_>>();
+        let stale = case
+            .stale_ids
+            .iter()
+            .cloned()
+            .collect::<std::collections::HashSet<_>>();
+        let expired = case
+            .records
+            .iter()
+            .filter(|record| {
+                record
+                    .expires_at_unix
+                    .is_some_and(|expires| expires <= case.now_unix)
+            })
             .map(|record| record.id.clone())
             .collect::<std::collections::HashSet<_>>();
         let hits = retrieved_ids.iter().filter(|id| expected.contains(*id)).count();
@@ -716,10 +739,24 @@ fn evaluate_memory_retrieval_fixture() -> Result<MemoryRetrievalEvaluationReport
     }
 
     let case_count = case_reports.len().max(1) as f64;
-    let precision_at_k = case_reports.iter().map(|item| item.precision_at_k).sum::<f64>() / case_count;
-    let recall_at_k = case_reports.iter().map(|item| item.recall_at_k).sum::<f64>() / case_count;
-    let stale_results_at_k = case_reports.iter().map(|item| item.stale_results_at_k).sum();
-    let expired_leakage = case_reports.iter().map(|item| item.expired_leakage).sum();
+    let precision_at_k = case_reports
+        .iter()
+        .map(|item| item.precision_at_k)
+        .sum::<f64>()
+        / case_count;
+    let recall_at_k = case_reports
+        .iter()
+        .map(|item| item.recall_at_k)
+        .sum::<f64>()
+        / case_count;
+    let stale_results_at_k = case_reports
+        .iter()
+        .map(|item| item.stale_results_at_k)
+        .sum();
+    let expired_leakage = case_reports
+        .iter()
+        .map(|item| item.expired_leakage)
+        .sum();
 
     let deletion_leakage = memory_forgetting_leakage_check(now)?;
     let passed = precision_at_k >= 0.66
@@ -759,16 +796,22 @@ fn memory_forgetting_leakage_check(now: u64) -> Result<usize> {
         )
     })?;
     MemoryStore::transact(&directory, |store| {
-        anyhow::ensure!(store.delete(&id), "evaluation sentinel could not be deleted");
+        anyhow::ensure!(
+            store.delete(&id),
+            "evaluation sentinel could not be deleted"
+        );
         Ok(())
     })?;
     let loaded = MemoryStore::load(&directory)?;
-    let leaked = loaded.search_ranked(
-        "synthetic deletion leakage sentinel",
-        &MemorySearchFilters::default(),
-        now.saturating_add(1),
-        usize::MAX,
-    ).iter().any(|result| result.record_id == id);
+    let leaked = loaded
+        .search_ranked(
+            "synthetic deletion leakage sentinel",
+            &MemorySearchFilters::default(),
+            now.saturating_add(1),
+            usize::MAX,
+        )
+        .iter()
+        .any(|result| result.record_id == id);
     let _ = fs::remove_dir_all(&directory);
     Ok(if leaked { 1 } else { 0 })
 }
@@ -779,7 +822,9 @@ fn persist_memory_retrieval_report(report: &MemoryRetrievalEvaluationReport) -> 
         .join("evaluations")
         .join("memory-retrieval")
         .join("latest.json");
-    let parent = path.parent().context("memory retrieval report path has no parent")?;
+    let parent = path
+        .parent()
+        .context("memory retrieval report path has no parent")?;
     fs::create_dir_all(parent)?;
     let temporary = path.with_extension("json.tmp");
     let backup = path.with_extension("json.bak");
@@ -816,8 +861,9 @@ pub fn latest_memory_retrieval() -> Result<Option<MemoryRetrievalEvaluationRepor
         return Ok(None);
     }
     let bytes = fs::read(&path).with_context(|| format!("could not read {}", path.display()))?;
-    Ok(Some(serde_json::from_slice(&bytes)
-        .with_context(|| format!("invalid memory retrieval report at {}", path.display()))?))
+    Ok(Some(serde_json::from_slice(&bytes).with_context(|| {
+        format!("invalid memory retrieval report at {}", path.display())
+    })?))
 }
 
 pub fn print_memory_retrieval_report(report: &MemoryRetrievalEvaluationReport) {
