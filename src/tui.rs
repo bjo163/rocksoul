@@ -356,6 +356,9 @@ impl App {
             KeyCode::Char('?') => self.help_open = true,
             KeyCode::Char('r') => {
                 if let Ok(snapshot) = Snapshot::load() {
+                    self.preferences = snapshot.preferences.clone().unwrap_or_default();
+                    self.preferences_error = snapshot.preferences.is_err();
+                    self.palette = Palette::for_theme(self.preferences.theme);
                     self.snapshot = snapshot;
                 }
             }
