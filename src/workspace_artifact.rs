@@ -265,7 +265,6 @@ impl WorkspaceArtifactService {
             bail!("independent artifact read-back did not match proposed bytes");
         }
 
-
         if published {
             Ok(ArtifactOutcome::Created {
                 path: target.to_path_buf(),
