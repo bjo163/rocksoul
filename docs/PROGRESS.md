@@ -1,6 +1,6 @@
 # Rocksoul Project Progress
 
-**Last updated:** 2026-11-06 (Asia/Jakarta, Universal 99 independent domains taxonomy v2 published)  
+**Last updated:** 2026-11-06 (Asia/Jakarta, Universal 99 independent domains overlap reconciliation v2.1.0 published)  
 **Repository:** [bjo163/rocksoul](https://github.com/bjo163/rocksoul)  
 **Canonical branch:** `main`  
 **Current principle:** One Core. Infinite Evolution.
@@ -199,33 +199,31 @@ A feature is complete only when:
 Never label an in-progress workflow as passed. Never close an issue because a branch or PR merely exists.
 
 
-## RID Universal 99 Domains & Stats — taxonomy v2 published (runtime migration pending)
-
-Human-readable catalogue: [docs/rid-universal-stats.md](rid-universal-stats.md).
+## RID Universal 99 Domains & Stats — overlap reconciliation published (runtime migration pending)
 
 **Canonical taxonomy:** `data/rid/universal_stats.v2.json`  
-**Catalogue ID:** `rocksoul.rid.universal_stats.v2`  
-**Version:** `2.0.0`  
-**Commit:** `a25355d1314c740172dc8adc85aa8d3c3c3a1eb3`
+**Version:** `2.1.0`  
+**Commit:** `86b60a6d7c5545423c623f842c07ad7e4676f50b`  
+**Human-readable audit:** [docs/rid-universal-stats.md](rid-universal-stats.md)
 
 Delivered:
-- Exactly **99 first-class independent universal domains**, not nine parent categories.
-- Exactly one linked capability stat per domain; 99 unique domain IDs, keys, and stat IDs.
-- Stable domain IDs `rid_domain:01`–`rid_domain:99` and stat IDs `rid_stat:01`–`rid_stat:99`.
-- Each domain has a distinct name and capability definition; each linked stat retains its operational definition and evidence-oriented evaluation protocol.
-- No mandatory parent-domain hierarchy and no fixed 11-stats-per-category structure.
-- Initial state remains `unrated`; `not_applicable` is distinct from zero. XP and Level remain separate.
-- Previous v1 nine-by-eleven taxonomy is retained as a historical snapshot and explicitly superseded.
-- Asmaul Husna remains a separate religious/inspirational reference, never a technical scoring map.
+- Exactly 99 independent first-class domains and 99 linked stat dimensions; no nine-domain parent grouping.
+- All 99 domains now declare a primary measurement target, inclusion criteria, exclusion criteria, adjacent-overlap IDs, and a separation rule.
+- 223 directed overlap guards document the high-risk construct boundaries.
+- Added a no-double-counting evidence policy: one outcome cannot be reused to score multiple dimensions; multiple scores from one task require separately observable outcomes and separate rubric checks.
+- Refined ambiguous labels including POLICY_CHECK, BOUNDARY, AUTHORIZE, UNCERTAINTY_DETECTION, ERROR_DETECTION, VIEWPOINT_MODEL, GOAL_TRACK, COLLAB_CONTEXT, and RELIABILITY.
+- Catalogue version advanced to 2.1.0; IDs remain stable and all new measurements remain unrated.
+- Religious inspiration data remains separate from technical taxonomy.
 
-Compatibility boundary:
-- Existing Rust RID structures and saved profiles may still use `asmaul_husna:NN` identifiers. No runtime migration or score reinterpretation has been performed.
-- Do not silently migrate profiles by ordinal position. Runtime migration must be explicit, versioned, backed up, reversible/recoverable, and tested with legacy fixtures.
-- Religious names, transliterations, glosses, and optional editorial associations still require qualified independent religious/language review.
+Audit findings / remaining work:
+- The taxonomy data and documentation are reconciled, but independent psychometric validation is not complete.
+- **Rust runtime is still legacy:** `src/rid_catalogue.rs` embeds `asmaul_husna.v1.json`; `StatId` still serializes `asmaul_husna:NN`; CLI and Cockpit still display the legacy name layer.
+- Do not map historical scores by ordinal slot. Runtime migration must archive legacy records unchanged, create new `rid_stat:NN` measurements as unrated, preserve identity and XP, and keep a recoverable pre-migration backup.
+- CI and Rust test results for this taxonomy-only change have not yet been verified.
 
-Next:
-1. Audit Rust RID structures, persistence, CLI, Cockpit, and fixtures against the v2 schema.
-2. Implement explicit migration preserving historical scores and evidence.
-3. Add catalogue validators for exactly 99 unique domains and 99 linked stats.
-4. Add trusted evaluator integration; keep all dimensions unrated until evidence exists.
-5. Keep Issue #8 open until independent religious/language review is complete.
+Next implementation slice:
+1. Migrate Rust catalogue types/validator to v2.1.0 and validate 99 unique domain IDs, keys, stat IDs, and complete overlap metadata.
+2. Add explicit schema-v1 profile migration with immutable legacy stat archive and fresh unrated universal records.
+3. Update CLI, Cockpit, tests, docs and Windows CI to display universal domain names only.
+4. Add overlap-regression tests that reject duplicate measurement targets and evidence double-counting.
+5. Keep evaluator integration pending until a trusted independent evaluator and domain-specific rubrics exist.
