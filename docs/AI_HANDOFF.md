@@ -83,7 +83,7 @@ Do not split crates or add layers just for theoretical future extensibility. Ext
 
 ## 4. Implemented baseline on main (before PR #51)
 
-The baseline recorded during this handoff review is main SHA `3489b9641083530c6e6d4a4f3bc554c17e10a638`. Re-check before relying on it; main may have advanced.
+The verified main SHA at this handoff refresh is `260d29852bb30f2f63129271a07cd368fafccc3f` (PR #51 squash merge). Re-check latest main before relying on it; main may have advanced.
 
 ### Stage 0 — seed CLI
 
@@ -105,9 +105,9 @@ PR #34 merged at `0f5ca4bc4d1c65322cb02963fcc23c53fa990f5d`; Linux/Windows CI #2
 - XP only after trusted verification; replay idempotency.
 - Not implemented: generalized acceptance-check orchestration across arbitrary typed services; complete planner/turn/reflection conversation recovery across restart; arbitrary shell or unrestricted tool access.
 
-### Stage 2 — persistent memory (main baseline)
+### Stage 2 — persistent memory (merged main baseline)
 
-The main baseline includes local memory schema v3 and its prior migrations, cross-process locking, retention/forgetting, ranked lexical retrieval and offline evaluation, and human-reviewed model proposals. See PRs #43, #46, #47, #49, and #50; verify current PR/commit state before continuing.
+The main baseline now includes local memory schema v4 and migrations from v1/v2/v3, cross-process locking, retention/forgetting, ranked lexical retrieval and offline evaluation, human-reviewed model proposals, structured claim provenance, task-bound kernel receipt verification, receipt revocation, and append-only claim supersession. Stage 2 memory implementation was extended by PR #51 (merge commit `260d29852bb30f2f63129271a07cd368fafccc3f`). Issue #44 is closed. Automatic conversation capture and automatic memory context injection remain disabled.
 
 - Model proposals are staged separately and cannot silently write memory.
 - Exact interactive approval binds the candidate fingerprint.
@@ -117,45 +117,41 @@ The main baseline includes local memory schema v3 and its prior migrations, cros
 - Retrieval is deterministic lexical ranking, not a probability.
 - Automatic proposal emission from the REPL and automatic memory context injection remain disabled.
 
-## 5. Active work at handoff snapshot — PR #51
+## 5. Recently completed — PR #51
 
 **PR:** https://github.com/bjo163/rocksoul/pull/51  
-**Branch:** `feat/verified-task-outcome-claims`  
-**Issue:** #44  
-**Last observed head before the most recent fix:** `9df80599bb6f8ab5094b3c21b1c6cac9946c33c3`  
-**Latest code fix commit:** `b29dc8136013ebf3bfcf1fbdbfef116b1aaf6e28`\n**Latest branch head at documentation refresh:** `607a55d25b1776899c0f5bab69ed0a1634b92ca2` (includes handoff and roadmap corrections).  
-**State at snapshot:** open; not merged. Re-check PR and CI before acting.
+**Issue:** #44 — closed after merge  
+**Merge commit:** `260d29852bb30f2f63129271a07cd368fafccc3f`  
+**PR head validated:** `817c651f23e3e74bd59c25c94585a7e2d3bf108b`  
+**CI:** [run #42008862735](https://github.com/bjo163/rocksoul/actions/runs/42008862735) — Linux and Windows jobs passed.
 
-PR #51 proposes:
+Merged behavior:
+- Structured claim provenance: user assertion, observed evidence, inference, unverified task outcome, verified task outcome, and contradicted/superseded.
+- Memory schema v4 and safe v1/v2/v3 migrations without promoting legacy model proposals to verified status.
+- Exact normalized claim, expected task/operation ID, verifier identity/version, evidence digest, outcome, timestamp and receipt integrity validation.
+- Receipt-bearing proposals require both `--verification-receipt-id` and `--verification-task-id`; the expected task ID is included in the exact proposal approval fingerprint and must match the receipt's integrity-bound task ID and persisted operation ID.
+- Freshness window (seven days), one-time receipt use, revocation ledger and downgrade of revoked verified claims.
+- Append-only claim-status history for correction/supersession.
+- Claim status and receipt provenance exposed through CLI and memory retrieval.
+- Proposal store v1-to-v2 migration without weakening exact human approval.
 
-- Structured provenance states: user assertion, observed evidence, inference, unverified task outcome, verified task outcome, and contradicted/superseded.
-- Memory schema v4 migration from v1/v2/v3 without falsely promoting prior proposals.
-- Exact normalized claim binding to a kernel-issued verification receipt, plus an expected task/operation ID included in the proposal fingerprint and matched against both the receipt task ID and persisted operation ID.
-- Freshness window (seven days), verifier identity/version, evidence digest, outcome, timestamp and receipt integrity validation.
-- Single-use receipt semantics, revocation ledger and downgrade of revoked verified claims.
-- Append-only claim-status history for explicit correction/supersession.
-- Claim status and receipt provenance in memory views/search and CLI.
-- Proposal store v2 migration without weakening the exact human approval boundary.
+### CI diagnosis and lessons retained
 
-### CI history and diagnosis
+The initial Linux/Windows failure came from receipt lookup parsing lock files and unrelated files as receipts. Lookup now accepts only `.json` receipt files. A later review found that a valid receipt for the same text could otherwise be attached to a different task; the proposal now binds an expected task/operation ID, and regression tests cover cross-task mismatch and modified operation metadata.
 
-A further review found that a valid receipt for the same text claim could otherwise be attached to a proposal from a different task because the proposal did not carry its expected task ID. The candidate now requires `--verification-task-id` together with `--verification-receipt-id`; the expected ID is included in the exact approval fingerprint and must match the receipt's integrity-bound `task_id` and its persisted `operation_id`. A dedicated cross-task replay test covers this boundary.
+The final validated head passed:
+- Linux formatting, Clippy, 105 tests, Core Integrity and memory retrieval evaluation.
+- Windows release build, tests, installer/portable packaging, clean portable smoke test and installer install/init/uninstall-preservation smoke test.
 
-Previous CI run #309 (run ID `41982853154`) failed on both Linux and Windows tests: two receipt-gating tests remained `UnverifiedTaskOutcome` instead of becoming `VerifiedTaskOutcome`. Formatting and Clippy had passed.
-
-Root cause found during follow-up: receipt lookup iterated every file in the receipt directory, including the lock file and unrelated non-receipt files. Parsing those files failed; the approval path intentionally treated an unavailable/invalid receipt as unverified. The lookup now accepts only files with the `.json` extension, excluding lock files, revocation ledgers, backups and unrelated files. Fix commit: `b29dc8136013ebf3bfcf1fbdbfef116b1aaf6e28`.
-
-**Do not assume the fix passes yet.** Confirm the new workflow run for the latest PR head. If it fails, inspect the full failing assertion and logs before changing behavior. Do not weaken the fail-closed receipt policy to make tests pass.
-
-### PR #51 safety invariants
+### Safety invariants now on main
 
 - Model output cannot mint receipts or call the trusted verifier.
-- User assertions do not need task receipts and must retain user-assertion status.
+- User assertions do not need task receipts and remain explicitly labeled.
 - Missing, stale, mismatched-claim, mismatched-task/operation, tampered, replayed or revoked receipts remain unverified.
 - One receipt can verify at most one memory claim.
 - Revocation is append-only and downgrades claims.
-- A receipt hash is not a digital signature. State this limitation in docs.
-- Keep automatic conversation capture and memory context injection disabled.
+- Receipt digest is an integrity check, not a digital signature against a local actor with write access to the runtime root.
+- Automatic conversation capture and memory context injection remain disabled.
 
 ## 6. Build, test and validate
 
