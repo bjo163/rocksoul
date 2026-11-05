@@ -1346,7 +1346,7 @@ mod tests {
 
     #[test]
     fn all_screens_render_at_standard_wide_and_narrow_sizes() {
-        use ratatui::{backend::TestBackend, Terminal};
+        use ratatui::{Terminal, backend::TestBackend};
 
         let mut app = App::new(Snapshot::load().unwrap());
         for (width, height) in [(80, 24), (120, 40), (60, 20)] {
