@@ -952,7 +952,7 @@ fn render_memory(frame: &mut Frame<'_>, area: Rect, app: &App) {
                 }
                 if app.memory_detail_open {
                     if let Some(record) = records.get(selected_index) {
-                        push_memory_detail(&mut lines, &record.content);
+                        push_memory_detail(&mut lines, &record.content, &app.palette);
                     }
                 } else if !records.is_empty() {
                     lines.push(Line::from(
@@ -1051,12 +1051,12 @@ fn render_memory(frame: &mut Frame<'_>, area: Rect, app: &App) {
     );
 }
 
-fn push_memory_detail(lines: &mut Vec<Line<'static>>, content: &str) {
+fn push_memory_detail(lines: &mut Vec<Line<'static>>, content: &str, palette: &Palette) {
     lines.push(Line::from(""));
     lines.push(Line::from(Span::styled(
         "SELECTED MEMORY CONTENT",
         Style::default()
-            .fg(app.palette.accent)
+            .fg(palette.accent)
             .add_modifier(Modifier::BOLD),
     )));
     match memory_detail_display(content) {
@@ -1454,7 +1454,7 @@ fn render_inspector(frame: &mut Frame<'_>, area: Rect, app: &App) {
             .as_ref()
             .and_then(|cat| cat.entries.get(app.selected_stat))
         {
-            lines.extend(rid_detail(entry, app.snapshot.rid_profile.as_ref()));
+            lines.extend(rid_detail(entry, app.snapshot.rid_profile.as_ref(), &app.palette));
         }
     } else {
         lines.push(Line::from("No active selection."));
@@ -1468,13 +1468,17 @@ fn render_inspector(frame: &mut Frame<'_>, area: Rect, app: &App) {
     );
 }
 
-fn rid_detail(entry: &CatalogueEntry, profile: Option<&RuhProfile>) -> Vec<Line<'static>> {
+fn rid_detail(
+    entry: &CatalogueEntry,
+    profile: Option<&RuhProfile>,
+    palette: &Palette,
+) -> Vec<Line<'static>> {
     let mut lines = vec![
         Line::from(""),
         Line::from(Span::styled(
             entry.name.transliteration.clone(),
             Style::default()
-                .fg(app.palette.text)
+                .fg(palette.text)
                 .add_modifier(Modifier::BOLD),
         )),
         Line::from(entry.name.arabic.clone()),
@@ -1482,7 +1486,7 @@ fn rid_detail(entry: &CatalogueEntry, profile: Option<&RuhProfile>) -> Vec<Line<
         Line::from(""),
         Line::from(Span::styled(
             entry.technical_stat.label.clone(),
-            Style::default().fg(app.palette.accent),
+            Style::default().fg(palette.accent),
         )),
         Line::from(entry.technical_stat.key.clone()),
         Line::from(entry.technical_stat.definition.clone()),
