@@ -4,6 +4,7 @@ use std::{
 };
 
 use anyhow::{Context, Result};
+use sha2::{Digest, Sha256};
 
 use crate::{
     cli::{Command, EvalCommand, EvalSuite, MemoryCommand, RidCommand, WorkspaceCommand},
@@ -11,7 +12,7 @@ use crate::{
     core::{
         TurnEvent, TurnState, VerificationEvidence, VerificationRequest, verify_turn_and_award_xp,
     },
-    memory::{MemoryKind, MemoryRecord, MemorySearchFilters, MemoryStore},
+    memory::{MemoryClaimStatus, MemoryKind, MemoryRecord, MemorySearchFilters, MemoryStore},
     memory_proposal,
     model::ModelConfig,
     paths::AppPaths,
@@ -122,7 +123,7 @@ pub fn init() -> Result<()> {
     println!("Workspace: {}", paths.workspace_dir.display());
     println!(
         "Memory store: {} ({})",
-        paths.memory_dir.join("store.v3.json").display(),
+        paths.memory_dir.join("store.v4.json").display(),
         if memory_created {
             "created"
         } else {
@@ -170,6 +171,7 @@ fn receipt_matches_ignoring_verification_time(existing: &[u8], expected: &[u8]) 
     for document in [&mut existing, &mut expected] {
         if let Some(object) = document.as_object_mut() {
             object.remove("verified_at_unix");
+            object.remove("receipt_hash");
         }
     }
     Ok(existing == expected)
@@ -193,17 +195,13 @@ fn persist_workspace_receipt(
     })?;
     let operation_key = operation_id.rsplit(':').next().unwrap_or("unknown");
     let destination = receipt_dir.join(format!("workspace-{operation_key}.json"));
-    let document = serde_json::json!({
-        "schema_version": 1,
-        "operation_id": operation_id,
-        "task_id": receipt.task_id(),
-        "verification_id": receipt.verification_id(),
-        "verified_at_unix": receipt.verified_at_unix(),
-        "required_checks_passed": receipt.required_checks_passed(),
-        "total_checks": receipt.total_checks(),
-        "evidence_refs": receipt.evidence_refs(),
-        "xp_awarded": receipt.xp_awarded(),
-    });
+    let mut document =
+        serde_json::to_value(receipt).context("could not serialize kernel verification receipt")?;
+    let object = document
+        .as_object_mut()
+        .context("verification receipt did not serialize as an object")?;
+    object.insert("schema_version".to_owned(), serde_json::json!(2));
+    object.insert("operation_id".to_owned(), serde_json::json!(operation_id));
     let mut encoded =
         serde_json::to_vec_pretty(&document).context("could not serialize verification receipt")?;
     encoded.push(b'\n');
@@ -283,7 +281,7 @@ async fn run_workspace(command: WorkspaceCommand) -> Result<()> {
                         parsed
                             .get("schema_version")
                             .and_then(serde_json::Value::as_u64)
-                            == Some(1),
+                            == Some(2),
                         "unsupported verification receipt schema"
                     );
                     println!("receipt: {}", serde_json::to_string(&parsed)?);
@@ -440,6 +438,11 @@ async fn run_workspace(command: WorkspaceCommand) -> Result<()> {
             turn.apply(TurnEvent::PlanAccepted)?;
             turn.apply(TurnEvent::ActionCompleted)?;
             let verification_id = format!("workspace-artifact:{operation_id}");
+            let artifact_digest = format!("{:x}", Sha256::digest(proposal.content.as_bytes()));
+            let normalized_claim = format!(
+                "created workspace artifact {} sha256 {}",
+                proposal.filename, artifact_digest
+            );
             let request = VerificationRequest::new(
                 operation_id.clone(),
                 verification_id,
@@ -466,7 +469,8 @@ async fn run_workspace(command: WorkspaceCommand) -> Result<()> {
                         true,
                     ),
                 ],
-            );
+            )
+            .with_claim(normalized_claim);
             let verification = verify_turn_and_award_xp(&mut turn, &mut profile, request)?;
             rid_store::save(&paths.rid_file, &profile)
                 .context("could not persist RID after verification")?;
@@ -791,7 +795,7 @@ pub fn memory_status() -> Result<()> {
     print_memory_records(&store.active_records(now_unix()?), "Rocksoul memory");
     println!(
         "Store: {}",
-        paths.memory_dir.join("store.v3.json").display()
+        paths.memory_dir.join("store.v4.json").display()
     );
     Ok(())
 }
@@ -806,6 +810,9 @@ async fn run_memory(command: MemoryCommand) -> Result<()> {
             source_turn_reference,
             provenance,
             expires_in_hours,
+            claim_status,
+            verification_receipt_id,
+            verification_task_id,
         } => {
             let now = now_unix()?;
             let expires_at = expires_in_hours
@@ -827,6 +834,9 @@ async fn run_memory(command: MemoryCommand) -> Result<()> {
                     source_turn_reference,
                     provenance,
                     expires_at_unix: expires_at,
+                    claim_status,
+                    verification_receipt_id,
+                    verification_task_id,
                 },
                 now,
             )?;
@@ -835,6 +845,18 @@ async fn run_memory(command: MemoryCommand) -> Result<()> {
             println!("Kind: {}", proposal.kind);
             println!("Source turn: {}", proposal.source_turn_reference);
             println!("Provenance: {}", proposal.provenance);
+            println!("Claim status: {}", proposal.claim_status);
+            println!(
+                "Verification receipt: {}",
+                proposal
+                    .verification_receipt_id
+                    .as_deref()
+                    .unwrap_or("none")
+            );
+            println!(
+                "Verification task: {}",
+                proposal.verification_task_id.as_deref().unwrap_or("none")
+            );
             println!("Fingerprint: {}", proposal.fingerprint);
             println!("Review with: rocksoul memory approve {}", proposal.id);
         }
@@ -845,11 +867,17 @@ async fn run_memory(command: MemoryCommand) -> Result<()> {
             }
             for proposal in proposals {
                 println!(
-                    "{} [{} · {}] source={} fingerprint={}",
+                    "{} [{} · {} · claim={}] source={} receipt={} task={} fingerprint={}",
                     proposal.id,
                     proposal.kind,
                     proposal.status,
+                    proposal.claim_status,
                     proposal.source_turn_reference,
+                    proposal
+                        .verification_receipt_id
+                        .as_deref()
+                        .unwrap_or("none"),
+                    proposal.verification_task_id.as_deref().unwrap_or("none"),
                     proposal.fingerprint
                 );
                 if let Some(memory_id) = proposal.memory_record_id {
@@ -891,13 +919,28 @@ async fn run_memory(command: MemoryCommand) -> Result<()> {
                     anyhow::bail!("memory proposal approval cancelled; no memory was written");
                 }
             }
-            let memory_id = memory_proposal::approve(
+            let memory_id = memory_proposal::approve_with_receipts(
                 &paths.memory_dir,
+                Some(&paths.logs_dir.join("receipts")),
                 &id,
                 confirmation.trim_end(),
                 now_unix()?,
             )?;
+            let store = MemoryStore::load(&paths.memory_dir)?;
+            let record = store
+                .records
+                .iter()
+                .find(|record| record.id == memory_id)
+                .context("approved memory record was not found after persistence")?;
             println!("Approved exact proposal and persisted memory record {memory_id}.");
+            println!("Claim status: {}", record.claim_status);
+            if let Some(receipt_id) = &record.verification_receipt_id {
+                println!("Kernel receipt: {receipt_id}");
+            } else if record.claim_status == MemoryClaimStatus::UnverifiedTaskOutcome {
+                println!(
+                    "Outcome remains UNVERIFIED: no fresh, exact, unused, non-revoked kernel receipt matched."
+                );
+            }
         }
         MemoryCommand::Deny { id } => {
             memory_proposal::deny(&paths.memory_dir, &id, now_unix()?)?;
@@ -906,6 +949,27 @@ async fn run_memory(command: MemoryCommand) -> Result<()> {
         MemoryCommand::CancelProposal { id } => {
             memory_proposal::cancel(&paths.memory_dir, &id, now_unix()?)?;
             println!("Cancelled memory proposal {id}; no memory record was written.");
+        }
+        MemoryCommand::Supersede { id } => {
+            crate::memory::supersede_claim(&paths.memory_dir, &id, now_unix()?)?;
+            println!(
+                "Memory claim {id} marked contradicted/superseded; correction history was appended."
+            );
+        }
+        MemoryCommand::RevokeReceipt {
+            verification_id,
+            reason_code,
+        } => {
+            memory_proposal::revoke_receipt(
+                &paths.logs_dir.join("receipts"),
+                &paths.memory_dir,
+                &verification_id,
+                now_unix()?,
+                &reason_code,
+            )?;
+            println!(
+                "Revoked kernel receipt {verification_id}; it cannot verify future memory claims."
+            );
         }
         MemoryCommand::Export => {
             let store = MemoryStore::load(&paths.memory_dir)?;
@@ -942,7 +1006,7 @@ async fn run_memory(command: MemoryCommand) -> Result<()> {
                         println!("ID: {id}");
                         println!(
                             "Store: {}",
-                            paths.memory_dir.join("store.v3.json").display()
+                            paths.memory_dir.join("store.v4.json").display()
                         );
                     }
                     MemoryCommand::List => {
@@ -967,10 +1031,11 @@ async fn run_memory(command: MemoryCommand) -> Result<()> {
                         println!("Memory search — deterministic lexical ranking");
                         for result in &matches {
                             println!(
-                                "- [{}] {} ({}, source={}, created={}, source-confidence={:?})",
+                                "- [{}] {} ({}, claim={}, source={}, created={}, source-confidence={:?})",
                                 result.lexical_score,
                                 result.record_id,
                                 result.kind,
+                                result.claim_status,
                                 result.source,
                                 result.created_at_unix,
                                 result.source_confidence
@@ -1019,7 +1084,9 @@ async fn run_memory(command: MemoryCommand) -> Result<()> {
                     | MemoryCommand::Proposals
                     | MemoryCommand::Approve { .. }
                     | MemoryCommand::Deny { .. }
-                    | MemoryCommand::CancelProposal { .. } => {
+                    | MemoryCommand::CancelProposal { .. }
+                    | MemoryCommand::Supersede { .. }
+                    | MemoryCommand::RevokeReceipt { .. } => {
                         unreachable!(
                             "proposal and export commands are handled outside the memory transaction"
                         )
@@ -1054,8 +1121,10 @@ fn print_memory_records(records: &[&MemoryRecord], heading: &str) {
             record.id, record.kind, approval, record.content, tags
         );
         println!(
-            "    source={} · created={} · expires={}",
+            "    source={} · claim={} · receipt={} · created={} · expires={}",
             record.source,
+            record.claim_status,
+            record.verification_receipt_id.as_deref().unwrap_or("none"),
             record.created_at_unix,
             record
                 .expires_at_unix
@@ -1244,7 +1313,7 @@ mod tests {
         assert_eq!(recovered_profile.total_xp(), xp_before_replay);
         let document: serde_json::Value =
             serde_json::from_slice(&fs::read(&path).unwrap()).unwrap();
-        assert_eq!(document["schema_version"], 1);
+        assert_eq!(document["schema_version"], 2);
         assert_eq!(document["operation_id"], "workspace:note.txt:abc123");
         assert_eq!(document["verification_id"], "workspace-verification:abc123");
         assert_eq!(document["evidence_refs"][0], "workspace-readback:abc123");

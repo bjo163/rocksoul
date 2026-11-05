@@ -13,10 +13,14 @@ use sha2::{Digest, Sha256};
 
 use anyhow::{Context, Result, bail};
 
-use crate::memory::{MemoryKind, MemoryStore};
+use crate::{
+    core::{VerificationReceipt, normalize_task_claim},
+    memory::{MemoryClaimStatus, MemoryKind, MemoryStore},
+};
 
-const PROPOSAL_SCHEMA_VERSION: u16 = 1;
-const PROPOSAL_FILE: &str = "proposals.v1.json";
+const PROPOSAL_SCHEMA_VERSION: u16 = 2;
+const PROPOSAL_FILE: &str = "proposals.v2.json";
+const LEGACY_PROPOSAL_FILE: &str = "proposals.v1.json";
 const PROPOSAL_LOCK_FILE: &str = ".proposals.lock";
 const LOCK_TIMEOUT: Duration = Duration::from_secs(5);
 const LOCK_RETRY: Duration = Duration::from_millis(25);
@@ -55,6 +59,12 @@ pub struct MemoryProposal {
     pub status: ProposalStatus,
     pub decided_at_unix: Option<u64>,
     pub memory_record_id: Option<String>,
+    #[serde(default)]
+    pub claim_status: MemoryClaimStatus,
+    #[serde(default)]
+    pub verification_receipt_id: Option<String>,
+    #[serde(default)]
+    pub verification_task_id: Option<String>,
 }
 
 impl MemoryProposal {
@@ -71,6 +81,9 @@ pub struct MemoryProposalCandidate {
     pub source_turn_reference: String,
     pub provenance: String,
     pub expires_at_unix: Option<u64>,
+    pub claim_status: MemoryClaimStatus,
+    pub verification_receipt_id: Option<String>,
+    pub verification_task_id: Option<String>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -113,6 +126,22 @@ impl ProposalStore {
             }
             match proposal.status {
                 ProposalStatus::Pending => {
+                    if !matches!(
+                        proposal.claim_status,
+                        MemoryClaimStatus::Inference | MemoryClaimStatus::UnverifiedTaskOutcome
+                    ) || (proposal.verification_receipt_id.is_some()
+                        && (proposal.claim_status != MemoryClaimStatus::UnverifiedTaskOutcome
+                            || proposal.verification_task_id.is_none()))
+                        || (proposal.verification_task_id.is_some()
+                            != proposal.verification_receipt_id.is_some())
+                    {
+                        bail!("pending model proposal has an unsupported claim authority status");
+                    }
+                    if proposal.verification_task_id.as_ref().is_some_and(|id| {
+                        id.trim().is_empty() || id.len() > 256 || id.chars().any(char::is_control)
+                    }) {
+                        bail!("pending model proposal verification task ID is invalid");
+                    }
                     if proposal.decided_at_unix.is_some() || proposal.memory_record_id.is_some() {
                         bail!("pending memory proposal has decision metadata");
                     }
@@ -172,6 +201,9 @@ pub fn create(
         source_turn_reference,
         provenance,
         expires_at_unix,
+        claim_status,
+        verification_receipt_id,
+        verification_task_id,
     } = candidate;
     validate_candidate(
         kind,
@@ -182,6 +214,29 @@ pub fn create(
         expires_at_unix,
         now,
     )?;
+    if !matches!(
+        claim_status,
+        MemoryClaimStatus::Inference | MemoryClaimStatus::UnverifiedTaskOutcome
+    ) {
+        bail!("model proposals may only be classified as inference or unverified task outcome");
+    }
+    if verification_receipt_id.as_ref().is_some_and(|id| {
+        id.trim().is_empty() || id.len() > 256 || id.chars().any(char::is_control)
+    }) {
+        bail!("verification receipt ID is invalid");
+    }
+    if verification_receipt_id.is_some() != verification_task_id.is_some() {
+        bail!("a verification receipt and its expected task ID must be supplied together");
+    }
+    if verification_task_id.as_ref().is_some_and(|id| {
+        id.trim().is_empty() || id.len() > 256 || id.chars().any(char::is_control)
+    }) {
+        bail!("verification task ID is invalid");
+    }
+    if verification_receipt_id.is_some() && claim_status != MemoryClaimStatus::UnverifiedTaskOutcome
+    {
+        bail!("verification receipts may only be attached to task-outcome claims");
+    }
     let _lock = acquire_lock(directory)?;
     let mut store = load_unlocked(directory)?;
     let id = format!(
@@ -202,6 +257,9 @@ pub fn create(
         status: ProposalStatus::Pending,
         decided_at_unix: None,
         memory_record_id: None,
+        claim_status,
+        verification_receipt_id,
+        verification_task_id,
     };
     proposal.fingerprint = fingerprint(&proposal);
     if store
@@ -242,7 +300,18 @@ pub fn get_pending(directory: &Path, id: &str) -> Result<MemoryProposal> {
     Ok(proposal.clone())
 }
 
+#[cfg(test)]
 pub fn approve(directory: &Path, id: &str, confirmation: &str, now: u64) -> Result<String> {
+    approve_with_receipts(directory, None, id, confirmation, now)
+}
+
+pub fn approve_with_receipts(
+    directory: &Path,
+    receipts_directory: Option<&Path>,
+    id: &str,
+    confirmation: &str,
+    now: u64,
+) -> Result<String> {
     let _lock = acquire_lock(directory)?;
     let mut proposals = load_unlocked(directory)?;
     let proposal = proposals
@@ -262,10 +331,32 @@ pub fn approve(directory: &Path, id: &str, confirmation: &str, now: u64) -> Resu
 
     let proposal_snapshot = proposal.clone();
     let source = format!("model_proposal:{}", proposal_snapshot.id);
+    let receipt_candidate = proposal_snapshot
+        .verification_receipt_id
+        .as_deref()
+        .zip(proposal_snapshot.verification_task_id.as_deref())
+        .and_then(|(receipt_id, task_id)| {
+            receipts_directory.and_then(|directory| {
+                load_verified_receipt(
+                    directory,
+                    receipt_id,
+                    task_id,
+                    &proposal_snapshot.content,
+                    now,
+                )
+                .ok()
+                .flatten()
+            })
+        });
     let memory_record_id = MemoryStore::transact(directory, |memory| {
         if let Some(existing) = memory.records.iter().find(|record| record.source == source) {
             return Ok(existing.id.clone());
         }
+        let receipt_is_unused = receipt_candidate.as_ref().is_some_and(|receipt| {
+            !memory.records.iter().any(|record| {
+                record.verification_receipt_id.as_deref() == Some(receipt.verification_id())
+            })
+        });
         let record_id = memory.add_user_entry(
             proposal_snapshot.kind,
             proposal_snapshot.content.clone(),
@@ -279,6 +370,20 @@ pub fn approve(directory: &Path, id: &str, confirmation: &str, now: u64) -> Resu
             .find(|record| record.id == record_id)
             .context("newly added memory record disappeared before commit")?;
         record.source = source.clone();
+        record.claim_status = if proposal_snapshot.claim_status
+            == MemoryClaimStatus::UnverifiedTaskOutcome
+            && receipt_is_unused
+        {
+            record.verification_receipt_id = receipt_candidate
+                .as_ref()
+                .map(|receipt| receipt.verification_id().to_owned());
+            record.evidence_hash = receipt_candidate
+                .as_ref()
+                .map(|receipt| receipt.evidence_hash().to_owned());
+            MemoryClaimStatus::VerifiedTaskOutcome
+        } else {
+            proposal_snapshot.claim_status
+        };
         Ok(record_id)
     })?;
 
@@ -320,6 +425,143 @@ fn decide_without_memory(
     proposal.content.clear();
     proposal.tags.clear();
     save_unlocked(directory, &store)
+}
+
+const RECEIPT_MAX_AGE_SECONDS: u64 = 7 * 24 * 60 * 60;
+const TRUSTED_VERIFIER_ID: &str = "rocksoul.core.verifier";
+const TRUSTED_VERIFIER_VERSION: u16 = 1;
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+struct ReceiptRevocation {
+    verification_id: String,
+    revoked_at_unix: u64,
+    reason_code: String,
+}
+
+pub fn revoke_receipt(
+    receipts_directory: &Path,
+    memory_directory: &Path,
+    verification_id: &str,
+    now: u64,
+    reason_code: &str,
+) -> Result<()> {
+    if verification_id.trim().is_empty()
+        || now == 0
+        || reason_code.trim().is_empty()
+        || reason_code.chars().any(char::is_control)
+    {
+        bail!("receipt revocation requires an ID, timestamp, and reason code");
+    }
+    let _receipt_lock = acquire_lock(receipts_directory)?;
+    if is_receipt_revoked(receipts_directory, verification_id)? {
+        bail!("kernel receipt {verification_id} is already revoked");
+    }
+    fs::create_dir_all(receipts_directory)?;
+    let path = receipts_directory.join("revoked.jsonl");
+    let mut file = OpenOptions::new().create(true).append(true).open(&path)?;
+    serde_json::to_writer(
+        &mut file,
+        &ReceiptRevocation {
+            verification_id: verification_id.to_owned(),
+            revoked_at_unix: now,
+            reason_code: reason_code.to_owned(),
+        },
+    )?;
+    file.write_all(&[10])?;
+    file.sync_all()?;
+    crate::memory::downgrade_revoked_receipt_claims(memory_directory, verification_id, now)?;
+    Ok(())
+}
+
+fn is_receipt_revoked(receipts_directory: &Path, verification_id: &str) -> Result<bool> {
+    let path = receipts_directory.join("revoked.jsonl");
+    if !path.is_file() {
+        return Ok(false);
+    }
+    let content = fs::read_to_string(&path)?;
+    for (index, line) in content.lines().enumerate() {
+        if line.trim().is_empty() {
+            continue;
+        }
+        let event: ReceiptRevocation = serde_json::from_str(line)
+            .with_context(|| format!("receipt revocation ledger has invalid line {}", index + 1))?;
+        if event.verification_id.trim().is_empty()
+            || event.revoked_at_unix == 0
+            || event.reason_code.trim().is_empty()
+        {
+            bail!("receipt revocation ledger contains an invalid event");
+        }
+        if event.verification_id == verification_id {
+            return Ok(true);
+        }
+    }
+    Ok(false)
+}
+
+fn load_verified_receipt(
+    receipts_directory: &Path,
+    verification_id: &str,
+    expected_task_id: &str,
+    claim: &str,
+    now: u64,
+) -> Result<Option<VerificationReceipt>> {
+    let _receipt_lock = acquire_lock(receipts_directory)?;
+    if is_receipt_revoked(receipts_directory, verification_id)? {
+        return Ok(None);
+    }
+    let expected_claim = normalize_task_claim(claim);
+    let expected_claim_hash = format!("{:x}", Sha256::digest(expected_claim.as_bytes()));
+    for entry in fs::read_dir(receipts_directory)? {
+        let path = entry?.path();
+        if !path.is_file()
+            || path.extension().and_then(|extension| extension.to_str()) != Some("json")
+        {
+            // Ignore lock files, revocation ledgers, backups, and unrelated files.
+            continue;
+        }
+        let bytes = fs::read(&path)?;
+        let document: serde_json::Value = serde_json::from_slice(&bytes)
+            .with_context(|| format!("invalid verification receipt {}", path.display()))?;
+        if document
+            .get("verification_id")
+            .and_then(serde_json::Value::as_str)
+            != Some(verification_id)
+        {
+            continue;
+        }
+        if document
+            .get("schema_version")
+            .and_then(serde_json::Value::as_u64)
+            != Some(2)
+        {
+            return Ok(None);
+        }
+        let receipt: VerificationReceipt = serde_json::from_value(document.clone())?;
+        if receipt.task_id() != expected_task_id
+            || document
+                .get("operation_id")
+                .and_then(serde_json::Value::as_str)
+                != Some(receipt.task_id())
+        {
+            return Ok(None);
+        }
+        if !receipt.integrity_valid()
+            || receipt.outcome() != "verified"
+            || receipt.verifier_id() != TRUSTED_VERIFIER_ID
+            || receipt.verifier_version() != TRUSTED_VERIFIER_VERSION
+            || receipt.normalized_claim() != Some(expected_claim.as_str())
+            || receipt.claim_hash() != Some(expected_claim_hash.as_str())
+            || receipt.evidence_hash().len() != 64
+            || receipt.required_checks_passed() == 0
+            || receipt.total_checks() < receipt.required_checks_passed()
+            || receipt.verified_at_unix() > now
+            || now.saturating_sub(receipt.verified_at_unix()) > RECEIPT_MAX_AGE_SECONDS
+        {
+            return Ok(None);
+        }
+        return Ok(Some(receipt));
+    }
+    Ok(None)
 }
 
 fn validate_candidate(
@@ -447,6 +689,9 @@ fn fingerprint(proposal: &MemoryProposal) -> String {
         &proposal.source_turn_reference,
         &proposal.provenance,
         proposal.expires_at_unix,
+        proposal.claim_status,
+        &proposal.verification_receipt_id,
+        &proposal.verification_task_id,
     ))
     .expect("serializing a memory proposal payload cannot fail");
     let digest = Sha256::digest(payload);
@@ -476,7 +721,55 @@ fn load_unlocked(directory: &Path) -> Result<ProposalStore> {
                 format!("could not recover proposal store from {}", backup.display())
             })?;
         } else {
-            return Ok(ProposalStore::default());
+            let legacy = directory.join(LEGACY_PROPOSAL_FILE);
+            let legacy_backup = directory.join(format!("{LEGACY_PROPOSAL_FILE}.bak"));
+            let legacy_source = if legacy.is_file() {
+                Some(legacy.clone())
+            } else if legacy_backup.is_file() {
+                Some(legacy_backup.clone())
+            } else {
+                None
+            };
+            let Some(legacy_source) = legacy_source else {
+                return Ok(ProposalStore::default());
+            };
+            let bytes = fs::read(&legacy_source).with_context(|| {
+                format!(
+                    "could not read legacy proposal store {}",
+                    legacy_source.display()
+                )
+            })?;
+            let mut store: ProposalStore = serde_json::from_slice(&bytes).with_context(|| {
+                format!("invalid legacy proposal store {}", legacy_source.display())
+            })?;
+            if store.schema_version != 1 {
+                bail!(
+                    "unsupported legacy memory proposal schema version {}",
+                    store.schema_version
+                );
+            }
+            store.schema_version = PROPOSAL_SCHEMA_VERSION;
+            for proposal in &mut store.proposals {
+                if proposal.status == ProposalStatus::Pending {
+                    proposal.claim_status = MemoryClaimStatus::Inference;
+                    proposal.verification_receipt_id = None;
+                    proposal.fingerprint = fingerprint(proposal);
+                }
+            }
+            store.validate()?;
+            save_unlocked(directory, &store)?;
+            for old_path in [legacy, legacy_backup] {
+                if old_path.is_file() {
+                    fs::remove_file(&old_path).with_context(|| {
+                        format!(
+                            "could not remove migrated proposal snapshot {}",
+                            old_path.display()
+                        )
+                    })?;
+                }
+            }
+            eprintln!("Migrated memory proposal store schema v1 to v2.");
+            return Ok(store);
         }
     }
     let bytes = fs::read(&path).with_context(|| format!("could not read {}", path.display()))?;
@@ -613,7 +906,8 @@ mod tests {
     };
 
     use super::{
-        MemoryProposalCandidate, ProposalStatus, approve, cancel, create, deny, get_pending, list,
+        MemoryProposalCandidate, ProposalStatus, approve, approve_with_receipts, cancel, create,
+        deny, get_pending, list,
     };
 
     fn temp_dir() -> PathBuf {
@@ -638,7 +932,79 @@ mod tests {
             source_turn_reference: source_turn_reference.into(),
             provenance: "test-model".into(),
             expires_at_unix: None,
+            claim_status: crate::memory::MemoryClaimStatus::Inference,
+            verification_receipt_id: None,
+            verification_task_id: None,
         }
+    }
+
+    fn issue_receipt(
+        receipts_directory: &std::path::Path,
+        verification_id: &str,
+        claim: &str,
+        timestamp: u64,
+    ) {
+        use crate::core::{
+            TurnEvent, TurnState, VerificationEvidence, VerificationOutcome, VerificationRequest,
+            verify_turn_and_award_xp,
+        };
+        use crate::rid::{RuhIdentity, RuhProfile};
+
+        let mut profile = RuhProfile::new(RuhIdentity {
+            instance_id: "receipt-fixture".to_owned(),
+            created_at_unix: 1,
+        })
+        .unwrap();
+        let mut turn = TurnState::new("receipt-task", 0);
+        turn.apply(TurnEvent::Start).unwrap();
+        turn.apply(TurnEvent::PlanAccepted).unwrap();
+        turn.apply(TurnEvent::ActionCompleted).unwrap();
+        let request = VerificationRequest::new(
+            "receipt-task",
+            verification_id,
+            timestamp,
+            1,
+            1,
+            vec![VerificationEvidence::new(
+                "artifact-readback",
+                "present",
+                "present",
+                "test-evidence:artifact",
+                true,
+            )],
+        )
+        .with_claim(claim);
+        let receipt = match verify_turn_and_award_xp(&mut turn, &mut profile, request).unwrap() {
+            VerificationOutcome::Verified { receipt, .. } => receipt,
+            other => panic!("expected a verified fixture receipt, got {other:?}"),
+        };
+        fs::create_dir_all(receipts_directory).unwrap();
+        let mut document = serde_json::to_value(&receipt).unwrap();
+        document
+            .as_object_mut()
+            .unwrap()
+            .insert("schema_version".into(), serde_json::json!(2));
+        document
+            .as_object_mut()
+            .unwrap()
+            .insert("operation_id".into(), serde_json::json!("receipt-task"));
+        fs::write(
+            receipts_directory.join("fixture-receipt.json"),
+            serde_json::to_vec_pretty(&document).unwrap(),
+        )
+        .unwrap();
+    }
+
+    fn task_candidate(content: &str, receipt_id: Option<&str>) -> MemoryProposalCandidate {
+        let mut value = candidate(
+            crate::memory::MemoryKind::Episodic,
+            content,
+            "turn-work-result",
+        );
+        value.claim_status = crate::memory::MemoryClaimStatus::UnverifiedTaskOutcome;
+        value.verification_receipt_id = receipt_id.map(str::to_owned);
+        value.verification_task_id = receipt_id.map(|_| "receipt-task".to_owned());
+        value
     }
 
     fn create_one(directory: &std::path::Path) -> super::MemoryProposal {
@@ -652,6 +1018,57 @@ mod tests {
             100,
         )
         .unwrap()
+    }
+
+    #[test]
+    fn migrates_v1_pending_proposals_without_promoting_claim_authority() {
+        use sha2::{Digest, Sha256};
+
+        let directory = temp_dir();
+        let proposal = create_one(&directory);
+        fs::remove_file(directory.join("proposals.v2.json")).unwrap();
+        let old_payload = serde_json::to_vec(&(
+            proposal.kind,
+            &proposal.content,
+            &proposal.tags,
+            &proposal.source_turn_reference,
+            &proposal.provenance,
+            proposal.expires_at_unix,
+        ))
+        .unwrap();
+        let old_fingerprint = format!("{:x}", Sha256::digest(old_payload));
+        let mut document = serde_json::to_value(super::ProposalStore {
+            schema_version: 1,
+            proposals: vec![proposal.clone()],
+        })
+        .unwrap();
+        document["proposals"][0]["fingerprint"] = serde_json::json!(old_fingerprint);
+        document["proposals"][0]
+            .as_object_mut()
+            .unwrap()
+            .remove("claim_status");
+        document["proposals"][0]
+            .as_object_mut()
+            .unwrap()
+            .remove("verification_receipt_id");
+        document["schema_version"] = serde_json::json!(1);
+        fs::write(
+            directory.join("proposals.v1.json"),
+            serde_json::to_vec_pretty(&document).unwrap(),
+        )
+        .unwrap();
+
+        let migrated = list(&directory).unwrap();
+        assert_eq!(migrated.len(), 1);
+        assert_eq!(
+            migrated[0].claim_status,
+            crate::memory::MemoryClaimStatus::Inference
+        );
+        assert!(migrated[0].verification_receipt_id.is_none());
+        assert!(migrated[0].fingerprint != old_fingerprint);
+        assert!(directory.join("proposals.v2.json").is_file());
+        assert!(!directory.join("proposals.v1.json").exists());
+        fs::remove_dir_all(directory).unwrap();
     }
 
     #[test]
@@ -675,10 +1092,366 @@ mod tests {
         );
         assert!(audit[0].tags.is_empty());
         assert!(
-            !directory.join("proposals.v1.json.bak").exists(),
+            !directory.join("proposals.v2.json.bak").exists(),
             "old proposal backup must not retain the approved candidate payload"
         );
         assert!(approve(&directory, &proposal.id, &proposal.approval_phrase(), 102).is_err());
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn exact_fresh_kernel_receipt_is_required_for_verified_task_outcome() {
+        let directory = temp_dir();
+        let receipts = directory.join("receipts");
+        let claim = "Created workspace artifact note.txt sha256 abcdef";
+        issue_receipt(&receipts, "verify-task-exact", claim, 10_000);
+
+        let proposal = create(
+            &directory,
+            task_candidate(claim, Some("verify-task-exact")),
+            10_001,
+        )
+        .unwrap();
+        let memory_id = approve_with_receipts(
+            &directory,
+            Some(&receipts),
+            &proposal.id,
+            &proposal.approval_phrase(),
+            10_002,
+        )
+        .unwrap();
+        let memory = crate::memory::MemoryStore::load(&directory).unwrap();
+        let record = memory
+            .records
+            .iter()
+            .find(|record| record.id == memory_id)
+            .unwrap();
+        assert_eq!(
+            record.claim_status,
+            crate::memory::MemoryClaimStatus::VerifiedTaskOutcome
+        );
+        assert_eq!(
+            record.verification_receipt_id.as_deref(),
+            Some("verify-task-exact")
+        );
+        assert!(
+            record
+                .evidence_hash
+                .as_deref()
+                .is_some_and(|hash| hash.len() == 64)
+        );
+        super::revoke_receipt(
+            &receipts,
+            &directory,
+            "verify-task-exact",
+            10_003,
+            "operator_review",
+        )
+        .unwrap();
+        let downgraded = crate::memory::MemoryStore::load(&directory).unwrap();
+        let record = downgraded
+            .records
+            .iter()
+            .find(|record| record.id == memory_id)
+            .unwrap();
+        assert_eq!(
+            record.claim_status,
+            crate::memory::MemoryClaimStatus::UnverifiedTaskOutcome
+        );
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn missing_mismatched_stale_and_revoked_receipts_remain_unverified() {
+        let directory = temp_dir();
+        let receipts = directory.join("receipts");
+        let claim = "The deployment completed successfully";
+
+        let missing = create(&directory, task_candidate(claim, None), 20_000).unwrap();
+        let missing_id = approve_with_receipts(
+            &directory,
+            Some(&receipts),
+            &missing.id,
+            &missing.approval_phrase(),
+            20_001,
+        )
+        .unwrap();
+        let store = crate::memory::MemoryStore::load(&directory).unwrap();
+        assert_eq!(
+            store
+                .records
+                .iter()
+                .find(|r| r.id == missing_id)
+                .unwrap()
+                .claim_status,
+            crate::memory::MemoryClaimStatus::UnverifiedTaskOutcome
+        );
+
+        issue_receipt(
+            &receipts,
+            "verify-mismatch",
+            "different exact claim",
+            20_000,
+        );
+        let mismatch = create(
+            &directory,
+            task_candidate(claim, Some("verify-mismatch")),
+            20_002,
+        )
+        .unwrap();
+        let mismatch_id = approve_with_receipts(
+            &directory,
+            Some(&receipts),
+            &mismatch.id,
+            &mismatch.approval_phrase(),
+            20_003,
+        )
+        .unwrap();
+        let store = crate::memory::MemoryStore::load(&directory).unwrap();
+        assert_eq!(
+            store
+                .records
+                .iter()
+                .find(|r| r.id == mismatch_id)
+                .unwrap()
+                .claim_status,
+            crate::memory::MemoryClaimStatus::UnverifiedTaskOutcome
+        );
+
+        issue_receipt(&receipts, "verify-stale", claim, 1);
+        let stale = create(
+            &directory,
+            task_candidate(claim, Some("verify-stale")),
+            1 + 8 * 24 * 60 * 60,
+        )
+        .unwrap();
+        let stale_id = approve_with_receipts(
+            &directory,
+            Some(&receipts),
+            &stale.id,
+            &stale.approval_phrase(),
+            1 + 8 * 24 * 60 * 60,
+        )
+        .unwrap();
+        let store = crate::memory::MemoryStore::load(&directory).unwrap();
+        assert_eq!(
+            store
+                .records
+                .iter()
+                .find(|r| r.id == stale_id)
+                .unwrap()
+                .claim_status,
+            crate::memory::MemoryClaimStatus::UnverifiedTaskOutcome
+        );
+
+        issue_receipt(&receipts, "verify-revoked", claim, 30_000);
+        super::revoke_receipt(
+            &receipts,
+            &directory,
+            "verify-revoked",
+            30_001,
+            "operator_review",
+        )
+        .unwrap();
+        let revoked = create(
+            &directory,
+            task_candidate(claim, Some("verify-revoked")),
+            30_002,
+        )
+        .unwrap();
+        let revoked_id = approve_with_receipts(
+            &directory,
+            Some(&receipts),
+            &revoked.id,
+            &revoked.approval_phrase(),
+            30_003,
+        )
+        .unwrap();
+        let store = crate::memory::MemoryStore::load(&directory).unwrap();
+        assert_eq!(
+            store
+                .records
+                .iter()
+                .find(|r| r.id == revoked_id)
+                .unwrap()
+                .claim_status,
+            crate::memory::MemoryClaimStatus::UnverifiedTaskOutcome
+        );
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn model_proposal_cannot_self_assign_verified_status_or_supply_mutated_receipt() {
+        let directory = temp_dir();
+        let mut forbidden = candidate(
+            crate::memory::MemoryKind::Episodic,
+            "The task completed",
+            "turn-forbidden",
+        );
+        forbidden.claim_status = crate::memory::MemoryClaimStatus::VerifiedTaskOutcome;
+        assert!(create(&directory, forbidden, 50_000).is_err());
+
+        let receipts = directory.join("receipts");
+        let claim = "The task completed with trusted evidence";
+        issue_receipt(&receipts, "verify-mutated", claim, 50_001);
+        let path = receipts.join("fixture-receipt.json");
+        let mut document: serde_json::Value =
+            serde_json::from_slice(&fs::read(&path).unwrap()).unwrap();
+        document["evidence_hash"] = serde_json::json!("0".repeat(64));
+        fs::write(&path, serde_json::to_vec_pretty(&document).unwrap()).unwrap();
+
+        let proposal = create(
+            &directory,
+            task_candidate(claim, Some("verify-mutated")),
+            50_002,
+        )
+        .unwrap();
+        let memory_id = approve_with_receipts(
+            &directory,
+            Some(&receipts),
+            &proposal.id,
+            &proposal.approval_phrase(),
+            50_003,
+        )
+        .unwrap();
+        let store = crate::memory::MemoryStore::load(&directory).unwrap();
+        assert_eq!(
+            store
+                .records
+                .iter()
+                .find(|record| record.id == memory_id)
+                .unwrap()
+                .claim_status,
+            crate::memory::MemoryClaimStatus::UnverifiedTaskOutcome
+        );
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn mismatched_operation_id_cannot_verify_a_task_outcome() {
+        let directory = temp_dir();
+        let receipts = directory.join("receipts");
+        let claim = "The workspace operation completed with verified evidence";
+        issue_receipt(&receipts, "verify-operation-binding", claim, 45_000);
+
+        let path = receipts.join("fixture-receipt.json");
+        let mut document: serde_json::Value =
+            serde_json::from_slice(&fs::read(&path).unwrap()).unwrap();
+        document["operation_id"] = serde_json::json!("different-operation");
+        fs::write(&path, serde_json::to_vec_pretty(&document).unwrap()).unwrap();
+
+        let proposal = create(
+            &directory,
+            task_candidate(claim, Some("verify-operation-binding")),
+            45_001,
+        )
+        .unwrap();
+        let memory_id = approve_with_receipts(
+            &directory,
+            Some(&receipts),
+            &proposal.id,
+            &proposal.approval_phrase(),
+            45_002,
+        )
+        .unwrap();
+
+        let store = crate::memory::MemoryStore::load(&directory).unwrap();
+        assert_eq!(
+            store
+                .records
+                .iter()
+                .find(|record| record.id == memory_id)
+                .unwrap()
+                .claim_status,
+            crate::memory::MemoryClaimStatus::UnverifiedTaskOutcome
+        );
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn receipt_from_another_task_cannot_verify_a_claim() {
+        let directory = temp_dir();
+        let receipts = directory.join("receipts");
+        let claim = "The task completed with a verified result";
+        issue_receipt(&receipts, "verify-other-task", claim, 46_000);
+
+        let mut candidate = task_candidate(claim, Some("verify-other-task"));
+        candidate.verification_task_id = Some("different-task".to_owned());
+        let proposal = create(&directory, candidate, 46_001).unwrap();
+        let memory_id = approve_with_receipts(
+            &directory,
+            Some(&receipts),
+            &proposal.id,
+            &proposal.approval_phrase(),
+            46_002,
+        )
+        .unwrap();
+
+        let store = crate::memory::MemoryStore::load(&directory).unwrap();
+        assert_eq!(
+            store
+                .records
+                .iter()
+                .find(|record| record.id == memory_id)
+                .unwrap()
+                .claim_status,
+            crate::memory::MemoryClaimStatus::UnverifiedTaskOutcome
+        );
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn receipt_is_one_time_and_cannot_verify_a_second_memory_claim() {
+        let directory = temp_dir();
+        let receipts = directory.join("receipts");
+        let claim = "Task completed with verified evidence";
+        issue_receipt(&receipts, "verify-one-time", claim, 40_000);
+
+        let first = create(
+            &directory,
+            task_candidate(claim, Some("verify-one-time")),
+            40_001,
+        )
+        .unwrap();
+        let first_id = approve_with_receipts(
+            &directory,
+            Some(&receipts),
+            &first.id,
+            &first.approval_phrase(),
+            40_002,
+        )
+        .unwrap();
+        let mut second_candidate = task_candidate(claim, Some("verify-one-time"));
+        second_candidate.source_turn_reference = "turn-second-work-result".to_owned();
+        let second = create(&directory, second_candidate, 40_003).unwrap();
+        let second_id = approve_with_receipts(
+            &directory,
+            Some(&receipts),
+            &second.id,
+            &second.approval_phrase(),
+            40_004,
+        )
+        .unwrap();
+
+        let store = crate::memory::MemoryStore::load(&directory).unwrap();
+        assert_eq!(
+            store
+                .records
+                .iter()
+                .find(|r| r.id == first_id)
+                .unwrap()
+                .claim_status,
+            crate::memory::MemoryClaimStatus::VerifiedTaskOutcome
+        );
+        assert_eq!(
+            store
+                .records
+                .iter()
+                .find(|r| r.id == second_id)
+                .unwrap()
+                .claim_status,
+            crate::memory::MemoryClaimStatus::UnverifiedTaskOutcome
+        );
         fs::remove_dir_all(directory).unwrap();
     }
 
@@ -741,7 +1514,7 @@ mod tests {
     fn modified_payload_is_rejected_before_approval() {
         let directory = temp_dir();
         let proposal = create_one(&directory);
-        let path = directory.join("proposals.v1.json");
+        let path = directory.join("proposals.v2.json");
         let mut store: serde_json::Value =
             serde_json::from_slice(&fs::read(&path).unwrap()).unwrap();
         store["proposals"][0]["content"] =
@@ -783,7 +1556,7 @@ mod tests {
         let directory = temp_dir();
         let proposal = create_one(&directory);
         fs::write(
-            directory.join("store.v3.json"),
+            directory.join("store.v4.json"),
             br#"{"schema_version":99,"revision":0,"records":[]}"#,
         )
         .unwrap();

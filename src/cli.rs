@@ -1,6 +1,6 @@
 use clap::{Parser, Subcommand};
 
-use crate::memory::MemoryKind;
+use crate::memory::{MemoryClaimStatus, MemoryKind};
 
 #[derive(Debug, Parser)]
 #[command(
@@ -148,6 +148,15 @@ pub enum MemoryCommand {
         /// Suggest expiry after this many hours (working memory only).
         #[arg(long)]
         expires_in_hours: Option<u64>,
+        /// Classify this model proposal as an inference or an unverified task outcome.
+        #[arg(long, value_enum, default_value_t = MemoryClaimStatus::Inference)]
+        claim_status: MemoryClaimStatus,
+        /// Optional kernel receipt ID; it is validated at approval and may not be replayed.
+        #[arg(long)]
+        verification_receipt_id: Option<String>,
+        /// Expected task/operation ID bound by the kernel receipt; required with --verification-receipt-id.
+        #[arg(long)]
+        verification_task_id: Option<String>,
     },
     /// List pending and decided model memory proposals.
     Proposals,
@@ -157,4 +166,12 @@ pub enum MemoryCommand {
     Deny { id: String },
     /// Cancel one pending proposal without creating a memory record.
     CancelProposal { id: String },
+    /// Mark a memory claim contradicted or superseded by a later correction.
+    Supersede { id: String },
+    /// Revoke a kernel receipt so it cannot verify a future memory claim.
+    RevokeReceipt {
+        verification_id: String,
+        #[arg(long, default_value = "operator_revocation")]
+        reason_code: String,
+    },
 }

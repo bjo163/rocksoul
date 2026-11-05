@@ -14,9 +14,10 @@ use anyhow::{Context, Result, anyhow, bail};
 use clap::ValueEnum;
 use serde::{Deserialize, Serialize};
 
-pub const MEMORY_SCHEMA_VERSION: u16 = 3;
+pub const MEMORY_SCHEMA_VERSION: u16 = 4;
 pub const RETENTION_POLICY_VERSION: u16 = 1;
-const STORE_FILE: &str = "store.v3.json";
+const STORE_FILE: &str = "store.v4.json";
+const LEGACY_V3_STORE_FILE: &str = "store.v3.json";
 const LEGACY_V2_STORE_FILE: &str = "store.v2.json";
 const LEGACY_STORE_FILE: &str = "store.v1.json";
 const FORGETTING_LEDGER_FILE: &str = "forgetting.jsonl";
@@ -46,6 +47,31 @@ impl std::fmt::Display for MemoryKind {
     }
 }
 
+#[derive(Clone, Copy, Debug, Default, Deserialize, Eq, PartialEq, Serialize, ValueEnum)]
+#[serde(rename_all = "snake_case")]
+pub enum MemoryClaimStatus {
+    UserAssertion,
+    ObservedEvidence,
+    #[default]
+    Inference,
+    UnverifiedTaskOutcome,
+    VerifiedTaskOutcome,
+    ContradictedSuperseded,
+}
+
+impl std::fmt::Display for MemoryClaimStatus {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter.write_str(match self {
+            Self::UserAssertion => "user_assertion",
+            Self::ObservedEvidence => "observed_evidence",
+            Self::Inference => "inference",
+            Self::UnverifiedTaskOutcome => "unverified_task_outcome",
+            Self::VerifiedTaskOutcome => "verified_task_outcome",
+            Self::ContradictedSuperseded => "contradicted_superseded",
+        })
+    }
+}
+
 #[derive(Clone, Copy, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum RetentionPolicy {
@@ -70,6 +96,12 @@ pub struct MemoryRecord {
     pub retention_policy_version: u16,
     #[serde(default)]
     pub retention_policy: RetentionPolicy,
+    #[serde(default)]
+    pub claim_status: MemoryClaimStatus,
+    #[serde(default)]
+    pub verification_receipt_id: Option<String>,
+    #[serde(default)]
+    pub evidence_hash: Option<String>,
 }
 
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -90,6 +122,8 @@ pub struct MemorySearchResult {
     pub updated_at_unix: u64,
     /// Source-record confidence only; not a retrieval relevance probability.
     pub source_confidence: Option<f32>,
+    pub claim_status: MemoryClaimStatus,
+    pub verification_receipt_id: Option<String>,
     pub lexical_score: u32,
     pub matched_terms: Vec<String>,
     pub relevance_explanation: String,
@@ -123,6 +157,7 @@ impl MemoryStore {
         if path.exists()
             || backup_path(&path).exists()
             || legacy.exists()
+            || legacy_v3_store_path(directory).exists()
             || legacy_v2_store_path(directory).exists()
         {
             return Ok((Self::load_unlocked(directory)?, false));
@@ -133,7 +168,7 @@ impl MemoryStore {
     }
 
     /// Load the current store, recover its last known-good backup when needed,
-    /// or migrate the legacy v1 document without modifying the original file.
+    /// or migrate a supported v1/v2/v3 document without modifying the original file.
     pub fn load(directory: &Path) -> Result<Self> {
         fs::create_dir_all(directory).with_context(|| {
             format!("could not create memory directory {}", directory.display())
@@ -149,6 +184,7 @@ impl MemoryStore {
             match read_current_store(&path) {
                 Ok(mut store) => {
                     apply_forgetting_ledger(directory, &mut store)?;
+                    apply_claim_status_ledger(directory, &mut store)?;
                     return Ok(store);
                 }
                 Err(primary_error) => {
@@ -167,6 +203,7 @@ impl MemoryStore {
                         restore_backup(&backup, &path)?;
                         let mut recovered = recovered;
                         apply_forgetting_ledger(directory, &mut recovered)?;
+                        apply_claim_status_ledger(directory, &mut recovered)?;
                         eprintln!(
                             "Recovered memory store from validated backup: {}",
                             backup.display()
@@ -182,6 +219,7 @@ impl MemoryStore {
             let mut recovered = read_current_store(&backup)?;
             restore_backup(&backup, &path)?;
             apply_forgetting_ledger(directory, &mut recovered)?;
+            apply_claim_status_ledger(directory, &mut recovered)?;
             eprintln!(
                 "Recovered missing memory store from validated backup: {}",
                 backup.display()
@@ -190,6 +228,7 @@ impl MemoryStore {
         }
 
         for (legacy, expected_version) in [
+            (legacy_v3_store_path(directory), 3_u16),
             (legacy_v2_store_path(directory), 2_u16),
             (legacy_store_path(directory), 1_u16),
         ] {
@@ -221,9 +260,17 @@ impl MemoryStore {
                 } else {
                     RetentionPolicy::KeepUntilDeleted
                 };
+                record.claim_status = if record.source == "user_explicit" {
+                    MemoryClaimStatus::UserAssertion
+                } else {
+                    MemoryClaimStatus::Inference
+                };
+                record.verification_receipt_id = None;
+                record.evidence_hash = None;
             }
             store.validate()?;
             apply_forgetting_ledger(directory, &mut store)?;
+            apply_claim_status_ledger(directory, &mut store)?;
             store.save_unlocked(directory)?;
             eprintln!(
                 "Migrated memory store schema v{} to v{}; original retained at {}",
@@ -247,6 +294,7 @@ impl MemoryStore {
         }
 
         let mut ids = HashSet::with_capacity(self.records.len());
+        let mut receipt_ids = HashSet::new();
         for record in &self.records {
             if record.id.trim().is_empty()
                 || record.content.trim().is_empty()
@@ -282,6 +330,39 @@ impl MemoryStore {
                 != record.expires_at_unix.is_some()
             {
                 bail!("memory retention policy and expiry timestamp are inconsistent");
+            }
+            if record.claim_status == MemoryClaimStatus::VerifiedTaskOutcome
+                && (!record.user_approved
+                    || record
+                        .verification_receipt_id
+                        .as_deref()
+                        .is_none_or(str::is_empty)
+                    || record.evidence_hash.as_deref().is_none_or(str::is_empty))
+            {
+                bail!(
+                    "verified task-outcome memory requires explicit approval, a verifier receipt, and an evidence hash"
+                );
+            }
+            if record
+                .verification_receipt_id
+                .as_ref()
+                .is_some_and(|receipt_id| {
+                    receipt_id.trim().is_empty()
+                        || receipt_id.len() > 256
+                        || receipt_id.chars().any(char::is_control)
+                })
+            {
+                bail!("memory verification receipt ID is invalid");
+            }
+            if let Some(receipt_id) = &record.verification_receipt_id {
+                if !receipt_ids.insert(receipt_id.as_str()) {
+                    bail!("a kernel verification receipt may verify only one memory claim");
+                }
+            }
+            if record.evidence_hash.as_ref().is_some_and(|hash| {
+                hash.len() != 64 || !hash.bytes().all(|byte| byte.is_ascii_hexdigit())
+            }) {
+                bail!("memory evidence hash must be a SHA-256 hex digest");
             }
         }
         Ok(())
@@ -327,6 +408,9 @@ impl MemoryStore {
             } else {
                 RetentionPolicy::KeepUntilDeleted
             },
+            claim_status: MemoryClaimStatus::UserAssertion,
+            verification_receipt_id: None,
+            evidence_hash: None,
         };
         self.records.push(record);
         self.revision = self.revision.saturating_add(1);
@@ -447,6 +531,8 @@ impl MemoryStore {
                     created_at_unix: record.created_at_unix,
                     updated_at_unix: record.updated_at_unix,
                     source_confidence: record.confidence,
+                    claim_status: record.claim_status,
+                    verification_receipt_id: record.verification_receipt_id.clone(),
                     lexical_score,
                     matched_terms,
                     relevance_explanation,
@@ -508,7 +594,8 @@ impl MemoryStore {
         let existed = path.is_file()
             || backup_path(&path).is_file()
             || legacy_store_path(directory).is_file()
-            || legacy_v2_store_path(directory).is_file();
+            || legacy_v2_store_path(directory).is_file()
+            || legacy_v3_store_path(directory).is_file();
         let mut store = Self::load_unlocked(directory)?;
         let previous = store.clone();
         let output = operation(&mut store)?;
@@ -699,12 +786,173 @@ fn legacy_store_path(directory: &Path) -> PathBuf {
     directory.join(LEGACY_STORE_FILE)
 }
 
+fn legacy_v3_store_path(directory: &Path) -> PathBuf {
+    directory.join(LEGACY_V3_STORE_FILE)
+}
+
 fn legacy_v2_store_path(directory: &Path) -> PathBuf {
     directory.join(LEGACY_V2_STORE_FILE)
 }
 
 fn default_retention_policy_version() -> u16 {
     RETENTION_POLICY_VERSION
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+struct ClaimStatusEvent {
+    record_id: String,
+    occurred_at_unix: u64,
+    status: MemoryClaimStatus,
+    reason_code: String,
+}
+
+fn claim_status_ledger_path(directory: &Path) -> PathBuf {
+    directory.join("claim-status.jsonl")
+}
+
+fn append_claim_status_event(directory: &Path, event: &ClaimStatusEvent) -> Result<()> {
+    use std::io::Write as _;
+    let path = claim_status_ledger_path(directory);
+    let mut file = OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(&path)
+        .with_context(|| format!("could not append claim status ledger {}", path.display()))?;
+    serde_json::to_writer(&mut file, event)?;
+    file.write_all(&[10])?;
+    file.sync_all()?;
+    Ok(())
+}
+
+fn apply_claim_status_ledger(directory: &Path, store: &mut MemoryStore) -> Result<()> {
+    let path = claim_status_ledger_path(directory);
+    if !path.is_file() {
+        return Ok(());
+    }
+    let content = fs::read_to_string(&path)
+        .with_context(|| format!("could not read claim status ledger {}", path.display()))?;
+    let mut changed = false;
+    for (index, line) in content.lines().enumerate() {
+        if line.trim().is_empty() {
+            continue;
+        }
+        let event: ClaimStatusEvent = serde_json::from_str(line).with_context(|| {
+            format!(
+                "claim status ledger has invalid event on line {}",
+                index + 1
+            )
+        })?;
+        if event.record_id.trim().is_empty()
+            || event.occurred_at_unix == 0
+            || event.reason_code.trim().is_empty()
+            || !matches!(
+                event.status,
+                MemoryClaimStatus::UnverifiedTaskOutcome
+                    | MemoryClaimStatus::ContradictedSuperseded
+            )
+        {
+            bail!(
+                "claim status ledger contains an invalid event on line {}",
+                index + 1
+            );
+        }
+        if let Some(record) = store
+            .records
+            .iter_mut()
+            .find(|record| record.id == event.record_id)
+        {
+            if record.claim_status != event.status {
+                record.claim_status = event.status;
+                record.updated_at_unix = record.updated_at_unix.max(event.occurred_at_unix);
+                changed = true;
+            }
+        }
+    }
+    if changed {
+        store.revision = store.revision.saturating_add(1);
+    }
+    Ok(())
+}
+
+pub fn supersede_claim(directory: &Path, record_id: &str, now: u64) -> Result<()> {
+    if now == 0 {
+        bail!("claim supersession requires a valid timestamp");
+    }
+    fs::create_dir_all(directory)?;
+    let _lock = acquire_store_lock(directory)?;
+    let mut store = MemoryStore::load_unlocked(directory)?;
+    let record = store
+        .records
+        .iter()
+        .find(|record| record.id == record_id)
+        .with_context(|| format!("memory record not found: {record_id}"))?;
+    if record.claim_status == MemoryClaimStatus::ContradictedSuperseded {
+        bail!("memory claim {record_id} is already superseded");
+    }
+    append_claim_status_event(
+        directory,
+        &ClaimStatusEvent {
+            record_id: record_id.to_owned(),
+            occurred_at_unix: now,
+            status: MemoryClaimStatus::ContradictedSuperseded,
+            reason_code: "explicit_user_correction".to_owned(),
+        },
+    )?;
+    let record = store
+        .records
+        .iter_mut()
+        .find(|record| record.id == record_id)
+        .unwrap();
+    record.claim_status = MemoryClaimStatus::ContradictedSuperseded;
+    record.updated_at_unix = now.max(record.updated_at_unix);
+    store.revision = store.revision.saturating_add(1);
+    store.save_unlocked(directory)
+}
+
+pub fn downgrade_revoked_receipt_claims(
+    directory: &Path,
+    verification_id: &str,
+    now: u64,
+) -> Result<usize> {
+    if now == 0 || verification_id.trim().is_empty() {
+        bail!("receipt downgrade requires a valid receipt ID and timestamp");
+    }
+    fs::create_dir_all(directory)?;
+    let _lock = acquire_store_lock(directory)?;
+    let mut store = MemoryStore::load_unlocked(directory)?;
+    let ids = store
+        .records
+        .iter()
+        .filter(|record| {
+            record.verification_receipt_id.as_deref() == Some(verification_id)
+                && record.claim_status == MemoryClaimStatus::VerifiedTaskOutcome
+        })
+        .map(|record| record.id.clone())
+        .collect::<Vec<_>>();
+    for record_id in &ids {
+        append_claim_status_event(
+            directory,
+            &ClaimStatusEvent {
+                record_id: record_id.clone(),
+                occurred_at_unix: now,
+                status: MemoryClaimStatus::UnverifiedTaskOutcome,
+                reason_code: "verification_receipt_revoked".to_owned(),
+            },
+        )?;
+        if let Some(record) = store
+            .records
+            .iter_mut()
+            .find(|record| &record.id == record_id)
+        {
+            record.claim_status = MemoryClaimStatus::UnverifiedTaskOutcome;
+            record.updated_at_unix = now.max(record.updated_at_unix);
+        }
+    }
+    if !ids.is_empty() {
+        store.revision = store.revision.saturating_add(1);
+        store.save_unlocked(directory)?;
+    }
+    Ok(ids.len())
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -792,12 +1040,15 @@ fn scrub_forgotten_snapshots(directory: &Path) -> Result<()> {
     let current = store_path(directory);
     let legacy_v1 = legacy_store_path(directory);
     let legacy_v2 = legacy_v2_store_path(directory);
+    let legacy_v3 = legacy_v3_store_path(directory);
     for path in [
         backup_path(&current),
         current.with_extension("json.tmp"),
         current.with_extension("json.recovery.tmp"),
         legacy_v1.clone(),
         legacy_v1.with_extension("json.bak"),
+        legacy_v3.clone(),
+        legacy_v3.with_extension("json.bak"),
         legacy_v1.with_extension("json.tmp"),
         legacy_v2.clone(),
         legacy_v2.with_extension("json.bak"),
@@ -923,8 +1174,9 @@ mod tests {
     use fs2::FileExt;
 
     use super::{
-        MEMORY_SCHEMA_VERSION, MemoryKind, MemoryStore, RETENTION_POLICY_VERSION, RetentionPolicy,
-        backup_path, legacy_store_path, legacy_v2_store_path, store_path,
+        MEMORY_SCHEMA_VERSION, MemoryClaimStatus, MemoryKind, MemoryStore,
+        RETENTION_POLICY_VERSION, RetentionPolicy, backup_path, legacy_store_path,
+        legacy_v2_store_path, legacy_v3_store_path, store_path,
     };
 
     fn temp_dir() -> PathBuf {
@@ -936,7 +1188,7 @@ mod tests {
     }
 
     #[test]
-    fn migrates_v1_store_to_v3_without_modifying_legacy_file() {
+    fn migrates_v1_store_to_v4_without_modifying_legacy_file() {
         let directory = temp_dir();
         fs::create_dir_all(&directory).unwrap();
         let mut legacy = MemoryStore {
@@ -957,6 +1209,9 @@ mod tests {
             expires_at_unix: Some(100),
             retention_policy_version: RETENTION_POLICY_VERSION,
             retention_policy: RetentionPolicy::ExpireAt,
+            claim_status: MemoryClaimStatus::UserAssertion,
+            verification_receipt_id: None,
+            evidence_hash: None,
         });
         let legacy_path = legacy_store_path(&directory);
         let mut legacy_json = serde_json::to_value(&legacy).unwrap();
@@ -989,7 +1244,74 @@ mod tests {
     }
 
     #[test]
-    fn migrates_v2_store_to_v3_and_derives_retention_policy() {
+    fn migrates_v3_claims_without_promoting_model_proposals_to_verified() {
+        let directory = temp_dir();
+        fs::create_dir_all(&directory).unwrap();
+        let mut legacy = MemoryStore {
+            schema_version: 3,
+            revision: 9,
+            ..MemoryStore::default()
+        };
+        legacy.records.push(super::MemoryRecord {
+            id: "legacy-model-proposal".into(),
+            kind: MemoryKind::Episodic,
+            content: "A model-proposed task outcome".into(),
+            tags: vec![],
+            source: "model_proposal:old-proposal".into(),
+            user_approved: true,
+            confidence: None,
+            created_at_unix: 10,
+            updated_at_unix: 10,
+            expires_at_unix: None,
+            retention_policy_version: RETENTION_POLICY_VERSION,
+            retention_policy: RetentionPolicy::KeepUntilDeleted,
+            claim_status: MemoryClaimStatus::Inference,
+            verification_receipt_id: None,
+            evidence_hash: None,
+        });
+        legacy.records.push(super::MemoryRecord {
+            id: "legacy-user-assertion".into(),
+            kind: MemoryKind::Semantic,
+            content: "A user-provided preference".into(),
+            tags: vec![],
+            source: "user_explicit".into(),
+            user_approved: true,
+            confidence: None,
+            created_at_unix: 11,
+            updated_at_unix: 11,
+            expires_at_unix: None,
+            retention_policy_version: RETENTION_POLICY_VERSION,
+            retention_policy: RetentionPolicy::KeepUntilDeleted,
+            claim_status: MemoryClaimStatus::UserAssertion,
+            verification_receipt_id: None,
+            evidence_hash: None,
+        });
+        let legacy_path = legacy_v3_store_path(&directory);
+        fs::write(&legacy_path, serde_json::to_vec_pretty(&legacy).unwrap()).unwrap();
+
+        let migrated = MemoryStore::load(&directory).unwrap();
+        assert_eq!(migrated.schema_version, MEMORY_SCHEMA_VERSION);
+        assert_eq!(
+            migrated.records[0].claim_status,
+            MemoryClaimStatus::Inference
+        );
+        assert_eq!(
+            migrated.records[1].claim_status,
+            MemoryClaimStatus::UserAssertion
+        );
+        assert!(
+            migrated
+                .records
+                .iter()
+                .all(|record| record.verification_receipt_id.is_none())
+        );
+        assert!(legacy_path.is_file());
+        assert!(store_path(&directory).is_file());
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn migrates_v2_store_to_v4_and_derives_retention_policy() {
         let directory = temp_dir();
         fs::create_dir_all(&directory).unwrap();
         let mut legacy = MemoryStore {
@@ -1010,6 +1332,9 @@ mod tests {
             expires_at_unix: Some(50),
             retention_policy_version: RETENTION_POLICY_VERSION,
             retention_policy: RetentionPolicy::ExpireAt,
+            claim_status: MemoryClaimStatus::UserAssertion,
+            verification_receipt_id: None,
+            evidence_hash: None,
         });
         let mut legacy_json = serde_json::to_value(&legacy).unwrap();
         legacy_json["records"][0]
@@ -1375,6 +1700,39 @@ mod tests {
     }
 
     #[test]
+    fn explicit_claim_supersession_is_append_only_and_survives_reload() {
+        let directory = temp_dir();
+        let mut id = String::new();
+        MemoryStore::transact(&directory, |store| {
+            id = store.add_user_entry(
+                MemoryKind::Semantic,
+                "The deployment succeeded".into(),
+                vec![],
+                None,
+                100,
+            )?;
+            Ok(())
+        })
+        .unwrap();
+
+        super::supersede_claim(&directory, &id, 200).unwrap();
+        let loaded = MemoryStore::load(&directory).unwrap();
+        let record = loaded
+            .records
+            .iter()
+            .find(|record| record.id == id)
+            .unwrap();
+        assert_eq!(
+            record.claim_status,
+            MemoryClaimStatus::ContradictedSuperseded
+        );
+        let ledger = fs::read_to_string(directory.join("claim-status.jsonl")).unwrap();
+        assert!(ledger.contains("explicit_user_correction"));
+        assert!(super::supersede_claim(&directory, &id, 201).is_err());
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
     fn rejects_unknown_schema_and_invalid_confidence() {
         let unsupported = MemoryStore {
             schema_version: MEMORY_SCHEMA_VERSION + 1,
@@ -1396,6 +1754,9 @@ mod tests {
                 expires_at_unix: None,
                 retention_policy_version: RETENTION_POLICY_VERSION,
                 retention_policy: RetentionPolicy::KeepUntilDeleted,
+                claim_status: MemoryClaimStatus::Inference,
+                verification_receipt_id: None,
+                evidence_hash: None,
             }],
             ..MemoryStore::default()
         };

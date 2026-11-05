@@ -54,7 +54,7 @@ The roadmap is capability-driven. Each stage must deliver a working, tested incr
 
 ## Stage 2 — Persistent memory
 
-**Status:** Local-only schema v3 memory lifecycle, deterministic retrieval evaluation, and the human-reviewed proposal workflow are merged to `main` through PRs #43, #46, #47, #49, and #50. Verified task-outcome claim receipts remain open in [#44](https://github.com/bjo163/rocksoul/issues/44). Automatic cognition-to-memory emission and retrieval injection remain disabled.
+**Status:** The latest `main` baseline contains the local-only schema v3 memory lifecycle, deterministic retrieval evaluation, and human-reviewed proposal workflow (PRs #43, #46, #47, #49, and #50). Schema v4 claim provenance, kernel receipt gating, revocation, and supersession are proposed in open PR #51 for issue [#44](https://github.com/bjo163/rocksoul/issues/44); they are not complete until merged and CI-verified. Automatic cognition-to-memory emission and retrieval injection remain disabled.
 
 - [x] Add a root-local JSON store with schema versioning and atomic replacement/backup recovery.
 - [x] Separate episodic, semantic, procedural, working, and derived record kinds.
@@ -63,6 +63,7 @@ The roadmap is capability-driven. Each stage must deliver a working, tested incr
 - [x] Support expiry for working-memory records.
 - [x] Show real store counts and provenance in the Cognitive Cockpit.
 - [x] Migrate v1-to-v2-to-v3 memory stores with retention metadata, metadata-preserving validation, and backup recovery diagnostics.
+- [ ] Migrate v3-to-v4 claim provenance without promoting legacy model proposals; gate verified task outcomes on exact fresh single-use kernel receipts with a matching expected task/operation ID; support revocation downgrade and append-only supersession (proposed in PR #51).
 - [x] Serialize memory read-modify-write CLI transactions with a stable OS lock file, bounded five-second acquisition timeout, and subprocess tests for contention, process-exit release, and concurrent writers.
 - [x] Add versioned per-record retention policies, dry-run-first expiry pruning, and append-only content-free forgetting tombstones.
 - [x] Apply tombstones during normal load and backup recovery; scrub managed backups, legacy snapshots, and exports after explicit forgetting.
@@ -70,7 +71,7 @@ The roadmap is capability-driven. Each stage must deliver a working, tested incr
 - [x] Persist machine-readable retrieval reports and run the evaluation in Linux CI and Windows portable smoke tests.
 - [ ] Consider memory context injection only after separate policy approval and additional contamination/regression tests.
 - [x] Add typed model-proposal records with source-turn provenance, retention suggestions, credential/sensitive-category rejection, exact SHA-256 payload binding, one-time interactive approval, denial/cancellation, post-decision content scrubbing, and idempotent persistence; silent model writes and automatic context injection remain disabled.
-- [ ] Gate verified task-outcome claims on exact kernel-issued verification receipts; preserve user assertions and unverified claims with explicit provenance ([#44](https://github.com/bjo163/rocksoul/issues/44)).
+
 
 ## Stage 3 — Skills and tools
 
