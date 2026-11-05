@@ -11,17 +11,17 @@ This is the durable progress snapshot for maintainers and delegated/local AI age
 
 | Area | State | Evidence / note |
 |---|---|---|
-| Product foundation | <badge>In place</badge> | One Rust Cargo package, one portable native executable, CLI/REPL and optional Ratatui cockpit |
-| Stage 0 — Seed CLI | <badge>Implemented</badge> | Windows release build and automated installer/portable smoke tests; manual clean-device upgrade test remains |
-| Stage 1 — Reliable cognition | <badge>Vertical slice merged</badge> | PR #34, merge commit `0f5ca4bc4d1c65322cb02963fcc23c53fa990f5d`; CI #248 passed |
-| Stage 1 follow-through | <badge>Open</badge> | Issue #35: crash injection after artifact publication/before XP persistence and generalized typed acceptance checks |
-| Stage 2 — Persistent memory | <badge>Core baseline merged</badge> | Schema v3, locking, retention/forgetting, retrieval evaluation and human-reviewed proposals merged through PRs #43/#46/#47/#49/#50 |
-| Stage 2 claim integrity | <badge>Validation in progress</badge> | PR #51 proposes schema v4, claim provenance, kernel receipt gate, revocation and supersession for issue #44 |
-| Stage 3 — Skills/tools | <badge>Not started</badge> | No general tool registry or arbitrary tool execution |
-| Stage 4 — Application builder | <badge>Not started</badge> | Future bounded project-generation workflow |
-| Stage 5 — Evaluation/evolution | <badge>Partial foundation</badge> | Offline Core Integrity exists; candidate benchmarking, isolated evolution and promotion/rollback remain |
-| Stage 6 — Multi-agent | <badge>Not started</badge> | Deliberately deferred until single-agent foundations justify delegation |
-| Stage 7 — Additional interfaces | <badge>Not started</badge> | CLI remains primary; do not add web/desktop/server prematurely |
+| Product foundation | **In place** | One Rust Cargo package, one portable native executable, CLI/REPL and optional Ratatui cockpit |
+| Stage 0 — Seed CLI | **Implemented** | Windows release build and automated installer/portable smoke tests; manual clean-device upgrade test remains |
+| Stage 1 — Reliable cognition | **Vertical slice merged** | PR #34, merge commit `0f5ca4bc4d1c65322cb02963fcc23c53fa990f5d`; CI #248 passed |
+| Stage 1 follow-through | **Open** | Issue #35: crash injection after artifact publication/before XP persistence and generalized typed acceptance checks |
+| Stage 2 — Persistent memory | **Core baseline merged** | Schema v3, locking, retention/forgetting, retrieval evaluation and human-reviewed proposals merged through PRs #43/#46/#47/#49/#50 |
+| Stage 2 claim integrity | **Validation in progress** | PR #51 proposes schema v4, claim provenance, kernel receipt gate, revocation and supersession for issue #44 |
+| Stage 3 — Skills/tools | **Not started** | No general tool registry or arbitrary tool execution |
+| Stage 4 — Application builder | **Not started** | Future bounded project-generation workflow |
+| Stage 5 — Evaluation/evolution | **Partial foundation** | Offline Core Integrity exists; candidate benchmarking, isolated evolution and promotion/rollback remain |
+| Stage 6 — Multi-agent | **Not started** | Deliberately deferred until single-agent foundations justify delegation |
+| Stage 7 — Additional interfaces | **Not started** | CLI remains primary; do not add web/desktop/server prematurely |
 
 > A badge describes the progress snapshot, not a guarantee that a live workflow is currently green. Check the linked PR and CI before merging.
 
