@@ -480,7 +480,9 @@ fn render_header(frame: &mut Frame<'_>, area: Rect, app: &App) {
         ),
         Span::styled(
             if english { "/ COGNITIVE COCKPIT " } else { "/ KOKPIT KOGNITIF " },
-            Style::default().fg(app.palette.accent).add_modifier(Modifier::BOLD),
+            Style::default()
+                .fg(app.palette.accent)
+                .add_modifier(Modifier::BOLD),
         ),
         Span::styled(status.0, Style::default().fg(status.1)),
         Span::raw("   "),
@@ -1592,7 +1594,10 @@ mod tests {
     fn navigation_labels_are_localized() {
         assert_eq!(Screen::Memory.label(LocaleMode::English), "MEMORY");
         assert_eq!(Screen::Memory.label(LocaleMode::Indonesian), "MEMORI");
-        assert_eq!(Screen::Settings.title(LocaleMode::Indonesian), "Pengaturan Tampilan");
+        assert_eq!(
+            Screen::Settings.title(LocaleMode::Indonesian),
+            "Pengaturan Tampilan"
+        );
     }
 
     #[test]
