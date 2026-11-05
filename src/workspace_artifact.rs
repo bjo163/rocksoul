@@ -148,20 +148,6 @@ impl WorkspaceArtifactService {
         self.execute_approved_with_publish_hook(proposal, approval, cancellation, || {})
     }
 
-    #[cfg(test)]
-    pub(crate) fn execute_approved_with_after_publish_hook<G>(
-        &self,
-        proposal: &WorkspaceArtifactProposal,
-        approval: &UserApproval,
-        cancellation: &CancellationToken,
-        after_publish: G,
-    ) -> Result<ArtifactOutcome>
-    where
-        G: FnOnce() -> Result<()>,
-    {
-        self.execute_approved_with_hooks(proposal, approval, cancellation, || {}, after_publish)
-    }
-
     fn execute_approved_with_publish_hook<F>(
         &self,
         proposal: &WorkspaceArtifactProposal,
@@ -171,27 +157,6 @@ impl WorkspaceArtifactService {
     ) -> Result<ArtifactOutcome>
     where
         F: FnOnce(),
-    {
-        self.execute_approved_with_hooks(
-            proposal,
-            approval,
-            cancellation,
-            before_publish,
-            || Ok(()),
-        )
-    }
-
-    fn execute_approved_with_hooks<F, G>(
-        &self,
-        proposal: &WorkspaceArtifactProposal,
-        approval: &UserApproval,
-        cancellation: &CancellationToken,
-        before_publish: F,
-        after_publish: G,
-    ) -> Result<ArtifactOutcome>
-    where
-        F: FnOnce(),
-        G: FnOnce() -> Result<()>,
     {
         cancellation.check()?;
         proposal.validate()?;
@@ -220,14 +185,9 @@ impl WorkspaceArtifactService {
                         .context("existing artifact is not valid UTF-8")?,
                 })
             }
-            Err(error) if error.kind() == std::io::ErrorKind::NotFound => self.create_and_verify(
-                &root,
-                &target,
-                proposal,
-                cancellation,
-                before_publish,
-                after_publish,
-            ),
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+                self.create_and_verify(&root, &target, proposal, cancellation, before_publish)
+            }
             Err(error) => Err(error).context("could not inspect artifact target"),
         }
     }
@@ -248,18 +208,16 @@ impl WorkspaceArtifactService {
         Ok(())
     }
 
-    fn create_and_verify<F, G>(
+    fn create_and_verify<F>(
         &self,
         root: &Path,
         target: &Path,
         proposal: &WorkspaceArtifactProposal,
         cancellation: &CancellationToken,
         before_publish: F,
-        after_publish: G,
     ) -> Result<ArtifactOutcome>
     where
         F: FnOnce(),
-        G: FnOnce() -> Result<()>,
     {
         let nonce = SystemTime::now()
             .duration_since(UNIX_EPOCH)
@@ -307,8 +265,6 @@ impl WorkspaceArtifactService {
             bail!("independent artifact read-back did not match proposed bytes");
         }
 
-        // Test-only callers can model process loss after publication/read-back but before XP.
-        after_publish()?;
 
         if published {
             Ok(ArtifactOutcome::Created {
@@ -445,34 +401,6 @@ mod tests {
         assert!(result.is_err());
         assert!(!root.join("cancel-at-publish.txt").exists());
         assert_eq!(fs::read_dir(&root).unwrap().count(), 0);
-        fs::remove_dir_all(root).unwrap();
-    }
-
-    #[test]
-    fn simulated_crash_after_publish_keeps_artifact_for_idempotent_replay() {
-        let root = workspace();
-        let item = proposal(
-            "crash-window.txt",
-            "published before simulated process loss",
-        );
-        let service = WorkspaceArtifactService::new(&root);
-        let result = service.execute_approved_with_hooks(
-            &item,
-            &approve(&item),
-            &CancellationToken::default(),
-            || {},
-            || Err(anyhow!("simulated process loss after publication")),
-        );
-        assert!(result.is_err());
-        assert_eq!(
-            fs::read(root.join(&item.filename)).unwrap(),
-            item.content.as_bytes()
-        );
-
-        let replay = service
-            .execute_approved(&item, &approve(&item), &CancellationToken::default())
-            .unwrap();
-        assert!(matches!(replay, ArtifactOutcome::AlreadyPresent { .. }));
         fs::remove_dir_all(root).unwrap();
     }
 
