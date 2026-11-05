@@ -27,25 +27,25 @@ This is the durable progress snapshot for maintainers and delegated/local AI age
 
 ## Active implementation — Issue #9 Cognitive Cockpit
 
-**PR:** [#55 — surface bounded persisted task history](https://github.com/bjo163/rocksoul/pull/55) (draft; not merged)  
-**Branch:** `feat/tui-cockpit-completion`  
-**Base:** `main` at `0e89bcec834880d3e6aca3f066507c44834c2eb7`  
-**Latest code commit with Linux validation:** `b5c6039da99110ad5b5a2cc401a9f6c54d590faa`
+**Task branch:** feat/tui-cockpit-completion  
+**Latest implementation/documentation head:** 0654a8ecf95ef168de58f374425606d306c78bf4  
+**Target:** main (no Cockpit completion changes merged yet)
 
-Delivered on the PR branch:
-- Bounded newest-first task trace reader and TUI event history with selection/detail navigation.
-- Control-character-safe, content-free task metadata presentation.
-- Memory browser with local search, kind/claim filters and exact source filter; metadata is the default, while explicit Enter-to-reveal uses the shared sensitive-content guard.
-- Created/expiry metadata and schema-v4 memory path correction.
-- Evaluation report loaded once per snapshot rather than from the render function, including suite/version/pass state and failed check IDs.
-- Focused tests for bounded trace reading, sanitization, memory filter cycling and metadata clipping.
+Delivered on the task branch:
+- Bounded persisted task trace with newest-first selection/detail and safe metadata-only rendering.
+- Memory browser with local search, kind/claim/source filters, provenance/approval/expiry metadata, and explicit Enter-to-reveal through the shared sensitive-content guard.
+- Snapshot-based memory store health, Core Integrity and memory retrieval report diagnostics, plus sanitized RID error details.
+- Versioned portable TUI preferences for dark/light theme, compact/comfortable density and English/Indonesian locale; unknown or malformed preference files are preserved rather than overwritten.
+- Semantic palette tokens applied to screens and overlays; locale applied to navigation, header, footer, settings and command palette.
+- TestBackend coverage for all eight screens across 80×24, 120×40 and 60×20, both themes/locales, and palette/help overlays.
+- Updated task plan and product/technical handoff documents.
 
-Validation:
-- Linux CI run [#42059872680](https://github.com/bjo163/rocksoul/actions/runs/42059872680): formatting, Clippy, **113 tests**, Core Integrity **23/23**, and memory retrieval precision@2/recall@2 **1.000/1.000** passed.
-- Windows release build, tests, portable ZIP smoke and installer preservation smoke passed on the same functional code before the final task-selection/test-only commits in [run #42059339120](https://github.com/bjo163/rocksoul/actions/runs/42059339120). Re-run against the final PR head before merge.
-- Issue #9 remains open; PR #55 remains draft. No merge or issue closure is claimed.
+Previously verified code slice:
+- Linux CI #42060471515 passed formatting, Clippy, 114 tests, Core Integrity 23/23 and memory retrieval precision/recall 1.000.
+- Windows CI #42060471515 passed release build/tests, installer and portable packaging, portable smoke and install/init/uninstall-preservation smoke.
+- The task branch has since added preference persistence, semantic theme application, localization and more tests. Final-head CI must be rerun; earlier green CI is not evidence for the current head.
 
-Remaining: explicit memory-content detail reveal (if approved by privacy design), focused UI tests for memory states, diagnostic parser/redaction tests, persisted preferences and actual theme/density/locale application, responsive/focus TestBackend coverage, and final Linux/Windows CI on the final PR head.
+Remaining: E6 missing-config/empty-registry diagnostics tests; final-head fmt/Clippy/tests/Core Integrity/retrieval evaluation; final Windows build/installer/portable smoke; full diff audit; PR refresh/merge; main SHA and issue closure verification.
 
 ## 1. Accepted baseline on main
 

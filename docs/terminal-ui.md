@@ -1,6 +1,6 @@
 # Rocksoul Terminal UI — Cognitive Cockpit
 
-**Status:** The opt-in Ratatui cockpit MVP is implemented. Draft PR #55 extends it with bounded persisted task history, event selection/detail, a metadata-only searchable/filterable memory browser, and snapshot-based evaluation reporting. These changes are not yet merged to main. Preferences, full diagnostic redaction coverage, and broader TestBackend/responsive tests remain incomplete.  
+**Status:** The opt-in Ratatui cockpit MVP is implemented. The active task branch extends it with bounded persisted task history, event selection/detail, a searchable/filterable memory browser with guarded explicit detail reveal, snapshot-based diagnostics/evaluation reporting, versioned portable preferences, semantic dark/light palettes, density limits and English/Indonesian navigation. These changes are not yet merged to main. Missing-config/empty-registry diagnostics tests and final-head cross-platform validation remain open.  
 **Product:** Rocksoul local-first cognitive runtime  
 **Interface:** Native terminal application
 

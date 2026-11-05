@@ -79,7 +79,7 @@ The roadmap is capability-driven. Each stage must deliver a working, tested incr
 
 ## Next implementation dependency
 
-The next selected task is [Issue #9 — Cognitive Cockpit completion](https://github.com/bjo163/rocksoul/issues/9). The initial eight-screen TUI exists, but persisted task history, searchable memory browsing, diagnostics/evaluation reporting, portable presentation preferences and deeper test coverage remain incomplete. See `docs/plans/issue-9/` for the autonomous execution plan.
+Issue #9 — Cognitive Cockpit completion is actively implemented on feat/tui-cockpit-completion but is not yet merged. The task branch now includes bounded persisted task history, searchable/filterable memory browsing with guarded detail reveal, snapshot diagnostics/evaluation reporting, versioned portable preferences, semantic dark/light palettes, density and locale application, and TestBackend responsive/overlay coverage. Final-head Linux/Windows CI, missing-config/empty-registry diagnostics tests, full diff audit and merge remain open. See docs/plans/issue-9/ for the autonomous execution plan.
 
 Issue #13's AGI-oriented evaluation harness depends on #4, #5, #8 and #9. Do not duplicate or begin the full harness until its dependencies are audited and closed. Issue #8's catalogue implementation exists, but its independent religious/language review remains outstanding and must not be self-approved by an AI model.
 

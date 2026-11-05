@@ -288,10 +288,10 @@ For every new task, write/update an execution plan with:
 ## 12. Active handoff — Issue #9 implementation in progress
 
 **Issue:** [#9 Cognitive Cockpit](https://github.com/bjo163/rocksoul/issues/9)  
-**Draft PR:** [#55](https://github.com/bjo163/rocksoul/pull/55)  
+**PR:** Refresh after final task-branch head validation (earlier draft PR #55 was superseded)  
 **Task branch:** `feat/tui-cockpit-completion`  
 **PR base SHA:** `0e89bcec834880d3e6aca3f066507c44834c2eb7`  
-**Latest code commit validated on Linux:** `b5c6039da99110ad5b5a2cc401a9f6c54d590faa`
+**Current task branch head:** 0654a8ecf95ef168de58f374425606d306c78bf4 (final-head CI pending)
 
 ### Implemented on the PR branch (not yet on main)
 

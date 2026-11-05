@@ -49,9 +49,9 @@ The current release does **not** provide unrestricted shell execution, autonomou
 
 ### Cognitive Cockpit completion — active PR
 
-The initial cockpit is being extended in [draft PR #55](https://github.com/bjo163/rocksoul/pull/55). This work is **not merged into `main` or included in the published release yet**.
+The initial cockpit is being extended on the feat/tui-cockpit-completion task branch. The current implementation remains **unmerged and unreleased** until final-head Linux and Windows CI and the remaining acceptance gates pass.
 
-The PR adds a bounded, content-free persisted task-trace monitor; keyboard selection and event details; a memory browser with local search and kind/claim/source filters, metadata by default, and explicit privacy-guarded detail reveal; a corrected schema-v4 memory path; and an evaluation report loaded into the refreshable runtime snapshot. It remains read-only and does not invoke models, tools, or memory mutations.
+The branch adds bounded persisted task-trace navigation, a searchable/filterable memory browser with explicit privacy-guarded detail reveal, snapshot-based diagnostics/evaluation reporting, versioned portable theme/density/locale preferences, semantic dark/light palettes, and localized navigation. It remains read-only and does not invoke models, tools, or memory mutations.
 
 Track implementation and remaining acceptance criteria in [the Issue #9 task plan](docs/plans/issue-9/task.md).
 
