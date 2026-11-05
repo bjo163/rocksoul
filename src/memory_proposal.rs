@@ -265,6 +265,16 @@ pub fn get_pending(directory: &Path, id: &str) -> Result<MemoryProposal> {
 }
 
 pub fn approve(directory: &Path, id: &str, confirmation: &str, now: u64) -> Result<String> {
+    approve_with_receipts(directory, None, id, confirmation, now)
+}
+
+pub fn approve_with_receipts(
+    directory: &Path,
+    receipts_directory: Option<&Path>,
+    id: &str,
+    confirmation: &str,
+    now: u64,
+) -> Result<String> {
     let _lock = acquire_lock(directory)?;
     let mut proposals = load_unlocked(directory)?;
     let proposal = proposals
@@ -284,10 +294,23 @@ pub fn approve(directory: &Path, id: &str, confirmation: &str, now: u64) -> Resu
 
     let proposal_snapshot = proposal.clone();
     let source = format!("model_proposal:{}", proposal_snapshot.id);
+    let receipt_candidate = proposal_snapshot
+        .verification_receipt_id
+        .as_deref()
+        .and_then(|receipt_id| receipts_directory.and_then(|directory| {
+            load_verified_receipt(directory, receipt_id, &proposal_snapshot.content, now)
+                .ok()
+                .flatten()
+        }));
     let memory_record_id = MemoryStore::transact(directory, |memory| {
         if let Some(existing) = memory.records.iter().find(|record| record.source == source) {
             return Ok(existing.id.clone());
         }
+        let receipt_is_unused = receipt_candidate.as_ref().is_some_and(|receipt| {
+            !memory.records.iter().any(|record| {
+                record.verification_receipt_id.as_deref() == Some(receipt.verification_id())
+            })
+        });
         let record_id = memory.add_user_entry(
             proposal_snapshot.kind,
             proposal_snapshot.content.clone(),
@@ -301,6 +324,15 @@ pub fn approve(directory: &Path, id: &str, confirmation: &str, now: u64) -> Resu
             .find(|record| record.id == record_id)
             .context("newly added memory record disappeared before commit")?;
         record.source = source.clone();
+        record.claim_status = if proposal_snapshot.claim_status == MemoryClaimStatus::UnverifiedTaskOutcome
+            && receipt_is_unused
+        {
+            record.verification_receipt_id = receipt_candidate.as_ref().map(|receipt| receipt.verification_id().to_owned());
+            record.evidence_hash = receipt_candidate.as_ref().map(|receipt| receipt.evidence_hash().to_owned());
+            MemoryClaimStatus::VerifiedTaskOutcome
+        } else {
+            proposal_snapshot.claim_status
+        };
         Ok(record_id)
     })?;
 
