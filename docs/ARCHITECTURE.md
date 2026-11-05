@@ -1,6 +1,6 @@
 # Rocksoul Architecture
 
-**Status:** Describes the implementation on `main` as of 2026-11-04. Future capabilities are explicitly marked as planned.
+**Status:** Describes the merged `main` baseline plus the proposed claim-provenance delta in PR #51. The v4 memory details below are proposed branch behavior until PR #51 is merged; do not treat them as deployed `main` behavior.
 
 ## Product definition
 
@@ -83,9 +83,11 @@ The exact directories are initialized by `rocksoul init`. Keep credentials in th
 
 ### Memory implementation status
 
-The current memory store is a local JSON schema v1 with typed record kinds (episodic, semantic, procedural, working, derived), provenance/source fields, explicit user approval, timestamps, optional confidence, and optional expiry. The CLI supports list, add, text/tag search, export, delete, and confirmed clear. Writes use a temporary-file/backup replacement strategy and loading can recover a backup when the primary file is absent.
+**Merged `main` baseline:** local JSON schema v3 with typed record kinds (episodic, semantic, procedural, working, derived), provenance/source fields, explicit user approval, timestamps, optional confidence and expiry, v1/v2 migrations, backup recovery, cross-process OS locking, retention/forgetting tombstones, deterministic lexical retrieval/evaluation, and human-reviewed model proposals. Model output cannot silently write or delete memory.
 
-Not implemented yet: schema migration, inter-process locking, retention/forgetting workflows beyond explicit deletion and working-record expiry, ranked retrieval, automatic conversation ingestion, and automatic memory injection into model context. Model output cannot silently write or delete memory.
+**Proposed in PR #51 (not merged at this snapshot):** schema v4 claim-provenance metadata and v3-to-v4 migration; explicit distinction among user assertion, observed evidence, inference, unverified task outcome, verified task outcome, and contradicted/superseded claims; exact fresh single-use kernel receipt gating; append-only claim-status history; receipt revocation and downgrade; CLI/search visibility for claim provenance. Legacy model proposals are not promoted to verified status during migration.
+
+Automatic conversation ingestion and automatic memory injection remain disabled. Do not mark the PR #51 additions as part of `main` until its checks pass and it is merged.
 
 ## RID and ASMA-99 boundary
 
