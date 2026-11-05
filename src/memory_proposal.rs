@@ -106,41 +106,50 @@ impl ProposalStore {
             {
                 bail!("memory proposal store contains invalid or duplicate proposals");
             }
-            validate_candidate(
-                proposal.kind,
-                &proposal.content,
-                &proposal.tags,
-                &proposal.source_turn_reference,
-                &proposal.provenance,
-                proposal.expires_at_unix,
-                proposal.created_at_unix,
-            )?;
-            if fingerprint(proposal) != proposal.fingerprint {
-                bail!(
-                    "memory proposal {} payload fingerprint mismatch; refusing edited proposal",
-                    proposal.id
-                );
+            if proposal.source_turn_reference.trim().is_empty()
+                || proposal.provenance.trim().is_empty()
+            {
+                bail!("memory proposal provenance is missing");
             }
             match proposal.status {
-                ProposalStatus::Pending
-                    if proposal.decided_at_unix.is_some()
-                        || proposal.memory_record_id.is_some() =>
-                {
-                    bail!("pending memory proposal has decision metadata");
+                ProposalStatus::Pending => {
+                    if proposal.decided_at_unix.is_some() || proposal.memory_record_id.is_some() {
+                        bail!("pending memory proposal has decision metadata");
+                    }
+                    validate_candidate(
+                        proposal.kind,
+                        &proposal.content,
+                        &proposal.tags,
+                        &proposal.source_turn_reference,
+                        &proposal.provenance,
+                        proposal.expires_at_unix,
+                        proposal.created_at_unix,
+                    )?;
+                    if fingerprint(proposal) != proposal.fingerprint {
+                        bail!(
+                            "memory proposal {} payload fingerprint mismatch; refusing edited proposal",
+                            proposal.id
+                        );
+                    }
                 }
-                ProposalStatus::Approved
+                ProposalStatus::Approved => {
                     if proposal.decided_at_unix.is_none()
-                        || proposal.memory_record_id.is_none() =>
-                {
-                    bail!("approved memory proposal is missing its persisted decision");
+                        || proposal.memory_record_id.is_none()
+                        || !proposal.content.is_empty()
+                        || !proposal.tags.is_empty()
+                    {
+                        bail!("approved proposal must be content-scrubbed and retain decision metadata");
+                    }
                 }
-                ProposalStatus::Denied | ProposalStatus::Cancelled
+                ProposalStatus::Denied | ProposalStatus::Cancelled => {
                     if proposal.decided_at_unix.is_none()
-                        || proposal.memory_record_id.is_some() =>
-                {
-                    bail!("denied/cancelled memory proposal has invalid decision metadata");
+                        || proposal.memory_record_id.is_some()
+                        || !proposal.content.is_empty()
+                        || !proposal.tags.is_empty()
+                    {
+                        bail!("denied/cancelled proposal must be content-scrubbed and have valid decision metadata");
+                    }
                 }
-                _ => {}
             }
         }
         Ok(())
@@ -272,6 +281,8 @@ pub fn approve(directory: &Path, id: &str, confirmation: &str, now: u64) -> Resu
     proposal.status = ProposalStatus::Approved;
     proposal.decided_at_unix = Some(now);
     proposal.memory_record_id = Some(memory_record_id.clone());
+    proposal.content.clear();
+    proposal.tags.clear();
     save_unlocked(directory, &proposals)?;
     Ok(memory_record_id)
 }
@@ -302,6 +313,8 @@ fn decide_without_memory(
     }
     proposal.status = status;
     proposal.decided_at_unix = Some(now);
+    proposal.content.clear();
+    proposal.tags.clear();
     save_unlocked(directory, &store)
 }
 
@@ -633,6 +646,9 @@ mod tests {
             format!("model_proposal:{}", proposal.id)
         );
         assert!(memory.records[0].user_approved);
+        let audit = list(&directory).unwrap();
+        assert!(audit[0].content.is_empty(), "approved proposal payload must be scrubbed");
+        assert!(audit[0].tags.is_empty());
         assert!(approve(&directory, &proposal.id, &proposal.approval_phrase(), 102).is_err());
         fs::remove_dir_all(directory).unwrap();
     }
@@ -660,14 +676,15 @@ mod tests {
                 .len(),
             0
         );
+        let audit = list(&directory).unwrap();
         assert_eq!(
-            list(&directory)
-                .unwrap()
+            audit
                 .iter()
                 .filter(|item| item.status == ProposalStatus::Denied)
                 .count(),
             1
         );
+        assert!(audit.iter().all(|item| item.content.is_empty()));
         assert!(get_pending(&directory, &cancelled.id).is_err());
         fs::remove_dir_all(directory).unwrap();
     }
