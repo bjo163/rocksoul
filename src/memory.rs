@@ -72,6 +72,29 @@ pub struct MemoryRecord {
     pub retention_policy: RetentionPolicy,
 }
 
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct MemorySearchFilters {
+    pub kind: Option<MemoryKind>,
+    pub source: Option<String>,
+    pub created_after_unix: Option<u64>,
+    pub created_before_unix: Option<u64>,
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+pub struct MemorySearchResult {
+    pub record_id: String,
+    pub content: String,
+    pub kind: MemoryKind,
+    pub source: String,
+    pub created_at_unix: u64,
+    pub updated_at_unix: u64,
+    /// Source-record confidence only; not a retrieval relevance probability.
+    pub source_confidence: Option<f32>,
+    pub lexical_score: u32,
+    pub matched_terms: Vec<String>,
+    pub relevance_explanation: String,
+}
+
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub struct MemoryStore {
     pub schema_version: u16,
@@ -357,6 +380,80 @@ impl MemoryStore {
             .collect()
     }
 
+    /// Deterministic offline lexical retrieval. Scores are ranking units, not confidence.
+    pub fn search_ranked(
+        &self,
+        query: &str,
+        filters: &MemorySearchFilters,
+        now: u64,
+        limit: usize,
+    ) -> Vec<MemorySearchResult> {
+        if limit == 0 {
+            return Vec::new();
+        }
+        let query_terms = unique_terms(tokenize(query));
+        if query_terms.is_empty() {
+            return Vec::new();
+        }
+        let mut results = self
+            .active_records(now)
+            .into_iter()
+            .filter(|record| {
+                filters.kind.is_none_or(|kind| record.kind == kind)
+                    && filters.source.as_ref().is_none_or(|source| &record.source == source)
+                    && filters.created_after_unix.is_none_or(|time| record.created_at_unix >= time)
+                    && filters.created_before_unix.is_none_or(|time| record.created_at_unix <= time)
+            })
+            .filter_map(|record| {
+                let content_terms = tokenize(&record.content);
+                let tag_terms = record.tags.iter().flat_map(|tag| tokenize(tag)).collect::<Vec<_>>();
+                let all_terms = content_terms.iter().chain(tag_terms.iter()).collect::<Vec<_>>();
+                let matched_terms = query_terms
+                    .iter()
+                    .filter(|term| all_terms.iter().any(|candidate| *candidate == *term))
+                    .cloned()
+                    .collect::<Vec<_>>();
+                if matched_terms.is_empty() {
+                    return None;
+                }
+                let occurrences = query_terms
+                    .iter()
+                    .map(|term| all_terms.iter().filter(|candidate| *candidate == term).count() as u32)
+                    .sum::<u32>();
+                let phrase_match = content_terms.windows(query_terms.len()).any(|window| window == query_terms.as_slice());
+                let lexical_score = matched_terms.len() as u32 * 100
+                    + occurrences * 10
+                    + if phrase_match { 250 } else { 0 };
+                let relevance_explanation = format!(
+                    "matched {}/{} query terms across content/tags; {} token occurrence(s){}",
+                    matched_terms.len(),
+                    query_terms.len(),
+                    occurrences,
+                    if phrase_match { "; exact token phrase match" } else { "" }
+                );
+                Some(MemorySearchResult {
+                    record_id: record.id.clone(),
+                    content: record.content.clone(),
+                    kind: record.kind,
+                    source: record.source.clone(),
+                    created_at_unix: record.created_at_unix,
+                    updated_at_unix: record.updated_at_unix,
+                    source_confidence: record.confidence,
+                    lexical_score,
+                    matched_terms,
+                    relevance_explanation,
+                })
+            })
+            .collect::<Vec<_>>();
+        results.sort_by(|left, right| {
+            right.lexical_score.cmp(&left.lexical_score)
+                .then_with(|| right.created_at_unix.cmp(&left.created_at_unix))
+                .then_with(|| left.record_id.cmp(&right.record_id))
+        });
+        results.truncate(limit);
+        results
+    }
+
     pub fn delete(&mut self, id: &str) -> bool {
         let previous = self.records.len();
         self.records.retain(|record| record.id != id);
@@ -566,6 +663,19 @@ fn is_lock_contention(error: &std::io::Error) -> bool {
     {
         false
     }
+}
+
+fn tokenize(value: &str) -> Vec<String> {
+    value
+        .split(|character: char| !character.is_alphanumeric())
+        .filter(|term| !term.is_empty())
+        .map(str::to_lowercase)
+        .collect()
+}
+
+fn unique_terms(terms: Vec<String>) -> Vec<String> {
+    let mut seen = HashSet::new();
+    terms.into_iter().filter(|term| seen.insert(term.clone())).collect()
 }
 
 fn store_path(directory: &Path) -> PathBuf {
