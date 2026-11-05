@@ -57,7 +57,7 @@ CI runs Rust unit tests, the offline Core Integrity evaluation, and Windows rele
 
 ## Capability taxonomy and RID mapping
 
-RID Universal 99 v2.3.0 is the canonical measurement registry. Future adapters must emit explicit `rid_domain:NN` and `rid_stat:NN` references and preserve all 99 dimensions. Never create a second competing 99-stat taxonomy or aggregate scores into a replacement family score.
+RID Universal 99 v2.3.0 is the canonical measurement registry, referenced by `data/evaluation/benchmark-manifest.v1.json` (manifest version 1.1.0). Future adapters must emit explicit `rid_domain:NN` and `rid_stat:NN` references and preserve all 99 dimensions. Never create a second competing 99-stat taxonomy or aggregate scores into a replacement family score.
 
 The ten families are benchmark coverage/navigation tags only: perception, generation, attention, learning, memory, reasoning, metacognition, executive functions, problem solving, and social cognition. They are not parent domains and are not additional RID scores. Cross-cutting tags include safety, robustness, calibration, recovery, retention, transfer, long-horizon consistency, latency, tokens, cost, and resource usage; tags describe test coverage, not new capability dimensions.
 
