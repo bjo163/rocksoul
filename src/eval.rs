@@ -693,15 +693,15 @@ fn evaluate_memory_retrieval_fixture() -> Result<MemoryRetrievalEvaluationReport
             fixture.top_k,
         );
         let retrieved_ids = retrieved.iter().map(|item| item.record_id.clone()).collect::<Vec<_>>();
-        let expected = case.expected_ids.iter().collect::<std::collections::HashSet<_>>();
-        let stale = case.stale_ids.iter().collect::<std::collections::HashSet<_>>();
+        let expected = case.expected_ids.iter().cloned().collect::<std::collections::HashSet<_>>();
+        let stale = case.stale_ids.iter().cloned().collect::<std::collections::HashSet<_>>();
         let expired = case.records.iter()
             .filter(|record| record.expires_at_unix.is_some_and(|expires| expires <= case.now_unix))
-            .map(|record| record.id.as_str())
+            .map(|record| record.id.clone())
             .collect::<std::collections::HashSet<_>>();
-        let hits = retrieved_ids.iter().filter(|id| expected.contains(id)).count();
-        let stale_results_at_k = retrieved_ids.iter().filter(|id| stale.contains(id)).count();
-        let expired_leakage = retrieved_ids.iter().filter(|id| expired.contains(id.as_str())).count();
+        let hits = retrieved_ids.iter().filter(|id| expected.contains(*id)).count();
+        let stale_results_at_k = retrieved_ids.iter().filter(|id| stale.contains(*id)).count();
+        let expired_leakage = retrieved_ids.iter().filter(|id| expired.contains(*id)).count();
         let precision_at_k = hits as f64 / fixture.top_k as f64;
         let recall_at_k = hits as f64 / case.expected_ids.len().max(1) as f64;
         case_reports.push(MemoryRetrievalCaseReport {
@@ -770,7 +770,7 @@ fn memory_forgetting_leakage_check(now: u64) -> Result<usize> {
         usize::MAX,
     ).iter().any(|result| result.record_id == id);
     let _ = fs::remove_dir_all(&directory);
-    Ok(usize::from(leaked))
+    Ok(if leaked { 1 } else { 0 })
 }
 
 fn persist_memory_retrieval_report(report: &MemoryRetrievalEvaluationReport) -> Result<()> {
@@ -940,6 +940,17 @@ pub fn print_report(report: &EvaluationReport) {
 #[cfg(test)]
 mod tests {
     use super::EvaluationReport;
+
+    #[test]
+    fn offline_memory_retrieval_fixture_meets_quality_and_privacy_gates() {
+        let report = super::evaluate_memory_retrieval_fixture().unwrap();
+        assert!(report.passed, "memory retrieval report failed: {report:?}");
+        assert!(report.precision_at_k >= 0.66);
+        assert!(report.recall_at_k >= 0.95);
+        assert_eq!(report.stale_results_at_k, 0);
+        assert_eq!(report.expired_leakage, 0);
+        assert_eq!(report.deletion_leakage, 0);
+    }
 
     #[test]
     fn evaluation_report_counts_failed_checks_without_averaging_them_away() {
