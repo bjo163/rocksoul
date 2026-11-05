@@ -144,7 +144,6 @@ impl MemoryStore {
                         restore_backup(&backup, &path)?;
                         let mut recovered = recovered;
                         apply_forgetting_ledger(directory, &mut recovered)?;
-                        scrub_forgotten_snapshots(directory)?;
                         eprintln!(
                             "Recovered memory store from validated backup: {}",
                             backup.display()
@@ -160,7 +159,6 @@ impl MemoryStore {
             let mut recovered = read_current_store(&backup)?;
             restore_backup(&backup, &path)?;
             apply_forgetting_ledger(directory, &mut recovered)?;
-            scrub_forgotten_snapshots(directory)?;
             eprintln!(
                 "Recovered missing memory store from validated backup: {}",
                 backup.display()
