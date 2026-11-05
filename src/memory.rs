@@ -309,9 +309,9 @@ impl MemoryStore {
         let path = store_path(directory);
         let existed = path.is_file() || backup_path(&path).is_file() || legacy_store_path(directory).is_file();
         let mut store = Self::load_unlocked(directory)?;
-        let previous_revision = store.revision;
+        let previous = store.clone();
         let output = operation(&mut store)?;
-        if !existed || store.revision != previous_revision { store.save_unlocked(directory)?; }
+        if !existed || store != previous { store.save_unlocked(directory)?; }
         Ok(output)
     }
 
