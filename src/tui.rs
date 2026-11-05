@@ -145,6 +145,7 @@ struct App {
     memory_query: String,
     memory_search_active: bool,
     memory_selected: usize,
+    task_selected: usize,
     memory_kind_filter: Option<MemoryKind>,
     memory_claim_filter: Option<MemoryClaimStatus>,
 }
@@ -164,6 +165,7 @@ impl App {
             memory_query: String::new(),
             memory_search_active: false,
             memory_selected: 0,
+            task_selected: 0,
             memory_kind_filter: None,
             memory_claim_filter: None,
         }
@@ -220,6 +222,12 @@ impl App {
             KeyCode::Down if self.screen == Screen::Rid => self.move_stat(1),
             KeyCode::Up if self.screen == Screen::Memory => {
                 self.memory_selected = self.memory_selected.saturating_sub(1)
+            }
+            KeyCode::Up if self.screen == Screen::Tasks => {
+                self.task_selected = self.task_selected.saturating_sub(1)
+            }
+            KeyCode::Down if self.screen == Screen::Tasks => {
+                self.task_selected = self.task_selected.saturating_add(1).min(11)
             }
             KeyCode::Down if self.screen == Screen::Memory => {
                 self.memory_selected = self.memory_selected.saturating_add(1).min(99)
@@ -400,7 +408,7 @@ fn render_body(frame: &mut Frame<'_>, area: Rect, app: &mut App) {
     match app.screen {
         Screen::Overview => render_overview(frame, columns[0], app),
         Screen::Brains => render_brains(frame, columns[0], app),
-        Screen::Tasks => render_tasks(frame, columns[0]),
+        Screen::Tasks => render_tasks(frame, columns[0], app),
         Screen::Memory => render_memory(frame, columns[0], app),
         Screen::Rid => render_rid(frame, columns[0], app),
         Screen::Tools => render_tools(frame, columns[0]),
@@ -504,7 +512,7 @@ fn render_brains(frame: &mut Frame<'_>, area: Rect, app: &App) {
     );
 }
 
-fn render_tasks(frame: &mut Frame<'_>, area: Rect) {
+fn render_tasks(frame: &mut Frame<'_>, area: Rect, app: &mut App) {
     const MAX_EVENTS: usize = 12;
     let lines = match AppPaths::discover().and_then(|paths| {
         let records = task_trace::read_recent(
@@ -513,6 +521,7 @@ fn render_tasks(frame: &mut Frame<'_>, area: Rect) {
             MAX_EVENTS,
         )?;
         if records.is_empty() {
+            app.task_selected = 0;
             return Ok(vec![
                 Line::from(Span::styled(
                     "NO TASK EVENTS RECORDED",
@@ -522,15 +531,16 @@ fn render_tasks(frame: &mut Frame<'_>, area: Rect) {
                 Line::from("No queue or active task is inferred from an empty trace."),
             ]);
         }
+        app.task_selected = app.task_selected.min(records.len().saturating_sub(1));
         let mut lines = vec![
             Line::from(Span::styled(
                 format!("PERSISTED TASK TRACE · {} RECENT EVENTS", records.len()),
                 Style::default().fg(AMBER).add_modifier(Modifier::BOLD),
             )),
-            Line::from("Newest events first · target is limited to its filename"),
+            Line::from("Newest events first · ↑/↓ select · content-free metadata only"),
             Line::from(""),
         ];
-        for record in &records {
+        for (index, record) in records.iter().enumerate() {
             let event = safe_trace_text(record.get("event"), 18);
             let operation = safe_trace_text(record.get("operation_id"), 12);
             let target = safe_trace_text(record.get("target"), 96);
@@ -541,9 +551,37 @@ fn render_tasks(frame: &mut Frame<'_>, area: Rect) {
                 .map(|value| value.to_string())
                 .unwrap_or_else(|| "time n/a".to_owned());
             lines.push(Line::from(format!(
-                "{timestamp}  {event:<18}  {operation:<12}  {target_name}"
+                "{} {timestamp}  {event:<18}  {operation:<12}  {target_name}",
+                if index == app.task_selected { "▸" } else { " " }
             )));
         }
+        let selected = &records[app.task_selected];
+        lines.push(Line::from(""));
+        lines.push(Line::from(Span::styled(
+            "SELECTED EVENT",
+            Style::default().fg(AMBER).add_modifier(Modifier::BOLD),
+        )));
+        lines.push(Line::from(format!(
+            "Event       {}",
+            safe_trace_text(selected.get("event"), 32)
+        )));
+        lines.push(Line::from(format!(
+            "Operation   {}",
+            safe_trace_text(selected.get("operation_id"), 64)
+        )));
+        let target = safe_trace_text(selected.get("target"), 96);
+        lines.push(Line::from(format!(
+            "Target      {}",
+            target.rsplit('/').next().unwrap_or("target")
+        )));
+        lines.push(Line::from(format!(
+            "Timestamp   {}",
+            selected
+                .get("timestamp_unix_ms")
+                .and_then(serde_json::Value::as_u64)
+                .map(|value| value.to_string())
+                .unwrap_or_else(|| "n/a".to_owned())
+        )));
         Ok(lines)
     }) {
         Ok(lines) => lines,
