@@ -990,21 +990,36 @@ mod tests {
             &proposal.source_turn_reference,
             &proposal.provenance,
             proposal.expires_at_unix,
-        )).unwrap();
+        ))
+        .unwrap();
         let old_fingerprint = format!("{:x}", Sha256::digest(old_payload));
         let mut document = serde_json::to_value(super::ProposalStore {
             schema_version: 1,
             proposals: vec![proposal.clone()],
-        }).unwrap();
+        })
+        .unwrap();
         document["proposals"][0]["fingerprint"] = serde_json::json!(old_fingerprint);
-        document["proposals"][0].as_object_mut().unwrap().remove("claim_status");
-        document["proposals"][0].as_object_mut().unwrap().remove("verification_receipt_id");
+        document["proposals"][0]
+            .as_object_mut()
+            .unwrap()
+            .remove("claim_status");
+        document["proposals"][0]
+            .as_object_mut()
+            .unwrap()
+            .remove("verification_receipt_id");
         document["schema_version"] = serde_json::json!(1);
-        fs::write(directory.join("proposals.v1.json"), serde_json::to_vec_pretty(&document).unwrap()).unwrap();
+        fs::write(
+            directory.join("proposals.v1.json"),
+            serde_json::to_vec_pretty(&document).unwrap(),
+        )
+        .unwrap();
 
         let migrated = list(&directory).unwrap();
         assert_eq!(migrated.len(), 1);
-        assert_eq!(migrated[0].claim_status, crate::memory::MemoryClaimStatus::Inference);
+        assert_eq!(
+            migrated[0].claim_status,
+            crate::memory::MemoryClaimStatus::Inference
+        );
         assert!(migrated[0].verification_receipt_id.is_none());
         assert!(migrated[0].fingerprint != old_fingerprint);
         assert!(directory.join("proposals.v2.json").is_file());
@@ -1051,7 +1066,8 @@ mod tests {
             &directory,
             task_candidate(claim, Some("verify-task-exact")),
             10_001,
-        ).unwrap();
+        )
+        .unwrap();
         let memory_id = approve_with_receipts(
             &directory,
             Some(&receipts),
@@ -1060,14 +1076,43 @@ mod tests {
             10_002,
         ).unwrap();
         let memory = crate::memory::MemoryStore::load(&directory).unwrap();
-        let record = memory.records.iter().find(|record| record.id == memory_id).unwrap();
-        assert_eq!(record.claim_status, crate::memory::MemoryClaimStatus::VerifiedTaskOutcome);
-        assert_eq!(record.verification_receipt_id.as_deref(), Some("verify-task-exact"));
-        assert!(record.evidence_hash.as_deref().is_some_and(|hash| hash.len() == 64));
-        super::revoke_receipt(&receipts, &directory, "verify-task-exact", 10_003, "operator_review").unwrap();
+        let record = memory
+            .records
+            .iter()
+            .find(|record| record.id == memory_id)
+            .unwrap();
+        assert_eq!(
+            record.claim_status,
+            crate::memory::MemoryClaimStatus::VerifiedTaskOutcome
+        );
+        assert_eq!(
+            record.verification_receipt_id.as_deref(),
+            Some("verify-task-exact")
+        );
+        assert!(
+            record
+                .evidence_hash
+                .as_deref()
+                .is_some_and(|hash| hash.len() == 64)
+        );
+        super::revoke_receipt(
+            &receipts,
+            &directory,
+            "verify-task-exact",
+            10_003,
+            "operator_review",
+        )
+        .unwrap();
         let downgraded = crate::memory::MemoryStore::load(&directory).unwrap();
-        let record = downgraded.records.iter().find(|record| record.id == memory_id).unwrap();
-        assert_eq!(record.claim_status, crate::memory::MemoryClaimStatus::UnverifiedTaskOutcome);
+        let record = downgraded
+            .records
+            .iter()
+            .find(|record| record.id == memory_id)
+            .unwrap();
+        assert_eq!(
+            record.claim_status,
+            crate::memory::MemoryClaimStatus::UnverifiedTaskOutcome
+        );
         fs::remove_dir_all(directory).unwrap();
     }
 
@@ -1079,39 +1124,114 @@ mod tests {
 
         let missing = create(&directory, task_candidate(claim, None), 20_000).unwrap();
         let missing_id = approve_with_receipts(
-            &directory, Some(&receipts), &missing.id, &missing.approval_phrase(), 20_001,
-        ).unwrap();
+            &directory,
+            Some(&receipts),
+            &missing.id,
+            &missing.approval_phrase(),
+            20_001,
+        )
+        .unwrap();
         let store = crate::memory::MemoryStore::load(&directory).unwrap();
-        assert_eq!(store.records.iter().find(|r| r.id == missing_id).unwrap().claim_status,
-            crate::memory::MemoryClaimStatus::UnverifiedTaskOutcome);
+        assert_eq!(
+            store
+                .records
+                .iter()
+                .find(|r| r.id == missing_id)
+                .unwrap()
+                .claim_status,
+            crate::memory::MemoryClaimStatus::UnverifiedTaskOutcome
+        );
 
-        issue_receipt(&receipts, "verify-mismatch", "different exact claim", 20_000);
-        let mismatch = create(&directory, task_candidate(claim, Some("verify-mismatch")), 20_002).unwrap();
+        issue_receipt(
+            &receipts,
+            "verify-mismatch",
+            "different exact claim",
+            20_000,
+        );
+        let mismatch = create(
+            &directory,
+            task_candidate(claim, Some("verify-mismatch")),
+            20_002,
+        )
+        .unwrap();
         let mismatch_id = approve_with_receipts(
-            &directory, Some(&receipts), &mismatch.id, &mismatch.approval_phrase(), 20_003,
-        ).unwrap();
+            &directory,
+            Some(&receipts),
+            &mismatch.id,
+            &mismatch.approval_phrase(),
+            20_003,
+        )
+        .unwrap();
         let store = crate::memory::MemoryStore::load(&directory).unwrap();
-        assert_eq!(store.records.iter().find(|r| r.id == mismatch_id).unwrap().claim_status,
-            crate::memory::MemoryClaimStatus::UnverifiedTaskOutcome);
+        assert_eq!(
+            store
+                .records
+                .iter()
+                .find(|r| r.id == mismatch_id)
+                .unwrap()
+                .claim_status,
+            crate::memory::MemoryClaimStatus::UnverifiedTaskOutcome
+        );
 
         issue_receipt(&receipts, "verify-stale", claim, 1);
-        let stale = create(&directory, task_candidate(claim, Some("verify-stale")), 1 + 8 * 24 * 60 * 60).unwrap();
+        let stale = create(
+            &directory,
+            task_candidate(claim, Some("verify-stale")),
+            1 + 8 * 24 * 60 * 60,
+        )
+        .unwrap();
         let stale_id = approve_with_receipts(
-            &directory, Some(&receipts), &stale.id, &stale.approval_phrase(), 1 + 8 * 24 * 60 * 60,
-        ).unwrap();
+            &directory,
+            Some(&receipts),
+            &stale.id,
+            &stale.approval_phrase(),
+            1 + 8 * 24 * 60 * 60,
+        )
+        .unwrap();
         let store = crate::memory::MemoryStore::load(&directory).unwrap();
-        assert_eq!(store.records.iter().find(|r| r.id == stale_id).unwrap().claim_status,
-            crate::memory::MemoryClaimStatus::UnverifiedTaskOutcome);
+        assert_eq!(
+            store
+                .records
+                .iter()
+                .find(|r| r.id == stale_id)
+                .unwrap()
+                .claim_status,
+            crate::memory::MemoryClaimStatus::UnverifiedTaskOutcome
+        );
 
         issue_receipt(&receipts, "verify-revoked", claim, 30_000);
-        super::revoke_receipt(&receipts, &directory, "verify-revoked", 30_001, "operator_review").unwrap();
-        let revoked = create(&directory, task_candidate(claim, Some("verify-revoked")), 30_002).unwrap();
+        super::revoke_receipt(
+            &receipts,
+            &directory,
+            "verify-revoked",
+            30_001,
+            "operator_review",
+        )
+        .unwrap();
+        let revoked = create(
+            &directory,
+            task_candidate(claim, Some("verify-revoked")),
+            30_002,
+        )
+        .unwrap();
         let revoked_id = approve_with_receipts(
-            &directory, Some(&receipts), &revoked.id, &revoked.approval_phrase(), 30_003,
-        ).unwrap();
+            &directory,
+            Some(&receipts),
+            &revoked.id,
+            &revoked.approval_phrase(),
+            30_003,
+        )
+        .unwrap();
         let store = crate::memory::MemoryStore::load(&directory).unwrap();
-        assert_eq!(store.records.iter().find(|r| r.id == revoked_id).unwrap().claim_status,
-            crate::memory::MemoryClaimStatus::UnverifiedTaskOutcome);
+        assert_eq!(
+            store
+                .records
+                .iter()
+                .find(|r| r.id == revoked_id)
+                .unwrap()
+                .claim_status,
+            crate::memory::MemoryClaimStatus::UnverifiedTaskOutcome
+        );
         fs::remove_dir_all(directory).unwrap();
     }
 
@@ -1135,17 +1255,28 @@ mod tests {
         document["evidence_hash"] = serde_json::json!("0".repeat(64));
         fs::write(&path, serde_json::to_vec_pretty(&document).unwrap()).unwrap();
 
-        let proposal = create(&directory, task_candidate(claim, Some("verify-mutated")), 50_002).unwrap();
+        let proposal = create(
+            &directory,
+            task_candidate(claim, Some("verify-mutated")),
+            50_002,
+        )
+        .unwrap();
         let memory_id = approve_with_receipts(
             &directory,
             Some(&receipts),
             &proposal.id,
             &proposal.approval_phrase(),
             50_003,
-        ).unwrap();
+        )
+        .unwrap();
         let store = crate::memory::MemoryStore::load(&directory).unwrap();
         assert_eq!(
-            store.records.iter().find(|record| record.id == memory_id).unwrap().claim_status,
+            store
+                .records
+                .iter()
+                .find(|record| record.id == memory_id)
+                .unwrap()
+                .claim_status,
             crate::memory::MemoryClaimStatus::UnverifiedTaskOutcome
         );
         fs::remove_dir_all(directory).unwrap();
@@ -1158,20 +1289,54 @@ mod tests {
         let claim = "Task completed with verified evidence";
         issue_receipt(&receipts, "verify-one-time", claim, 40_000);
 
-        let first = create(&directory, task_candidate(claim, Some("verify-one-time")), 40_001).unwrap();
+        let first = create(
+            &directory,
+            task_candidate(claim, Some("verify-one-time")),
+            40_001,
+        )
+        .unwrap();
         let first_id = approve_with_receipts(
-            &directory, Some(&receipts), &first.id, &first.approval_phrase(), 40_002,
-        ).unwrap();
-        let second = create(&directory, task_candidate(claim, Some("verify-one-time")), 40_003).unwrap();
+            &directory,
+            Some(&receipts),
+            &first.id,
+            &first.approval_phrase(),
+            40_002,
+        )
+        .unwrap();
+        let second = create(
+            &directory,
+            task_candidate(claim, Some("verify-one-time")),
+            40_003,
+        )
+        .unwrap();
         let second_id = approve_with_receipts(
-            &directory, Some(&receipts), &second.id, &second.approval_phrase(), 40_004,
-        ).unwrap();
+            &directory,
+            Some(&receipts),
+            &second.id,
+            &second.approval_phrase(),
+            40_004,
+        )
+        .unwrap();
 
         let store = crate::memory::MemoryStore::load(&directory).unwrap();
-        assert_eq!(store.records.iter().find(|r| r.id == first_id).unwrap().claim_status,
-            crate::memory::MemoryClaimStatus::VerifiedTaskOutcome);
-        assert_eq!(store.records.iter().find(|r| r.id == second_id).unwrap().claim_status,
-            crate::memory::MemoryClaimStatus::UnverifiedTaskOutcome);
+        assert_eq!(
+            store
+                .records
+                .iter()
+                .find(|r| r.id == first_id)
+                .unwrap()
+                .claim_status,
+            crate::memory::MemoryClaimStatus::VerifiedTaskOutcome
+        );
+        assert_eq!(
+            store
+                .records
+                .iter()
+                .find(|r| r.id == second_id)
+                .unwrap()
+                .claim_status,
+            crate::memory::MemoryClaimStatus::UnverifiedTaskOutcome
+        );
         fs::remove_dir_all(directory).unwrap();
     }
 
