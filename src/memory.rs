@@ -333,10 +333,18 @@ impl MemoryStore {
                 bail!("memory retention policy and expiry timestamp are inconsistent");
             }
             if record.claim_status == MemoryClaimStatus::VerifiedTaskOutcome
-                && (record.verification_receipt_id.as_deref().is_none_or(str::is_empty)
+                && (!record.user_approved
+                    || record.verification_receipt_id.as_deref().is_none_or(str::is_empty)
                     || record.evidence_hash.as_deref().is_none_or(str::is_empty))
             {
-                bail!("verified task-outcome memory requires a verifier receipt and evidence hash");
+                bail!("verified task-outcome memory requires explicit approval, a verifier receipt, and an evidence hash");
+            }
+            if record.verification_receipt_id.as_ref().is_some_and(|receipt_id| {
+                receipt_id.trim().is_empty()
+                    || receipt_id.len() > 256
+                    || receipt_id.chars().any(char::is_control)
+            }) {
+                bail!("memory verification receipt ID is invalid");
             }
             if let Some(receipt_id) = &record.verification_receipt_id {
                 if !receipt_ids.insert(receipt_id.as_str()) {
