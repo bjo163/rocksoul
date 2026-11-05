@@ -173,16 +173,16 @@ This progress snapshot was refreshed after PR #53 merged and `main` was verified
 ### Immediate
 
 1. Keep Issue #9's merged Cockpit behavior stable; any follow-up must be a new, narrowly scoped issue.
-2. Next dependency gate: [Issue #8](https://github.com/bjo163/rocksoul/issues/8) requires independent human religious/language review of the 99-entry catalogue.
-3. Do not let an AI model self-approve religious/language correctness; record reviewer scope, findings, disagreements and accepted corrections.
-4. After Issue #8 review is complete, reassess [Issue #13](https://github.com/bjo163/rocksoul/issues/13), whose evaluation-harness dependencies include #4, #5, #8 and #9.
+2. Continue [Issue #13](https://github.com/bjo163/rocksoul/issues/13): deterministic evaluation now has source-commit provenance; agent-trajectory and learning/generalization suites remain planned.
+3. Verify exact-head Linux and Windows CI for the RID/runtime changes before closing Issue #5 or trusting any RID score.
+4. Keep [Issue #8](https://github.com/bjo163/rocksoul/issues/8) as a separate independent human religious/language review; it does not block technical evaluation infrastructure.
 5. Keep arbitrary shell, generic tool execution, automatic memory capture and memory context injection out of scope until separately designed and gated.
 
-### Current next task: Issue #8 — independent catalogue review
+### Current next task: Issue #13 — reproducible evaluation harness
 
-Issue #9 is merged and closed. The next dependency is not another UI implementation: it is an independent human review of the existing 99-entry catalogue's religious and language presentation. AI self-review is not an acceptable substitute. Issue #13 must remain blocked until #4, #5, #8 and #9 are all audited and closed.
+The deterministic Core Integrity and memory-retrieval suites are implemented and wired into CI. The Core Integrity report now records the tested source revision (`ROCKSOUL_GIT_SHA`, or `unknown` for builds without revision metadata), preserving compatibility with older reports. The next implementation work is to add reproducible model-dependent trajectory runs, held-out learning/transfer evaluation, structured evidence manifests, and machine-readable plus human-readable reports without introducing hidden network calls.
 
-Issue #13 owns the broader AGI-oriented evaluation harness and explicitly depends on #4, #5, #8 and #9. Do not start or duplicate that harness before its dependencies are audited/closed. Issue #8's catalogue is implemented but still requires independent religious/language review; do not mark it complete through AI self-review. Stage 2 umbrella #36 and work packages #37–#41 plus follow-up #44 are closed. Do not start automatic memory injection until separate policy, privacy/contamination, forgetting/deletion and regression gates are reviewed.
+Technical dependencies are #4, #5, and #9. Issue #4 and #9 are closed. Issue #5's runtime/catalogue implementation is on main but remains open pending exact-head Linux/Windows CI and trusted-evaluator gates. Issue #8's independent religious/language review is separate and does not block the technical harness. Stage 2 umbrella #36 and work packages #37–#41 plus follow-up #44 are closed. Do not start automatic memory injection until separate policy, privacy/contamination, forgetting/deletion and regression gates are reviewed.
 
 ## 6. Release and merge gates
 
