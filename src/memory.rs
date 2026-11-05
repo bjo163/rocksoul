@@ -626,6 +626,8 @@ fn apply_forgetting_ledger(directory: &Path, store: &mut MemoryStore) -> Result<
     if store.records.len() != before {
         store.revision = store.revision.saturating_add(1);
         store.save_unlocked(directory)?;
+    }
+    if !forgotten.is_empty() {
         scrub_forgotten_snapshots(directory)?;
     }
     Ok(())
@@ -799,6 +801,111 @@ mod tests {
         assert!(store_path(&directory).is_file());
         assert_eq!(migrated.records[0].retention_policy, RetentionPolicy::ExpireAt);
         assert_eq!(MemoryStore::load(&directory).unwrap(), migrated);
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn migrates_v2_store_to_v3_and_derives_retention_policy() {
+        let directory = temp_dir();
+        fs::create_dir_all(&directory).unwrap();
+        let mut legacy = MemoryStore {
+            schema_version: 2,
+            revision: 4,
+            ..MemoryStore::default()
+        };
+        legacy.records.push(super::MemoryRecord {
+            id: "legacy-v2".into(),
+            kind: MemoryKind::Working,
+            content: "temporary legacy record".into(),
+            tags: vec![],
+            source: "user_explicit".into(),
+            user_approved: true,
+            confidence: None,
+            created_at_unix: 10,
+            updated_at_unix: 10,
+            expires_at_unix: Some(50),
+            retention_policy_version: RETENTION_POLICY_VERSION,
+            retention_policy: RetentionPolicy::ExpireAt,
+        });
+        let mut legacy_json = serde_json::to_value(&legacy).unwrap();
+        legacy_json["records"][0].as_object_mut().unwrap().remove("retention_policy_version");
+        legacy_json["records"][0].as_object_mut().unwrap().remove("retention_policy");
+        let legacy_path = legacy_v2_store_path(&directory);
+        fs::write(&legacy_path, serde_json::to_vec_pretty(&legacy_json).unwrap()).unwrap();
+
+        let migrated = MemoryStore::load(&directory).unwrap();
+        assert_eq!(migrated.schema_version, MEMORY_SCHEMA_VERSION);
+        assert_eq!(migrated.records[0].retention_policy_version, RETENTION_POLICY_VERSION);
+        assert_eq!(migrated.records[0].retention_policy, RetentionPolicy::ExpireAt);
+        assert!(legacy_path.is_file());
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn forgotten_record_cannot_return_from_a_stale_backup() {
+        let directory = temp_dir();
+        MemoryStore::transact(&directory, |store| {
+            store.add_user_entry(MemoryKind::Semantic, "forget me".into(), vec![], None, 10)?;
+            Ok(())
+        }).unwrap();
+        let stale = fs::read(store_path(&directory)).unwrap();
+        let id = MemoryStore::load(&directory).unwrap().records[0].id.clone();
+
+        MemoryStore::transact(&directory, |store| {
+            assert!(store.delete(&id));
+            Ok(())
+        }).unwrap();
+        assert!(directory.join("forgetting.jsonl").is_file());
+        assert!(!backup_path(&store_path(&directory)).exists());
+
+        fs::write(store_path(&directory), &stale).unwrap();
+        fs::write(backup_path(&store_path(&directory)), &stale).unwrap();
+        let recovered = MemoryStore::load(&directory).unwrap();
+        assert!(recovered.records.is_empty());
+        assert!(!backup_path(&store_path(&directory)).exists());
+        let ledger = fs::read_to_string(directory.join("forgetting.jsonl")).unwrap();
+        assert!(ledger.contains(&id));
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn expired_prune_is_preview_only_until_explicit_apply() {
+        let directory = temp_dir();
+        MemoryStore::transact(&directory, |store| {
+            store.add_user_entry(
+                MemoryKind::Working,
+                "expired context".into(),
+                vec![],
+                Some(20),
+                10,
+            )?;
+            Ok(())
+        }).unwrap();
+        let id = MemoryStore::load(&directory).unwrap().records[0].id.clone();
+
+        MemoryStore::transact(&directory, |store| {
+            assert_eq!(store.expired_ids(20), vec![id.clone()]);
+            assert_eq!(store.records.len(), 1);
+            Ok(())
+        }).unwrap();
+        assert_eq!(MemoryStore::load(&directory).unwrap().records.len(), 1);
+
+        MemoryStore::transact(&directory, |store| {
+            assert_eq!(store.prune_expired(20), vec![id.clone()]);
+            Ok(())
+        }).unwrap();
+        assert!(MemoryStore::load(&directory).unwrap().records.is_empty());
+        let ledger = fs::read_to_string(directory.join("forgetting.jsonl")).unwrap();
+        assert!(ledger.contains("retention_expired"));
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn malformed_forgetting_ledger_fails_closed() {
+        let directory = temp_dir();
+        MemoryStore::initialize(&directory).unwrap();
+        fs::write(directory.join("forgetting.jsonl"), "{invalid").unwrap();
+        assert!(MemoryStore::load(&directory).is_err());
         fs::remove_dir_all(directory).unwrap();
     }
 
