@@ -1305,12 +1305,9 @@ mod tests {
             40_002,
         )
         .unwrap();
-        let second = create(
-            &directory,
-            task_candidate(claim, Some("verify-one-time")),
-            40_003,
-        )
-        .unwrap();
+        let mut second_candidate = task_candidate(claim, Some("verify-one-time"));
+        second_candidate.source_turn_reference = "turn-second-work-result".to_owned();
+        let second = create(&directory, second_candidate, 40_003).unwrap();
         let second_id = approve_with_receipts(
             &directory,
             Some(&receipts),
