@@ -825,15 +825,24 @@ fn push_memory_detail(lines: &mut Vec<Line<'static>>, content: &str) {
         "SELECTED MEMORY CONTENT",
         Style::default().fg(AMBER).add_modifier(Modifier::BOLD),
     )));
-    if let Some(reason) = crate::memory_proposal::sensitive_content_reason(content) {
-        lines.push(Line::from(format!(
+    match memory_detail_display(content) {
+        Ok(content) => {
+            lines.push(Line::from(content));
+            lines.push(Line::from(
+                "Content truncated to 512 characters; control characters removed.",
+            ));
+        }
+        Err(reason) => lines.push(Line::from(format!(
             "Content blocked by privacy guard: {reason}"
-        )));
+        ))),
+    }
+}
+
+fn memory_detail_display(content: &str) -> Result<String, &'static str> {
+    if let Some(reason) = crate::memory_proposal::sensitive_content_reason(content) {
+        Err(reason)
     } else {
-        lines.push(Line::from(clip_text(content, 512)));
-        lines.push(Line::from(
-            "Content truncated to 512 characters; control characters removed.",
-        ));
+        Ok(clip_text(content, 512))
     }
 }
 
@@ -1379,6 +1388,17 @@ mod tests {
             super::report_state(&Ok::<Option<u8>, String>(Some(1))),
             "available"
         );
+    }
+
+    #[test]
+    fn memory_detail_display_blocks_sensitive_content_and_clips_safe_text() {
+        assert_eq!(
+            super::memory_detail_display("api_key=example-secret"),
+            Err("credential_or_secret")
+        );
+        let safe = super::memory_detail_display("safe\u{001b}[31m memory note").unwrap();
+        assert!(!safe.chars().any(char::is_control));
+        assert!(safe.chars().count() <= 512);
     }
 
     #[test]
