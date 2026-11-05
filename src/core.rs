@@ -108,7 +108,6 @@ impl TurnState {
 /// Fields are deliberately private. Model output is not an evidence object;
 /// an application adapter must create this value from an observed result.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize)]
-pub struct VerificationEvidence
 pub struct VerificationEvidence {
     check_id: String,
     expected: String,
