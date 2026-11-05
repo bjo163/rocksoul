@@ -1,5 +1,6 @@
 use std::{
     fs,
+    path::PathBuf,
     time::{SystemTime, UNIX_EPOCH},
 };
 
@@ -247,6 +248,126 @@ fn persist_workspace_receipt(
     }
 }
 
+struct WorkspaceCompletion {
+    path: PathBuf,
+    bytes: usize,
+    outcome_label: &'static str,
+    profile: RuhProfile,
+    verification: crate::core::VerificationOutcome,
+}
+
+fn complete_workspace_operation_with_hook<F>(
+    paths: &AppPaths,
+    proposal: &WorkspaceArtifactProposal,
+    outcome: ArtifactOutcome,
+    timestamp: u64,
+    after_readback: F,
+) -> Result<WorkspaceCompletion>
+where
+    F: FnOnce() -> Result<()>,
+{
+    let (path, bytes, outcome_label) = match outcome {
+        ArtifactOutcome::Created { path, bytes, .. } => (path, bytes, "created"),
+        ArtifactOutcome::AlreadyPresent { path, bytes, .. } => {
+            (path, bytes, "already present (idempotent replay)")
+        }
+    };
+
+    let observed_regular_file = fs::symlink_metadata(&path)
+        .is_ok_and(|metadata| metadata.is_file() && !metadata.file_type().is_symlink());
+    let observed_content = if observed_regular_file {
+        fs::read(&path)
+            .ok()
+            .and_then(|bytes| String::from_utf8(bytes).ok())
+            .unwrap_or_default()
+    } else {
+        String::new()
+    };
+
+    // This seam is private and receives a no-op in production. Tests use it to
+    // model process loss after the real filesystem read-back but before XP.
+    after_readback()?;
+
+    let mut profile = rid_store::load(&paths.rid_file)
+        .context("RID profile is required; run rocksoul init first")?;
+    let mut turn = TurnState::new(format!("workspace-{}", proposal.filename), 0);
+    turn.apply(TurnEvent::Start)?;
+    turn.apply(TurnEvent::PlanAccepted)?;
+    turn.apply(TurnEvent::ActionCompleted)?;
+    let operation_id = proposal.operation_id();
+    let verification_id = format!("workspace-artifact:{operation_id}");
+    let artifact_digest = format!("{:x}", Sha256::digest(proposal.content.as_bytes()));
+    let normalized_claim = format!(
+        "created workspace artifact {} sha256 {}",
+        proposal.filename, artifact_digest
+    );
+    let request = VerificationRequest::new(
+        operation_id.clone(),
+        verification_id,
+        timestamp,
+        1,
+        1,
+        vec![
+            VerificationEvidence::new(
+                "artifact-is-regular-file",
+                "true",
+                if observed_regular_file { "true" } else { "false" },
+                format!("workspace-artifact:{operation_id}"),
+                true,
+            ),
+            VerificationEvidence::new(
+                "artifact-readback-matches",
+                proposal.content.as_str(),
+                observed_content.as_str(),
+                format!("workspace-readback:{operation_id}"),
+                true,
+            ),
+        ],
+    )
+    .with_claim(normalized_claim);
+    let verification = verify_turn_and_award_xp(&mut turn, &mut profile, request)?;
+    rid_store::save(&paths.rid_file, &profile)
+        .context("could not persist RID after verification")?;
+
+    if let crate::core::VerificationOutcome::Verified { receipt, xp_record } = &verification {
+        let receipt_path = persist_workspace_receipt(&paths.logs_dir, &operation_id, receipt)?;
+        let newly_awarded = matches!(xp_record, crate::rid::XpRecordOutcome::Recorded);
+        let receipt_detail = format!(
+            "receipt={} xp={} xp_outcome={} checks={}/{} evidence={} receipt_path={}",
+            receipt.verification_id(),
+            receipt.xp_awarded(),
+            if newly_awarded { "recorded" } else { "duplicate" },
+            receipt.required_checks_passed(),
+            receipt.total_checks(),
+            receipt.evidence_refs().join(","),
+            receipt_path.display(),
+        );
+        task_trace::append(
+            &paths.logs_dir.join("task-trace.v1.jsonl"),
+            &operation_id,
+            TaskTraceEvent::Verified,
+            &proposal.filename,
+            &receipt_detail,
+        )?;
+    } else {
+        task_trace::append(
+            &paths.logs_dir.join("task-trace.v1.jsonl"),
+            &operation_id,
+            TaskTraceEvent::Failed,
+            &proposal.filename,
+            "independent verification failed; no XP receipt",
+        )?;
+    }
+
+    Ok(WorkspaceCompletion {
+        path,
+        bytes,
+        outcome_label,
+        profile,
+        verification,
+    })
+}
+
 async fn run_workspace(command: WorkspaceCommand) -> Result<()> {
     match command {
         WorkspaceCommand::Trace => {
@@ -410,120 +531,31 @@ async fn run_workspace(command: WorkspaceCommand) -> Result<()> {
                 &proposal.filename,
                 "artifact published or identical replay observed",
             )?;
-            let (path, bytes, observed_content, outcome_label) = match outcome {
-                ArtifactOutcome::Created {
-                    path,
-                    bytes,
-                    observed_content,
-                } => (path, bytes, observed_content, "created"),
-                ArtifactOutcome::AlreadyPresent {
-                    path,
-                    bytes,
-                    observed_content,
-                } => (
-                    path,
-                    bytes,
-                    observed_content,
-                    "already present (idempotent replay)",
-                ),
-            };
-
-            let observed_regular_file = fs::symlink_metadata(&path)
-                .is_ok_and(|metadata| metadata.is_file() && !metadata.file_type().is_symlink());
-            let timestamp = now_unix()?;
-            let mut profile = rid_store::load(&paths.rid_file)
-                .context("RID profile is required; run rocksoul init first")?;
-            let mut turn = TurnState::new(format!("workspace-{}", proposal.filename), 0);
-            turn.apply(TurnEvent::Start)?;
-            turn.apply(TurnEvent::PlanAccepted)?;
-            turn.apply(TurnEvent::ActionCompleted)?;
-            let verification_id = format!("workspace-artifact:{operation_id}");
-            let artifact_digest = format!("{:x}", Sha256::digest(proposal.content.as_bytes()));
-            let normalized_claim = format!(
-                "created workspace artifact {} sha256 {}",
-                proposal.filename, artifact_digest
+            let completion = complete_workspace_operation_with_hook(
+                &paths,
+                &proposal,
+                outcome,
+                now_unix()?,
+                || Ok(()),
+            )?;
+            println!(
+                "Workspace artifact {}: {}",
+                completion.outcome_label,
+                completion.path.display()
             );
-            let request = VerificationRequest::new(
-                operation_id.clone(),
-                verification_id,
-                timestamp,
-                1,
-                1,
-                vec![
-                    VerificationEvidence::new(
-                        "artifact-is-regular-file",
-                        "true",
-                        if observed_regular_file {
-                            "true"
-                        } else {
-                            "false"
-                        },
-                        format!("workspace-artifact:{operation_id}"),
-                        true,
-                    ),
-                    VerificationEvidence::new(
-                        "artifact-readback-matches",
-                        proposal.content.as_str(),
-                        observed_content.as_str(),
-                        format!("workspace-readback:{operation_id}"),
-                        true,
-                    ),
-                ],
-            )
-            .with_claim(normalized_claim);
-            let verification = verify_turn_and_award_xp(&mut turn, &mut profile, request)?;
-            rid_store::save(&paths.rid_file, &profile)
-                .context("could not persist RID after verification")?;
-
-            if let crate::core::VerificationOutcome::Verified { receipt, xp_record } = &verification
-            {
-                let receipt_path =
-                    persist_workspace_receipt(&paths.logs_dir, &operation_id, receipt)?;
-                let newly_awarded = matches!(xp_record, crate::rid::XpRecordOutcome::Recorded);
-                let receipt_detail = format!(
-                    "receipt={} xp={} xp_outcome={} checks={}/{} evidence={} receipt_path={}",
-                    receipt.verification_id(),
-                    receipt.xp_awarded(),
-                    if newly_awarded {
-                        "recorded"
-                    } else {
-                        "duplicate"
-                    },
-                    receipt.required_checks_passed(),
-                    receipt.total_checks(),
-                    receipt.evidence_refs().join(","),
-                    receipt_path.display(),
-                );
-                task_trace::append(
-                    &trace_path,
-                    &operation_id,
-                    TaskTraceEvent::Verified,
-                    &proposal.filename,
-                    &receipt_detail,
-                )?;
-            } else {
-                task_trace::append(
-                    &trace_path,
-                    &operation_id,
-                    TaskTraceEvent::Failed,
-                    &proposal.filename,
-                    "independent verification failed; no XP receipt",
-                )?;
-            }
-            println!("Workspace artifact {outcome_label}: {}", path.display());
-            println!("Independent read-back verified: {bytes} bytes.");
-            println!("RID XP total: {}.", profile.total_xp());
-            if let crate::core::VerificationOutcome::Verified { receipt, xp_record } = verification
+            println!(
+                "Independent read-back verified: {} bytes.",
+                completion.bytes
+            );
+            println!("RID XP total: {}.", completion.profile.total_xp());
+            if let crate::core::VerificationOutcome::Verified { receipt, xp_record } =
+                &completion.verification
             {
                 let newly_awarded = matches!(xp_record, crate::rid::XpRecordOutcome::Recorded);
                 println!(
                     "Verification receipt: {} · {} XP {}",
                     receipt.verification_id(),
-                    if newly_awarded {
-                        receipt.xp_awarded()
-                    } else {
-                        0
-                    },
+                    if newly_awarded { receipt.xp_awarded() } else { 0 },
                     if newly_awarded {
                         "awarded"
                     } else {
