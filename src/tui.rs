@@ -1191,21 +1191,21 @@ fn render_rid(frame: &mut Frame<'_>, area: Rect, app: &mut App) {
         .iter()
         .map(|entry| {
             let score = profile
-                .and_then(|p| StatId::new(entry.slot_id).ok().and_then(|id| p.stat(id)))
+                .and_then(|p| StatId::new(entry.id).ok().and_then(|id| p.stat(id)))
                 .and_then(|record| record.score)
                 .map(|value| format!("{value:>3}/100"))
                 .unwrap_or_else(|| "unrated".to_owned());
             ListItem::new(Line::from(vec![
                 Span::styled(
-                    format!("{:02} ", entry.slot_id),
+                    format!("{:02} ", entry.id),
                     Style::default().fg(app.palette.muted),
                 ),
                 Span::styled(
-                    format!("{:<18}", entry.name.transliteration),
+                    format!("{:<18}", entry.domain_label),
                     Style::default().fg(app.palette.text),
                 ),
                 Span::styled(
-                    format!("{:<25}", entry.technical_stat.label),
+                    format!("{:<25}", entry.label),
                     Style::default().fg(app.palette.muted),
                 ),
                 Span::styled(score, Style::default().fg(app.palette.accent)),
@@ -1480,7 +1480,7 @@ fn rid_detail(
     let mut lines = vec![
         Line::from(""),
         Line::from(Span::styled(
-            entry.name.transliteration.clone(),
+            entry.domain_label.clone(),
             Style::default()
                 .fg(palette.text)
                 .add_modifier(Modifier::BOLD),
@@ -1489,7 +1489,7 @@ fn rid_detail(
         Line::from(entry.name.gloss.id.clone()),
         Line::from(""),
         Line::from(Span::styled(
-            entry.technical_stat.label.clone(),
+            entry.label.clone(),
             Style::default().fg(palette.accent),
         )),
         Line::from(entry.technical_stat.key.clone()),
@@ -1505,7 +1505,7 @@ fn rid_detail(
         Line::from("Inspirational label only; this metric does not measure a divine attribute."),
     ];
     if let Some(profile) = profile {
-        if let Ok(id) = StatId::new(entry.slot_id) {
+        if let Ok(id) = StatId::new(entry.id) {
             if let Some(stat) = profile.stat(id) {
                 lines.push(Line::from(format!(
                     "Score: {}",
