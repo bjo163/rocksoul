@@ -63,6 +63,8 @@ pub struct MemoryProposal {
     pub claim_status: MemoryClaimStatus,
     #[serde(default)]
     pub verification_receipt_id: Option<String>,
+    #[serde(default)]
+    pub verification_task_id: Option<String>,
 }
 
 impl MemoryProposal {
@@ -81,6 +83,7 @@ pub struct MemoryProposalCandidate {
     pub expires_at_unix: Option<u64>,
     pub claim_status: MemoryClaimStatus,
     pub verification_receipt_id: Option<String>,
+    pub verification_task_id: Option<String>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -127,9 +130,17 @@ impl ProposalStore {
                         proposal.claim_status,
                         MemoryClaimStatus::Inference | MemoryClaimStatus::UnverifiedTaskOutcome
                     ) || (proposal.verification_receipt_id.is_some()
-                        && proposal.claim_status != MemoryClaimStatus::UnverifiedTaskOutcome)
+                        && (proposal.claim_status != MemoryClaimStatus::UnverifiedTaskOutcome
+                            || proposal.verification_task_id.is_none()))
+                        || (proposal.verification_task_id.is_some()
+                            != proposal.verification_receipt_id.is_some())
                     {
                         bail!("pending model proposal has an unsupported claim authority status");
+                    }
+                    if proposal.verification_task_id.as_ref().is_some_and(|id| {
+                        id.trim().is_empty() || id.len() > 256 || id.chars().any(char::is_control)
+                    }) {
+                        bail!("pending model proposal verification task ID is invalid");
                     }
                     if proposal.decided_at_unix.is_some() || proposal.memory_record_id.is_some() {
                         bail!("pending memory proposal has decision metadata");
@@ -192,6 +203,7 @@ pub fn create(
         expires_at_unix,
         claim_status,
         verification_receipt_id,
+        verification_task_id,
     } = candidate;
     validate_candidate(
         kind,
@@ -212,6 +224,14 @@ pub fn create(
         id.trim().is_empty() || id.len() > 256 || id.chars().any(char::is_control)
     }) {
         bail!("verification receipt ID is invalid");
+    }
+    if verification_receipt_id.is_some() != verification_task_id.is_some() {
+        bail!("a verification receipt and its expected task ID must be supplied together");
+    }
+    if verification_task_id.as_ref().is_some_and(|id| {
+        id.trim().is_empty() || id.len() > 256 || id.chars().any(char::is_control)
+    }) {
+        bail!("verification task ID is invalid");
     }
     if verification_receipt_id.is_some() && claim_status != MemoryClaimStatus::UnverifiedTaskOutcome
     {
@@ -239,6 +259,7 @@ pub fn create(
         memory_record_id: None,
         claim_status,
         verification_receipt_id,
+        verification_task_id,
     };
     proposal.fingerprint = fingerprint(&proposal);
     if store
@@ -313,11 +334,18 @@ pub fn approve_with_receipts(
     let receipt_candidate = proposal_snapshot
         .verification_receipt_id
         .as_deref()
-        .and_then(|receipt_id| {
+        .zip(proposal_snapshot.verification_task_id.as_deref())
+        .and_then(|(receipt_id, task_id)| {
             receipts_directory.and_then(|directory| {
-                load_verified_receipt(directory, receipt_id, &proposal_snapshot.content, now)
-                    .ok()
-                    .flatten()
+                load_verified_receipt(
+                    directory,
+                    receipt_id,
+                    task_id,
+                    &proposal_snapshot.content,
+                    now,
+                )
+                .ok()
+                .flatten()
             })
         });
     let memory_record_id = MemoryStore::transact(directory, |memory| {
@@ -473,6 +501,7 @@ fn is_receipt_revoked(receipts_directory: &Path, verification_id: &str) -> Resul
 fn load_verified_receipt(
     receipts_directory: &Path,
     verification_id: &str,
+    expected_task_id: &str,
     claim: &str,
     now: u64,
 ) -> Result<Option<VerificationReceipt>> {
@@ -508,10 +537,11 @@ fn load_verified_receipt(
             return Ok(None);
         }
         let receipt: VerificationReceipt = serde_json::from_value(document.clone())?;
-        if document
-            .get("operation_id")
-            .and_then(serde_json::Value::as_str)
-            != Some(receipt.task_id())
+        if receipt.task_id() != expected_task_id
+            || document
+                .get("operation_id")
+                .and_then(serde_json::Value::as_str)
+                != Some(receipt.task_id())
         {
             return Ok(None);
         }
@@ -661,6 +691,7 @@ fn fingerprint(proposal: &MemoryProposal) -> String {
         proposal.expires_at_unix,
         proposal.claim_status,
         &proposal.verification_receipt_id,
+        &proposal.verification_task_id,
     ))
     .expect("serializing a memory proposal payload cannot fail");
     let digest = Sha256::digest(payload);
@@ -903,6 +934,7 @@ mod tests {
             expires_at_unix: None,
             claim_status: crate::memory::MemoryClaimStatus::Inference,
             verification_receipt_id: None,
+            verification_task_id: None,
         }
     }
 
@@ -971,6 +1003,7 @@ mod tests {
         );
         value.claim_status = crate::memory::MemoryClaimStatus::UnverifiedTaskOutcome;
         value.verification_receipt_id = receipt_id.map(str::to_owned);
+        value.verification_task_id = receipt_id.map(|_| "receipt-task".to_owned());
         value
     }
 
@@ -1319,6 +1352,38 @@ mod tests {
             &proposal.id,
             &proposal.approval_phrase(),
             45_002,
+        )
+        .unwrap();
+
+        let store = crate::memory::MemoryStore::load(&directory).unwrap();
+        assert_eq!(
+            store
+                .records
+                .iter()
+                .find(|record| record.id == memory_id)
+                .unwrap()
+                .claim_status,
+            crate::memory::MemoryClaimStatus::UnverifiedTaskOutcome
+        );
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn receipt_from_another_task_cannot_verify_a_claim() {
+        let directory = temp_dir();
+        let receipts = directory.join("receipts");
+        let claim = "The task completed with a verified result";
+        issue_receipt(&receipts, "verify-other-task", claim, 46_000);
+
+        let mut candidate = task_candidate(claim, Some("verify-other-task"));
+        candidate.verification_task_id = Some("different-task".to_owned());
+        let proposal = create(&directory, candidate, 46_001).unwrap();
+        let memory_id = approve_with_receipts(
+            &directory,
+            Some(&receipts),
+            &proposal.id,
+            &proposal.approval_phrase(),
+            46_002,
         )
         .unwrap();
 
