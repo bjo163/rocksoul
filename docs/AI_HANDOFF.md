@@ -46,7 +46,7 @@ Keep these concepts separate:
 - **Age:** elapsed time from the identity creation timestamp; not XP or level.
 - **XP ledger:** append-only records for eligible verified work/events. Event identity must be idempotent; replay cannot award XP twice.
 - **Level:** deterministic, versioned derivation from XP; never independently edited.
-- **99 Universal Stats:** the canonical technical taxonomy is `data/rid/universal_stats.v1.json`: 99 observable capability dimensions across 99 independent first-class domains, each with a stable `rid_stat:NN` ID, action-word label, definition, and evidence-oriented evaluation protocol. Scores begin unrated and require trusted external evaluation.
+- **99 Universal Stats:** the canonical technical taxonomy is `data/rid/universal_stats.v2.json`: 99 observable capability dimensions across 99 independent first-class domains, each with a stable `rid_stat:NN` ID, action-word label, definition, and evidence-oriented evaluation protocol. Scores begin unrated and require trusted external evaluation.
 - **Asmaul Husna reference:** `data/rid/asmaul_husna.v1.json` is a separate optional religious/inspirational catalogue. It does not define stat identities, labels, scores, or evaluation. Never infer semantic or theological equivalence from matching ordinal positions. Religious/language review remains a human expert gate.
 - **Four Kitab context:** Al-Qur'an is the primary reference, with Taurat, Zabur, and Injil represented respectfully as the other three traditions in the product narrative. Do not turn religious text into a technical scoring system.
 
