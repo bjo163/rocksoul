@@ -54,6 +54,9 @@
 
 ## Phase F — Verification and merge
 
+- Final PR head `c9c605d6896930e5a36f30bb8d3fbe2ecfdd5484` passed CI #42044132321 on Linux and Windows.
+- PR #53 squash-merged to `main` as `458df81f87ae0b328dbc12c2b2829ca3a0ff75d9`; issue #35 was closed after verifying the main ref.
+
 - First PR CI run #42012045477 exposed a formatting-only issue; corrected.
 - CI run #42042937489 passed Linux (108 tests, Core Integrity 23/23, memory retrieval) but exposed a Windows-only failure in an existing memory v1 migration test (revision 0 instead of 7). The temp-directory helper used PID + timestamp only; Windows clock precision allowed parallel tests to collide. Added a per-process atomic sequence to make test roots unique.
 - Final validation for head `8a0876fe9a3020477f52de5bab7451754acc8f62`: [CI #42043396826](https://github.com/bjo163/rocksoul/actions/runs/42043396826) passed all Linux and Windows jobs, including installer/portable packaging and smoke tests.
@@ -66,7 +69,7 @@
 - [x] F6. Verify CI Windows build/tests/portable packaging/installer smoke.
 - [x] F7. Inspect the complete diff and ensure no arbitrary tools, environment failpoints, or unrelated refactors.
 - [x] F8. Open a PR targeting main with base SHA, behavior, safety implications, test evidence and recovery limitations.
-- [ ] F9. Merge only after required checks pass; verify main SHA and close #35 with evidence.
+- [x] F9. Merge only after required checks pass; verify main SHA and close #35 with evidence.
 
 ## Completion output
 
