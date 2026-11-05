@@ -123,7 +123,7 @@ The main baseline includes local memory schema v3 and its prior migrations, cros
 **Branch:** `feat/verified-task-outcome-claims`  
 **Issue:** #44  
 **Last observed head before the most recent fix:** `9df80599bb6f8ab5094b3c21b1c6cac9946c33c3`  
-**Latest fix commit:** `b29dc8136013ebf3bfcf1fbdbfef116b1aaf6e28`  
+**Latest code fix commit:** `b29dc8136013ebf3bfcf1fbdbfef116b1aaf6e28`\n**Latest branch head at documentation refresh:** `607a55d25b1776899c0f5bab69ed0a1634b92ca2` (includes handoff and roadmap corrections).  
 **State at snapshot:** open; not merged. Re-check PR and CI before acting.
 
 PR #51 proposes:
