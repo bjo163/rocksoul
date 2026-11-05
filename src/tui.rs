@@ -139,6 +139,9 @@ struct App {
     help_open: bool,
     quit: bool,
     snapshot: Snapshot,
+    memory_query: String,
+    memory_search_active: bool,
+    memory_selected: usize,
 }
 
 impl App {
@@ -153,6 +156,9 @@ impl App {
             help_open: false,
             quit: false,
             snapshot,
+            memory_query: String::new(),
+            memory_search_active: false,
+            memory_selected: 0,
         }
     }
 
@@ -164,6 +170,22 @@ impl App {
 
     fn handle_key(&mut self, key: KeyEvent) {
         if key.kind != KeyEventKind::Press {
+            return;
+        }
+        if self.memory_search_active {
+            match key.code {
+                KeyCode::Esc | KeyCode::Enter => self.memory_search_active = false,
+                KeyCode::Backspace => {
+                    self.memory_query.pop();
+                }
+                KeyCode::Char(character)
+                    if !key.modifiers.contains(KeyModifiers::CONTROL)
+                        && self.memory_query.chars().count() < 64 =>
+                {
+                    self.memory_query.push(character);
+                }
+                _ => {}
+            }
             return;
         }
         if self.palette_open || self.help_open {
@@ -189,6 +211,9 @@ impl App {
             KeyCode::BackTab => self.select_screen(Screen::from_index(self.screen.index() + 7)),
             KeyCode::Up if self.screen == Screen::Rid => self.move_stat(-1),
             KeyCode::Down if self.screen == Screen::Rid => self.move_stat(1),
+            KeyCode::Up if self.screen == Screen::Memory => self.memory_selected = self.memory_selected.saturating_sub(1),
+            KeyCode::Down if self.screen == Screen::Memory => self.memory_selected = self.memory_selected.saturating_add(1).min(99),
+            KeyCode::Char('/') if self.screen == Screen::Memory => self.memory_search_active = true,
             KeyCode::Char('k') if key.modifiers.contains(KeyModifiers::CONTROL) => {
                 self.palette_open = true
             }
@@ -359,7 +384,7 @@ fn render_body(frame: &mut Frame<'_>, area: Rect, app: &mut App) {
         Screen::Overview => render_overview(frame, columns[0], app),
         Screen::Brains => render_brains(frame, columns[0], app),
         Screen::Tasks => render_tasks(frame, columns[0]),
-        Screen::Memory => render_memory(frame, columns[0]),
+        Screen::Memory => render_memory(frame, columns[0], app),
         Screen::Rid => render_rid(frame, columns[0], app),
         Screen::Tools => render_tools(frame, columns[0]),
         Screen::Diagnostics => render_diagnostics(frame, columns[0], app),
@@ -538,77 +563,92 @@ fn safe_trace_text(value: Option<&serde_json::Value>, limit: usize) -> String {
     }
 }
 
-fn render_memory(frame: &mut Frame<'_>, area: Rect) {
+fn render_memory(frame: &mut Frame<'_>, area: Rect, app: &App) {
+    const MAX_RECORDS: usize = 40;
     let lines = match AppPaths::discover().and_then(|paths| {
         let store = MemoryStore::load(&paths.memory_dir)?;
         let now = now_unix();
         let active = store.active_records(now);
-        let count = |kind| active.iter().filter(|record| record.kind == kind).count();
-        let approved = active.iter().filter(|record| record.user_approved).count();
         let mut lines = vec![
             Line::from(format!("Store schema         v{}", store.schema_version)),
             Line::from(format!("Active records       {}", active.len())),
-            Line::from(format!("User-approved        {approved}")),
+            Line::from(format!("Store                {}", paths.memory_dir.join("store.v4.json").display())),
             Line::from(format!(
-                "Working              {}",
-                count(MemoryKind::Working)
-            )),
-            Line::from(format!(
-                "Episodic             {}",
-                count(MemoryKind::Episodic)
-            )),
-            Line::from(format!(
-                "Semantic             {}",
-                count(MemoryKind::Semantic)
-            )),
-            Line::from(format!(
-                "Procedural           {}",
-                count(MemoryKind::Procedural)
-            )),
-            Line::from(format!(
-                "Derived              {}",
-                count(MemoryKind::Derived)
+                "Search               {}{}",
+                if app.memory_search_active { ">" } else { "" },
+                if app.memory_query.is_empty() { "press / to search" } else { &app.memory_query }
             )),
             Line::from(""),
-            Line::from(format!(
-                "Store: {}",
-                paths.memory_dir.join("store.v4.json").display()
-            )),
-            Line::from(""),
-            Line::from("Recent entries (content hidden in cockpit):"),
+            Line::from("ID             KIND       CLAIM STATUS             SOURCE                       ACCESS"),
         ];
-        for record in active.iter().rev().take(5) {
-            lines.push(Line::from(format!(
-                "{}  [{}]  {}",
-                record.id,
-                record.kind,
-                if record.user_approved {
-                    "approved"
-                } else {
-                    "derived/unapproved"
-                }
-            )));
+        if app.memory_query.is_empty() {
+            let mut records = active;
+            records.sort_by(|left, right| right.created_at_unix.cmp(&left.created_at_unix));
+            if records.is_empty() {
+                lines.push(Line::from("No active memory records."));
+            }
+            for (index, record) in records.iter().take(MAX_RECORDS).enumerate() {
+                lines.push(Line::from(format!(
+                    "{} {:<12} {:<10} {:<24} {:<26} {}",
+                    if index == app.memory_selected { "▸" } else { " " },
+                    clip_text(&record.id, 12),
+                    record.kind,
+                    record.claim_status,
+                    clip_text(&record.source, 26),
+                    if record.user_approved { "approved" } else { "unapproved" }
+                )));
+            }
+            if records.len() > MAX_RECORDS {
+                lines.push(Line::from(format!("Showing newest {MAX_RECORDS} of {} active records.", records.len())));
+            }
+        } else {
+            let results = store.search_ranked(
+                &app.memory_query,
+                &crate::memory::MemorySearchFilters::default(),
+                now,
+                MAX_RECORDS,
+            );
+            if results.is_empty() {
+                lines.push(Line::from("No active records matched this local search."));
+            }
+            for (index, record) in results.iter().enumerate() {
+                lines.push(Line::from(format!(
+                    "{} {:<12} {:<10} {:<24} {:<26} {}",
+                    if index == app.memory_selected { "▸" } else { " " },
+                    clip_text(&record.record_id, 12),
+                    record.kind,
+                    record.claim_status,
+                    clip_text(&record.source, 26),
+                    record.verification_receipt_id.as_deref().map(|_| "receipt").unwrap_or("no receipt")
+                )));
+            }
+            lines.push(Line::from("Search inspects local record content; content itself remains hidden."));
         }
         lines.push(Line::from(""));
-        lines.push(Line::from(
-            "Writes require explicit CLI user action; models cannot mutate memory.",
-        ));
+        lines.push(Line::from("Read-only inspector · no memory writes or forgetting actions."));
         Ok(lines)
     }) {
         Ok(lines) => lines,
-        Err(error) => vec![
-            Line::from("MEMORY STORE UNAVAILABLE"),
-            Line::from(format!("{error:#}")),
-            Line::from("Run rocksoul init to initialize the portable store."),
+        Err(_) => vec![
+            Line::from(Span::styled("MEMORY STORE UNAVAILABLE", Style::default().fg(RED).add_modifier(Modifier::BOLD))),
+            Line::from("The store is missing, corrupt, unsupported, or inaccessible."),
+            Line::from("No memory content is exposed in this error state."),
         ],
     };
-
     frame.render_widget(
         Paragraph::new(lines)
             .wrap(Wrap { trim: true })
-            .block(panel("MEMORY / EXPERIENCE")),
+            .block(panel("MEMORY / EXPERIENCE · ↑/↓ SELECT · / SEARCH")),
         area,
     );
+}
+
+fn clip_text(value: &str, limit: usize) -> String {
+    value
+        .chars()
+        .filter(|character| !character.is_control())
+        .take(limit)
+        .collect()
 }
 
 fn render_rid(frame: &mut Frame<'_>, area: Rect, app: &mut App) {
@@ -893,7 +933,7 @@ fn render_footer(frame: &mut Frame<'_>, area: Rect, app: &App) {
     let text = if app.screen == Screen::Rid {
         "↑/↓ Browse stats   1-8 Navigate   Ctrl+K Palette   ? Help   q Exit"
     } else {
-        "1-8 Navigate   Tab Next   Ctrl+K Palette   r Refresh   ? Help   q Exit"
+        "1-8 Navigate   / Search   ↑/↓ Select   Enter/Esc Close Search   Ctrl+K Palette   q Exit"
     };
     frame.render_widget(
         Paragraph::new(text)
