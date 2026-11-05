@@ -1,6 +1,6 @@
 # Rocksoul Project Progress
 
-**Last updated:** 2026-11-06 (Asia/Jakarta, Universal 99 domains second-pass overlap reconciliation v2.3.2 published)  
+**Last updated:** 2026-11-06 (Asia/Jakarta, Universal 99 domains third-pass overlap reconciliation v2.3.3 published)  
 **Repository:** [bjo163/rocksoul](https://github.com/bjo163/rocksoul)  
 **Canonical branch:** `main`  
 **Current principle:** One Core. Infinite Evolution.
@@ -199,25 +199,27 @@ A feature is complete only when:
 Never label an in-progress workflow as passed. Never close an issue because a branch or PR merely exists.
 
 
-## RID Universal 99 Domains & Stats — second-pass overlap reconciliation v2.3.2 (runtime migration implemented; CI pending)
+## RID Universal 99 Domains & Stats — third-pass overlap reconciliation v2.3.3 (runtime migration implemented; CI pending)
 
 **Canonical taxonomy:** `data/rid/universal_stats.v2.json`  
 **Version:** `2.3.2`  
 **Second-pass taxonomy commit:** `653fc83cf2f087ee81431840fa48c459ff30710f`  
+**Third-pass taxonomy commit:** `01a171d09fbea7aa8a278ecbccb8bf88277c22c8`  
 **Runtime validator commit:** `af7d4d9c831f7960ad9516214dd0d6bcdcce6ada`  
 **Human-readable audit:** [docs/rid-universal-stats.md](rid-universal-stats.md)
 
 Delivered:
 - Exactly 99 independent first-class domains and 99 linked stat slots: **99 capability dimensions, not 198**.
 - Exactly 99 unique domain IDs, keys, labels, measurement targets, stat IDs, stat keys, stat labels, and domain-specific separation rules.
-- **298 directed overlap guards / 149 reciprocal pairs**, plus 149 canonical pairwise contrast records (`rid_overlap:001`–`rid_overlap:149`).
+- **322 directed overlap guards / 161 reciprocal pairs**, plus 161 canonical pairwise contrast records (`rid_overlap:001`–`rid_overlap:149`).
 - Second-pass review added 12 missing adjacency guards: READ/UNDERSTAND, READ/TRANSLATE, TRACK/DIALOGUE, RETAIN/ADAPT, LEARN/INTEGRATE, OPTIMIZE/ITERATE, COMPLETE/SELF_CHECK, EXPRESS/STRUCTURE, TRANSLATE/TUNE, BOUNDARY/SECURE, SECURE/RESIST, and GOAL_TRACK/HANDOFF.
 - Each pair record names both constructs, both measurement targets, and an explicit separate-outcome rule; runtime validates exact graph/registry parity.
+- Third-pass review added 12 additional adjacency guards: NOTICE/ERROR_DETECTION, TRACK/MONITOR, TRACK/GOAL_TRACK, UPDATE/SYNTHESIZE, ANALYZE/REFLECT, PRIORITIZE/ESCALATE, EXECUTE/TRANSFER, EXECUTE/MONITOR, ALIGN/VIEWPOINT_MODEL, ALIGN/INCLUDE, INVENT/REFRAME, and EXPERIMENT/REFLECT.
 - All 99 domain separation rules state primary target, inclusion, exclusion, adjacent construct targets, and no-double-counting requirements.
 - Runtime validator checks unique metadata, normalized keys, sorted/unique reciprocal adjacency, exact graph counts, pairwise contrast IDs and targets, domain/stat metadata parity, and the one-to-one measurement contract.
 - Stat 42 remains RESUME (stable ID retained) to distinguish interruption recovery from long-run reliability.
-- Runtime embeds v2.3.2; schema-v1 archival migration preserves exact original bytes, legacy records, identity, and XP while initializing all universal scores as unrated.
-- Evaluation manifest v1.1.2 binds adapters to RID v2.3.2; benchmark families are navigation tags only, not additional scores.
+- Runtime embeds v2.3.3; schema-v1 archival migration preserves exact original bytes, legacy records, identity, and XP while initializing all universal scores as unrated.
+- Evaluation manifest v1.1.3 binds adapters to RID v2.3.3; benchmark families are navigation tags only, not additional scores.
 - Religious inspiration data remains separate from technical capability taxonomy.
 
 Audit conclusions and remaining gates:
@@ -228,7 +230,7 @@ Audit conclusions and remaining gates:
 - Exact-head Linux/Windows CI must be green before claiming verified completion.
 
 Next:
-1. Verify exact-head Linux and Windows CI for v2.3.2 and fix any failures.
+1. Verify exact-head Linux and Windows CI for v2.3.3 and fix any failures.
 2. Design trusted per-domain evaluator adapters with held-out benchmark suites, negative controls, calibrated confidence, and auditable evidence.
 3. Run independent expert review and empirical discriminant-validity studies before treating scores as comparable capability measurements.
 4. Keep all 99 dimensions `unrated` until trusted evidence exists; do not map historical Asmaul Husna scores by ordinal slot.
