@@ -618,7 +618,7 @@ fn render_overview(frame: &mut Frame<'_>, area: Rect, app: &App) {
         ]),
         Line::from(""),
         Line::from("KERNEL  TURN STATE MACHINE AVAILABLE"),
-        Line::from("ACTIVE TASK  NONE PERSISTED"),
+        Line::from("ACTIVE TASK QUEUE  NOT IMPLEMENTED"),
     ];
     frame.render_widget(
         Paragraph::new(summary).block(panel("SYSTEM SNAPSHOT", &app.palette)),
@@ -638,7 +638,7 @@ fn render_overview(frame: &mut Frame<'_>, area: Rect, app: &App) {
             Style::default().fg(app.palette.accent).add_modifier(Modifier::BOLD),
         )),
         Line::from(
-            "• Persistent task queue, Memory OS, tool registry and specialist model routing.",
+            "• Persistent task queue, full Memory OS, tool registry and specialist model routing.",
         ),
         Line::from("• Native LLM API and controlled learning/evolution pipeline."),
     ];
@@ -658,7 +658,7 @@ fn render_brains(frame: &mut Frame<'_>, area: Rect, app: &App) {
     };
     let lines = vec![
         Line::from(Span::styled(
-            "AUTOMATIC SPECIALIST REGISTRY",
+            "SPECIALIST ASSIGNMENTS",
             Style::default().fg(app.palette.accent).add_modifier(Modifier::BOLD),
         )),
         Line::from(
