@@ -320,10 +320,7 @@ impl RidCatalogue {
         for (index, entry) in self.entries.iter().enumerate() {
             let slot = index as u8 + 1;
             let domain = &self.domains[index];
-            ensure!(
-                entry.id == slot,
-                "RID stat slot order mismatch at {slot}"
-            );
+            ensure!(entry.id == slot, "RID stat slot order mismatch at {slot}");
             ensure!(
                 entry.stat_id == format!("rid_stat:{slot:02}"),
                 "RID stat ID mismatch at {slot}"
