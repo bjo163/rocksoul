@@ -256,6 +256,54 @@ mod tests {
     }
 
     #[test]
+    fn migrates_v1_profile_without_reassigning_legacy_scores() {
+        let path = test_path();
+        fs::create_dir_all(path.parent().unwrap()).unwrap();
+        let stats = (1_u64..=99)
+            .map(|id| {
+                serde_json::json!({
+                    "id": id,
+                    "catalogue_entry_id": format!("asmaul_husna:{id:02}"),
+                    "score": if id == 1 { Some(88_u8) } else { None },
+                    "confidence": if id == 1 { Some(95_u8) } else { None },
+                    "sample_count": if id == 1 { Some(20_u32) } else { None },
+                    "evidence_refs": if id == 1 { vec!["legacy://evidence/1"] } else { Vec::<String>::new() },
+                    "last_evaluated_at_unix": if id == 1 { Some(1_800_000_100_u64) } else { None },
+                    "rubric_version": if id == 1 { Some("legacy-v1".to_owned()) } else { None }
+                })
+            })
+            .collect::<Vec<_>>();
+        let legacy = serde_json::json!({
+            "schema_version": 1,
+            "level_curve_version": 1,
+            "identity": {
+                "instance_id": "rocksoul-legacy-fixture",
+                "created_at_unix": 1_800_000_000_u64
+            },
+            "xp_ledger": { "events": [] },
+            "stats": stats
+        });
+        let bytes = serde_json::to_vec_pretty(&legacy).unwrap();
+        fs::write(&path, &bytes).unwrap();
+
+        let migrated = load(&path).unwrap();
+        assert_eq!(migrated.identity().instance_id, "rocksoul-legacy-fixture");
+        assert_eq!(migrated.stats().len(), 99);
+        assert!(migrated.stats().iter().all(|stat| stat.score.is_none()));
+        assert_eq!(migrated.stats()[0].catalogue_entry_id, "rid_stat:01");
+        assert_eq!(migrated.archived_legacy_stat_count(), 99);
+
+        let archive = super::legacy_archive_path(&path);
+        assert_eq!(fs::read(&archive).unwrap(), bytes);
+        let archived: serde_json::Value = serde_json::from_slice(&fs::read(archive).unwrap()).unwrap();
+        assert_eq!(archived["stats"][0]["score"], 88);
+        let current: serde_json::Value = serde_json::from_slice(&fs::read(&path).unwrap()).unwrap();
+        assert_eq!(current["schema_version"], 2);
+
+        fs::remove_dir_all(path.ancestors().nth(2).unwrap()).unwrap();
+    }
+
+    #[test]
     fn invalid_json_is_not_reinitialized_or_overwritten() {
         let path = test_path();
         fs::create_dir_all(path.parent().unwrap()).unwrap();
