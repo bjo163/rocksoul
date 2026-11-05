@@ -546,8 +546,8 @@ fn render_header(frame: &mut Frame<'_>, area: Rect, app: &App) {
                 "/ KOKPIT KOGNITIF "
             },
             Style::default()
-                .fg(app.palette.accent)
-                .add_modifier(Modifier::BOLD),
+            .fg(app.palette.accent)
+            .add_modifier(Modifier::BOLD),
         ),
         Span::styled(status.0, Style::default().fg(status.1)),
         Span::raw("   "),
@@ -739,8 +739,8 @@ fn render_tasks(frame: &mut Frame<'_>, area: Rect, app: &mut App) {
                 Line::from(Span::styled(
                     format!("PERSISTED TASK TRACE · {} RECENT EVENTS", records.len()),
                     Style::default()
-                .fg(app.palette.accent)
-                .add_modifier(Modifier::BOLD),
+                        .fg(app.palette.accent)
+                        .add_modifier(Modifier::BOLD),
                 )),
                 Line::from("Newest events first · ↑/↓ select · content-free metadata only"),
                 Line::from(""),
@@ -767,8 +767,8 @@ fn render_tasks(frame: &mut Frame<'_>, area: Rect, app: &mut App) {
             lines.push(Line::from(Span::styled(
                 "SELECTED EVENT",
                 Style::default()
-                .fg(app.palette.accent)
-                .add_modifier(Modifier::BOLD),
+                    .fg(app.palette.accent)
+                    .add_modifier(Modifier::BOLD),
             )));
             lines.push(Line::from(format!("Event       {}", selected.event)));
             lines.push(Line::from(format!("Operation   {}", selected.operation_id)));
@@ -1559,11 +1559,13 @@ fn render_palette(frame: &mut Frame<'_>, area: Rect, app: &App) {
     let rows = Screen::ALL
         .iter()
         .enumerate()
-        .map(|(i, screen)| ListItem::new(format!(
+        .map(|(i, screen)| {
+            ListItem::new(format!(
                 "{}  {}",
                 i + 1,
                 screen.title(app.preferences.locale)
-            )))
+            ))
+        })
         .collect::<Vec<_>>();
     frame.render_widget(
         List::new(rows).block(panel("COMMAND PALETTE · PRESS 1-8", &app.palette)),
