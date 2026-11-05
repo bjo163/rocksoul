@@ -127,6 +127,8 @@ rocksoul workspace trace
 rocksoul memory add semantic --content "A user-approved fact"
 rocksoul memory search "fact"
 rocksoul memory delete <memory-id>
+rocksoul memory prune-expired                 # preview only
+rocksoul memory prune-expired --apply          # confirm expiry deletion
 rocksoul memory export
 
 rocksoul --help
