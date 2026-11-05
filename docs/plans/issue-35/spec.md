@@ -1,6 +1,6 @@
 # Issue #35 — Crash-window recovery and generalized acceptance gates
 
-**Status:** Execution specification prepared from `main` at `260d29852bb30f2f63129271a07cd368fafccc3f`.  
+**Status:** Execution specification prepared from `main` at `b76bf36740056e41933f8510c22a8376f49d997a`.  
 **Issue:** https://github.com/bjo163/rocksoul/issues/35  
 **Owner:** Rocksoul core / workspace execution  
 **Product boundary:** One Rust Cargo package, one portable native executable, CLI-first.
