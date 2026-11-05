@@ -94,29 +94,45 @@ impl Screen {
         Self::ALL[index % Self::ALL.len()]
     }
 
-    fn label(self) -> &'static str {
-        match self {
-            Self::Overview => "OVERVIEW",
-            Self::Brains => "BRAINS",
-            Self::Tasks => "TASKS",
-            Self::Memory => "MEMORY",
-            Self::Rid => "RID",
-            Self::Tools => "TOOLS",
-            Self::Diagnostics => "DIAGNOSTICS",
-            Self::Settings => "SETTINGS",
+    fn label(self, locale: LocaleMode) -> &'static str {
+        match (self, locale) {
+            (Self::Overview, LocaleMode::English) => "OVERVIEW",
+            (Self::Brains, LocaleMode::English) => "BRAINS",
+            (Self::Tasks, LocaleMode::English) => "TASKS",
+            (Self::Memory, LocaleMode::English) => "MEMORY",
+            (Self::Rid, LocaleMode::English) => "RID",
+            (Self::Tools, LocaleMode::English) => "TOOLS",
+            (Self::Diagnostics, LocaleMode::English) => "DIAGNOSTICS",
+            (Self::Settings, LocaleMode::English) => "SETTINGS",
+            (Self::Overview, LocaleMode::Indonesian) => "RINGKASAN",
+            (Self::Brains, LocaleMode::Indonesian) => "OTAK",
+            (Self::Tasks, LocaleMode::Indonesian) => "TUGAS",
+            (Self::Memory, LocaleMode::Indonesian) => "MEMORI",
+            (Self::Rid, LocaleMode::Indonesian) => "RID",
+            (Self::Tools, LocaleMode::Indonesian) => "ALAT",
+            (Self::Diagnostics, LocaleMode::Indonesian) => "DIAGNOSTIK",
+            (Self::Settings, LocaleMode::Indonesian) => "PENGATURAN",
         }
     }
 
-    fn title(self) -> &'static str {
-        match self {
-            Self::Overview => "Command Deck",
-            Self::Brains => "Brain Registry",
-            Self::Tasks => "Turn Monitor",
-            Self::Memory => "Memory & Experience",
-            Self::Rid => "Ruh Information",
-            Self::Tools => "Tools & Permissions",
-            Self::Diagnostics => "Runtime Diagnostics",
-            Self::Settings => "Presentation Settings",
+    fn title(self, locale: LocaleMode) -> &'static str {
+        match (self, locale) {
+            (Self::Overview, LocaleMode::English) => "Command Deck",
+            (Self::Brains, LocaleMode::English) => "Brain Registry",
+            (Self::Tasks, LocaleMode::English) => "Turn Monitor",
+            (Self::Memory, LocaleMode::English) => "Memory & Experience",
+            (Self::Rid, LocaleMode::English) => "Ruh Information",
+            (Self::Tools, LocaleMode::English) => "Tools & Permissions",
+            (Self::Diagnostics, LocaleMode::English) => "Runtime Diagnostics",
+            (Self::Settings, LocaleMode::English) => "Presentation Settings",
+            (Self::Overview, LocaleMode::Indonesian) => "Pusat Kendali",
+            (Self::Brains, LocaleMode::Indonesian) => "Registri Otak",
+            (Self::Tasks, LocaleMode::Indonesian) => "Monitor Tugas",
+            (Self::Memory, LocaleMode::Indonesian) => "Memori & Pengalaman",
+            (Self::Rid, LocaleMode::Indonesian) => "Informasi Ruh",
+            (Self::Tools, LocaleMode::Indonesian) => "Alat & Izin",
+            (Self::Diagnostics, LocaleMode::Indonesian) => "Diagnostik Runtime",
+            (Self::Settings, LocaleMode::Indonesian) => "Pengaturan Tampilan",
         }
     }
 }
@@ -477,7 +493,7 @@ fn render_navigation(frame: &mut Frame<'_>, area: Rect, app: &App) {
         .iter()
         .enumerate()
         .map(|(index, screen)| {
-            let label = format!(" {} {} ", index + 1, screen.label());
+            let label = format!(" {} {} ", index + 1, screen.label(app.preferences.locale));
             if *screen == app.screen {
                 Span::styled(
                     label,
@@ -1187,22 +1203,27 @@ fn render_diagnostics(frame: &mut Frame<'_>, area: Rect, app: &App) {
 }
 
 fn render_settings(frame: &mut Frame<'_>, area: Rect, app: &App) {
+    let english = app.preferences.locale == LocaleMode::English;
     let lines = vec![
-        Line::from(format!("Theme          {:?}", app.preferences.theme)),
-        Line::from(format!("Density        {:?}", app.preferences.density)),
-        Line::from("Keymap         keyboard-first"),
-        Line::from("Motion         reduced"),
-        Line::from(format!("Language       {:?}", app.preferences.locale)),
+        Line::from(format!("{}  {:?}", if english { "Theme" } else { "Tema" }, app.preferences.theme)),
+        Line::from(format!("{}  {:?}", if english { "Density" } else { "Kepadatan" }, app.preferences.density)),
+        Line::from(if english { "Keymap         keyboard-first" } else { "Tombol         keyboard-first" }),
+        Line::from(if english { "Motion         reduced" } else { "Gerak          dikurangi" }),
+        Line::from(format!("{}  {:?}", if english { "Language" } else { "Bahasa" }, app.preferences.locale)),
         Line::from(""),
-        Line::from("t Theme · d Density · l Language · saved to portable config"),
+        Line::from(if english { "t Theme · d Density · l Language · saved to portable config" } else { "t Tema · d Kepadatan · l Bahasa · tersimpan di konfigurasi portable" }),
         Line::from(if app.preferences_error {
-            "Preferences invalid/unsupported; existing file is preserved."
-        } else {
+            if english { "Preferences invalid/unsupported; existing file is preserved." } else { "Preferensi tidak valid/tidak didukung; file lama dipertahankan." }
+        } else if english {
             "Preferences loaded and version-checked."
+        } else {
+            "Preferensi dimuat dan versi telah diperiksa."
         }),
-        Line::from(
-            "Presentation settings cannot change routing, tool permissions or remote data-egress policy.",
-        ),
+        Line::from(if english {
+            "Presentation settings cannot change routing, tool permissions or remote data-egress policy."
+        } else {
+            "Pengaturan tampilan tidak dapat mengubah routing, izin alat, atau kebijakan data-egress."
+        }),
     ];
     frame.render_widget(
         Paragraph::new(lines)
@@ -1219,7 +1240,7 @@ fn render_inspector(frame: &mut Frame<'_>, area: Rect, app: &App) {
             Style::default().fg(app.palette.accent).add_modifier(Modifier::BOLD),
         )),
         Line::from(""),
-        Line::from(format!("SCREEN  {}", app.screen.label())),
+        Line::from(format!("SCREEN  {}", app.screen.label(app.preferences.locale))),
         Line::from(format!(
             "MODEL   {}",
             if app.snapshot.model_configured {
@@ -1326,7 +1347,7 @@ fn render_palette(frame: &mut Frame<'_>, area: Rect, app: &App) {
     let rows = Screen::ALL
         .iter()
         .enumerate()
-        .map(|(i, screen)| ListItem::new(format!("{}  {}", i + 1, screen.title())))
+        .map(|(i, screen)| ListItem::new(format!("{}  {}", i + 1, screen.title(app.preferences.locale))))
         .collect::<Vec<_>>();
     frame.render_widget(
         List::new(rows).block(panel("COMMAND PALETTE · PRESS 1-8", &app.palette)),
