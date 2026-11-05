@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "catalogue_id": "rocksoul.rid.universal_stats.v2",
-  "catalogue_version": "2.3.0",
+  "catalogue_version": "2.3.1",
   "display_language": "en",
   "total_domains": 99,
   "total_stats": 99,
@@ -3958,13 +3958,14 @@
     "unique_pair_count": 137
   },
   "audit": {
-    "review_version": "2.3.0",
+    "review_version": "2.3.1",
     "scope": [
       "construct distinction",
       "pairwise overlap guards",
       "evidence non-double-counting",
       "identifier and metadata integrity",
-      "pairwise contrast registry"
+      "pairwise contrast registry",
+      "domain-versus-stat semantic contract"
     ],
     "method": "editorial construct-boundary review plus deterministic structural validation",
     "limitation": "Structural uniqueness and editorial boundaries do not establish psychometric independence; independent evaluator studies remain required."
@@ -5340,5 +5341,12 @@
       "measurement_target_b": "quality of reaching an agreed trade-off among participants with differing constraints",
       "contrast_rule": "Conflict De-escalation measures reduction of hostility or escalation while preserving substantive issues (including tone stabilization, safety, factual grounding and constructive next step). Constraint-aware Negotiation measures quality of reaching an agreed trade-off among participants with differing constraints (including explicit concessions, preserved hard constraints and accepted agreement). These are separate outcomes: a shared task may contribute to both only when the evaluator records distinct outcome values and independent rubric judgments. If only one undifferentiated outcome is available, score at most the single best-fitting dimension and leave the other unrated."
     }
-  ]
+  ],
+  "domain_stat_relationship": {
+    "relationship": "one_to_one",
+    "independent_capability_count": 99,
+    "domain_role": "A domain is the canonical definition of one observable capability construct, including its measurement target and boundaries.",
+    "stat_role": "The linked stat is the per-profile measurement slot that stores the evaluated score and evidence state for that domain; it is not a second capability construct.",
+    "counting_rule": "One domain plus its linked stat slot represents one capability dimension. The catalogue contains 99 capability dimensions, not 198."
+  }
 }
