@@ -98,12 +98,7 @@ impl ProposalStore {
         }
         let mut ids = HashSet::new();
         for proposal in &self.proposals {
-            if proposal.id.trim().is_empty()
-                || proposal.content.trim().is_empty()
-                || proposal.source_turn_reference.trim().is_empty()
-                || proposal.provenance.trim().is_empty()
-                || !ids.insert(proposal.id.as_str())
-            {
+            if proposal.id.trim().is_empty() || !ids.insert(proposal.id.as_str()) {
                 bail!("memory proposal store contains invalid or duplicate proposals");
             }
             if proposal.source_turn_reference.trim().is_empty()
