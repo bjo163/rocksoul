@@ -400,14 +400,28 @@ impl MemoryStore {
             .into_iter()
             .filter(|record| {
                 filters.kind.is_none_or(|kind| record.kind == kind)
-                    && filters.source.as_ref().is_none_or(|source| &record.source == source)
-                    && filters.created_after_unix.is_none_or(|time| record.created_at_unix >= time)
-                    && filters.created_before_unix.is_none_or(|time| record.created_at_unix <= time)
+                    && filters
+                        .source
+                        .as_ref()
+                        .is_none_or(|source| &record.source == source)
+                    && filters
+                        .created_after_unix
+                        .is_none_or(|time| record.created_at_unix >= time)
+                    && filters
+                        .created_before_unix
+                        .is_none_or(|time| record.created_at_unix <= time)
             })
             .filter_map(|record| {
                 let content_terms = tokenize(&record.content);
-                let tag_terms = record.tags.iter().flat_map(|tag| tokenize(tag)).collect::<Vec<_>>();
-                let all_terms = content_terms.iter().chain(tag_terms.iter()).collect::<Vec<_>>();
+                let tag_terms = record
+                    .tags
+                    .iter()
+                    .flat_map(|tag| tokenize(tag))
+                    .collect::<Vec<_>>();
+                let all_terms = content_terms
+                    .iter()
+                    .chain(tag_terms.iter())
+                    .collect::<Vec<_>>();
                 let matched_terms = query_terms
                     .iter()
                     .filter(|term| all_terms.iter().any(|candidate| *candidate == *term))
@@ -418,9 +432,16 @@ impl MemoryStore {
                 }
                 let occurrences = query_terms
                     .iter()
-                    .map(|term| all_terms.iter().filter(|candidate| *candidate == term).count() as u32)
+                    .map(|term| {
+                        all_terms
+                            .iter()
+                            .filter(|candidate| *candidate == term)
+                            .count() as u32
+                    })
                     .sum::<u32>();
-                let phrase_match = content_terms.windows(query_terms.len()).any(|window| window == query_terms.as_slice());
+                let phrase_match = content_terms
+                    .windows(query_terms.len())
+                    .any(|window| window == query_terms.as_slice());
                 let lexical_score = matched_terms.len() as u32 * 100
                     + occurrences * 10
                     + if phrase_match { 250 } else { 0 };
@@ -429,7 +450,11 @@ impl MemoryStore {
                     matched_terms.len(),
                     query_terms.len(),
                     occurrences,
-                    if phrase_match { "; exact token phrase match" } else { "" }
+                    if phrase_match {
+                        "; exact token phrase match"
+                    } else {
+                        ""
+                    }
                 );
                 Some(MemorySearchResult {
                     record_id: record.id.clone(),
@@ -446,7 +471,9 @@ impl MemoryStore {
             })
             .collect::<Vec<_>>();
         results.sort_by(|left, right| {
-            right.lexical_score.cmp(&left.lexical_score)
+            right
+                .lexical_score
+                .cmp(&left.lexical_score)
                 .then_with(|| right.created_at_unix.cmp(&left.created_at_unix))
                 .then_with(|| left.record_id.cmp(&right.record_id))
         });
@@ -675,7 +702,10 @@ fn tokenize(value: &str) -> Vec<String> {
 
 fn unique_terms(terms: Vec<String>) -> Vec<String> {
     let mut seen = HashSet::new();
-    terms.into_iter().filter(|term| seen.insert(term.clone())).collect()
+    terms
+        .into_iter()
+        .filter(|term| seen.insert(term.clone()))
+        .collect()
 }
 
 fn store_path(directory: &Path) -> PathBuf {
@@ -1478,7 +1508,12 @@ mod tests {
         let results = store.search_ranked("canonical branch", &filters, 30, 10);
         assert_eq!(results.len(), 1);
         assert_eq!(results[0].kind, MemoryKind::Semantic);
-        assert_eq!(store.search_ranked("canonical branch", &filters, 30, 0).len(), 0);
+        assert_eq!(
+            store
+                .search_ranked("canonical branch", &filters, 30, 0)
+                .len(),
+            0
+        );
         assert!(store.search_ranked("   ", &filters, 30, 10).is_empty());
         fs::remove_dir_all(directory).unwrap();
     }
@@ -1504,14 +1539,16 @@ mod tests {
         })
         .unwrap();
         let loaded = MemoryStore::load(&directory).unwrap();
-        assert!(loaded
-            .search_ranked(
-                "secret project codename",
-                &super::MemorySearchFilters::default(),
-                30,
-                10
-            )
-            .is_empty());
+        assert!(
+            loaded
+                .search_ranked(
+                    "secret project codename",
+                    &super::MemorySearchFilters::default(),
+                    30,
+                    10
+                )
+                .is_empty()
+        );
         fs::remove_dir_all(directory).unwrap();
     }
 
