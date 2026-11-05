@@ -81,7 +81,7 @@ The roadmap is capability-driven. Each stage must deliver a working, tested incr
 
 Issue #9 — Cognitive Cockpit completion is **merged and closed**. PR #65 was squash-merged to `main` as `6474cd130bd8146f03dcacb757d9c341d4b1161a`; exact-head CI #42071047960 passed on Linux and Windows. The merged Cockpit includes bounded persisted task history, searchable/filterable memory browsing with guarded detail reveal, snapshot diagnostics/evaluation reporting, versioned portable preferences, semantic dark/light palettes, density/locale application, and responsive TestBackend coverage. See `docs/plans/issue-9/` for the completed execution record.
 
-The next dependency gate is Issue #8's independent religious/language review. Its 99-entry catalogue implementation exists, but review must be performed by qualified humans and must not be self-approved by an AI model. Issue #13's AGI-oriented evaluation harness depends on #4, #5, #8 and #9; do not duplicate or begin the full harness until all dependencies are audited and closed.
+The next engineering work is Issue #13's reproducible technical evaluation harness. Its technical dependencies are #4, #5 and #9; #4 and #9 are closed, while #5 awaits exact-head Linux/Windows CI and trusted-evaluator gates. Issue #8's independent religious/language review is a separate human governance task and does not block technical benchmark infrastructure because that reference catalogue is not part of RID scoring. Do not let AI self-approve the religious/language review.
 
 ## Stage 3 — Skills and tools
 
