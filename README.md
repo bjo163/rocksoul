@@ -119,13 +119,15 @@ rocksoul rid history
 
 rocksoul eval list
 rocksoul eval run core
+rocksoul eval run memory-retrieval
 rocksoul eval latest
+rocksoul eval memory-latest
 
 rocksoul memory list
 rocksoul workspace write note.txt --content "A verified workspace artifact"
 rocksoul workspace trace
 rocksoul memory add semantic --content "A user-approved fact"
-rocksoul memory search "fact"
+rocksoul memory search "fact" --kind semantic --source user_explicit --limit 5
 rocksoul memory delete <memory-id>
 rocksoul memory prune-expired                 # preview only
 rocksoul memory prune-expired --apply          # confirm expiry deletion
