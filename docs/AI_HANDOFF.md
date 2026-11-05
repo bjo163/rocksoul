@@ -63,10 +63,10 @@ Mutable configuration and runtime state belong under the executable/install root
 
 ### Universal 99 Stats — canonical taxonomy and migration guard
 
-- Canonical taxonomy file: `data/rid/universal_stats.v2.json`, catalogue version `2.0.0`.
-- Exactly 99 first-class independent universal capability domains, each linked to exactly one stat. There is no mandatory parent-domain hierarchy and no nine-domain × eleven-stat grouping. Domain IDs are `rid_domain:01`–`rid_domain:99`; stat IDs are `rid_stat:01`–`rid_stat:99`.
-- Every domain has a unique key, name, and capability definition; each linked stat has an operational definition and evidence-oriented evaluation protocol. The former v1 nine-by-eleven taxonomy is historical/superseded; trusted evaluator integration is a separate implementation task.
-- The new catalogue IDs are `rid_stat:01` through `rid_stat:99`. Existing persisted profiles and Rust domain code still use `asmaul_husna:01` through `asmaul_husna:99`. Do not silently rewrite IDs or reinterpret historical scores.
+- Canonical taxonomy file: `data/rid/universal_stats.v2.json`, catalogue version `2.1.0`.
+- Exactly 99 first-class independent universal capability domains, each linked to exactly one stat. There is no mandatory parent-domain hierarchy and no nine-domain × eleven-stat grouping. Never double-count one observed outcome across multiple stats; multi-stat evaluation requires distinct outcome evidence and separate rubric checks. Domain IDs are `rid_domain:01`–`rid_domain:99`; stat IDs are `rid_stat:01`–`rid_stat:99`.
+- Every domain has a unique key, name, primary measurement target, inclusion/exclusion criteria, adjacent-overlap IDs, and separation rule; each linked stat has a domain-specific evidence-oriented evaluation protocol. The former v1 nine-by-eleven taxonomy is historical/superseded. Taxonomy overlap boundaries are now explicit; independent psychometric validation and trusted evaluator integration remain separate implementation tasks.
+- The new catalogue IDs are `rid_stat:01` through `rid_stat:99`. Existing persisted profiles and Rust domain code still use `asmaul_husna:01` through `asmaul_husna:99`; `src/rid_catalogue.rs` still embeds the legacy religious catalogue and CLI/Cockpit still display that layer. Do not silently rewrite IDs or reinterpret historical scores. Migration must archive legacy records unchanged and initialize all new `rid_stat:NN` records as unrated.
 - Migration must be explicit, versioned, backed up, reversible/recoverable, and tested with legacy profile fixtures. Update Rust domain, persistence, CLI, Cockpit, docs, and tests as one coherent slice.
 - Keep all scores unrated until trusted evidence exists. `not_applicable` is not score zero. XP, level, and age are not proxies for stat capability.
 - Do not close the religious/language review gate for the separate Asmaul Husna catalogue without qualified independent reviewers.
