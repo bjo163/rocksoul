@@ -1,0 +1,195 @@
+{
+  "schema_version": 1,
+  "suite_id": "rocksoul.memory-retrieval",
+  "suite_version": "1.0.0",
+  "top_k": 2,
+  "cases": [
+    {
+      "id": "rust-formatting",
+      "query": "cargo fmt rust",
+      "now_unix": 5000,
+      "expected_ids": [
+        "rust-guide",
+        "rust-checklist"
+      ],
+      "stale_ids": [],
+      "records": [
+        {
+          "id": "rust-guide",
+          "kind": "procedural",
+          "content": "Run cargo fmt before every Rust commit",
+          "tags": [
+            "rust",
+            "format"
+          ],
+          "source": "user_explicit",
+          "user_approved": true,
+          "confidence": null,
+          "created_at_unix": 1000,
+          "updated_at_unix": 1000,
+          "expires_at_unix": null,
+          "retention_policy_version": 1,
+          "retention_policy": "keep_until_deleted"
+        },
+        {
+          "id": "rust-checklist",
+          "kind": "semantic",
+          "content": "Cargo fmt formatting is required for Rust contributions",
+          "tags": [
+            "checklist"
+          ],
+          "source": "user_explicit",
+          "user_approved": true,
+          "confidence": null,
+          "created_at_unix": 1100,
+          "updated_at_unix": 1100,
+          "expires_at_unix": null,
+          "retention_policy_version": 1,
+          "retention_policy": "keep_until_deleted"
+        },
+        {
+          "id": "windows-release",
+          "kind": "episodic",
+          "content": "Update Windows installer before release",
+          "tags": [
+            "windows"
+          ],
+          "source": "user_explicit",
+          "user_approved": true,
+          "confidence": null,
+          "created_at_unix": 1200,
+          "updated_at_unix": 1200,
+          "expires_at_unix": null,
+          "retention_policy_version": 1,
+          "retention_policy": "keep_until_deleted"
+        }
+      ]
+    },
+    {
+      "id": "canonical-branch",
+      "query": "canonical main branch",
+      "now_unix": 5000,
+      "expected_ids": [
+        "canonical-main",
+        "main-branch-policy"
+      ],
+      "stale_ids": [
+        "legacy-dev-branch"
+      ],
+      "records": [
+        {
+          "id": "canonical-main",
+          "kind": "semantic",
+          "content": "Canonical main branch is the only integration target",
+          "tags": [
+            "branch",
+            "main"
+          ],
+          "source": "user_explicit",
+          "user_approved": true,
+          "confidence": 0.9,
+          "created_at_unix": 4000,
+          "updated_at_unix": 4000,
+          "expires_at_unix": null,
+          "retention_policy_version": 1,
+          "retention_policy": "keep_until_deleted"
+        },
+        {
+          "id": "main-branch-policy",
+          "kind": "procedural",
+          "content": "Merge every reviewed change into the canonical main branch",
+          "tags": [
+            "policy"
+          ],
+          "source": "user_explicit",
+          "user_approved": true,
+          "confidence": null,
+          "created_at_unix": 3000,
+          "updated_at_unix": 3000,
+          "expires_at_unix": null,
+          "retention_policy_version": 1,
+          "retention_policy": "keep_until_deleted"
+        },
+        {
+          "id": "legacy-dev-branch",
+          "kind": "episodic",
+          "content": "Canonical main branch was previously named dev; use dev for integration",
+          "tags": [
+            "legacy"
+          ],
+          "source": "user_explicit",
+          "user_approved": true,
+          "confidence": null,
+          "created_at_unix": 1000,
+          "updated_at_unix": 1000,
+          "expires_at_unix": null,
+          "retention_policy_version": 1,
+          "retention_policy": "keep_until_deleted"
+        }
+      ]
+    },
+    {
+      "id": "expiry-filter",
+      "query": "temporary cache cleanup",
+      "now_unix": 5000,
+      "expected_ids": [
+        "cache-current",
+        "cache-procedure"
+      ],
+      "stale_ids": [],
+      "records": [
+        {
+          "id": "cache-current",
+          "kind": "semantic",
+          "content": "Temporary cache files expire after cleanup",
+          "tags": [
+            "cache",
+            "temporary"
+          ],
+          "source": "user_explicit",
+          "user_approved": true,
+          "confidence": null,
+          "created_at_unix": 3000,
+          "updated_at_unix": 3000,
+          "expires_at_unix": null,
+          "retention_policy_version": 1,
+          "retention_policy": "keep_until_deleted"
+        },
+        {
+          "id": "cache-procedure",
+          "kind": "procedural",
+          "content": "Run cleanup to remove temporary cache artifacts",
+          "tags": [
+            "cleanup"
+          ],
+          "source": "user_explicit",
+          "user_approved": true,
+          "confidence": null,
+          "created_at_unix": 2500,
+          "updated_at_unix": 2500,
+          "expires_at_unix": null,
+          "retention_policy_version": 1,
+          "retention_policy": "keep_until_deleted"
+        },
+        {
+          "id": "cache-expired",
+          "kind": "working",
+          "content": "Temporary cache cleanup removes old snapshots",
+          "tags": [
+            "temporary",
+            "cache",
+            "cleanup"
+          ],
+          "source": "user_explicit",
+          "user_approved": true,
+          "confidence": null,
+          "created_at_unix": 1000,
+          "updated_at_unix": 1000,
+          "expires_at_unix": 4000,
+          "retention_policy_version": 1,
+          "retention_policy": "expire_at"
+        }
+      ]
+    }
+  ]
+}
