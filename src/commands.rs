@@ -866,11 +866,16 @@ fn run_memory(command: MemoryCommand) -> Result<()> {
                             store.prune_expired(now);
                             println!("Forgot {} expired memory record(s).", expired.len());
                         } else {
-                            println!("Dry run: {} expired memory record(s) would be forgotten.", expired.len());
+                            println!(
+                                "Dry run: {} expired memory record(s) would be forgotten.",
+                                expired.len()
+                            );
                             for id in expired {
                                 println!("- {id}");
                             }
-                            println!("Run rocksoul memory prune-expired --apply to confirm deletion.");
+                            println!(
+                                "Run rocksoul memory prune-expired --apply to confirm deletion."
+                            );
                         }
                     }
                     MemoryCommand::Export => {
