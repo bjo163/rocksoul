@@ -89,6 +89,12 @@ impl Screen {
     }
 }
 
+struct MemoryStoreHealth {
+    schema_version: u16,
+    active_records: usize,
+    total_records: usize,
+}
+
 struct Snapshot {
     paths: AppPaths,
     model_configured: bool,
@@ -97,6 +103,7 @@ struct Snapshot {
     catalogue: Option<RidCatalogue>,
     evaluation: std::result::Result<Option<crate::eval::EvaluationReport>, String>,
     memory_evaluation: std::result::Result<Option<crate::eval::MemoryRetrievalEvaluationReport>, String>,
+    memory_store_health: std::result::Result<MemoryStoreHealth, String>,
 }
 
 impl Snapshot {
@@ -120,6 +127,13 @@ impl Snapshot {
                 .map_err(|_| "evaluation report is unreadable".to_owned()),
             memory_evaluation: crate::eval::latest_memory_retrieval()
                 .map_err(|_| "memory retrieval report is unreadable".to_owned()),
+            memory_store_health: MemoryStore::load(&paths.memory_dir)
+                .map(|store| MemoryStoreHealth {
+                    schema_version: store.schema_version,
+                    active_records: store.active_records(now_unix()).len(),
+                    total_records: store.records.len(),
+                })
+                .map_err(|_| "memory store is unreadable".to_owned()),
         })
     }
 
@@ -1047,6 +1061,13 @@ fn render_diagnostics(frame: &mut Frame<'_>, area: Rect, app: &App) {
             ),
             Ok(None) => "Memory retrieval report: not run".to_owned(),
             Err(_) => "Memory retrieval report: corrupt or unavailable".to_owned(),
+        }),
+        Line::from(match &app.snapshot.memory_store_health {
+            Ok(health) => format!(
+                "Memory store  v{} · active {}/{}",
+                health.schema_version, health.active_records, health.total_records
+            ),
+            Err(_) => "Memory store  corrupt / unavailable".to_owned(),
         }),
         Line::from("No synthetic latency, token, GPU, RAM or activity telemetry is shown."),
     ];
