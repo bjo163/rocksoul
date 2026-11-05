@@ -1475,21 +1475,28 @@ fn now_unix() -> u64 {
 
 #[cfg(test)]
 mod tests {
-    use super::{App, Screen, Snapshot};
+    use super::{App, LocaleMode, Palette, Screen, Snapshot, ThemeMode};
 
     #[test]
     fn all_screens_render_at_standard_wide_and_narrow_sizes() {
         use ratatui::{Terminal, backend::TestBackend};
 
         let mut app = App::new(Snapshot::load().unwrap());
-        for (width, height) in [(80, 24), (120, 40), (60, 20)] {
-            let backend = TestBackend::new(width, height);
-            let mut terminal = Terminal::new(backend).unwrap();
-            for index in 0..8 {
-                app.select_screen(Screen::from_index(index));
-                terminal
-                    .draw(|frame| super::render(frame, &mut app))
-                    .unwrap();
+        for theme in [ThemeMode::Dark, ThemeMode::Light] {
+            app.preferences.theme = theme;
+            app.palette = Palette::for_theme(theme);
+            for locale in [LocaleMode::English, LocaleMode::Indonesian] {
+                app.preferences.locale = locale;
+                for (width, height) in [(80, 24), (120, 40), (60, 20)] {
+                    let backend = TestBackend::new(width, height);
+                    let mut terminal = Terminal::new(backend).unwrap();
+                    for index in 0..8 {
+                        app.select_screen(Screen::from_index(index));
+                        terminal
+                            .draw(|frame| super::render(frame, &mut app))
+                            .unwrap();
+                    }
+                }
             }
         }
     }
@@ -1544,6 +1551,22 @@ mod tests {
             crate::memory_proposal::sensitive_content_reason("my medical diagnosis is private"),
             Some("sensitive_personal_category")
         );
+    }
+
+    #[test]
+    fn navigation_labels_are_localized() {
+        assert_eq!(Screen::Memory.label(LocaleMode::English), "MEMORY");
+        assert_eq!(Screen::Memory.label(LocaleMode::Indonesian), "MEMORI");
+        assert_eq!(Screen::Settings.title(LocaleMode::Indonesian), "Pengaturan Tampilan");
+    }
+
+    #[test]
+    fn light_and_dark_palettes_have_distinct_semantic_tokens() {
+        let dark = Palette::for_theme(ThemeMode::Dark);
+        let light = Palette::for_theme(ThemeMode::Light);
+        assert_ne!(dark.background, light.background);
+        assert_ne!(dark.text, light.text);
+        assert_ne!(dark.accent, light.accent);
     }
 
     #[test]
