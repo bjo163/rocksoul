@@ -228,7 +228,7 @@ Audit conclusions and remaining gates:
 - Correlation between capabilities is expected; the control is distinct measurement targets and non-reused outcome evidence, not a claim that capabilities are statistically independent.
 - Structural validation and editorial boundary review do **not** constitute independent psychometric validation. Trusted evaluator design, held-out benchmark quality, inter-rater reliability, and empirical discriminant validity remain pending.
 - Exact-head Linux/Windows CI must be green before claiming verified completion.
-- Previous CI diagnosis: `cargo fmt --check` reported formatting drift in `commands.rs`, `rid.rs`, `rid_catalogue.rs`, `rid_store.rs`, and `tui.rs`; Windows tests also exposed a fixture type mismatch (`Vec<&str>` vs `Vec<String>`). Formatting and the fixture have been corrected. The latest exact-main CI run is queued; do not mark it green until both Linux and Windows jobs finish.
+- Previous CI diagnosis and repairs: `cargo fmt --check` reported formatting drift in `commands.rs`, `rid.rs`, `rid_catalogue.rs`, `rid_store.rs`, and `tui.rs`; formatting is corrected. Windows tests exposed a fixture type mismatch (`Vec<&str>` vs `Vec<String>`), now fixed with owned strings. The next Windows run exposed `Access is denied` during legacy migration because a read-only archive handle was redundantly flushed after the staged file had already been synced; that read-only `sync_all` call is removed. The latest exact-main CI run is queued; do not mark it green until both Linux and Windows jobs finish.
 
 Next:
 1. Verify exact-head Linux and Windows CI for v2.3.3 and fix any failures.
