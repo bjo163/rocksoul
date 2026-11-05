@@ -9,6 +9,7 @@ use std::{
 };
 
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 
 use crate::rid::{RuhProfile, XpEvent, XpRecordOutcome, XpSource};
 
@@ -106,7 +107,7 @@ impl TurnState {
 ///
 /// Fields are deliberately private. Model output is not an evidence object;
 /// an application adapter must create this value from an observed result.
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct VerificationEvidence {
     check_id: String,
     expected: String,
@@ -144,6 +145,7 @@ pub struct VerificationRequest {
     difficulty: u8,
     policy_version: u16,
     checks: Vec<VerificationEvidence>,
+    claim: Option<String>,
 }
 
 impl VerificationRequest {
@@ -164,7 +166,14 @@ impl VerificationRequest {
             difficulty,
             policy_version,
             checks,
+            claim: None,
         }
+    }
+
+    /// Bind a successful receipt to one exact normalized task-outcome claim.
+    pub fn with_claim(mut self, claim: impl Into<String>) -> Self {
+        self.claim = Some(claim.into());
+        self
     }
 }
 
@@ -175,8 +184,14 @@ pub struct VerificationReceipt {
     required_checks_passed: usize,
     total_checks: usize,
     evidence_refs: Vec<String>,
+    evidence: Vec<VerificationEvidence>,
     xp_awarded: u32,
     verified_at_unix: u64,
+    claim_sha256: Option<String>,
+    evidence_sha256: String,
+    verifier_id: String,
+    verifier_version: u16,
+    policy_version: u16,
 }
 
 impl VerificationReceipt {
@@ -206,6 +221,56 @@ impl VerificationReceipt {
 
     pub fn verified_at_unix(&self) -> u64 {
         self.verified_at_unix
+    }
+
+    pub fn claim_sha256(&self) -> Option<&str> {
+        self.claim_sha256.as_deref()
+    }
+
+    pub fn evidence_sha256(&self) -> &str {
+        &self.evidence_sha256
+    }
+
+    pub fn verifier_id(&self) -> &str {
+        &self.verifier_id
+    }
+
+    pub fn verifier_version(&self) -> u16 {
+        self.verifier_version
+    }
+
+    pub fn policy_version(&self) -> u16 {
+        self.policy_version
+    }
+
+    /// Validate that this verifier-issued receipt binds this exact normalized claim.
+    pub fn validates_claim(&self, claim: &str) -> bool {
+        let Some(expected_claim_hash) = self.claim_sha256.as_deref() else {
+            return false;
+        };
+        let normalized_claim = normalize_verification_claim(claim);
+        let actual_claim_hash = sha256_hex(normalized_claim.as_bytes());
+        let evidence_hash_matches = serde_json::to_vec(&self.evidence)
+            .map(|bytes| sha256_hex(&bytes) == self.evidence_sha256)
+            .unwrap_or(false);
+        expected_claim_hash == actual_claim_hash
+            && evidence_hash_matches
+            && self.verifier_id == VERIFIER_ID
+            && self.verifier_version == VERIFIER_VERSION
+            && self.policy_version > 0
+            && !self.task_id.trim().is_empty()
+            && !self.verification_id.trim().is_empty()
+            && self.verified_at_unix > 0
+            && self.required_checks_passed > 0
+            && self.required_checks_passed <= self.total_checks
+            && self.total_checks == self.evidence_refs.len()
+            && self.total_checks == self.evidence.len()
+            && self.evidence.iter().all(|item| {
+                !item.check_id.trim().is_empty()
+                    && !item.evidence_ref.trim().is_empty()
+                    && (!item.required || item.expected == item.observed)
+            })
+            && self.xp_awarded > 0
     }
 }
 
@@ -239,6 +304,7 @@ pub fn verify_turn_and_award_xp(
         || request.policy_version == 0
         || !(1..=10).contains(&request.difficulty)
         || request.checks.is_empty()
+        || request.claim.as_ref().is_some_and(|claim| claim.trim().is_empty())
     {
         return Err(VerificationError::InvalidRequest);
     }
@@ -285,6 +351,15 @@ pub fn verify_turn_and_award_xp(
         policy_version: request.policy_version,
     };
 
+    let evidence_sha256 = sha256_hex(
+        &serde_json::to_vec(&request.checks)
+            .expect("verification evidence contains only serializable scalar fields"),
+    );
+    let claim_sha256 = request
+        .claim
+        .as_deref()
+        .map(|claim| sha256_hex(normalize_verification_claim(claim).as_bytes()));
+
     let xp_record = profile
         .record_verified_xp(event)
         .map_err(|error| VerificationError::Rid(error.to_string()))?;
@@ -298,11 +373,28 @@ pub fn verify_turn_and_award_xp(
             required_checks_passed: passed_required,
             total_checks: request.checks.len(),
             evidence_refs,
+            evidence: request.checks,
             xp_awarded,
             verified_at_unix: request.verified_at_unix,
+            claim_sha256,
+            evidence_sha256,
+            verifier_id: VERIFIER_ID.to_owned(),
+            verifier_version: VERIFIER_VERSION,
+            policy_version: request.policy_version,
         },
         xp_record,
     })
+}
+
+const VERIFIER_ID: &str = "rocksoul.kernel.verifier";
+const VERIFIER_VERSION: u16 = 1;
+
+fn normalize_verification_claim(claim: &str) -> String {
+    claim.split_whitespace().collect::<Vec<_>>().join(" ").to_lowercase()
+}
+
+fn sha256_hex(bytes: &[u8]) -> String {
+    format!("{:x}", Sha256::digest(bytes))
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
