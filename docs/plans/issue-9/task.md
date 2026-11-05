@@ -15,9 +15,9 @@
 
 ## Incremental implementation notes
 
-The current task branch now includes a bounded persisted task-trace reader and read-only TUI projection, a metadata-only searchable memory browser, the corrected schema-v4 memory path, and a refreshable evaluation-report snapshot. Linux CI has passed for the first implementation slice (111 tests, Clippy, Core Integrity 23/23, memory retrieval precision@2/recall@2 1.000); Windows validation is being repeated against the latest branch head.
+The current task branch includes bounded persisted task history, the read-only task monitor, metadata-first searchable memory browser with guarded explicit detail, snapshot-based diagnostics/evaluation, and portable theme/density/locale preferences. The first implementation slices passed earlier Linux/Windows checks, but the current head is not accepted until exact-head Linux and Windows CI pass. CI exposed formatting and a missing palette argument; both were fixed. A subsequent Clippy run exposed an unused/recursive tool-registry status helper; it was corrected and wired into the Tools screen. Re-run every gate on the resulting head.
 
-The following remain intentionally open: final-head fmt/Clippy/tests/Core Integrity/retrieval evaluation (G2), final-head Windows build/installer/portable smoke (G3), full diff audit (G6), PR merge (G7), and main/issue/handoff verification (G8). This is not Issue #9 completion.
+The following remain intentionally open: exact-head fmt/Clippy/tests/Core Integrity/retrieval evaluation (G2), exact-head Windows build/installer/portable smoke (G3), full diff audit (G6), PR merge (G7), and main/issue/handoff verification (G8). This is not Issue #9 completion.
 
 ## Phase A — Audit findings recorded
 
