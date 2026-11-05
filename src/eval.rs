@@ -795,6 +795,8 @@ pub struct MemoryRetrievalEvaluationReport {
     pub schema_version: u16,
     pub suite_id: String,
     pub suite_version: String,
+    #[serde(default)]
+    pub rocksoul_commit: String,
     pub evaluated_at_unix: u64,
     pub top_k: usize,
     pub precision_at_k: f64,
@@ -938,6 +940,7 @@ fn evaluate_memory_retrieval_fixture() -> Result<MemoryRetrievalEvaluationReport
         schema_version: 1,
         suite_id: fixture.suite_id,
         suite_version: fixture.suite_version,
+        rocksoul_commit: env!("ROCKSOUL_GIT_SHA").to_owned(),
         evaluated_at_unix: now,
         top_k: fixture.top_k,
         precision_at_k,
@@ -1051,6 +1054,7 @@ pub fn print_memory_retrieval_report(report: &MemoryRetrievalEvaluationReport) {
         report.top_k,
         report.recall_at_k
     );
+    println!("Source commit: {}", report.rocksoul_commit);
     println!(
         "Stale results: {} · expired leakage: {} · deletion leakage: {}",
         report.stale_results_at_k, report.expired_leakage, report.deletion_leakage
@@ -1174,6 +1178,7 @@ mod tests {
         let report = super::evaluate_memory_retrieval_fixture().unwrap();
         assert!(report.passed, "memory retrieval report failed: {report:?}");
         assert!(report.precision_at_k >= 0.66);
+        assert_eq!(report.rocksoul_commit, env!("ROCKSOUL_GIT_SHA"));
         assert!(report.recall_at_k >= 0.95);
         assert_eq!(report.stale_results_at_k, 0);
         assert_eq!(report.expired_leakage, 0);
