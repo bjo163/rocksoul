@@ -722,9 +722,18 @@ fn evaluate_memory_retrieval_fixture() -> Result<MemoryRetrievalEvaluationReport
             })
             .map(|record| record.id.clone())
             .collect::<std::collections::HashSet<_>>();
-        let hits = retrieved_ids.iter().filter(|id| expected.contains(*id)).count();
-        let stale_results_at_k = retrieved_ids.iter().filter(|id| stale.contains(*id)).count();
-        let expired_leakage = retrieved_ids.iter().filter(|id| expired.contains(*id)).count();
+        let hits = retrieved_ids
+            .iter()
+            .filter(|id| expected.contains(*id))
+            .count();
+        let stale_results_at_k = retrieved_ids
+            .iter()
+            .filter(|id| stale.contains(*id))
+            .count();
+        let expired_leakage = retrieved_ids
+            .iter()
+            .filter(|id| expired.contains(*id))
+            .count();
         let precision_at_k = hits as f64 / fixture.top_k as f64;
         let recall_at_k = hits as f64 / case.expected_ids.len().max(1) as f64;
         case_reports.push(MemoryRetrievalCaseReport {
@@ -753,10 +762,7 @@ fn evaluate_memory_retrieval_fixture() -> Result<MemoryRetrievalEvaluationReport
         .iter()
         .map(|item| item.stale_results_at_k)
         .sum();
-    let expired_leakage = case_reports
-        .iter()
-        .map(|item| item.expired_leakage)
-        .sum();
+    let expired_leakage = case_reports.iter().map(|item| item.expired_leakage).sum();
 
     let deletion_leakage = memory_forgetting_leakage_check(now)?;
     let passed = precision_at_k >= 0.66
