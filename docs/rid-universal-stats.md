@@ -2,10 +2,10 @@
 
 **Canonical catalogue:** `data/rid/universal_stats.v2.json`  
 **Catalogue ID:** `rocksoul.rid.universal_stats.v2`  
-**Version:** `2.2.1`  
+**Version:** `2.3.0`  
 **Structure:** **99 independent domains → 99 linked stat dimensions**  
 **Taxonomy review:** construct boundaries reconciled; independent psychometric validation pending.  
-**Runtime status:** Rust runtime embeds taxonomy v2.2.1; schema-v1 profile archival migration and CLI/Cockpit integration are implemented on `main`; exact-head CI verification is pending.
+**Runtime status:** Rust runtime embeds taxonomy v2.3.0; schema-v1 profile archival migration and CLI/Cockpit integration are implemented on `main`; exact-head CI verification is pending.
 
 ## 1. Model and non-overlap rule
 
@@ -125,7 +125,7 @@ The taxonomy is designed for humans, AI systems, robots, software agents, and ot
 
 ## 4. Explicit overlap policy
 
-The catalogue declares **274 directed adjacency/overlap guards forming 137 reciprocal pairs**. These are not parent-child relationships; they identify where evaluators must distinguish nearby constructs. The runtime validator checks the declared counts, reciprocal symmetry, sorted/unique adjacency lists, unique domain and stat labels/keys, unique measurement targets, and 99 distinct domain-specific separation rules. These checks validate catalogue integrity; they do not prove psychometric independence.
+The catalogue declares **274 directed adjacency/overlap guards forming 137 reciprocal pairs**. The JSON also contains a canonical pairwise contrast registry (`rid_overlap:001`–`rid_overlap:137`): each pair records both domain labels, both primary measurement targets, and an explicit rule for scoring them separately. These are not parent-child relationships; they identify where evaluators must distinguish nearby constructs. The runtime validator checks the declared counts, reciprocal symmetry, sorted/unique adjacency lists, unique domain and stat labels/keys, unique measurement targets, 99 distinct domain-specific separation rules, and exact parity between the adjacency graph and all 137 pairwise contrast records. These checks validate catalogue integrity; they do not prove psychometric independence.
 
 High-risk boundaries that must use separate outcome measures:
 
@@ -150,7 +150,7 @@ High-risk boundaries that must use separate outcome measures:
 
 ## 6. Compatibility and runtime migration
 
-The prior `data/rid/universal_stats.v1.json` is a historical nine-group × eleven-stat catalogue. It is superseded and must not be used as a current parent-domain hierarchy. The current v2.2.1 taxonomy preserves the 99 stable ordinal stat slots but revises labels and construct boundaries; consumers must bind by explicit IDs, never by display text or inferred meaning.
+The prior `data/rid/universal_stats.v1.json` is a historical nine-group × eleven-stat catalogue. It is superseded and must not be used as a current parent-domain hierarchy. The current v2.3.0 taxonomy preserves the 99 stable ordinal stat slots but revises labels and construct boundaries; consumers must bind by explicit IDs, never by display text or inferred meaning.
 
 **Runtime migration implemented on main; exact-head CI verification pending:** `src/rid_catalogue.rs` now embeds `data/rid/universal_stats.v2.json`; `StatId` emits `rid_stat:NN`; CLI and Cockpit render universal domain labels and construct boundaries rather than Asmaul Husna names.
 
