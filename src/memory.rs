@@ -443,13 +443,19 @@ impl MemoryStore {
         let now = now_unix()?;
         let mut forgotten_ids = load_forgetting_ids(directory)?.into_iter().collect::<Vec<_>>();
         forgotten_ids.sort();
+        let forgotten_set = forgotten_ids.iter().map(String::as_str).collect::<HashSet<_>>();
         let export = MemoryExport {
             schema_version: self.schema_version,
             retention_policy_version: RETENTION_POLICY_VERSION,
             revision: self.revision,
             exported_at_unix: now,
             forgotten_ids,
-            records: self.active_records(now).into_iter().cloned().collect(),
+            records: self
+                .active_records(now)
+                .into_iter()
+                .filter(|record| !forgotten_set.contains(record.id.as_str()))
+                .cloned()
+                .collect(),
         };
         write_json_atomic(&path, &export)?;
         Ok(path)
@@ -643,6 +649,7 @@ fn scrub_forgotten_snapshots(directory: &Path) -> Result<()> {
         legacy_store_path(directory),
         legacy_v2_store_path(directory),
         directory.join("exports/latest.json"),
+        directory.join("exports/latest.json.bak"),
     ] {
         if path.is_file() {
             fs::remove_file(&path).with_context(|| {
