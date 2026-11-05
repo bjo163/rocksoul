@@ -453,7 +453,7 @@ mod tests {
 
     use super::{
         TurnEvent, TurnPhase, TurnState, VerificationEvidence, VerificationOutcome,
-        VerificationRequest, verify_turn_and_award_xp,
+        VerificationRequest, normalize_task_claim, verify_turn_and_award_xp,
     };
 
     fn reach_verification(state: &mut TurnState) {
@@ -508,6 +508,40 @@ mod tests {
         assert_eq!(receipt.xp_awarded(), 12);
         assert_eq!(xp_record, XpRecordOutcome::Recorded);
         assert_eq!(profile.total_xp(), 12);
+    }
+
+    #[test]
+    fn receipt_binds_normalized_claim_and_detects_mutation() {
+        let mut turn = TurnState::new("claim-bound-task", 0);
+        let mut profile = profile();
+        reach_verification(&mut turn);
+        let request = VerificationRequest::new(
+            "claim-bound-task",
+            "claim-verification-1",
+            1_800_000_101,
+            1,
+            1,
+            vec![VerificationEvidence::new(
+                "readback",
+                "present",
+                "present",
+                "artifact:sha256:abc",
+                true,
+            )],
+        )
+        .with_claim("  Deployment   completed successfully  ");
+        let outcome = verify_turn_and_award_xp(&mut turn, &mut profile, request).unwrap();
+        let VerificationOutcome::Verified { receipt, .. } = outcome else {
+            panic!("expected verified claim receipt");
+        };
+        assert_eq!(receipt.normalized_claim(), Some("deployment completed successfully"));
+        assert_eq!(receipt.verifier_id(), "rocksoul.core.verifier");
+        assert_eq!(receipt.verifier_version(), 1);
+        assert!(receipt.integrity_valid());
+        let mut tampered = receipt;
+        tampered.normalized_claim = Some("deployment failed".to_owned());
+        assert!(!tampered.integrity_valid());
+        assert_eq!(normalize_task_claim("  A  B\nC "), "a b c");
     }
 
     #[test]
