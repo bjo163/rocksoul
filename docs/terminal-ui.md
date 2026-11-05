@@ -1,6 +1,6 @@
 # Rocksoul Terminal UI — Cognitive Cockpit
 
-**Status:** The opt-in Ratatui cockpit MVP is implemented. This document also contains a broader design target; screens, telemetry, command-palette behavior, and controls described below are not all implemented runtime capabilities.  
+**Status:** The opt-in Ratatui cockpit MVP is implemented. Draft PR #55 extends it with bounded persisted task history, event selection/detail, a metadata-only searchable/filterable memory browser, and snapshot-based evaluation reporting. These changes are not yet merged to main. Preferences, full diagnostic redaction coverage, and broader TestBackend/responsive tests remain incomplete.  
 **Product:** Rocksoul local-first cognitive runtime  
 **Interface:** Native terminal application
 
@@ -235,6 +235,22 @@ The initial increment does not yet implement persistence for UI preferences, rea
 5. RID screen: 99-stat catalogue, evidence, age, level, XP, and unrated state.
 6. Brains / Memory / Tools: read-only inspectors with controlled action intents.
 7. Command palette and polish: search, confirmation flow, accessibility, Windows Terminal validation, and documentation.
+
+## 11.1 Current incremental delivery — draft PR #55
+
+The following behaviors are implemented on `feat/tui-cockpit-completion` and remain pending merge:
+
+- Task Monitor reads the existing `logs/task-trace.v1.jsonl` records through a bounded reader (maximum 1 MiB and 12 newest events).
+- Events are selectable with Up/Down; the selected event shows only event type, operation ID, target filename and timestamp. Trace detail/body is never rendered.
+- Empty traces show a truthful empty state. Malformed, unsupported or inaccessible traces show a sanitized unavailable state.
+- Memory browser lists bounded metadata (kind, claim status, source, approval, creation and expiry); content stays hidden.
+- Memory search is local. Kind and claim filters are keyboard-controlled; exact source filtering uses `source:<value>`.
+- Memory path display uses `store.v4.json`.
+- Latest Core Integrity report is read into the refreshable snapshot, not loaded during rendering. Missing and unreadable reports are distinguished; failed check IDs are shown.
+
+The PR does not add a live task queue, tool registry, model registry, memory mutation actions, automatic memory capture, or memory context injection. These remain unavailable or explicitly deferred.
+
+Validation evidence and remaining tasks are tracked in [the Issue #9 execution plan](plans/issue-9/task.md) and [draft PR #55](https://github.com/bjo163/rocksoul/pull/55). Do not treat branch CI as a main release until the PR is merged.
 
 ## 12. Acceptance criteria
 
