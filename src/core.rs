@@ -668,6 +668,34 @@ mod tests {
                 "x".repeat(1_025),
                 true,
             )]),
+            super::AcceptanceCheckSet::new(vec![VerificationEvidence::new(
+                "oversized-value",
+                "x".repeat(16_385),
+                "present",
+                "test://oversized-value",
+                true,
+            )]),
+            super::AcceptanceCheckSet::new(vec![VerificationEvidence::new(
+                " ",
+                "present",
+                "present",
+                "test://empty-id",
+                true,
+            )]),
+            super::AcceptanceCheckSet::new(Vec::new()),
+            super::AcceptanceCheckSet::new(
+                (0..65)
+                    .map(|index| {
+                        VerificationEvidence::new(
+                            format!("check-{index}"),
+                            "present",
+                            "present",
+                            format!("test://check/{index}"),
+                            true,
+                        )
+                    })
+                    .collect(),
+            ),
         ] {
             let mut turn = TurnState::new("invalid-acceptance-contract", 0);
             let mut profile = profile();
