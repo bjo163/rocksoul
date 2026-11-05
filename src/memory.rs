@@ -158,6 +158,7 @@ impl MemoryStore {
         if path.exists()
             || backup_path(&path).exists()
             || legacy.exists()
+            || legacy_v3_store_path(directory).exists()
             || legacy_v2_store_path(directory).exists()
         {
             return Ok((Self::load_unlocked(directory)?, false));
@@ -225,6 +226,7 @@ impl MemoryStore {
         }
 
         for (legacy, expected_version) in [
+            (legacy_v3_store_path(directory), 3_u16),
             (legacy_v2_store_path(directory), 2_u16),
             (legacy_store_path(directory), 1_u16),
         ] {
@@ -256,6 +258,13 @@ impl MemoryStore {
                 } else {
                     RetentionPolicy::KeepUntilDeleted
                 };
+                record.claim_status = if record.source == "user_explicit" {
+                    MemoryClaimStatus::UserAssertion
+                } else {
+                    MemoryClaimStatus::Inference
+                };
+                record.verification_receipt_id = None;
+                record.evidence_hash = None;
             }
             store.validate()?;
             apply_forgetting_ledger(directory, &mut store)?;
@@ -318,6 +327,17 @@ impl MemoryStore {
             {
                 bail!("memory retention policy and expiry timestamp are inconsistent");
             }
+            if record.claim_status == MemoryClaimStatus::VerifiedTaskOutcome
+                && (record.verification_receipt_id.as_deref().is_none_or(str::is_empty)
+                    || record.evidence_hash.as_deref().is_none_or(str::is_empty))
+            {
+                bail!("verified task-outcome memory requires a verifier receipt and evidence hash");
+            }
+            if record.evidence_hash.as_ref().is_some_and(|hash| {
+                hash.len() != 64 || !hash.bytes().all(|byte| byte.is_ascii_hexdigit())
+            }) {
+                bail!("memory evidence hash must be a SHA-256 hex digest");
+            }
         }
         Ok(())
     }
@@ -362,6 +382,9 @@ impl MemoryStore {
             } else {
                 RetentionPolicy::KeepUntilDeleted
             },
+            claim_status: MemoryClaimStatus::UserAssertion,
+            verification_receipt_id: None,
+            evidence_hash: None,
         };
         self.records.push(record);
         self.revision = self.revision.saturating_add(1);
@@ -482,6 +505,8 @@ impl MemoryStore {
                     created_at_unix: record.created_at_unix,
                     updated_at_unix: record.updated_at_unix,
                     source_confidence: record.confidence,
+                    claim_status: record.claim_status,
+                    verification_receipt_id: record.verification_receipt_id.clone(),
                     lexical_score,
                     matched_terms,
                     relevance_explanation,
@@ -543,7 +568,8 @@ impl MemoryStore {
         let existed = path.is_file()
             || backup_path(&path).is_file()
             || legacy_store_path(directory).is_file()
-            || legacy_v2_store_path(directory).is_file();
+            || legacy_v2_store_path(directory).is_file()
+            || legacy_v3_store_path(directory).is_file();
         let mut store = Self::load_unlocked(directory)?;
         let previous = store.clone();
         let output = operation(&mut store)?;
@@ -734,6 +760,10 @@ fn legacy_store_path(directory: &Path) -> PathBuf {
     directory.join(LEGACY_STORE_FILE)
 }
 
+fn legacy_v3_store_path(directory: &Path) -> PathBuf {
+    directory.join(LEGACY_V3_STORE_FILE)
+}
+
 fn legacy_v2_store_path(directory: &Path) -> PathBuf {
     directory.join(LEGACY_V2_STORE_FILE)
 }
@@ -827,12 +857,15 @@ fn scrub_forgotten_snapshots(directory: &Path) -> Result<()> {
     let current = store_path(directory);
     let legacy_v1 = legacy_store_path(directory);
     let legacy_v2 = legacy_v2_store_path(directory);
+    let legacy_v3 = legacy_v3_store_path(directory);
     for path in [
         backup_path(&current),
         current.with_extension("json.tmp"),
         current.with_extension("json.recovery.tmp"),
         legacy_v1.clone(),
         legacy_v1.with_extension("json.bak"),
+        legacy_v3.clone(),
+        legacy_v3.with_extension("json.bak"),
         legacy_v1.with_extension("json.tmp"),
         legacy_v2.clone(),
         legacy_v2.with_extension("json.bak"),
@@ -958,8 +991,9 @@ mod tests {
     use fs2::FileExt;
 
     use super::{
-        MEMORY_SCHEMA_VERSION, MemoryKind, MemoryStore, RETENTION_POLICY_VERSION, RetentionPolicy,
-        backup_path, legacy_store_path, legacy_v2_store_path, store_path,
+        MEMORY_SCHEMA_VERSION, MemoryClaimStatus, MemoryKind, MemoryStore,
+        RETENTION_POLICY_VERSION, RetentionPolicy, backup_path, legacy_store_path,
+        legacy_v2_store_path, legacy_v3_store_path, store_path,
     };
 
     fn temp_dir() -> PathBuf {
@@ -971,7 +1005,7 @@ mod tests {
     }
 
     #[test]
-    fn migrates_v1_store_to_v3_without_modifying_legacy_file() {
+    fn migrates_v1_store_to_v4_without_modifying_legacy_file() {
         let directory = temp_dir();
         fs::create_dir_all(&directory).unwrap();
         let mut legacy = MemoryStore {
@@ -992,6 +1026,9 @@ mod tests {
             expires_at_unix: Some(100),
             retention_policy_version: RETENTION_POLICY_VERSION,
             retention_policy: RetentionPolicy::ExpireAt,
+            claim_status: MemoryClaimStatus::UserAssertion,
+            verification_receipt_id: None,
+            evidence_hash: None,
         });
         let legacy_path = legacy_store_path(&directory);
         let mut legacy_json = serde_json::to_value(&legacy).unwrap();
@@ -1024,7 +1061,7 @@ mod tests {
     }
 
     #[test]
-    fn migrates_v2_store_to_v3_and_derives_retention_policy() {
+    fn migrates_v2_store_to_v4_and_derives_retention_policy() {
         let directory = temp_dir();
         fs::create_dir_all(&directory).unwrap();
         let mut legacy = MemoryStore {
@@ -1431,6 +1468,9 @@ mod tests {
                 expires_at_unix: None,
                 retention_policy_version: RETENTION_POLICY_VERSION,
                 retention_policy: RetentionPolicy::KeepUntilDeleted,
+                claim_status: MemoryClaimStatus::Inference,
+                verification_receipt_id: None,
+                evidence_hash: None,
             }],
             ..MemoryStore::default()
         };
