@@ -132,7 +132,7 @@ This progress snapshot was refreshed after PR #51 merged. Keep it synchronized w
 
 ### Current next task: #35
 
-Issue #35 is the next selected implementation task. The Stage 2 memory umbrella #36 is ready to be reconciled and closed after updating its stale #41 checkbox and recording #44 as complete. Issue #13 remains the owner of the AGI-oriented evaluation harness; do not create a duplicate evaluation subsystem. Do not start automatic memory injection until a separate policy, privacy/contamination test matrix, forgetting/deletion behavior and regression gates are reviewed.
+Issue #35 is the next selected implementation task. Stage 2 umbrella issue #36 was reconciled and closed after all work packages #37–#41 and follow-up #44 were completed. Issue #13 remains the owner of the AGI-oriented evaluation harness; do not create a duplicate evaluation subsystem. Do not start automatic memory injection until a separate policy, privacy/contamination test matrix, forgetting/deletion behavior and regression gates are reviewed.
 
 ## 5. Release and merge gates
 
