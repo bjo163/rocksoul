@@ -19,7 +19,7 @@ use crate::{
     paths::AppPaths,
     rid::{RuhProfile, StatId},
     rid_catalogue::{CatalogueEntry, RidCatalogue},
-    rid_store,
+    rid_store, task_trace,
 };
 
 const BG: Color = Color::Rgb(15, 17, 18);
@@ -463,28 +463,81 @@ fn render_brains(frame: &mut Frame<'_>, area: Rect, app: &App) {
 }
 
 fn render_tasks(frame: &mut Frame<'_>, area: Rect) {
-    let lines = vec![
-        Line::from(Span::styled(
-            "COGNITIVE TURN LIFECYCLE",
-            Style::default().fg(AMBER).add_modifier(Modifier::BOLD),
-        )),
-        Line::from("01  Planning"),
-        Line::from("02  Executing"),
-        Line::from("03  Verifying"),
-        Line::from("04  Completed / Failed / Cancelled"),
-        Line::from(""),
-        Line::from(Span::styled(
-            "NO ACTIVE TASK",
-            Style::default().fg(MUTED).add_modifier(Modifier::BOLD),
-        )),
-        Line::from("Task queue and live turn timeline are not persisted in this increment."),
-    ];
+    const MAX_EVENTS: usize = 12;
+    let lines = match AppPaths::discover().and_then(|paths| {
+        let records = task_trace::read(&paths.logs_dir.join("task-trace.v1.jsonl"))?;
+        if records.is_empty() {
+            return Ok(vec![
+                Line::from(Span::styled(
+                    "NO TASK EVENTS RECORDED",
+                    Style::default().fg(MUTED).add_modifier(Modifier::BOLD),
+                )),
+                Line::from("Verified workspace operations will appear here after execution."),
+                Line::from("No queue or active task is inferred from an empty trace."),
+            ]);
+        }
+        let mut lines = vec![
+            Line::from(Span::styled(
+                format!("PERSISTED TASK TRACE · {} EVENTS", records.len()),
+                Style::default().fg(AMBER).add_modifier(Modifier::BOLD),
+            )),
+            Line::from("Newest events first · target is limited to its filename"),
+            Line::from(""),
+        ];
+        for record in records.iter().rev().take(MAX_EVENTS) {
+            let event = safe_trace_text(record.get("event"), 18);
+            let operation = safe_trace_text(record.get("operation_id"), 12);
+            let target = safe_trace_text(record.get("target"), 96);
+            let target_name = target.rsplit(['/', '\\\\']).next().unwrap_or("target");
+            let timestamp = record
+                .get("timestamp_unix_ms")
+                .and_then(serde_json::Value::as_u64)
+                .map(|value| value.to_string())
+                .unwrap_or_else(|| "time n/a".to_owned());
+            lines.push(Line::from(format!(
+                "{timestamp}  {event:<18}  {operation:<12}  {target_name}"
+            )));
+        }
+        if records.len() > MAX_EVENTS {
+            lines.push(Line::from(format!(
+                "Showing latest {MAX_EVENTS} of {} events.",
+                records.len()
+            )));
+        }
+        Ok(lines)
+    }) {
+        Ok(lines) => lines,
+        Err(_) => vec![
+            Line::from(Span::styled(
+                "TASK TRACE UNAVAILABLE",
+                Style::default().fg(RED).add_modifier(Modifier::BOLD),
+            )),
+            Line::from("The trace is malformed, unsupported, or inaccessible."),
+            Line::from("No task state is inferred from invalid records."),
+        ],
+    };
     frame.render_widget(
         Paragraph::new(lines)
             .wrap(Wrap { trim: true })
             .block(panel("TASK / TURN MONITOR")),
         area,
     );
+}
+
+fn safe_trace_text(value: Option<&serde_json::Value>, limit: usize) -> String {
+    let Some(value) = value.and_then(serde_json::Value::as_str) else {
+        return "n/a".to_owned();
+    };
+    let cleaned = value
+        .chars()
+        .filter(|character| !character.is_control())
+        .take(limit)
+        .collect::<String>();
+    if cleaned.is_empty() {
+        "n/a".to_owned()
+    } else {
+        cleaned
+    }
 }
 
 fn render_memory(frame: &mut Frame<'_>, area: Rect) {
@@ -521,7 +574,7 @@ fn render_memory(frame: &mut Frame<'_>, area: Rect) {
             Line::from(""),
             Line::from(format!(
                 "Store: {}",
-                paths.memory_dir.join("store.v1.json").display()
+                paths.memory_dir.join("store.v4.json").display()
             )),
             Line::from(""),
             Line::from("Recent entries (content hidden in cockpit):"),
