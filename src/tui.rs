@@ -1485,24 +1485,26 @@ fn rid_detail(
                 .fg(palette.text)
                 .add_modifier(Modifier::BOLD),
         )),
-        Line::from(entry.name.arabic.clone()),
-        Line::from(entry.name.gloss.id.clone()),
-        Line::from(""),
         Line::from(Span::styled(
             entry.label.clone(),
             Style::default().fg(palette.accent),
         )),
-        Line::from(entry.technical_stat.key.clone()),
-        Line::from(entry.technical_stat.definition.clone()),
+        Line::from(format!("Stat key: {}", entry.key)),
+        Line::from(format!("Definition: {}", entry.definition)),
         Line::from(""),
-        Line::from(format!("Domain: {}", entry.technical_stat.domain_label)),
+        Line::from(format!("Measurement target: {}", entry.measurement_target)),
+        Line::from(format!("Include: {}", entry.inclusion_criteria)),
+        Line::from(format!("Exclude: {}", entry.exclusion_criteria)),
         Line::from(format!(
-            "Samples required: {}",
-            entry.technical_stat.minimum_samples
+            "Overlap guards: {}",
+            if entry.overlap_with.is_empty() { "none".to_owned() } else { entry.overlap_with.join(", ") }
         )),
-        Line::from(format!("Rubric: {}", entry.technical_stat.score_rubric)),
-        Line::from(""),
-        Line::from("Inspirational label only; this metric does not measure a divine attribute."),
+        Line::from(format!("Boundary: {}", entry.separation_rule)),
+        Line::from(format!(
+            "Minimum samples: {}",
+            if (56..=66).contains(&entry.id) { 30 } else { 20 }
+        )),
+        Line::from("One evidence outcome must not be double-counted across stats."),
     ];
     if let Some(profile) = profile {
         if let Ok(id) = StatId::new(entry.id) {
