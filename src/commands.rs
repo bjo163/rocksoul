@@ -789,7 +789,7 @@ pub fn memory_status() -> Result<()> {
     print_memory_records(&store.active_records(now_unix()?), "Rocksoul memory");
     println!(
         "Store: {}",
-        paths.memory_dir.join("store.v1.json").display()
+        paths.memory_dir.join("store.v2.json").display()
     );
     Ok(())
 }
