@@ -15,9 +15,9 @@
 
 ## Incremental implementation notes
 
-The current task branch includes bounded persisted task history, the read-only task monitor, metadata-first searchable memory browser with guarded explicit detail, snapshot-based diagnostics/evaluation, and portable theme/density/locale preferences. The first implementation slices passed earlier Linux/Windows checks, but the current head is not accepted until exact-head Linux and Windows CI pass. CI exposed formatting and a missing palette argument; both were fixed. A subsequent Clippy run exposed an unused/recursive tool-registry status helper; it was corrected and wired into the Tools screen. Re-run every gate on the resulting head.
+The current task branch includes bounded persisted task history, the read-only task monitor, metadata-first searchable memory browser with guarded explicit detail, snapshot-based diagnostics/evaluation, and portable theme/density/locale preferences. Formatting, Clippy, full tests, Core Integrity and memory retrieval evaluation passed on exact validated head `e6cac1fbee4f99bbbdef3f7190161c0e9a8941f1` in CI #42070438679. Linux: 130 tests, Core Integrity 23/23, precision@2 1.000 and recall@2 1.000. Windows: 129 tests, Core Integrity 22/22, precision@2 1.000 and recall@2 1.000; release build, installer/portable packaging, clean portable smoke and installer install/init/uninstall-preservation smoke all passed. The earlier format, missing-palette and Clippy helper defects were corrected before this run.
 
-The following remain intentionally open: exact-head fmt/Clippy/tests/Core Integrity/retrieval evaluation (G2), exact-head Windows build/installer/portable smoke (G3), full diff audit (G6), PR merge (G7), and main/issue/handoff verification (G8). This is not Issue #9 completion.
+The exact-head validation gates G2 and G3 and full diff/safety audit G6 are complete with evidence above. Remaining: merge PR #65 into main (G7), then verify main ancestry/content and close Issue #9 with the merge SHA and CI evidence (G8). Until those integration checks finish, Issue #9 remains open.
 
 ## Phase A — Audit findings recorded
 
@@ -69,11 +69,11 @@ The initial audit confirms the current TUI has eight screens and two navigation 
 ## Phase G — Validation and handoff
 
 - [x] G1. Add TestBackend rendering coverage for all eight screens, navigation, empty/error states, overlays and responsive terminal sizes.
-- [ ] G2. Run fmt, Clippy, all tests, Core Integrity and memory retrieval evaluation.
-- [ ] G3. Verify Windows build/tests/portable smoke/installer smoke.
+- [x] G2. Run fmt, Clippy, all tests, Core Integrity and memory retrieval evaluation on exact head `e6cac1f` (CI #42070438679, Linux passed).
+- [x] G3. Verify Windows build/tests/portable smoke/installer smoke on exact head `e6cac1f` (CI #42070438679, Windows passed).
 - [x] G4. Verify the Cockpit remains read-only: no model/backend calls, tool invocation, task execution or memory mutation originates from widgets.
 - [x] G5. Update terminal-ui.md, README, Cognitive Cockpit architecture, roadmap, progress and AI handoff.
-- [ ] G6. Inspect complete diff and compare it with Issue #9 acceptance criteria.
+- [x] G6. Inspect complete eight-file diff and compare it with Issue #9 acceptance criteria; no model/tool/egress/memory mutation authority added to the TUI.
 - [ ] G7. Open PR to main; merge only after CI passes.
 - [ ] G8. Verify main SHA, close issue #9 with evidence, and update handoff with the next dependency-safe task.
 
