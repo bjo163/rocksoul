@@ -6,12 +6,16 @@
 
 ## Phase A — Audit and baseline
 
-- [ ] A1. Refresh main; record exact SHA and inspect open PRs/issues for superseding work.
-- [ ] A2. Read AGENTS, blueprint, terminal UI design, architecture, progress, issue #9 and all four plan files.
-- [ ] A3. Map all eight screens to real data sources and mark implemented, partial, unavailable or unsafe.
-- [ ] A4. Audit existing TUI tests, terminal lifecycle, cancellation, secret redaction and Windows behavior.
-- [ ] A5. Record the existing memory path bug (`store.v1.json` display vs schema v4) and all misleading/static status strings.
-- [ ] A6. Freeze non-goals: no model calls, tools, memory mutations, arbitrary execution or invented telemetry.
+- [x] A1. Refresh main; record exact SHA and inspect open PRs/issues for superseding work.
+- [x] A2. Read AGENTS, blueprint, terminal UI design, architecture, progress, issue #9 and all four plan files.
+- [x] A3. Map all eight screens to real data sources and mark implemented, partial, unavailable or unsafe.
+- [x] A4. Audit existing TUI tests, terminal lifecycle, cancellation, secret redaction and Windows behavior.
+- [x] A5. Record the existing memory path bug (`store.v1.json` display vs schema v4) and all misleading/static status strings.
+- [x] A6. Freeze non-goals: no model calls, tools, memory mutations, arbitrary execution or invented telemetry.
+
+## Phase A — Audit findings recorded
+
+The initial audit confirms the current TUI has eight screens and two navigation tests. The terminal lifecycle is guarded by the interactive-terminal check and `ratatui::run`. Tasks are static rather than a live queue; Memory is a summary only; Brains/Tools lack registries; Diagnostics has no evaluation report; Settings have no persisted preferences. The memory screen still prints the obsolete `store.v1.json` path even though the actual schema is v4. No fake capability or live metric may be added to fill these gaps.
 
 ## Phase B — Shared read models and truthful snapshots
 
