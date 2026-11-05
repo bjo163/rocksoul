@@ -9,6 +9,7 @@ use std::{
 };
 
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 
 use crate::rid::{RuhProfile, XpEvent, XpRecordOutcome, XpSource};
 
@@ -106,7 +107,8 @@ impl TurnState {
 ///
 /// Fields are deliberately private. Model output is not an evidence object;
 /// an application adapter must create this value from an observed result.
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+pub struct VerificationEvidence
 pub struct VerificationEvidence {
     check_id: String,
     expected: String,
@@ -144,6 +146,7 @@ pub struct VerificationRequest {
     difficulty: u8,
     policy_version: u16,
     checks: Vec<VerificationEvidence>,
+    normalized_claim: Option<String>,
 }
 
 impl VerificationRequest {
@@ -164,11 +167,18 @@ impl VerificationRequest {
             difficulty,
             policy_version,
             checks,
+            normalized_claim: None,
         }
+    }
+
+    /// Bind a trusted verification to the exact normalized task-outcome claim.
+    pub fn with_claim(mut self, claim: impl AsRef<str>) -> Self {
+        self.normalized_claim = Some(normalize_task_claim(claim.as_ref()));
+        self
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct VerificationReceipt {
     verification_id: String,
     task_id: String,
@@ -177,6 +187,13 @@ pub struct VerificationReceipt {
     evidence_refs: Vec<String>,
     xp_awarded: u32,
     verified_at_unix: u64,
+    verifier_id: String,
+    verifier_version: u16,
+    normalized_claim: Option<String>,
+    claim_hash: Option<String>,
+    evidence_hash: String,
+    receipt_hash: String,
+    outcome: String,
 }
 
 impl VerificationReceipt {
@@ -207,6 +224,14 @@ impl VerificationReceipt {
     pub fn verified_at_unix(&self) -> u64 {
         self.verified_at_unix
     }
+
+    pub fn verifier_id(&self) -> &str { &self.verifier_id }
+    pub fn verifier_version(&self) -> u16 { self.verifier_version }
+    pub fn normalized_claim(&self) -> Option<&str> { self.normalized_claim.as_deref() }
+    pub fn claim_hash(&self) -> Option<&str> { self.claim_hash.as_deref() }
+    pub fn evidence_hash(&self) -> &str { &self.evidence_hash }
+    pub fn receipt_hash(&self) -> &str { &self.receipt_hash }
+    pub fn outcome(&self) -> &str { &self.outcome }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -276,6 +301,12 @@ pub fn verify_turn_and_award_xp(
 
     let xp_awarded =
         (5_u32 + u32::from(request.difficulty) + (passed_required as u32 * 2)).min(100);
+    let evidence_bytes = serde_json::to_vec(&request.checks)
+        .expect("verification evidence serialization cannot fail");
+    let evidence_hash = format!("{:x}", Sha256::digest(evidence_bytes));
+    let claim_hash = request.normalized_claim.as_ref().map(|claim| {
+        format!("{:x}", Sha256::digest(claim.as_bytes()))
+    });
     let event = XpEvent {
         event_id: format!("verification:{}", request.verification_id),
         amount: xp_awarded,
@@ -291,6 +322,25 @@ pub fn verify_turn_and_award_xp(
     turn.apply(TurnEvent::VerificationPassed)
         .map_err(VerificationError::Transition)?;
 
+    let verifier_id = "rocksoul.core.verifier".to_owned();
+    let verifier_version = 1_u16;
+    let outcome = "verified".to_owned();
+    let receipt_hash_payload = serde_json::to_vec(&(
+        &request.verification_id,
+        &request.task_id,
+        passed_required,
+        request.checks.len(),
+        &evidence_refs,
+        xp_awarded,
+        request.verified_at_unix,
+        &verifier_id,
+        verifier_version,
+        &request.normalized_claim,
+        &claim_hash,
+        &evidence_hash,
+        &outcome,
+    )).expect("verification receipt serialization cannot fail");
+    let receipt_hash = format!("{:x}", Sha256::digest(receipt_hash_payload));
     Ok(VerificationOutcome::Verified {
         receipt: VerificationReceipt {
             verification_id: request.verification_id,
@@ -300,9 +350,20 @@ pub fn verify_turn_and_award_xp(
             evidence_refs,
             xp_awarded,
             verified_at_unix: request.verified_at_unix,
+            verifier_id,
+            verifier_version,
+            normalized_claim: request.normalized_claim,
+            claim_hash,
+            evidence_hash,
+            receipt_hash,
+            outcome,
         },
         xp_record,
     })
+}
+
+pub fn normalize_task_claim(claim: &str) -> String {
+    claim.split_whitespace().collect::<Vec<_>>().join(" ").to_lowercase()
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
