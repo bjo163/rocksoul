@@ -465,7 +465,11 @@ fn render_brains(frame: &mut Frame<'_>, area: Rect, app: &App) {
 fn render_tasks(frame: &mut Frame<'_>, area: Rect) {
     const MAX_EVENTS: usize = 12;
     let lines = match AppPaths::discover().and_then(|paths| {
-        let records = task_trace::read_recent(&paths.logs_dir.join("task-trace.v1.jsonl"), 262_144, MAX_EVENTS)?;
+        let records = task_trace::read_recent(
+            &paths.logs_dir.join("task-trace.v1.jsonl"),
+            262_144,
+            MAX_EVENTS,
+        )?;
         if records.is_empty() {
             return Ok(vec![
                 Line::from(Span::styled(
