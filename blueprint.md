@@ -29,7 +29,7 @@ Rocksoul must not be architecturally locked to one model provider, interface, ap
 - Growth through measured experience and validated improvement.
 - Stable foundations, controlled evolution, and recoverability.
 
-## 2. Foundational vision: AGI · ASMA-99 · Four Kitab
+## 2. Foundational vision: AGI · RID Universal 99 · Four Kitab
 
 The strategic vision has three connected foundations. They have different responsibilities and must not be conflated.
 
@@ -50,9 +50,9 @@ AGI is the long-term aspiration for general-purpose intelligence. Rocksoul shoul
 
 No single scalar score, model self-report, or successful chat response demonstrates AGI. Report capability vectors, evidence, uncertainty, sample counts, and safety gates.
 
-### 2.2 ASMA-99 — 99-name-inspired capability architecture
+### 2.2 RID Universal 99 — 99 independent capability domains
 
-ASMA-99 is the product's respectful naming and inspiration framework for **99 distinct technical intelligence domains and 99 corresponding stats**.
+RID Universal 99 is the technical capability taxonomy for **99 distinct, independently identified capability domains and 99 corresponding per-profile stat slots**. The domain defines the construct; its linked stat stores the measurement. Together they represent 99 capabilities, not 198.
 
 The required architecture is:
 
@@ -208,7 +208,7 @@ Rocksoul has one central runtime with modular internal responsibilities.
 | Cognition | Reasoning, planning, reflection, context |
 | Memory | Persistent experience, knowledge, retrieval, lifecycle |
 | Knowledge Foundation | Source-aware knowledge and Four Kitab corpus |
-| ASMA-99 Registry | 99 domains, 99 stats, provenance, schema |
+| RID Universal 99 Registry | 99 independent domains, 99 linked stat slots, provenance, schema |
 | Evaluation Engine | Benchmarks, rubrics, evidence, confidence |
 | RID | Identity, age, XP ledger, level |
 | Capability Registry | Discoverable, versioned capability contracts |
@@ -310,7 +310,7 @@ Stages are capability milestones, not promises that AGI will be achieved.
 **Exit:** generated projects can be built and validated reproducibly.
 
 ### Stage 5 — EVALUATION & EVOLUTION
-- ASMA-99 domain/stat schema migration to 99 individual domains.
+- RID Universal 99 domain/stat schema migration to 99 independent first-class domains.
 - Trusted stat evaluators and benchmark coverage.
 - Sandboxed candidate changes.
 - Baseline comparison and lineage.
@@ -511,7 +511,7 @@ Based on the current `main` documentation and merged PR history:
 - Native Rust CLI/REPL and portable-root direction exist.
 - Cognitive turn contracts, bounded model-only planning/reasoning, and a read-only Ratatui Cognitive Cockpit exist.
 - RID identity, instance age, append-only XP progression, deterministic level curve, and 99 initially unrated stat slots exist.
-- A 99-entry Asmaul Husna-inspired catalogue with 99 unique technical stat keys exists.
+- A 99-domain technical catalogue with unique domain/stat IDs and evidence boundaries exists; the Asmaul Husna reference remains a separate catalogue.
 - The current catalogue still groups those stats into nine technical group labels of eleven entries. It does **not yet implement 99 independent domain records**.
 - Offline Core Integrity evaluation exists.
 - Explicit local persistent memory with user-approved writes, export, and deletion exists.
@@ -548,7 +548,7 @@ The ultimate aspiration is general-purpose intelligence, not a larger feature ch
 - Knowledge preserves its source, context, and uncertainty.
 - Al-Qur'an is the primary reference in the Islamic knowledge framework.
 - The Four Kitab are treated with attribution and textual care.
-- ASMA-99 inspires a respectful 99-domain capability architecture; it does not turn divine attributes into software measurements.
+- Asmaul Husna may be documented as a separate respectful inspiration reference; it never defines or scores technical capability domains.
 - RID, XP, Level, and technical stats remain distinct.
 - Evolution is observable, governed, and recoverable.
 - The core remains stable while the ecosystem expands.
