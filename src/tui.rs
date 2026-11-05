@@ -546,8 +546,8 @@ fn render_header(frame: &mut Frame<'_>, area: Rect, app: &App) {
                 "/ KOKPIT KOGNITIF "
             },
             Style::default()
-            .fg(app.palette.accent)
-            .add_modifier(Modifier::BOLD),
+                .fg(app.palette.accent)
+                .add_modifier(Modifier::BOLD),
         ),
         Span::styled(status.0, Style::default().fg(status.1)),
         Span::raw("   "),
@@ -1056,8 +1056,8 @@ fn push_memory_detail(lines: &mut Vec<Line<'static>>, content: &str) {
     lines.push(Line::from(Span::styled(
         "SELECTED MEMORY CONTENT",
         Style::default()
-                .fg(app.palette.accent)
-                .add_modifier(Modifier::BOLD),
+            .fg(app.palette.accent)
+            .add_modifier(Modifier::BOLD),
     )));
     match memory_detail_display(content) {
         Ok(content) => {
