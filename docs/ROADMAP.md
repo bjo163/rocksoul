@@ -79,9 +79,9 @@ The roadmap is capability-driven. Each stage must deliver a working, tested incr
 
 ## Next implementation dependency
 
-Issue #9 — Cognitive Cockpit completion is actively implemented on feat/tui-cockpit-completion but is not yet merged. The task branch now includes bounded persisted task history, searchable/filterable memory browsing with guarded detail reveal, snapshot diagnostics/evaluation reporting, versioned portable preferences, semantic dark/light palettes, density and locale application, and TestBackend responsive/overlay coverage. Final-head Linux/Windows CI, missing-config/empty-registry diagnostics tests, full diff audit and merge remain open. See docs/plans/issue-9/ for the autonomous execution plan.
+Issue #9 — Cognitive Cockpit completion is **merged and closed**. PR #65 was squash-merged to `main` as `6474cd130bd8146f03dcacb757d9c341d4b1161a`; exact-head CI #42071047960 passed on Linux and Windows. The merged Cockpit includes bounded persisted task history, searchable/filterable memory browsing with guarded detail reveal, snapshot diagnostics/evaluation reporting, versioned portable preferences, semantic dark/light palettes, density/locale application, and responsive TestBackend coverage. See `docs/plans/issue-9/` for the completed execution record.
 
-Issue #13's AGI-oriented evaluation harness depends on #4, #5, #8 and #9. Do not duplicate or begin the full harness until its dependencies are audited and closed. Issue #8's catalogue implementation exists, but its independent religious/language review remains outstanding and must not be self-approved by an AI model.
+The next dependency gate is Issue #8's independent religious/language review. Its 99-entry catalogue implementation exists, but review must be performed by qualified humans and must not be self-approved by an AI model. Issue #13's AGI-oriented evaluation harness depends on #4, #5, #8 and #9; do not duplicate or begin the full harness until all dependencies are audited and closed.
 
 ## Stage 3 — Skills and tools
 
