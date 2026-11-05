@@ -93,9 +93,9 @@ Still disabled by design:
 Scope proposed:
 1. Add structured claim statuses: user assertion, observed evidence, inference, unverified task outcome, verified task outcome, contradicted/superseded.
 2. Migrate memory schema v3 to v4 without promoting old model proposals to verified status.
-3. Bind exact normalized task-outcome claims to kernel-issued receipts.
+3. Bind exact normalized task-outcome claims and expected task/operation IDs to kernel-issued receipts; the expected ID must match the receipt's integrity-bound task ID.
 4. Require a fresh (seven-day), exact, unused and non-revoked receipt.
-5. Keep invalid/missing/stale/mismatched/tampered/replayed/revoked receipts unverified.
+5. Keep invalid/missing/stale/mismatched-claim/mismatched-task/tampered/replayed/revoked receipts unverified.
 6. Keep ordinary user assertions receipt-free and explicitly labeled.
 7. Add append-only claim-status history for correction/supersession.
 8. Add append-only receipt revocation and downgrade revoked verified claims.
@@ -106,7 +106,7 @@ Scope proposed:
 
 Earlier run #41982853154 failed on Linux and Windows because two receipt-gating tests remained unverified. Formatting and Clippy had passed.
 
-Root cause identified: receipt lookup attempted to parse every file in the receipt directory, including OS lock files and unrelated non-receipt files. The lookup now accepts only `.json` receipt files. The fix was committed as `b29dc813...`.
+Root cause identified: receipt lookup attempted to parse every file in the receipt directory, including OS lock files and unrelated non-receipt files. The lookup now accepts only `.json` receipt files. A second review added an expected task ID to each receipt-bearing proposal; the approval fingerprint binds it, and it must match the receipt's integrity-bound task ID and persisted operation ID. Regression tests cover a different task and modified operation metadata. The lookup fix was committed as `b29dc813...`; task-binding work followed in commits after it.
 
 Observed after fix:
 - Workflow run #42007315585 for code fix commit `b29dc813...`: Linux formatting, Clippy, tests, Core Integrity and memory retrieval evaluation all passed.
