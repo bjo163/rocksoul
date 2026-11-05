@@ -268,7 +268,7 @@ See [SECURITY.md](SECURITY.md) and [AGENTS.md](AGENTS.md).
 | 6 | **Workforce** | Bounded delegation and coordination |
 | 7 | **Expansion** | Additional interfaces over one core |
 
-See [docs/ROADMAP.md](docs/ROADMAP.md) for implementation status and exit criteria, [docs/AI_HANDOFF.md](docs/AI_HANDOFF.md) for local-agent onboarding and execution rules, [docs/PROGRESS.md](docs/PROGRESS.md) for the current project status, [Issue #9 TUI execution plan](docs/plans/issue-9/spec.md) for the next autonomous handoff, and [blueprint.md](blueprint.md) for the complete master blueprint.
+Explore the [RID Universal 99 Stats](docs/rid-universal-stats.md) and [RID domain contract](docs/rid.md). See [docs/ROADMAP.md](docs/ROADMAP.md) for implementation status and exit criteria, [docs/AI_HANDOFF.md](docs/AI_HANDOFF.md) for local-agent onboarding and execution rules, [docs/PROGRESS.md](docs/PROGRESS.md) for the current project status, [Issue #9 TUI execution plan](docs/plans/issue-9/spec.md) for the next autonomous handoff, and [blueprint.md](blueprint.md) for the complete master blueprint.
 
 ## Development and validation
 
