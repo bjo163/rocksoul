@@ -224,6 +224,7 @@ impl MemoryStore {
             || backup_path(&path).exists()
             || legacy.exists()
             || legacy_v2_store_path(directory).exists()
+            || legacy_v3_store_path(directory).exists()
         {
             return Ok((Self::load_unlocked(directory)?, false));
         }
@@ -290,6 +291,7 @@ impl MemoryStore {
         }
 
         for (legacy, expected_version) in [
+            (legacy_v3_store_path(directory), 3_u16),
             (legacy_v2_store_path(directory), 2_u16),
             (legacy_store_path(directory), 1_u16),
         ] {
@@ -315,6 +317,15 @@ impl MemoryStore {
             }
             store.schema_version = MEMORY_SCHEMA_VERSION;
             for record in &mut store.records {
+                record.claim_status = if record.source.starts_with("model_proposal:") {
+                    MemoryClaimStatus::Inference
+                } else {
+                    MemoryClaimStatus::UserAssertion
+                };
+                record.verification_receipt = None;
+                record.verification_invalidated_at_unix = None;
+                record.supersedes = None;
+                record.superseded_by = None;
                 record.retention_policy_version = RETENTION_POLICY_VERSION;
                 record.retention_policy = if record.expires_at_unix.is_some() {
                     RetentionPolicy::ExpireAt
@@ -383,6 +394,45 @@ impl MemoryStore {
             {
                 bail!("memory retention policy and expiry timestamp are inconsistent");
             }
+            match record.claim_status {
+                MemoryClaimStatus::VerifiedTaskOutcome => {
+                    if record.verification_invalidated_at_unix.is_some()
+                        || !record
+                            .verification_receipt
+                            .as_ref()
+                            .is_some_and(|receipt| receipt.validates_claim(&record.content))
+                    {
+                        bail!("verified task-outcome memory is missing a valid kernel receipt");
+                    }
+                }
+                MemoryClaimStatus::UnverifiedTaskOutcome => {
+                    if record.verification_invalidated_at_unix.is_none()
+                        && record
+                            .verification_receipt
+                            .as_ref()
+                            .is_some_and(|receipt| receipt.validates_claim(&record.content))
+                    {
+                        bail!("valid verifier receipt must not be stored as unverified");
+                    }
+                }
+                MemoryClaimStatus::Contradicted | MemoryClaimStatus::Superseded => {
+                    if record.superseded_by.as_deref().is_none_or(str::is_empty) {
+                        bail!("contradicted/superseded memory must reference its correction");
+                    }
+                }
+                _ => {
+                    if record.verification_receipt.is_some()
+                        || record.verification_invalidated_at_unix.is_some()
+                    {
+                        bail!("non-outcome memory cannot carry a task verification receipt");
+                    }
+                }
+            }
+            if record.supersedes.as_deref().is_some_and(|id| id.is_empty() || id == record.id)
+                || record.superseded_by.as_deref().is_some_and(|id| id.is_empty() || id == record.id)
+            {
+                bail!("memory correction links are invalid");
+            }
         }
         Ok(())
     }
@@ -427,6 +477,11 @@ impl MemoryStore {
             } else {
                 RetentionPolicy::KeepUntilDeleted
             },
+            claim_status: MemoryClaimStatus::UserAssertion,
+            verification_receipt: None,
+            verification_invalidated_at_unix: None,
+            supersedes: None,
+            superseded_by: None,
         };
         self.records.push(record);
         self.revision = self.revision.saturating_add(1);
@@ -544,6 +599,7 @@ impl MemoryStore {
                     content: record.content.clone(),
                     kind: record.kind,
                     source: record.source.clone(),
+                    claim_status: record.claim_status,
                     created_at_unix: record.created_at_unix,
                     updated_at_unix: record.updated_at_unix,
                     source_confidence: record.confidence,
@@ -608,7 +664,8 @@ impl MemoryStore {
         let existed = path.is_file()
             || backup_path(&path).is_file()
             || legacy_store_path(directory).is_file()
-            || legacy_v2_store_path(directory).is_file();
+            || legacy_v2_store_path(directory).is_file()
+            || legacy_v3_store_path(directory).is_file();
         let mut store = Self::load_unlocked(directory)?;
         let previous = store.clone();
         let output = operation(&mut store)?;
@@ -803,6 +860,10 @@ fn legacy_v2_store_path(directory: &Path) -> PathBuf {
     directory.join(LEGACY_V2_STORE_FILE)
 }
 
+fn legacy_v3_store_path(directory: &Path) -> PathBuf {
+    directory.join(LEGACY_V3_STORE_FILE)
+}
+
 fn default_retention_policy_version() -> u16 {
     RETENTION_POLICY_VERSION
 }
@@ -892,6 +953,7 @@ fn scrub_forgotten_snapshots(directory: &Path) -> Result<()> {
     let current = store_path(directory);
     let legacy_v1 = legacy_store_path(directory);
     let legacy_v2 = legacy_v2_store_path(directory);
+    let legacy_v3 = legacy_v3_store_path(directory);
     for path in [
         backup_path(&current),
         current.with_extension("json.tmp"),
@@ -902,6 +964,9 @@ fn scrub_forgotten_snapshots(directory: &Path) -> Result<()> {
         legacy_v2.clone(),
         legacy_v2.with_extension("json.bak"),
         legacy_v2.with_extension("json.tmp"),
+        legacy_v3.clone(),
+        legacy_v3.with_extension("json.bak"),
+        legacy_v3.with_extension("json.tmp"),
         directory.join("exports/latest.json"),
         directory.join("exports/latest.json.bak"),
         directory.join("exports/latest.json.tmp"),
@@ -921,8 +986,9 @@ fn scrub_forgotten_snapshots(directory: &Path) -> Result<()> {
 fn read_current_store(path: &Path) -> Result<MemoryStore> {
     let bytes = fs::read(path)
         .with_context(|| format!("could not read memory store {}", path.display()))?;
-    let store: MemoryStore = serde_json::from_slice(&bytes)
+    let mut store: MemoryStore = serde_json::from_slice(&bytes)
         .with_context(|| format!("memory store is not valid JSON: {}", path.display()))?;
+    reconcile_verified_claims(&mut store);
     store.validate()?;
     Ok(store)
 }
