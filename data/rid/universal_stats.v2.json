@@ -74,8 +74,10 @@
       "measurement_target": "accuracy of parsing written language into explicit meaning and structure",
       "inclusion_criteria": "literal content, syntax, references, stated constraints and document structure",
       "exclusion_criteria": "visual detection of glyphs; generating or explaining new text; conclusions not entailed by text",
-      "overlap_with": [],
-      "separation_rule": "Score only this domain's stated measurement target; do not reuse evidence for another domain unless a distinct observable outcome is separately recorded."
+      "overlap_with": [
+        "rid_domain:11"
+      ],
+      "separation_rule": "When evaluating alongside rid_domain:11, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     },
     {
       "id": "rid_domain:04",
@@ -197,10 +199,13 @@
       "exclusion_criteria": "literal text parsing; deriving a new logical consequence; building a broad conceptual model",
       "overlap_with": [
         "rid_domain:03",
+        "rid_domain:10",
+        "rid_domain:22",
         "rid_domain:23",
-        "rid_domain:24"
+        "rid_domain:24",
+        "rid_domain:51"
       ],
-      "separation_rule": "When evaluating alongside rid_domain:03, rid_domain:23, rid_domain:24, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
+      "separation_rule": "When evaluating alongside rid_domain:03, rid_domain:10, rid_domain:22, rid_domain:23, rid_domain:24, rid_domain:51, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     },
     {
       "id": "rid_domain:12",
@@ -267,9 +272,10 @@
       "overlap_with": [
         "rid_domain:14",
         "rid_domain:16",
-        "rid_domain:74"
+        "rid_domain:74",
+        "rid_domain:76"
       ],
-      "separation_rule": "When evaluating alongside rid_domain:14, rid_domain:16, rid_domain:74, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
+      "separation_rule": "When evaluating alongside rid_domain:14, rid_domain:16, rid_domain:74, rid_domain:76, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     },
     {
       "id": "rid_domain:16",
@@ -333,11 +339,12 @@
       "inclusion_criteria": "search, ranking, filtering and returning the matching stored record with provenance",
       "exclusion_criteria": "direct recall from a single cue; quality of source content; synthesis after retrieval",
       "overlap_with": [
+        "rid_domain:12",
         "rid_domain:13",
         "rid_domain:18",
         "rid_domain:22"
       ],
-      "separation_rule": "When evaluating alongside rid_domain:13, rid_domain:18, rid_domain:22, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
+      "separation_rule": "When evaluating alongside rid_domain:12, rid_domain:13, rid_domain:18, rid_domain:22, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     },
     {
       "id": "rid_domain:20",
@@ -350,10 +357,11 @@
       "inclusion_criteria": "versioning, contradiction resolution, source precedence and stale-claim replacement",
       "exclusion_criteria": "learning a new skill; applying feedback to behavior; changing content without evidence",
       "overlap_with": [
+        "rid_domain:18",
         "rid_domain:21",
         "rid_domain:86"
       ],
-      "separation_rule": "When evaluating alongside rid_domain:21, rid_domain:86, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
+      "separation_rule": "When evaluating alongside rid_domain:18, rid_domain:21, rid_domain:86, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     },
     {
       "id": "rid_domain:21",
@@ -366,11 +374,13 @@
       "inclusion_criteria": "deduplication, canonicalization and preserving distinct facts during merge",
       "exclusion_criteria": "associating separate concepts; revising a claim due to new evidence; summarizing arbitrary text",
       "overlap_with": [
+        "rid_domain:12",
         "rid_domain:17",
         "rid_domain:18",
-        "rid_domain:20"
+        "rid_domain:20",
+        "rid_domain:28"
       ],
-      "separation_rule": "When evaluating alongside rid_domain:17, rid_domain:18, rid_domain:20, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
+      "separation_rule": "When evaluating alongside rid_domain:12, rid_domain:17, rid_domain:18, rid_domain:20, rid_domain:28, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     },
     {
       "id": "rid_domain:22",
@@ -385,9 +395,11 @@
       "overlap_with": [
         "rid_domain:11",
         "rid_domain:19",
-        "rid_domain:89"
+        "rid_domain:82",
+        "rid_domain:89",
+        "rid_domain:91"
       ],
-      "separation_rule": "When evaluating alongside rid_domain:11, rid_domain:19, rid_domain:89, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
+      "separation_rule": "When evaluating alongside rid_domain:11, rid_domain:19, rid_domain:82, rid_domain:89, rid_domain:91, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     },
     {
       "id": "rid_domain:23",
@@ -403,9 +415,10 @@
         "rid_domain:11",
         "rid_domain:24",
         "rid_domain:25",
-        "rid_domain:27"
+        "rid_domain:27",
+        "rid_domain:71"
       ],
-      "separation_rule": "When evaluating alongside rid_domain:11, rid_domain:24, rid_domain:25, rid_domain:27, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
+      "separation_rule": "When evaluating alongside rid_domain:11, rid_domain:24, rid_domain:25, rid_domain:27, rid_domain:71, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     },
     {
       "id": "rid_domain:24",
@@ -418,10 +431,11 @@
       "inclusion_criteria": "one-step entailment, implication, contradiction and direct consequence",
       "exclusion_criteria": "multi-step chains; probabilistic forecasting; evaluating usefulness or choosing an action",
       "overlap_with": [
+        "rid_domain:11",
         "rid_domain:23",
         "rid_domain:25"
       ],
-      "separation_rule": "When evaluating alongside rid_domain:23, rid_domain:25, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
+      "separation_rule": "When evaluating alongside rid_domain:11, rid_domain:23, rid_domain:25, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     },
     {
       "id": "rid_domain:25",
@@ -434,11 +448,12 @@
       "inclusion_criteria": "multi-hop deduction, intermediate-state consistency and traceable derivation",
       "exclusion_criteria": "single-step inference; broad decomposition without reasoning; final preference selection",
       "overlap_with": [
+        "rid_domain:23",
         "rid_domain:24",
         "rid_domain:27",
         "rid_domain:28"
       ],
-      "separation_rule": "When evaluating alongside rid_domain:24, rid_domain:27, rid_domain:28, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
+      "separation_rule": "When evaluating alongside rid_domain:23, rid_domain:24, rid_domain:27, rid_domain:28, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     },
     {
       "id": "rid_domain:26",
@@ -468,10 +483,11 @@
       "exclusion_criteria": "breaking a goal into deliverable tasks; comparing alternatives; selecting a solution",
       "overlap_with": [
         "rid_domain:23",
+        "rid_domain:25",
         "rid_domain:26",
         "rid_domain:35"
       ],
-      "separation_rule": "When evaluating alongside rid_domain:23, rid_domain:26, rid_domain:35, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
+      "separation_rule": "When evaluating alongside rid_domain:23, rid_domain:25, rid_domain:26, rid_domain:35, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     },
     {
       "id": "rid_domain:28",
@@ -486,9 +502,10 @@
       "overlap_with": [
         "rid_domain:17",
         "rid_domain:21",
+        "rid_domain:25",
         "rid_domain:77"
       ],
-      "separation_rule": "When evaluating alongside rid_domain:17, rid_domain:21, rid_domain:77, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
+      "separation_rule": "When evaluating alongside rid_domain:17, rid_domain:21, rid_domain:25, rid_domain:77, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     },
     {
       "id": "rid_domain:29",
@@ -518,9 +535,10 @@
       "exclusion_criteria": "exact arithmetic; time/resource estimates; selecting an action based on a forecast",
       "overlap_with": [
         "rid_domain:29",
+        "rid_domain:43",
         "rid_domain:84"
       ],
-      "separation_rule": "When evaluating alongside rid_domain:29, rid_domain:84, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
+      "separation_rule": "When evaluating alongside rid_domain:29, rid_domain:43, rid_domain:84, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     },
     {
       "id": "rid_domain:31",
@@ -551,9 +569,10 @@
       "exclusion_criteria": "ranking priorities only; rubric scoring without selection; execution of chosen action",
       "overlap_with": [
         "rid_domain:31",
-        "rid_domain:33"
+        "rid_domain:33",
+        "rid_domain:97"
       ],
-      "separation_rule": "When evaluating alongside rid_domain:31, rid_domain:33, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
+      "separation_rule": "When evaluating alongside rid_domain:31, rid_domain:33, rid_domain:97, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     },
     {
       "id": "rid_domain:33",
@@ -566,10 +585,11 @@
       "inclusion_criteria": "priority ranking under time, risk and dependency constraints",
       "exclusion_criteria": "full project planning; dependency-only ordering; choosing among mutually exclusive strategies",
       "overlap_with": [
+        "rid_domain:32",
         "rid_domain:34",
         "rid_domain:36"
       ],
-      "separation_rule": "When evaluating alongside rid_domain:34, rid_domain:36, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
+      "separation_rule": "When evaluating alongside rid_domain:32, rid_domain:34, rid_domain:36, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     },
     {
       "id": "rid_domain:34",
@@ -582,10 +602,11 @@
       "inclusion_criteria": "milestones, resources, risks, acceptance criteria and sequencing strategy",
       "exclusion_criteria": "splitting a goal into atomic tasks only; sorting an existing dependency graph; executing steps",
       "overlap_with": [
+        "rid_domain:33",
         "rid_domain:35",
         "rid_domain:36"
       ],
-      "separation_rule": "When evaluating alongside rid_domain:35, rid_domain:36, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
+      "separation_rule": "When evaluating alongside rid_domain:33, rid_domain:35, rid_domain:36, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     },
     {
       "id": "rid_domain:35",
@@ -665,11 +686,12 @@
       "inclusion_criteria": "argument formation, protocol use, response parsing and tool-specific error handling",
       "exclusion_criteria": "overall task success; permission policy decision; reasoning about what the tool should accomplish",
       "overlap_with": [
+        "rid_domain:37",
         "rid_domain:38",
         "rid_domain:56",
         "rid_domain:61"
       ],
-      "separation_rule": "When evaluating alongside rid_domain:38, rid_domain:56, rid_domain:61, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
+      "separation_rule": "When evaluating alongside rid_domain:37, rid_domain:38, rid_domain:56, rid_domain:61, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     },
     {
       "id": "rid_domain:40",
@@ -682,12 +704,13 @@
       "inclusion_criteria": "read-back, reproducible checks, test assertions and artifact-state confirmation",
       "exclusion_criteria": "self-review without independent evidence; action logging; delivery formatting",
       "overlap_with": [
+        "rid_domain:31",
         "rid_domain:44",
+        "rid_domain:63",
         "rid_domain:80",
-        "rid_domain:81",
-        "rid_domain:63"
+        "rid_domain:81"
       ],
-      "separation_rule": "When evaluating alongside rid_domain:44, rid_domain:80, rid_domain:81, rid_domain:63, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
+      "separation_rule": "When evaluating alongside rid_domain:31, rid_domain:44, rid_domain:63, rid_domain:80, rid_domain:81, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     },
     {
       "id": "rid_domain:41",
@@ -716,10 +739,12 @@
       "inclusion_criteria": "checkpointing, idempotent resume and bounded retry behavior",
       "exclusion_criteria": "restoring from corruption; long-term reliability across unrelated sessions; task success",
       "overlap_with": [
+        "rid_domain:16",
         "rid_domain:41",
+        "rid_domain:65",
         "rid_domain:99"
       ],
-      "separation_rule": "When evaluating alongside rid_domain:41, rid_domain:99, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
+      "separation_rule": "When evaluating alongside rid_domain:16, rid_domain:41, rid_domain:65, rid_domain:99, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     },
     {
       "id": "rid_domain:43",
@@ -750,9 +775,10 @@
       "overlap_with": [
         "rid_domain:38",
         "rid_domain:40",
-        "rid_domain:98"
+        "rid_domain:98",
+        "rid_domain:99"
       ],
-      "separation_rule": "When evaluating alongside rid_domain:38, rid_domain:40, rid_domain:98, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
+      "separation_rule": "When evaluating alongside rid_domain:38, rid_domain:40, rid_domain:98, rid_domain:99, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     },
     {
       "id": "rid_domain:45",
@@ -800,9 +826,10 @@
       "overlap_with": [
         "rid_domain:45",
         "rid_domain:46",
-        "rid_domain:48"
+        "rid_domain:48",
+        "rid_domain:52"
       ],
-      "separation_rule": "When evaluating alongside rid_domain:45, rid_domain:46, rid_domain:48, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
+      "separation_rule": "When evaluating alongside rid_domain:45, rid_domain:46, rid_domain:48, rid_domain:52, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     },
     {
       "id": "rid_domain:48",
@@ -862,10 +889,10 @@
       "inclusion_criteria": "minimal clarifying question, disambiguation and confirmed interpretation",
       "exclusion_criteria": "general information gathering; contextual interpretation of source text; adapting tone",
       "overlap_with": [
-        "rid_domain:49",
-        "rid_domain:11"
+        "rid_domain:11",
+        "rid_domain:49"
       ],
-      "separation_rule": "When evaluating alongside rid_domain:49, rid_domain:11, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
+      "separation_rule": "When evaluating alongside rid_domain:11, rid_domain:49, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     },
     {
       "id": "rid_domain:52",
@@ -910,9 +937,11 @@
       "exclusion_criteria": "persistent cross-session memory; listening accuracy; task coordination among agents",
       "overlap_with": [
         "rid_domain:50",
-        "rid_domain:89"
+        "rid_domain:89",
+        "rid_domain:91",
+        "rid_domain:95"
       ],
-      "separation_rule": "When evaluating alongside rid_domain:50, rid_domain:89, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
+      "separation_rule": "When evaluating alongside rid_domain:50, rid_domain:89, rid_domain:91, rid_domain:95, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     },
     {
       "id": "rid_domain:55",
@@ -941,11 +970,14 @@
       "inclusion_criteria": "rule matching, required/forbidden conditions and policy-version traceability",
       "exclusion_criteria": "ownership boundaries; user consent; technical sandbox enforcement",
       "overlap_with": [
+        "rid_domain:39",
         "rid_domain:57",
         "rid_domain:60",
-        "rid_domain:61"
+        "rid_domain:61",
+        "rid_domain:62",
+        "rid_domain:88"
       ],
-      "separation_rule": "When evaluating alongside rid_domain:57, rid_domain:60, rid_domain:61, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
+      "separation_rule": "When evaluating alongside rid_domain:39, rid_domain:57, rid_domain:60, rid_domain:61, rid_domain:62, rid_domain:88, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     },
     {
       "id": "rid_domain:57",
@@ -1007,11 +1039,12 @@
       "inclusion_criteria": "identity-bound permission, consent scope, expiry and revocation checks",
       "exclusion_criteria": "deciding policy legality; respecting ownership boundaries; sandbox enforcement",
       "overlap_with": [
+        "rid_domain:37",
         "rid_domain:56",
         "rid_domain:57",
         "rid_domain:66"
       ],
-      "separation_rule": "When evaluating alongside rid_domain:56, rid_domain:57, rid_domain:66, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
+      "separation_rule": "When evaluating alongside rid_domain:37, rid_domain:56, rid_domain:57, rid_domain:66, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     },
     {
       "id": "rid_domain:61",
@@ -1024,10 +1057,14 @@
       "inclusion_criteria": "sandbox limits, filesystem/network/process boundaries and resource caps",
       "exclusion_criteria": "prompt-injection resistance; authorization decision; audit record completeness",
       "overlap_with": [
+        "rid_domain:39",
+        "rid_domain:56",
         "rid_domain:57",
-        "rid_domain:62"
+        "rid_domain:58",
+        "rid_domain:62",
+        "rid_domain:88"
       ],
-      "separation_rule": "When evaluating alongside rid_domain:57, rid_domain:62, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
+      "separation_rule": "When evaluating alongside rid_domain:39, rid_domain:56, rid_domain:57, rid_domain:58, rid_domain:62, rid_domain:88, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     },
     {
       "id": "rid_domain:62",
@@ -1041,9 +1078,10 @@
       "exclusion_criteria": "general policy compliance; all-purpose security; refusing benign but unauthorized actions",
       "overlap_with": [
         "rid_domain:56",
+        "rid_domain:61",
         "rid_domain:66"
       ],
-      "separation_rule": "When evaluating alongside rid_domain:56, rid_domain:66, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
+      "separation_rule": "When evaluating alongside rid_domain:56, rid_domain:61, rid_domain:66, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     },
     {
       "id": "rid_domain:63",
@@ -1057,9 +1095,10 @@
       "exclusion_criteria": "checking whether an action was correct; preventing the action; data security controls",
       "overlap_with": [
         "rid_domain:40",
-        "rid_domain:58"
+        "rid_domain:58",
+        "rid_domain:99"
       ],
-      "separation_rule": "When evaluating alongside rid_domain:40, rid_domain:58, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
+      "separation_rule": "When evaluating alongside rid_domain:40, rid_domain:58, rid_domain:99, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     },
     {
       "id": "rid_domain:64",
@@ -1073,9 +1112,10 @@
       "exclusion_criteria": "refusing the action outright; resolving the risk; generic collaboration handoff",
       "overlap_with": [
         "rid_domain:66",
+        "rid_domain:88",
         "rid_domain:98"
       ],
-      "separation_rule": "When evaluating alongside rid_domain:66, rid_domain:98, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
+      "separation_rule": "When evaluating alongside rid_domain:66, rid_domain:88, rid_domain:98, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     },
     {
       "id": "rid_domain:65",
@@ -1104,10 +1144,11 @@
       "inclusion_criteria": "non-execution, concise boundary explanation and safe alternative where appropriate",
       "exclusion_criteria": "routing a case for human judgment; generic inability; policy classification alone",
       "overlap_with": [
-        "rid_domain:64",
-        "rid_domain:60"
+        "rid_domain:60",
+        "rid_domain:62",
+        "rid_domain:64"
       ],
-      "separation_rule": "When evaluating alongside rid_domain:64, rid_domain:60, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
+      "separation_rule": "When evaluating alongside rid_domain:60, rid_domain:62, rid_domain:64, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     },
     {
       "id": "rid_domain:67",
@@ -1153,11 +1194,12 @@
       "inclusion_criteria": "components, interfaces, trade-offs, usability and acceptance mapping",
       "exclusion_criteria": "inventing a novel method; generating raw ideas; implementing the design",
       "overlap_with": [
+        "rid_domain:67",
         "rid_domain:68",
         "rid_domain:70",
         "rid_domain:77"
       ],
-      "separation_rule": "When evaluating alongside rid_domain:68, rid_domain:70, rid_domain:77, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
+      "separation_rule": "When evaluating alongside rid_domain:67, rid_domain:68, rid_domain:70, rid_domain:77, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     },
     {
       "id": "rid_domain:70",
@@ -1170,9 +1212,10 @@
       "inclusion_criteria": "new algorithm, workflow or technique with demonstrated utility",
       "exclusion_criteria": "recombining known components without novelty; ordinary design; hypothetical brainstorming",
       "overlap_with": [
+        "rid_domain:67",
         "rid_domain:69"
       ],
-      "separation_rule": "When evaluating alongside rid_domain:69, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
+      "separation_rule": "When evaluating alongside rid_domain:67, rid_domain:69, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     },
     {
       "id": "rid_domain:71",
@@ -1185,10 +1228,10 @@
       "inclusion_criteria": "alternative problem statements that expose a different actionable perspective",
       "exclusion_criteria": "abstracting a general principle; changing facts; choosing a solution",
       "overlap_with": [
-        "rid_domain:72",
-        "rid_domain:23"
+        "rid_domain:23",
+        "rid_domain:72"
       ],
-      "separation_rule": "When evaluating alongside rid_domain:72, rid_domain:23, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
+      "separation_rule": "When evaluating alongside rid_domain:23, rid_domain:72, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     },
     {
       "id": "rid_domain:72",
@@ -1218,9 +1261,10 @@
       "exclusion_criteria": "actual skill transfer performance; associative linking; general abstraction",
       "overlap_with": [
         "rid_domain:17",
+        "rid_domain:72",
         "rid_domain:76"
       ],
-      "separation_rule": "When evaluating alongside rid_domain:17, rid_domain:76, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
+      "separation_rule": "When evaluating alongside rid_domain:17, rid_domain:72, rid_domain:76, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     },
     {
       "id": "rid_domain:74",
@@ -1249,10 +1293,11 @@
       "inclusion_criteria": "version-to-version quality delta against fixed acceptance criteria",
       "exclusion_criteria": "receiving or classifying feedback; one-shot design; learning a general skill",
       "overlap_with": [
+        "rid_domain:16",
         "rid_domain:74",
         "rid_domain:86"
       ],
-      "separation_rule": "When evaluating alongside rid_domain:74, rid_domain:86, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
+      "separation_rule": "When evaluating alongside rid_domain:16, rid_domain:74, rid_domain:86, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     },
     {
       "id": "rid_domain:76",
@@ -1265,10 +1310,10 @@
       "inclusion_criteria": "held-out transfer tasks, adaptation cost and preserved accuracy",
       "exclusion_criteria": "verbal analogy alone; learning from scratch; general behavior change",
       "overlap_with": [
-        "rid_domain:73",
-        "rid_domain:15"
+        "rid_domain:15",
+        "rid_domain:73"
       ],
-      "separation_rule": "When evaluating alongside rid_domain:73, rid_domain:15, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
+      "separation_rule": "When evaluating alongside rid_domain:15, rid_domain:73, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     },
     {
       "id": "rid_domain:77",
@@ -1329,10 +1374,11 @@
       "inclusion_criteria": "checklist completion and detected requirement omissions",
       "exclusion_criteria": "finding unanticipated errors; independent verification; post-task reflection",
       "overlap_with": [
+        "rid_domain:40",
         "rid_domain:81",
-        "rid_domain:40"
+        "rid_domain:85"
       ],
-      "separation_rule": "When evaluating alongside rid_domain:81, rid_domain:40, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
+      "separation_rule": "When evaluating alongside rid_domain:40, rid_domain:81, rid_domain:85, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     },
     {
       "id": "rid_domain:81",
@@ -1345,10 +1391,12 @@
       "inclusion_criteria": "bugs, contradictions, invalid claims and unintended inconsistencies",
       "exclusion_criteria": "checking only predefined checklist items; external verifier success; learning from outcomes",
       "overlap_with": [
+        "rid_domain:40",
         "rid_domain:80",
-        "rid_domain:85"
+        "rid_domain:85",
+        "rid_domain:87"
       ],
-      "separation_rule": "When evaluating alongside rid_domain:80, rid_domain:85, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
+      "separation_rule": "When evaluating alongside rid_domain:40, rid_domain:80, rid_domain:85, rid_domain:87, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     },
     {
       "id": "rid_domain:82",
@@ -1361,10 +1409,10 @@
       "inclusion_criteria": "assumption register, source distinction and impact if false",
       "exclusion_criteria": "general unknowns; provenance metadata; probabilistic confidence",
       "overlap_with": [
-        "rid_domain:79",
-        "rid_domain:22"
+        "rid_domain:22",
+        "rid_domain:79"
       ],
-      "separation_rule": "When evaluating alongside rid_domain:79, rid_domain:22, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
+      "separation_rule": "When evaluating alongside rid_domain:22, rid_domain:79, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     },
     {
       "id": "rid_domain:83",
@@ -1394,9 +1442,10 @@
       "overlap_with": [
         "rid_domain:29",
         "rid_domain:30",
+        "rid_domain:43",
         "rid_domain:78"
       ],
-      "separation_rule": "When evaluating alongside rid_domain:29, rid_domain:30, rid_domain:78, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
+      "separation_rule": "When evaluating alongside rid_domain:29, rid_domain:30, rid_domain:43, rid_domain:78, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     },
     {
       "id": "rid_domain:85",
@@ -1410,9 +1459,10 @@
       "exclusion_criteria": "changing future behavior immediately; checklist self-review; collecting feedback",
       "overlap_with": [
         "rid_domain:80",
+        "rid_domain:81",
         "rid_domain:86"
       ],
-      "separation_rule": "When evaluating alongside rid_domain:80, rid_domain:86, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
+      "separation_rule": "When evaluating alongside rid_domain:80, rid_domain:81, rid_domain:86, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     },
     {
       "id": "rid_domain:86",
@@ -1442,10 +1492,10 @@
       "inclusion_criteria": "change-point detection, trend deviation and false-alarm control",
       "exclusion_criteria": "monitoring current state only; correcting the deviation; self-error detection on one output",
       "overlap_with": [
-        "rid_domain:83",
-        "rid_domain:81"
+        "rid_domain:81",
+        "rid_domain:83"
       ],
-      "separation_rule": "When evaluating alongside rid_domain:83, rid_domain:81, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
+      "separation_rule": "When evaluating alongside rid_domain:81, rid_domain:83, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     },
     {
       "id": "rid_domain:88",
@@ -1475,10 +1525,12 @@
       "inclusion_criteria": "faithful viewpoint summary with uncertainty about unstated beliefs",
       "exclusion_criteria": "listening to literal instructions; assuming private emotions; negotiating an outcome",
       "overlap_with": [
+        "rid_domain:22",
         "rid_domain:50",
+        "rid_domain:54",
         "rid_domain:91"
       ],
-      "separation_rule": "When evaluating alongside rid_domain:50, rid_domain:91, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
+      "separation_rule": "When evaluating alongside rid_domain:22, rid_domain:50, rid_domain:54, rid_domain:91, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     },
     {
       "id": "rid_domain:90",
@@ -1573,10 +1625,10 @@
       "inclusion_criteria": "misunderstanding identification, correction and shared confirmation",
       "exclusion_criteria": "de-escalating emotional conflict; adapting tone proactively; dialogue continuity",
       "overlap_with": [
-        "rid_domain:94",
-        "rid_domain:54"
+        "rid_domain:54",
+        "rid_domain:94"
       ],
-      "separation_rule": "When evaluating alongside rid_domain:94, rid_domain:54, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
+      "separation_rule": "When evaluating alongside rid_domain:54, rid_domain:94, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     },
     {
       "id": "rid_domain:96",
@@ -1638,10 +1690,10 @@
       "exclusion_criteria": "single-task completion; surviving one interruption; subjective trust or personal worth",
       "overlap_with": [
         "rid_domain:42",
-        "rid_domain:63",
-        "rid_domain:44"
+        "rid_domain:44",
+        "rid_domain:63"
       ],
-      "separation_rule": "When evaluating alongside rid_domain:42, rid_domain:63, rid_domain:44, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
+      "separation_rule": "When evaluating alongside rid_domain:42, rid_domain:44, rid_domain:63, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     }
   ],
   "entries": [
@@ -1691,7 +1743,7 @@
       "domain": "textual_comprehension",
       "domain_label": "Textual Comprehension",
       "definition": "Extracts meaning and structure from written text, including noisy or formatted input.",
-      "evaluation_protocol": "Evaluate Textual Comprehension only against its declared measurement target: accuracy of parsing written language into explicit meaning and structure. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (literal content, syntax, references, stated constraints and document structure) and negative/control cases that test the exclusion criteria (visual detection of glyphs; generating or explaining new text; conclusions not entailed by text). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. Score only this domain's stated measurement target; do not reuse evidence for another domain unless a distinct observable outcome is separately recorded. Do not infer a score from self-report, XP, uptime, or message volume.",
+      "evaluation_protocol": "Evaluate Textual Comprehension only against its declared measurement target: accuracy of parsing written language into explicit meaning and structure. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (literal content, syntax, references, stated constraints and document structure) and negative/control cases that test the exclusion criteria (visual detection of glyphs; generating or explaining new text; conclusions not entailed by text). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. When evaluating alongside rid_domain:11, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores. Do not infer a score from self-report, XP, uptime, or message volume.",
       "status": "taxonomy_reconciled_evaluator_adapter_pending",
       "initial_state": "unrated",
       "domain_id": "rid_domain:03",
@@ -1699,8 +1751,10 @@
       "measurement_target": "accuracy of parsing written language into explicit meaning and structure",
       "inclusion_criteria": "literal content, syntax, references, stated constraints and document structure",
       "exclusion_criteria": "visual detection of glyphs; generating or explaining new text; conclusions not entailed by text",
-      "overlap_with": [],
-      "separation_rule": "Score only this domain's stated measurement target; do not reuse evidence for another domain unless a distinct observable outcome is separately recorded."
+      "overlap_with": [
+        "rid_domain:11"
+      ],
+      "separation_rule": "When evaluating alongside rid_domain:11, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     },
     {
       "id": 4,
@@ -1860,7 +1914,7 @@
       "domain": "contextual_interpretation",
       "domain_label": "Contextual Interpretation",
       "definition": "Builds a context-aware representation of received signals while preserving uncertainty.",
-      "evaluation_protocol": "Evaluate Contextual Interpretation only against its declared measurement target: accuracy of assigning context-dependent meaning to an already parsed input. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (resolving polysemy, pragmatic cues, local context and speaker intent where evidenced) and negative/control cases that test the exclusion criteria (literal text parsing; deriving a new logical consequence; building a broad conceptual model). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. When evaluating alongside rid_domain:03, rid_domain:23, rid_domain:24, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores. Do not infer a score from self-report, XP, uptime, or message volume.",
+      "evaluation_protocol": "Evaluate Contextual Interpretation only against its declared measurement target: accuracy of assigning context-dependent meaning to an already parsed input. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (resolving polysemy, pragmatic cues, local context and speaker intent where evidenced) and negative/control cases that test the exclusion criteria (literal text parsing; deriving a new logical consequence; building a broad conceptual model). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. When evaluating alongside rid_domain:03, rid_domain:10, rid_domain:22, rid_domain:23, rid_domain:24, rid_domain:51, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores. Do not infer a score from self-report, XP, uptime, or message volume.",
       "status": "taxonomy_reconciled_evaluator_adapter_pending",
       "initial_state": "unrated",
       "domain_id": "rid_domain:11",
@@ -1870,10 +1924,13 @@
       "exclusion_criteria": "literal text parsing; deriving a new logical consequence; building a broad conceptual model",
       "overlap_with": [
         "rid_domain:03",
+        "rid_domain:10",
+        "rid_domain:22",
         "rid_domain:23",
-        "rid_domain:24"
+        "rid_domain:24",
+        "rid_domain:51"
       ],
-      "separation_rule": "When evaluating alongside rid_domain:03, rid_domain:23, rid_domain:24, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
+      "separation_rule": "When evaluating alongside rid_domain:03, rid_domain:10, rid_domain:22, rid_domain:23, rid_domain:24, rid_domain:51, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     },
     {
       "id": 12,
@@ -1953,7 +2010,7 @@
       "domain": "skill_acquisition",
       "domain_label": "Skill Acquisition",
       "definition": "Improves performance after valid instruction, examples, or feedback.",
-      "evaluation_protocol": "Evaluate Skill Acquisition only against its declared measurement target: measured performance gain after a defined instruction or practice intervention. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (pre/post improvement on the same skill under controlled conditions) and negative/control cases that test the exclusion criteria (adapting to a changed environment without new learning; retention after delay; task execution alone). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. When evaluating alongside rid_domain:14, rid_domain:16, rid_domain:74, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores. Do not infer a score from self-report, XP, uptime, or message volume.",
+      "evaluation_protocol": "Evaluate Skill Acquisition only against its declared measurement target: measured performance gain after a defined instruction or practice intervention. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (pre/post improvement on the same skill under controlled conditions) and negative/control cases that test the exclusion criteria (adapting to a changed environment without new learning; retention after delay; task execution alone). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. When evaluating alongside rid_domain:14, rid_domain:16, rid_domain:74, rid_domain:76, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores. Do not infer a score from self-report, XP, uptime, or message volume.",
       "status": "taxonomy_reconciled_evaluator_adapter_pending",
       "initial_state": "unrated",
       "domain_id": "rid_domain:15",
@@ -1964,9 +2021,10 @@
       "overlap_with": [
         "rid_domain:14",
         "rid_domain:16",
-        "rid_domain:74"
+        "rid_domain:74",
+        "rid_domain:76"
       ],
-      "separation_rule": "When evaluating alongside rid_domain:14, rid_domain:16, rid_domain:74, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
+      "separation_rule": "When evaluating alongside rid_domain:14, rid_domain:16, rid_domain:74, rid_domain:76, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     },
     {
       "id": 16,
@@ -2045,7 +2103,7 @@
       "domain": "targeted_retrieval",
       "domain_label": "Targeted Retrieval",
       "definition": "Selects the correct stored information for a specific query or task.",
-      "evaluation_protocol": "Evaluate Targeted Retrieval only against its declared measurement target: success selecting the correct record from a defined searchable collection for a query. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (search, ranking, filtering and returning the matching stored record with provenance) and negative/control cases that test the exclusion criteria (direct recall from a single cue; quality of source content; synthesis after retrieval). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. When evaluating alongside rid_domain:13, rid_domain:18, rid_domain:22, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores. Do not infer a score from self-report, XP, uptime, or message volume.",
+      "evaluation_protocol": "Evaluate Targeted Retrieval only against its declared measurement target: success selecting the correct record from a defined searchable collection for a query. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (search, ranking, filtering and returning the matching stored record with provenance) and negative/control cases that test the exclusion criteria (direct recall from a single cue; quality of source content; synthesis after retrieval). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. When evaluating alongside rid_domain:12, rid_domain:13, rid_domain:18, rid_domain:22, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores. Do not infer a score from self-report, XP, uptime, or message volume.",
       "status": "taxonomy_reconciled_evaluator_adapter_pending",
       "initial_state": "unrated",
       "domain_id": "rid_domain:19",
@@ -2054,11 +2112,12 @@
       "inclusion_criteria": "search, ranking, filtering and returning the matching stored record with provenance",
       "exclusion_criteria": "direct recall from a single cue; quality of source content; synthesis after retrieval",
       "overlap_with": [
+        "rid_domain:12",
         "rid_domain:13",
         "rid_domain:18",
         "rid_domain:22"
       ],
-      "separation_rule": "When evaluating alongside rid_domain:13, rid_domain:18, rid_domain:22, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
+      "separation_rule": "When evaluating alongside rid_domain:12, rid_domain:13, rid_domain:18, rid_domain:22, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     },
     {
       "id": 20,
@@ -2068,7 +2127,7 @@
       "domain": "knowledge_revision",
       "domain_label": "Knowledge Revision",
       "definition": "Revises stored information when newer, better-supported evidence becomes available.",
-      "evaluation_protocol": "Evaluate Knowledge Revision only against its declared measurement target: correctness of updating or superseding a stored claim when new evidence arrives. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (versioning, contradiction resolution, source precedence and stale-claim replacement) and negative/control cases that test the exclusion criteria (learning a new skill; applying feedback to behavior; changing content without evidence). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. When evaluating alongside rid_domain:21, rid_domain:86, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores. Do not infer a score from self-report, XP, uptime, or message volume.",
+      "evaluation_protocol": "Evaluate Knowledge Revision only against its declared measurement target: correctness of updating or superseding a stored claim when new evidence arrives. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (versioning, contradiction resolution, source precedence and stale-claim replacement) and negative/control cases that test the exclusion criteria (learning a new skill; applying feedback to behavior; changing content without evidence). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. When evaluating alongside rid_domain:18, rid_domain:21, rid_domain:86, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores. Do not infer a score from self-report, XP, uptime, or message volume.",
       "status": "taxonomy_reconciled_evaluator_adapter_pending",
       "initial_state": "unrated",
       "domain_id": "rid_domain:20",
@@ -2077,10 +2136,11 @@
       "inclusion_criteria": "versioning, contradiction resolution, source precedence and stale-claim replacement",
       "exclusion_criteria": "learning a new skill; applying feedback to behavior; changing content without evidence",
       "overlap_with": [
+        "rid_domain:18",
         "rid_domain:21",
         "rid_domain:86"
       ],
-      "separation_rule": "When evaluating alongside rid_domain:21, rid_domain:86, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
+      "separation_rule": "When evaluating alongside rid_domain:18, rid_domain:21, rid_domain:86, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     },
     {
       "id": 21,
@@ -2090,7 +2150,7 @@
       "domain": "knowledge_consolidation",
       "domain_label": "Knowledge Consolidation",
       "definition": "Combines repeated or related learning into stable, non-duplicated knowledge.",
-      "evaluation_protocol": "Evaluate Knowledge Consolidation only against its declared measurement target: quality of merging repeated records into a compact, non-contradictory representation. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (deduplication, canonicalization and preserving distinct facts during merge) and negative/control cases that test the exclusion criteria (associating separate concepts; revising a claim due to new evidence; summarizing arbitrary text). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. When evaluating alongside rid_domain:17, rid_domain:18, rid_domain:20, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores. Do not infer a score from self-report, XP, uptime, or message volume.",
+      "evaluation_protocol": "Evaluate Knowledge Consolidation only against its declared measurement target: quality of merging repeated records into a compact, non-contradictory representation. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (deduplication, canonicalization and preserving distinct facts during merge) and negative/control cases that test the exclusion criteria (associating separate concepts; revising a claim due to new evidence; summarizing arbitrary text). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. When evaluating alongside rid_domain:12, rid_domain:17, rid_domain:18, rid_domain:20, rid_domain:28, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores. Do not infer a score from self-report, XP, uptime, or message volume.",
       "status": "taxonomy_reconciled_evaluator_adapter_pending",
       "initial_state": "unrated",
       "domain_id": "rid_domain:21",
@@ -2099,11 +2159,13 @@
       "inclusion_criteria": "deduplication, canonicalization and preserving distinct facts during merge",
       "exclusion_criteria": "associating separate concepts; revising a claim due to new evidence; summarizing arbitrary text",
       "overlap_with": [
+        "rid_domain:12",
         "rid_domain:17",
         "rid_domain:18",
-        "rid_domain:20"
+        "rid_domain:20",
+        "rid_domain:28"
       ],
-      "separation_rule": "When evaluating alongside rid_domain:17, rid_domain:18, rid_domain:20, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
+      "separation_rule": "When evaluating alongside rid_domain:12, rid_domain:17, rid_domain:18, rid_domain:20, rid_domain:28, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     },
     {
       "id": 22,
@@ -2113,7 +2175,7 @@
       "domain": "context_provenance",
       "domain_label": "Context & Provenance",
       "definition": "Preserves source, time, scope, and context needed to interpret remembered information.",
-      "evaluation_protocol": "Evaluate Context & Provenance only against its declared measurement target: completeness and correctness of source metadata attached to retained information. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (origin, timestamp, scope, version, author/evaluator and lineage) and negative/control cases that test the exclusion criteria (interpreting context; judging source credibility; storing the factual content itself). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. When evaluating alongside rid_domain:11, rid_domain:19, rid_domain:89, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores. Do not infer a score from self-report, XP, uptime, or message volume.",
+      "evaluation_protocol": "Evaluate Context & Provenance only against its declared measurement target: completeness and correctness of source metadata attached to retained information. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (origin, timestamp, scope, version, author/evaluator and lineage) and negative/control cases that test the exclusion criteria (interpreting context; judging source credibility; storing the factual content itself). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. When evaluating alongside rid_domain:11, rid_domain:19, rid_domain:82, rid_domain:89, rid_domain:91, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores. Do not infer a score from self-report, XP, uptime, or message volume.",
       "status": "taxonomy_reconciled_evaluator_adapter_pending",
       "initial_state": "unrated",
       "domain_id": "rid_domain:22",
@@ -2124,9 +2186,11 @@
       "overlap_with": [
         "rid_domain:11",
         "rid_domain:19",
-        "rid_domain:89"
+        "rid_domain:82",
+        "rid_domain:89",
+        "rid_domain:91"
       ],
-      "separation_rule": "When evaluating alongside rid_domain:11, rid_domain:19, rid_domain:89, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
+      "separation_rule": "When evaluating alongside rid_domain:11, rid_domain:19, rid_domain:82, rid_domain:89, rid_domain:91, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     },
     {
       "id": 23,
@@ -2136,7 +2200,7 @@
       "domain": "conceptual_understanding",
       "domain_label": "Conceptual Understanding",
       "definition": "Builds a faithful model of a request, concept, or situation and its constraints.",
-      "evaluation_protocol": "Evaluate Conceptual Understanding only against its declared measurement target: fidelity of an internal or explicit model of a concept/system and its relations. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (explaining components, purpose, constraints and how parts relate) and negative/control cases that test the exclusion criteria (parsing surface text; interpreting one ambiguous phrase; deriving a conclusion from premises). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. When evaluating alongside rid_domain:11, rid_domain:24, rid_domain:25, rid_domain:27, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores. Do not infer a score from self-report, XP, uptime, or message volume.",
+      "evaluation_protocol": "Evaluate Conceptual Understanding only against its declared measurement target: fidelity of an internal or explicit model of a concept/system and its relations. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (explaining components, purpose, constraints and how parts relate) and negative/control cases that test the exclusion criteria (parsing surface text; interpreting one ambiguous phrase; deriving a conclusion from premises). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. When evaluating alongside rid_domain:11, rid_domain:24, rid_domain:25, rid_domain:27, rid_domain:71, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores. Do not infer a score from self-report, XP, uptime, or message volume.",
       "status": "taxonomy_reconciled_evaluator_adapter_pending",
       "initial_state": "unrated",
       "domain_id": "rid_domain:23",
@@ -2148,9 +2212,10 @@
         "rid_domain:11",
         "rid_domain:24",
         "rid_domain:25",
-        "rid_domain:27"
+        "rid_domain:27",
+        "rid_domain:71"
       ],
-      "separation_rule": "When evaluating alongside rid_domain:11, rid_domain:24, rid_domain:25, rid_domain:27, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
+      "separation_rule": "When evaluating alongside rid_domain:11, rid_domain:24, rid_domain:25, rid_domain:27, rid_domain:71, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     },
     {
       "id": 24,
@@ -2160,7 +2225,7 @@
       "domain": "logical_inference",
       "domain_label": "Logical Inference",
       "definition": "Derives conclusions that follow from available facts and stated assumptions.",
-      "evaluation_protocol": "Evaluate Logical Inference only against its declared measurement target: validity of a single conclusion directly entailed by stated premises. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (one-step entailment, implication, contradiction and direct consequence) and negative/control cases that test the exclusion criteria (multi-step chains; probabilistic forecasting; evaluating usefulness or choosing an action). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. When evaluating alongside rid_domain:23, rid_domain:25, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores. Do not infer a score from self-report, XP, uptime, or message volume.",
+      "evaluation_protocol": "Evaluate Logical Inference only against its declared measurement target: validity of a single conclusion directly entailed by stated premises. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (one-step entailment, implication, contradiction and direct consequence) and negative/control cases that test the exclusion criteria (multi-step chains; probabilistic forecasting; evaluating usefulness or choosing an action). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. When evaluating alongside rid_domain:11, rid_domain:23, rid_domain:25, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores. Do not infer a score from self-report, XP, uptime, or message volume.",
       "status": "taxonomy_reconciled_evaluator_adapter_pending",
       "initial_state": "unrated",
       "domain_id": "rid_domain:24",
@@ -2169,10 +2234,11 @@
       "inclusion_criteria": "one-step entailment, implication, contradiction and direct consequence",
       "exclusion_criteria": "multi-step chains; probabilistic forecasting; evaluating usefulness or choosing an action",
       "overlap_with": [
+        "rid_domain:11",
         "rid_domain:23",
         "rid_domain:25"
       ],
-      "separation_rule": "When evaluating alongside rid_domain:23, rid_domain:25, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
+      "separation_rule": "When evaluating alongside rid_domain:11, rid_domain:23, rid_domain:25, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     },
     {
       "id": 25,
@@ -2182,7 +2248,7 @@
       "domain": "multi_step_reasoning",
       "domain_label": "Multi-step Reasoning",
       "definition": "Applies coherent multi-step logic and maintains consistency across a solution.",
-      "evaluation_protocol": "Evaluate Multi-step Reasoning only against its declared measurement target: validity of a bounded chain of dependent reasoning steps. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (multi-hop deduction, intermediate-state consistency and traceable derivation) and negative/control cases that test the exclusion criteria (single-step inference; broad decomposition without reasoning; final preference selection). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. When evaluating alongside rid_domain:24, rid_domain:27, rid_domain:28, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores. Do not infer a score from self-report, XP, uptime, or message volume.",
+      "evaluation_protocol": "Evaluate Multi-step Reasoning only against its declared measurement target: validity of a bounded chain of dependent reasoning steps. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (multi-hop deduction, intermediate-state consistency and traceable derivation) and negative/control cases that test the exclusion criteria (single-step inference; broad decomposition without reasoning; final preference selection). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. When evaluating alongside rid_domain:23, rid_domain:24, rid_domain:27, rid_domain:28, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores. Do not infer a score from self-report, XP, uptime, or message volume.",
       "status": "taxonomy_reconciled_evaluator_adapter_pending",
       "initial_state": "unrated",
       "domain_id": "rid_domain:25",
@@ -2191,11 +2257,12 @@
       "inclusion_criteria": "multi-hop deduction, intermediate-state consistency and traceable derivation",
       "exclusion_criteria": "single-step inference; broad decomposition without reasoning; final preference selection",
       "overlap_with": [
+        "rid_domain:23",
         "rid_domain:24",
         "rid_domain:27",
         "rid_domain:28"
       ],
-      "separation_rule": "When evaluating alongside rid_domain:24, rid_domain:27, rid_domain:28, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
+      "separation_rule": "When evaluating alongside rid_domain:23, rid_domain:24, rid_domain:27, rid_domain:28, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     },
     {
       "id": 26,
@@ -2227,7 +2294,7 @@
       "domain": "problem_analysis",
       "domain_label": "Problem Analysis",
       "definition": "Breaks a complex problem or body of information into relevant parts.",
-      "evaluation_protocol": "Evaluate Problem Analysis only against its declared measurement target: quality of diagnosing a problem's structure, causes and constraints. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (component analysis, causal factors, root-cause hypotheses and impact mapping) and negative/control cases that test the exclusion criteria (breaking a goal into deliverable tasks; comparing alternatives; selecting a solution). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. When evaluating alongside rid_domain:23, rid_domain:26, rid_domain:35, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores. Do not infer a score from self-report, XP, uptime, or message volume.",
+      "evaluation_protocol": "Evaluate Problem Analysis only against its declared measurement target: quality of diagnosing a problem's structure, causes and constraints. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (component analysis, causal factors, root-cause hypotheses and impact mapping) and negative/control cases that test the exclusion criteria (breaking a goal into deliverable tasks; comparing alternatives; selecting a solution). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. When evaluating alongside rid_domain:23, rid_domain:25, rid_domain:26, rid_domain:35, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores. Do not infer a score from self-report, XP, uptime, or message volume.",
       "status": "taxonomy_reconciled_evaluator_adapter_pending",
       "initial_state": "unrated",
       "domain_id": "rid_domain:27",
@@ -2237,10 +2304,11 @@
       "exclusion_criteria": "breaking a goal into deliverable tasks; comparing alternatives; selecting a solution",
       "overlap_with": [
         "rid_domain:23",
+        "rid_domain:25",
         "rid_domain:26",
         "rid_domain:35"
       ],
-      "separation_rule": "When evaluating alongside rid_domain:23, rid_domain:26, rid_domain:35, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
+      "separation_rule": "When evaluating alongside rid_domain:23, rid_domain:25, rid_domain:26, rid_domain:35, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     },
     {
       "id": 28,
@@ -2250,7 +2318,7 @@
       "domain": "cross_source_synthesis",
       "domain_label": "Cross-source Synthesis",
       "definition": "Combines multiple relevant sources or components into a coherent result.",
-      "evaluation_protocol": "Evaluate Cross-source Synthesis only against its declared measurement target: faithfulness of a combined claim supported by multiple independent sources. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (reconciling evidence, preserving disagreement and composing a source-grounded conclusion) and negative/control cases that test the exclusion criteria (simple association; component integration into software; summarizing a single source). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. When evaluating alongside rid_domain:17, rid_domain:21, rid_domain:77, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores. Do not infer a score from self-report, XP, uptime, or message volume.",
+      "evaluation_protocol": "Evaluate Cross-source Synthesis only against its declared measurement target: faithfulness of a combined claim supported by multiple independent sources. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (reconciling evidence, preserving disagreement and composing a source-grounded conclusion) and negative/control cases that test the exclusion criteria (simple association; component integration into software; summarizing a single source). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. When evaluating alongside rid_domain:17, rid_domain:21, rid_domain:25, rid_domain:77, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores. Do not infer a score from self-report, XP, uptime, or message volume.",
       "status": "taxonomy_reconciled_evaluator_adapter_pending",
       "initial_state": "unrated",
       "domain_id": "rid_domain:28",
@@ -2261,9 +2329,10 @@
       "overlap_with": [
         "rid_domain:17",
         "rid_domain:21",
+        "rid_domain:25",
         "rid_domain:77"
       ],
-      "separation_rule": "When evaluating alongside rid_domain:17, rid_domain:21, rid_domain:77, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
+      "separation_rule": "When evaluating alongside rid_domain:17, rid_domain:21, rid_domain:25, rid_domain:77, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     },
     {
       "id": 29,
@@ -2295,7 +2364,7 @@
       "domain": "outcome_forecasting",
       "domain_label": "Outcome Forecasting",
       "definition": "Estimates likely outcomes and communicates uncertainty in those estimates.",
-      "evaluation_protocol": "Evaluate Outcome Forecasting only against its declared measurement target: calibration and accuracy of predictions about future external outcomes. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (probabilities or ranges for events beyond direct deterministic calculation) and negative/control cases that test the exclusion criteria (exact arithmetic; time/resource estimates; selecting an action based on a forecast). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. When evaluating alongside rid_domain:29, rid_domain:84, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores. Do not infer a score from self-report, XP, uptime, or message volume.",
+      "evaluation_protocol": "Evaluate Outcome Forecasting only against its declared measurement target: calibration and accuracy of predictions about future external outcomes. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (probabilities or ranges for events beyond direct deterministic calculation) and negative/control cases that test the exclusion criteria (exact arithmetic; time/resource estimates; selecting an action based on a forecast). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. When evaluating alongside rid_domain:29, rid_domain:43, rid_domain:84, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores. Do not infer a score from self-report, XP, uptime, or message volume.",
       "status": "taxonomy_reconciled_evaluator_adapter_pending",
       "initial_state": "unrated",
       "domain_id": "rid_domain:30",
@@ -2305,9 +2374,10 @@
       "exclusion_criteria": "exact arithmetic; time/resource estimates; selecting an action based on a forecast",
       "overlap_with": [
         "rid_domain:29",
+        "rid_domain:43",
         "rid_domain:84"
       ],
-      "separation_rule": "When evaluating alongside rid_domain:29, rid_domain:84, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
+      "separation_rule": "When evaluating alongside rid_domain:29, rid_domain:43, rid_domain:84, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     },
     {
       "id": 31,
@@ -2340,7 +2410,7 @@
       "domain": "decision_selection",
       "domain_label": "Decision Selection",
       "definition": "Selects an action or answer that best satisfies the goal and constraints.",
-      "evaluation_protocol": "Evaluate Decision Selection only against its declared measurement target: quality of choosing one action from feasible alternatives against stated goals. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (choice quality, constraint satisfaction and decision rationale) and negative/control cases that test the exclusion criteria (ranking priorities only; rubric scoring without selection; execution of chosen action). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. When evaluating alongside rid_domain:31, rid_domain:33, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores. Do not infer a score from self-report, XP, uptime, or message volume.",
+      "evaluation_protocol": "Evaluate Decision Selection only against its declared measurement target: quality of choosing one action from feasible alternatives against stated goals. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (choice quality, constraint satisfaction and decision rationale) and negative/control cases that test the exclusion criteria (ranking priorities only; rubric scoring without selection; execution of chosen action). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. When evaluating alongside rid_domain:31, rid_domain:33, rid_domain:97, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores. Do not infer a score from self-report, XP, uptime, or message volume.",
       "status": "taxonomy_reconciled_evaluator_adapter_pending",
       "initial_state": "unrated",
       "domain_id": "rid_domain:32",
@@ -2350,9 +2420,10 @@
       "exclusion_criteria": "ranking priorities only; rubric scoring without selection; execution of chosen action",
       "overlap_with": [
         "rid_domain:31",
-        "rid_domain:33"
+        "rid_domain:33",
+        "rid_domain:97"
       ],
-      "separation_rule": "When evaluating alongside rid_domain:31, rid_domain:33, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
+      "separation_rule": "When evaluating alongside rid_domain:31, rid_domain:33, rid_domain:97, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     },
     {
       "id": 33,
@@ -2362,7 +2433,7 @@
       "domain": "priority_management",
       "domain_label": "Priority Management",
       "definition": "Orders actions by impact, urgency, risk, dependency, and available resources.",
-      "evaluation_protocol": "Evaluate Priority Management only against its declared measurement target: correct ordering of tasks or items by explicit urgency and impact criteria. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (priority ranking under time, risk and dependency constraints) and negative/control cases that test the exclusion criteria (full project planning; dependency-only ordering; choosing among mutually exclusive strategies). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. When evaluating alongside rid_domain:34, rid_domain:36, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores. Do not infer a score from self-report, XP, uptime, or message volume.",
+      "evaluation_protocol": "Evaluate Priority Management only against its declared measurement target: correct ordering of tasks or items by explicit urgency and impact criteria. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (priority ranking under time, risk and dependency constraints) and negative/control cases that test the exclusion criteria (full project planning; dependency-only ordering; choosing among mutually exclusive strategies). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. When evaluating alongside rid_domain:32, rid_domain:34, rid_domain:36, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores. Do not infer a score from self-report, XP, uptime, or message volume.",
       "status": "taxonomy_reconciled_evaluator_adapter_pending",
       "initial_state": "unrated",
       "domain_id": "rid_domain:33",
@@ -2371,10 +2442,11 @@
       "inclusion_criteria": "priority ranking under time, risk and dependency constraints",
       "exclusion_criteria": "full project planning; dependency-only ordering; choosing among mutually exclusive strategies",
       "overlap_with": [
+        "rid_domain:32",
         "rid_domain:34",
         "rid_domain:36"
       ],
-      "separation_rule": "When evaluating alongside rid_domain:34, rid_domain:36, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
+      "separation_rule": "When evaluating alongside rid_domain:32, rid_domain:34, rid_domain:36, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     },
     {
       "id": 34,
@@ -2384,7 +2456,7 @@
       "domain": "strategic_planning",
       "domain_label": "Strategic Planning",
       "definition": "Produces a feasible sequence of actions with goals, dependencies, and completion criteria.",
-      "evaluation_protocol": "Evaluate Strategic Planning only against its declared measurement target: feasibility and completeness of a goal-directed plan. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (milestones, resources, risks, acceptance criteria and sequencing strategy) and negative/control cases that test the exclusion criteria (splitting a goal into atomic tasks only; sorting an existing dependency graph; executing steps). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. When evaluating alongside rid_domain:35, rid_domain:36, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores. Do not infer a score from self-report, XP, uptime, or message volume.",
+      "evaluation_protocol": "Evaluate Strategic Planning only against its declared measurement target: feasibility and completeness of a goal-directed plan. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (milestones, resources, risks, acceptance criteria and sequencing strategy) and negative/control cases that test the exclusion criteria (splitting a goal into atomic tasks only; sorting an existing dependency graph; executing steps). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. When evaluating alongside rid_domain:33, rid_domain:35, rid_domain:36, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores. Do not infer a score from self-report, XP, uptime, or message volume.",
       "status": "taxonomy_reconciled_evaluator_adapter_pending",
       "initial_state": "unrated",
       "domain_id": "rid_domain:34",
@@ -2393,10 +2465,11 @@
       "inclusion_criteria": "milestones, resources, risks, acceptance criteria and sequencing strategy",
       "exclusion_criteria": "splitting a goal into atomic tasks only; sorting an existing dependency graph; executing steps",
       "overlap_with": [
+        "rid_domain:33",
         "rid_domain:35",
         "rid_domain:36"
       ],
-      "separation_rule": "When evaluating alongside rid_domain:35, rid_domain:36, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
+      "separation_rule": "When evaluating alongside rid_domain:33, rid_domain:35, rid_domain:36, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     },
     {
       "id": 35,
@@ -2497,7 +2570,7 @@
       "domain": "tool_operation",
       "domain_label": "Tool Operation",
       "definition": "Uses available tools, interfaces, and systems correctly and within permission boundaries.",
-      "evaluation_protocol": "Evaluate Tool Operation only against its declared measurement target: correctness of invoking and handling a specific tool or interface contract. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (argument formation, protocol use, response parsing and tool-specific error handling) and negative/control cases that test the exclusion criteria (overall task success; permission policy decision; reasoning about what the tool should accomplish). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. When evaluating alongside rid_domain:38, rid_domain:56, rid_domain:61, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores. Do not infer a score from self-report, XP, uptime, or message volume.",
+      "evaluation_protocol": "Evaluate Tool Operation only against its declared measurement target: correctness of invoking and handling a specific tool or interface contract. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (argument formation, protocol use, response parsing and tool-specific error handling) and negative/control cases that test the exclusion criteria (overall task success; permission policy decision; reasoning about what the tool should accomplish). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. When evaluating alongside rid_domain:37, rid_domain:38, rid_domain:56, rid_domain:61, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores. Do not infer a score from self-report, XP, uptime, or message volume.",
       "status": "taxonomy_reconciled_evaluator_adapter_pending",
       "initial_state": "unrated",
       "domain_id": "rid_domain:39",
@@ -2506,11 +2579,12 @@
       "inclusion_criteria": "argument formation, protocol use, response parsing and tool-specific error handling",
       "exclusion_criteria": "overall task success; permission policy decision; reasoning about what the tool should accomplish",
       "overlap_with": [
+        "rid_domain:37",
         "rid_domain:38",
         "rid_domain:56",
         "rid_domain:61"
       ],
-      "separation_rule": "When evaluating alongside rid_domain:38, rid_domain:56, rid_domain:61, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
+      "separation_rule": "When evaluating alongside rid_domain:37, rid_domain:38, rid_domain:56, rid_domain:61, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     },
     {
       "id": 40,
@@ -2520,7 +2594,7 @@
       "domain": "result_verification",
       "domain_label": "Result Verification",
       "definition": "Checks that a result satisfies its acceptance criteria before reporting completion.",
-      "evaluation_protocol": "Evaluate Result Verification only against its declared measurement target: independent evidence that a delivered result satisfies declared acceptance criteria. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (read-back, reproducible checks, test assertions and artifact-state confirmation) and negative/control cases that test the exclusion criteria (self-review without independent evidence; action logging; delivery formatting). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. When evaluating alongside rid_domain:44, rid_domain:80, rid_domain:81, rid_domain:63, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores. Do not infer a score from self-report, XP, uptime, or message volume.",
+      "evaluation_protocol": "Evaluate Result Verification only against its declared measurement target: independent evidence that a delivered result satisfies declared acceptance criteria. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (read-back, reproducible checks, test assertions and artifact-state confirmation) and negative/control cases that test the exclusion criteria (self-review without independent evidence; action logging; delivery formatting). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. When evaluating alongside rid_domain:31, rid_domain:44, rid_domain:63, rid_domain:80, rid_domain:81, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores. Do not infer a score from self-report, XP, uptime, or message volume.",
       "status": "taxonomy_reconciled_evaluator_adapter_pending",
       "initial_state": "unrated",
       "domain_id": "rid_domain:40",
@@ -2529,12 +2603,13 @@
       "inclusion_criteria": "read-back, reproducible checks, test assertions and artifact-state confirmation",
       "exclusion_criteria": "self-review without independent evidence; action logging; delivery formatting",
       "overlap_with": [
+        "rid_domain:31",
         "rid_domain:44",
+        "rid_domain:63",
         "rid_domain:80",
-        "rid_domain:81",
-        "rid_domain:63"
+        "rid_domain:81"
       ],
-      "separation_rule": "When evaluating alongside rid_domain:44, rid_domain:80, rid_domain:81, rid_domain:63, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
+      "separation_rule": "When evaluating alongside rid_domain:31, rid_domain:44, rid_domain:63, rid_domain:80, rid_domain:81, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     },
     {
       "id": 41,
@@ -2566,7 +2641,7 @@
       "domain": "interruption_resilience",
       "domain_label": "Interruption Resilience",
       "definition": "Continues useful work through interruptions while respecting retry and stop limits.",
-      "evaluation_protocol": "Evaluate Interruption Resilience only against its declared measurement target: ability to resume or safely stop work after interruption without losing valid progress. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (checkpointing, idempotent resume and bounded retry behavior) and negative/control cases that test the exclusion criteria (restoring from corruption; long-term reliability across unrelated sessions; task success). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. When evaluating alongside rid_domain:41, rid_domain:99, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores. Do not infer a score from self-report, XP, uptime, or message volume.",
+      "evaluation_protocol": "Evaluate Interruption Resilience only against its declared measurement target: ability to resume or safely stop work after interruption without losing valid progress. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (checkpointing, idempotent resume and bounded retry behavior) and negative/control cases that test the exclusion criteria (restoring from corruption; long-term reliability across unrelated sessions; task success). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. When evaluating alongside rid_domain:16, rid_domain:41, rid_domain:65, rid_domain:99, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores. Do not infer a score from self-report, XP, uptime, or message volume.",
       "status": "taxonomy_reconciled_evaluator_adapter_pending",
       "initial_state": "unrated",
       "domain_id": "rid_domain:42",
@@ -2575,10 +2650,12 @@
       "inclusion_criteria": "checkpointing, idempotent resume and bounded retry behavior",
       "exclusion_criteria": "restoring from corruption; long-term reliability across unrelated sessions; task success",
       "overlap_with": [
+        "rid_domain:16",
         "rid_domain:41",
+        "rid_domain:65",
         "rid_domain:99"
       ],
-      "separation_rule": "When evaluating alongside rid_domain:41, rid_domain:99, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
+      "separation_rule": "When evaluating alongside rid_domain:16, rid_domain:41, rid_domain:65, rid_domain:99, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     },
     {
       "id": 43,
@@ -2610,7 +2687,7 @@
       "domain": "delivery_completion",
       "domain_label": "Delivery Completion",
       "definition": "Delivers the agreed output and closes the task with evidence and accurate status.",
-      "evaluation_protocol": "Evaluate Delivery Completion only against its declared measurement target: presence and completeness of the agreed deliverable at the handoff boundary. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (required files/outputs, format, destination and declared completion state) and negative/control cases that test the exclusion criteria (independent correctness verification; task execution in progress; communication quality). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. When evaluating alongside rid_domain:38, rid_domain:40, rid_domain:98, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores. Do not infer a score from self-report, XP, uptime, or message volume.",
+      "evaluation_protocol": "Evaluate Delivery Completion only against its declared measurement target: presence and completeness of the agreed deliverable at the handoff boundary. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (required files/outputs, format, destination and declared completion state) and negative/control cases that test the exclusion criteria (independent correctness verification; task execution in progress; communication quality). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. When evaluating alongside rid_domain:38, rid_domain:40, rid_domain:98, rid_domain:99, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores. Do not infer a score from self-report, XP, uptime, or message volume.",
       "status": "taxonomy_reconciled_evaluator_adapter_pending",
       "initial_state": "unrated",
       "domain_id": "rid_domain:44",
@@ -2621,9 +2698,10 @@
       "overlap_with": [
         "rid_domain:38",
         "rid_domain:40",
-        "rid_domain:98"
+        "rid_domain:98",
+        "rid_domain:99"
       ],
-      "separation_rule": "When evaluating alongside rid_domain:38, rid_domain:40, rid_domain:98, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
+      "separation_rule": "When evaluating alongside rid_domain:38, rid_domain:40, rid_domain:98, rid_domain:99, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     },
     {
       "id": 45,
@@ -2678,7 +2756,7 @@
       "domain": "information_compression",
       "domain_label": "Information Compression",
       "definition": "Compresses information while preserving essential meaning and important caveats.",
-      "evaluation_protocol": "Evaluate Information Compression only against its declared measurement target: preservation of key information under a constrained output budget. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (coverage of essential points, omission cost and length reduction) and negative/control cases that test the exclusion criteria (translation; explanatory expansion; arbitrary formatting without compression). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. When evaluating alongside rid_domain:45, rid_domain:46, rid_domain:48, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores. Do not infer a score from self-report, XP, uptime, or message volume.",
+      "evaluation_protocol": "Evaluate Information Compression only against its declared measurement target: preservation of key information under a constrained output budget. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (coverage of essential points, omission cost and length reduction) and negative/control cases that test the exclusion criteria (translation; explanatory expansion; arbitrary formatting without compression). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. When evaluating alongside rid_domain:45, rid_domain:46, rid_domain:48, rid_domain:52, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores. Do not infer a score from self-report, XP, uptime, or message volume.",
       "status": "taxonomy_reconciled_evaluator_adapter_pending",
       "initial_state": "unrated",
       "domain_id": "rid_domain:47",
@@ -2689,9 +2767,10 @@
       "overlap_with": [
         "rid_domain:45",
         "rid_domain:46",
-        "rid_domain:48"
+        "rid_domain:48",
+        "rid_domain:52"
       ],
-      "separation_rule": "When evaluating alongside rid_domain:45, rid_domain:46, rid_domain:48, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
+      "separation_rule": "When evaluating alongside rid_domain:45, rid_domain:46, rid_domain:48, rid_domain:52, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     },
     {
       "id": 48,
@@ -2766,7 +2845,7 @@
       "domain": "ambiguity_resolution",
       "domain_label": "Ambiguity Resolution",
       "definition": "Resolves ambiguity with minimal, relevant clarification and confirms important interpretations.",
-      "evaluation_protocol": "Evaluate Ambiguity Resolution only against its declared measurement target: correct reduction of multiple plausible interpretations of a specific request. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (minimal clarifying question, disambiguation and confirmed interpretation) and negative/control cases that test the exclusion criteria (general information gathering; contextual interpretation of source text; adapting tone). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. When evaluating alongside rid_domain:49, rid_domain:11, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores. Do not infer a score from self-report, XP, uptime, or message volume.",
+      "evaluation_protocol": "Evaluate Ambiguity Resolution only against its declared measurement target: correct reduction of multiple plausible interpretations of a specific request. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (minimal clarifying question, disambiguation and confirmed interpretation) and negative/control cases that test the exclusion criteria (general information gathering; contextual interpretation of source text; adapting tone). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. When evaluating alongside rid_domain:11, rid_domain:49, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores. Do not infer a score from self-report, XP, uptime, or message volume.",
       "status": "taxonomy_reconciled_evaluator_adapter_pending",
       "initial_state": "unrated",
       "domain_id": "rid_domain:51",
@@ -2775,10 +2854,10 @@
       "inclusion_criteria": "minimal clarifying question, disambiguation and confirmed interpretation",
       "exclusion_criteria": "general information gathering; contextual interpretation of source text; adapting tone",
       "overlap_with": [
-        "rid_domain:49",
-        "rid_domain:11"
+        "rid_domain:11",
+        "rid_domain:49"
       ],
-      "separation_rule": "When evaluating alongside rid_domain:49, rid_domain:11, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
+      "separation_rule": "When evaluating alongside rid_domain:11, rid_domain:49, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     },
     {
       "id": 52,
@@ -2831,7 +2910,7 @@
       "domain": "dialogue_continuity",
       "domain_label": "Dialogue Continuity",
       "definition": "Maintains coherence and continuity across multiple conversational turns.",
-      "evaluation_protocol": "Evaluate Dialogue Continuity only against its declared measurement target: coherence of turn-to-turn conversational state within an active interaction. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (referent continuity, unresolved thread tracking and conversational state transitions) and negative/control cases that test the exclusion criteria (persistent cross-session memory; listening accuracy; task coordination among agents). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. When evaluating alongside rid_domain:50, rid_domain:89, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores. Do not infer a score from self-report, XP, uptime, or message volume.",
+      "evaluation_protocol": "Evaluate Dialogue Continuity only against its declared measurement target: coherence of turn-to-turn conversational state within an active interaction. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (referent continuity, unresolved thread tracking and conversational state transitions) and negative/control cases that test the exclusion criteria (persistent cross-session memory; listening accuracy; task coordination among agents). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. When evaluating alongside rid_domain:50, rid_domain:89, rid_domain:91, rid_domain:95, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores. Do not infer a score from self-report, XP, uptime, or message volume.",
       "status": "taxonomy_reconciled_evaluator_adapter_pending",
       "initial_state": "unrated",
       "domain_id": "rid_domain:54",
@@ -2841,9 +2920,11 @@
       "exclusion_criteria": "persistent cross-session memory; listening accuracy; task coordination among agents",
       "overlap_with": [
         "rid_domain:50",
-        "rid_domain:89"
+        "rid_domain:89",
+        "rid_domain:91",
+        "rid_domain:95"
       ],
-      "separation_rule": "When evaluating alongside rid_domain:50, rid_domain:89, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
+      "separation_rule": "When evaluating alongside rid_domain:50, rid_domain:89, rid_domain:91, rid_domain:95, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     },
     {
       "id": 55,
@@ -2875,7 +2956,7 @@
       "domain": "policy_check",
       "domain_label": "Policy Conformance",
       "definition": "Follows applicable policies, rules, and explicit operating constraints.",
-      "evaluation_protocol": "Evaluate Policy Conformance only against its declared measurement target: correct application of an explicit rule or policy set to a proposed action. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (rule matching, required/forbidden conditions and policy-version traceability) and negative/control cases that test the exclusion criteria (ownership boundaries; user consent; technical sandbox enforcement). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. When evaluating alongside rid_domain:57, rid_domain:60, rid_domain:61, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores. Do not infer a score from self-report, XP, uptime, or message volume.",
+      "evaluation_protocol": "Evaluate Policy Conformance only against its declared measurement target: correct application of an explicit rule or policy set to a proposed action. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (rule matching, required/forbidden conditions and policy-version traceability) and negative/control cases that test the exclusion criteria (ownership boundaries; user consent; technical sandbox enforcement). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. When evaluating alongside rid_domain:39, rid_domain:57, rid_domain:60, rid_domain:61, rid_domain:62, rid_domain:88, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores. Do not infer a score from self-report, XP, uptime, or message volume.",
       "status": "taxonomy_reconciled_evaluator_adapter_pending",
       "initial_state": "unrated",
       "domain_id": "rid_domain:56",
@@ -2884,11 +2965,14 @@
       "inclusion_criteria": "rule matching, required/forbidden conditions and policy-version traceability",
       "exclusion_criteria": "ownership boundaries; user consent; technical sandbox enforcement",
       "overlap_with": [
+        "rid_domain:39",
         "rid_domain:57",
         "rid_domain:60",
-        "rid_domain:61"
+        "rid_domain:61",
+        "rid_domain:62",
+        "rid_domain:88"
       ],
-      "separation_rule": "When evaluating alongside rid_domain:57, rid_domain:60, rid_domain:61, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
+      "separation_rule": "When evaluating alongside rid_domain:39, rid_domain:57, rid_domain:60, rid_domain:61, rid_domain:62, rid_domain:88, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     },
     {
       "id": 57,
@@ -2965,7 +3049,7 @@
       "domain": "authorize",
       "domain_label": "Authorization & Consent Validation",
       "definition": "Requires valid authorization before actions that need user approval.",
-      "evaluation_protocol": "Evaluate Authorization & Consent Validation only against its declared measurement target: verification that required principal approval exists before a gated action. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (identity-bound permission, consent scope, expiry and revocation checks) and negative/control cases that test the exclusion criteria (deciding policy legality; respecting ownership boundaries; sandbox enforcement). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. When evaluating alongside rid_domain:56, rid_domain:57, rid_domain:66, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores. Do not infer a score from self-report, XP, uptime, or message volume.",
+      "evaluation_protocol": "Evaluate Authorization & Consent Validation only against its declared measurement target: verification that required principal approval exists before a gated action. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (identity-bound permission, consent scope, expiry and revocation checks) and negative/control cases that test the exclusion criteria (deciding policy legality; respecting ownership boundaries; sandbox enforcement). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. When evaluating alongside rid_domain:37, rid_domain:56, rid_domain:57, rid_domain:66, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores. Do not infer a score from self-report, XP, uptime, or message volume.",
       "status": "taxonomy_reconciled_evaluator_adapter_pending",
       "initial_state": "unrated",
       "domain_id": "rid_domain:60",
@@ -2974,11 +3058,12 @@
       "inclusion_criteria": "identity-bound permission, consent scope, expiry and revocation checks",
       "exclusion_criteria": "deciding policy legality; respecting ownership boundaries; sandbox enforcement",
       "overlap_with": [
+        "rid_domain:37",
         "rid_domain:56",
         "rid_domain:57",
         "rid_domain:66"
       ],
-      "separation_rule": "When evaluating alongside rid_domain:56, rid_domain:57, rid_domain:66, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
+      "separation_rule": "When evaluating alongside rid_domain:37, rid_domain:56, rid_domain:57, rid_domain:66, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     },
     {
       "id": 61,
@@ -2988,7 +3073,7 @@
       "domain": "execution_containment",
       "domain_label": "Execution Containment",
       "definition": "Keeps execution within its sandbox, workspace, and granted capability boundary.",
-      "evaluation_protocol": "Evaluate Execution Containment only against its declared measurement target: technical prevention of actions outside an assigned execution boundary. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (sandbox limits, filesystem/network/process boundaries and resource caps) and negative/control cases that test the exclusion criteria (prompt-injection resistance; authorization decision; audit record completeness). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. When evaluating alongside rid_domain:57, rid_domain:62, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores. Do not infer a score from self-report, XP, uptime, or message volume.",
+      "evaluation_protocol": "Evaluate Execution Containment only against its declared measurement target: technical prevention of actions outside an assigned execution boundary. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (sandbox limits, filesystem/network/process boundaries and resource caps) and negative/control cases that test the exclusion criteria (prompt-injection resistance; authorization decision; audit record completeness). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. When evaluating alongside rid_domain:39, rid_domain:56, rid_domain:57, rid_domain:58, rid_domain:62, rid_domain:88, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores. Do not infer a score from self-report, XP, uptime, or message volume.",
       "status": "taxonomy_reconciled_evaluator_adapter_pending",
       "initial_state": "unrated",
       "domain_id": "rid_domain:61",
@@ -2997,10 +3082,14 @@
       "inclusion_criteria": "sandbox limits, filesystem/network/process boundaries and resource caps",
       "exclusion_criteria": "prompt-injection resistance; authorization decision; audit record completeness",
       "overlap_with": [
+        "rid_domain:39",
+        "rid_domain:56",
         "rid_domain:57",
-        "rid_domain:62"
+        "rid_domain:58",
+        "rid_domain:62",
+        "rid_domain:88"
       ],
-      "separation_rule": "When evaluating alongside rid_domain:57, rid_domain:62, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
+      "separation_rule": "When evaluating alongside rid_domain:39, rid_domain:56, rid_domain:57, rid_domain:58, rid_domain:62, rid_domain:88, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     },
     {
       "id": 62,
@@ -3010,7 +3099,7 @@
       "domain": "instruction_attack_resistance",
       "domain_label": "Instruction Attack Resistance",
       "definition": "Detects and resists prompt injection, malicious instructions, and untrusted data directives.",
-      "evaluation_protocol": "Evaluate Instruction Attack Resistance only against its declared measurement target: robustness against hostile or untrusted instructions attempting to override trusted control. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (prompt injection, data-as-instruction confusion and hierarchy preservation) and negative/control cases that test the exclusion criteria (general policy compliance; all-purpose security; refusing benign but unauthorized actions). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. When evaluating alongside rid_domain:56, rid_domain:66, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores. Do not infer a score from self-report, XP, uptime, or message volume.",
+      "evaluation_protocol": "Evaluate Instruction Attack Resistance only against its declared measurement target: robustness against hostile or untrusted instructions attempting to override trusted control. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (prompt injection, data-as-instruction confusion and hierarchy preservation) and negative/control cases that test the exclusion criteria (general policy compliance; all-purpose security; refusing benign but unauthorized actions). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. When evaluating alongside rid_domain:56, rid_domain:61, rid_domain:66, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores. Do not infer a score from self-report, XP, uptime, or message volume.",
       "status": "taxonomy_reconciled_evaluator_adapter_pending",
       "initial_state": "unrated",
       "domain_id": "rid_domain:62",
@@ -3020,9 +3109,10 @@
       "exclusion_criteria": "general policy compliance; all-purpose security; refusing benign but unauthorized actions",
       "overlap_with": [
         "rid_domain:56",
+        "rid_domain:61",
         "rid_domain:66"
       ],
-      "separation_rule": "When evaluating alongside rid_domain:56, rid_domain:66, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
+      "separation_rule": "When evaluating alongside rid_domain:56, rid_domain:61, rid_domain:66, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     },
     {
       "id": 63,
@@ -3032,7 +3122,7 @@
       "domain": "action_auditability",
       "domain_label": "Action Auditability",
       "definition": "Produces complete, useful, and tamper-evident records of important actions.",
-      "evaluation_protocol": "Evaluate Action Auditability only against its declared measurement target: completeness and integrity of records describing what actions occurred. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (actor, action, time, inputs/outputs references and immutable event lineage) and negative/control cases that test the exclusion criteria (checking whether an action was correct; preventing the action; data security controls). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. When evaluating alongside rid_domain:40, rid_domain:58, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores. Do not infer a score from self-report, XP, uptime, or message volume.",
+      "evaluation_protocol": "Evaluate Action Auditability only against its declared measurement target: completeness and integrity of records describing what actions occurred. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (actor, action, time, inputs/outputs references and immutable event lineage) and negative/control cases that test the exclusion criteria (checking whether an action was correct; preventing the action; data security controls). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. When evaluating alongside rid_domain:40, rid_domain:58, rid_domain:99, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores. Do not infer a score from self-report, XP, uptime, or message volume.",
       "status": "taxonomy_reconciled_evaluator_adapter_pending",
       "initial_state": "unrated",
       "domain_id": "rid_domain:63",
@@ -3042,9 +3132,10 @@
       "exclusion_criteria": "checking whether an action was correct; preventing the action; data security controls",
       "overlap_with": [
         "rid_domain:40",
-        "rid_domain:58"
+        "rid_domain:58",
+        "rid_domain:99"
       ],
-      "separation_rule": "When evaluating alongside rid_domain:40, rid_domain:58, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
+      "separation_rule": "When evaluating alongside rid_domain:40, rid_domain:58, rid_domain:99, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     },
     {
       "id": 64,
@@ -3054,7 +3145,7 @@
       "domain": "risk_escalation",
       "domain_label": "Risk Escalation",
       "definition": "Routes high-risk, uncertain, or unauthorized situations to the appropriate human or control.",
-      "evaluation_protocol": "Evaluate Risk Escalation only against its declared measurement target: correct routing of an identified risk to an appropriate human or higher control. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (threshold-triggered escalation, urgency, context and handoff completeness) and negative/control cases that test the exclusion criteria (refusing the action outright; resolving the risk; generic collaboration handoff). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. When evaluating alongside rid_domain:66, rid_domain:98, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores. Do not infer a score from self-report, XP, uptime, or message volume.",
+      "evaluation_protocol": "Evaluate Risk Escalation only against its declared measurement target: correct routing of an identified risk to an appropriate human or higher control. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (threshold-triggered escalation, urgency, context and handoff completeness) and negative/control cases that test the exclusion criteria (refusing the action outright; resolving the risk; generic collaboration handoff). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. When evaluating alongside rid_domain:66, rid_domain:88, rid_domain:98, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores. Do not infer a score from self-report, XP, uptime, or message volume.",
       "status": "taxonomy_reconciled_evaluator_adapter_pending",
       "initial_state": "unrated",
       "domain_id": "rid_domain:64",
@@ -3064,9 +3155,10 @@
       "exclusion_criteria": "refusing the action outright; resolving the risk; generic collaboration handoff",
       "overlap_with": [
         "rid_domain:66",
+        "rid_domain:88",
         "rid_domain:98"
       ],
-      "separation_rule": "When evaluating alongside rid_domain:66, rid_domain:98, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
+      "separation_rule": "When evaluating alongside rid_domain:66, rid_domain:88, rid_domain:98, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     },
     {
       "id": 65,
@@ -3098,7 +3190,7 @@
       "domain": "safe_refusal",
       "domain_label": "Safe Refusal",
       "definition": "Declines unsafe or unauthorized requests clearly and explains safe boundaries where possible.",
-      "evaluation_protocol": "Evaluate Safe Refusal only against its declared measurement target: correctly declining a specific action that violates a defined safety or authorization rule. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (non-execution, concise boundary explanation and safe alternative where appropriate) and negative/control cases that test the exclusion criteria (routing a case for human judgment; generic inability; policy classification alone). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. When evaluating alongside rid_domain:64, rid_domain:60, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores. Do not infer a score from self-report, XP, uptime, or message volume.",
+      "evaluation_protocol": "Evaluate Safe Refusal only against its declared measurement target: correctly declining a specific action that violates a defined safety or authorization rule. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (non-execution, concise boundary explanation and safe alternative where appropriate) and negative/control cases that test the exclusion criteria (routing a case for human judgment; generic inability; policy classification alone). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. When evaluating alongside rid_domain:60, rid_domain:62, rid_domain:64, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores. Do not infer a score from self-report, XP, uptime, or message volume.",
       "status": "taxonomy_reconciled_evaluator_adapter_pending",
       "initial_state": "unrated",
       "domain_id": "rid_domain:66",
@@ -3107,10 +3199,11 @@
       "inclusion_criteria": "non-execution, concise boundary explanation and safe alternative where appropriate",
       "exclusion_criteria": "routing a case for human judgment; generic inability; policy classification alone",
       "overlap_with": [
-        "rid_domain:64",
-        "rid_domain:60"
+        "rid_domain:60",
+        "rid_domain:62",
+        "rid_domain:64"
       ],
-      "separation_rule": "When evaluating alongside rid_domain:64, rid_domain:60, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
+      "separation_rule": "When evaluating alongside rid_domain:60, rid_domain:62, rid_domain:64, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     },
     {
       "id": 67,
@@ -3165,7 +3258,7 @@
       "domain": "solution_design",
       "domain_label": "Solution Design",
       "definition": "Shapes a solution around user needs, constraints, usability, and quality criteria.",
-      "evaluation_protocol": "Evaluate Solution Design only against its declared measurement target: fitness of a structured solution architecture against requirements. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (components, interfaces, trade-offs, usability and acceptance mapping) and negative/control cases that test the exclusion criteria (inventing a novel method; generating raw ideas; implementing the design). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. When evaluating alongside rid_domain:68, rid_domain:70, rid_domain:77, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores. Do not infer a score from self-report, XP, uptime, or message volume.",
+      "evaluation_protocol": "Evaluate Solution Design only against its declared measurement target: fitness of a structured solution architecture against requirements. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (components, interfaces, trade-offs, usability and acceptance mapping) and negative/control cases that test the exclusion criteria (inventing a novel method; generating raw ideas; implementing the design). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. When evaluating alongside rid_domain:67, rid_domain:68, rid_domain:70, rid_domain:77, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores. Do not infer a score from self-report, XP, uptime, or message volume.",
       "status": "taxonomy_reconciled_evaluator_adapter_pending",
       "initial_state": "unrated",
       "domain_id": "rid_domain:69",
@@ -3174,11 +3267,12 @@
       "inclusion_criteria": "components, interfaces, trade-offs, usability and acceptance mapping",
       "exclusion_criteria": "inventing a novel method; generating raw ideas; implementing the design",
       "overlap_with": [
+        "rid_domain:67",
         "rid_domain:68",
         "rid_domain:70",
         "rid_domain:77"
       ],
-      "separation_rule": "When evaluating alongside rid_domain:68, rid_domain:70, rid_domain:77, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
+      "separation_rule": "When evaluating alongside rid_domain:67, rid_domain:68, rid_domain:70, rid_domain:77, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     },
     {
       "id": 70,
@@ -3188,7 +3282,7 @@
       "domain": "method_invention",
       "domain_label": "Method Invention",
       "definition": "Develops a new method or combination that solves a defined problem.",
-      "evaluation_protocol": "Evaluate Method Invention only against its declared measurement target: novelty and reproducibility of a procedure not already supplied by the task. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (new algorithm, workflow or technique with demonstrated utility) and negative/control cases that test the exclusion criteria (recombining known components without novelty; ordinary design; hypothetical brainstorming). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. When evaluating alongside rid_domain:69, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores. Do not infer a score from self-report, XP, uptime, or message volume.",
+      "evaluation_protocol": "Evaluate Method Invention only against its declared measurement target: novelty and reproducibility of a procedure not already supplied by the task. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (new algorithm, workflow or technique with demonstrated utility) and negative/control cases that test the exclusion criteria (recombining known components without novelty; ordinary design; hypothetical brainstorming). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. When evaluating alongside rid_domain:67, rid_domain:69, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores. Do not infer a score from self-report, XP, uptime, or message volume.",
       "status": "taxonomy_reconciled_evaluator_adapter_pending",
       "initial_state": "unrated",
       "domain_id": "rid_domain:70",
@@ -3197,9 +3291,10 @@
       "inclusion_criteria": "new algorithm, workflow or technique with demonstrated utility",
       "exclusion_criteria": "recombining known components without novelty; ordinary design; hypothetical brainstorming",
       "overlap_with": [
+        "rid_domain:67",
         "rid_domain:69"
       ],
-      "separation_rule": "When evaluating alongside rid_domain:69, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
+      "separation_rule": "When evaluating alongside rid_domain:67, rid_domain:69, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     },
     {
       "id": 71,
@@ -3209,7 +3304,7 @@
       "domain": "problem_reframing",
       "domain_label": "Problem Reframing",
       "definition": "Restates a problem from a useful alternative perspective without losing its facts.",
-      "evaluation_protocol": "Evaluate Problem Reframing only against its declared measurement target: utility and factual preservation when expressing the same problem under a new frame. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (alternative problem statements that expose a different actionable perspective) and negative/control cases that test the exclusion criteria (abstracting a general principle; changing facts; choosing a solution). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. When evaluating alongside rid_domain:72, rid_domain:23, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores. Do not infer a score from self-report, XP, uptime, or message volume.",
+      "evaluation_protocol": "Evaluate Problem Reframing only against its declared measurement target: utility and factual preservation when expressing the same problem under a new frame. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (alternative problem statements that expose a different actionable perspective) and negative/control cases that test the exclusion criteria (abstracting a general principle; changing facts; choosing a solution). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. When evaluating alongside rid_domain:23, rid_domain:72, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores. Do not infer a score from self-report, XP, uptime, or message volume.",
       "status": "taxonomy_reconciled_evaluator_adapter_pending",
       "initial_state": "unrated",
       "domain_id": "rid_domain:71",
@@ -3218,10 +3313,10 @@
       "inclusion_criteria": "alternative problem statements that expose a different actionable perspective",
       "exclusion_criteria": "abstracting a general principle; changing facts; choosing a solution",
       "overlap_with": [
-        "rid_domain:72",
-        "rid_domain:23"
+        "rid_domain:23",
+        "rid_domain:72"
       ],
-      "separation_rule": "When evaluating alongside rid_domain:72, rid_domain:23, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
+      "separation_rule": "When evaluating alongside rid_domain:23, rid_domain:72, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     },
     {
       "id": 72,
@@ -3253,7 +3348,7 @@
       "domain": "analogical_transfer",
       "domain_label": "Analogical Transfer",
       "definition": "Uses a relevant analogy to transfer understanding and identifies its limits.",
-      "evaluation_protocol": "Evaluate Analogical Transfer only against its declared measurement target: structural correspondence quality when using a source case to illuminate a target case. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (mapped relations, useful inference and explicit analogy limits) and negative/control cases that test the exclusion criteria (actual skill transfer performance; associative linking; general abstraction). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. When evaluating alongside rid_domain:17, rid_domain:76, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores. Do not infer a score from self-report, XP, uptime, or message volume.",
+      "evaluation_protocol": "Evaluate Analogical Transfer only against its declared measurement target: structural correspondence quality when using a source case to illuminate a target case. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (mapped relations, useful inference and explicit analogy limits) and negative/control cases that test the exclusion criteria (actual skill transfer performance; associative linking; general abstraction). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. When evaluating alongside rid_domain:17, rid_domain:72, rid_domain:76, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores. Do not infer a score from self-report, XP, uptime, or message volume.",
       "status": "taxonomy_reconciled_evaluator_adapter_pending",
       "initial_state": "unrated",
       "domain_id": "rid_domain:73",
@@ -3263,9 +3358,10 @@
       "exclusion_criteria": "actual skill transfer performance; associative linking; general abstraction",
       "overlap_with": [
         "rid_domain:17",
+        "rid_domain:72",
         "rid_domain:76"
       ],
-      "separation_rule": "When evaluating alongside rid_domain:17, rid_domain:76, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
+      "separation_rule": "When evaluating alongside rid_domain:17, rid_domain:72, rid_domain:76, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     },
     {
       "id": 74,
@@ -3297,7 +3393,7 @@
       "domain": "iterative_refinement",
       "domain_label": "Iterative Refinement",
       "definition": "Improves an artifact through repeated feedback and measured revisions.",
-      "evaluation_protocol": "Evaluate Iterative Refinement only against its declared measurement target: measured improvement of an artifact across successive versions. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (version-to-version quality delta against fixed acceptance criteria) and negative/control cases that test the exclusion criteria (receiving or classifying feedback; one-shot design; learning a general skill). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. When evaluating alongside rid_domain:74, rid_domain:86, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores. Do not infer a score from self-report, XP, uptime, or message volume.",
+      "evaluation_protocol": "Evaluate Iterative Refinement only against its declared measurement target: measured improvement of an artifact across successive versions. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (version-to-version quality delta against fixed acceptance criteria) and negative/control cases that test the exclusion criteria (receiving or classifying feedback; one-shot design; learning a general skill). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. When evaluating alongside rid_domain:16, rid_domain:74, rid_domain:86, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores. Do not infer a score from self-report, XP, uptime, or message volume.",
       "status": "taxonomy_reconciled_evaluator_adapter_pending",
       "initial_state": "unrated",
       "domain_id": "rid_domain:75",
@@ -3306,10 +3402,11 @@
       "inclusion_criteria": "version-to-version quality delta against fixed acceptance criteria",
       "exclusion_criteria": "receiving or classifying feedback; one-shot design; learning a general skill",
       "overlap_with": [
+        "rid_domain:16",
         "rid_domain:74",
         "rid_domain:86"
       ],
-      "separation_rule": "When evaluating alongside rid_domain:74, rid_domain:86, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
+      "separation_rule": "When evaluating alongside rid_domain:16, rid_domain:74, rid_domain:86, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     },
     {
       "id": 76,
@@ -3319,7 +3416,7 @@
       "domain": "cross_domain_transfer",
       "domain_label": "Cross-domain Transfer",
       "definition": "Applies a learned skill or principle to a meaningfully different task or domain.",
-      "evaluation_protocol": "Evaluate Cross-domain Transfer only against its declared measurement target: performance applying an established capability to a structurally different task domain. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (held-out transfer tasks, adaptation cost and preserved accuracy) and negative/control cases that test the exclusion criteria (verbal analogy alone; learning from scratch; general behavior change). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. When evaluating alongside rid_domain:73, rid_domain:15, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores. Do not infer a score from self-report, XP, uptime, or message volume.",
+      "evaluation_protocol": "Evaluate Cross-domain Transfer only against its declared measurement target: performance applying an established capability to a structurally different task domain. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (held-out transfer tasks, adaptation cost and preserved accuracy) and negative/control cases that test the exclusion criteria (verbal analogy alone; learning from scratch; general behavior change). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. When evaluating alongside rid_domain:15, rid_domain:73, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores. Do not infer a score from self-report, XP, uptime, or message volume.",
       "status": "taxonomy_reconciled_evaluator_adapter_pending",
       "initial_state": "unrated",
       "domain_id": "rid_domain:76",
@@ -3328,10 +3425,10 @@
       "inclusion_criteria": "held-out transfer tasks, adaptation cost and preserved accuracy",
       "exclusion_criteria": "verbal analogy alone; learning from scratch; general behavior change",
       "overlap_with": [
-        "rid_domain:73",
-        "rid_domain:15"
+        "rid_domain:15",
+        "rid_domain:73"
       ],
-      "separation_rule": "When evaluating alongside rid_domain:73, rid_domain:15, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
+      "separation_rule": "When evaluating alongside rid_domain:15, rid_domain:73, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     },
     {
       "id": 77,
@@ -3407,7 +3504,7 @@
       "domain": "self_review",
       "domain_label": "Self Review",
       "definition": "Reviews its own output against explicit criteria before submission.",
-      "evaluation_protocol": "Evaluate Self Review only against its declared measurement target: coverage of a predefined checklist applied to one's own output before submission. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (checklist completion and detected requirement omissions) and negative/control cases that test the exclusion criteria (finding unanticipated errors; independent verification; post-task reflection). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. When evaluating alongside rid_domain:81, rid_domain:40, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores. Do not infer a score from self-report, XP, uptime, or message volume.",
+      "evaluation_protocol": "Evaluate Self Review only against its declared measurement target: coverage of a predefined checklist applied to one's own output before submission. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (checklist completion and detected requirement omissions) and negative/control cases that test the exclusion criteria (finding unanticipated errors; independent verification; post-task reflection). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. When evaluating alongside rid_domain:40, rid_domain:81, rid_domain:85, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores. Do not infer a score from self-report, XP, uptime, or message volume.",
       "status": "taxonomy_reconciled_evaluator_adapter_pending",
       "initial_state": "unrated",
       "domain_id": "rid_domain:80",
@@ -3416,10 +3513,11 @@
       "inclusion_criteria": "checklist completion and detected requirement omissions",
       "exclusion_criteria": "finding unanticipated errors; independent verification; post-task reflection",
       "overlap_with": [
+        "rid_domain:40",
         "rid_domain:81",
-        "rid_domain:40"
+        "rid_domain:85"
       ],
-      "separation_rule": "When evaluating alongside rid_domain:81, rid_domain:40, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
+      "separation_rule": "When evaluating alongside rid_domain:40, rid_domain:81, rid_domain:85, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     },
     {
       "id": 81,
@@ -3429,7 +3527,7 @@
       "domain": "error_detection",
       "domain_label": "Self-error Detection",
       "definition": "Detects likely mistakes, inconsistencies, and unsupported claims in its own work.",
-      "evaluation_protocol": "Evaluate Self-error Detection only against its declared measurement target: precision and recall for detecting actual defects in one's own output. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (bugs, contradictions, invalid claims and unintended inconsistencies) and negative/control cases that test the exclusion criteria (checking only predefined checklist items; external verifier success; learning from outcomes). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. When evaluating alongside rid_domain:80, rid_domain:85, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores. Do not infer a score from self-report, XP, uptime, or message volume.",
+      "evaluation_protocol": "Evaluate Self-error Detection only against its declared measurement target: precision and recall for detecting actual defects in one's own output. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (bugs, contradictions, invalid claims and unintended inconsistencies) and negative/control cases that test the exclusion criteria (checking only predefined checklist items; external verifier success; learning from outcomes). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. When evaluating alongside rid_domain:40, rid_domain:80, rid_domain:85, rid_domain:87, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores. Do not infer a score from self-report, XP, uptime, or message volume.",
       "status": "taxonomy_reconciled_evaluator_adapter_pending",
       "initial_state": "unrated",
       "domain_id": "rid_domain:81",
@@ -3438,10 +3536,12 @@
       "inclusion_criteria": "bugs, contradictions, invalid claims and unintended inconsistencies",
       "exclusion_criteria": "checking only predefined checklist items; external verifier success; learning from outcomes",
       "overlap_with": [
+        "rid_domain:40",
         "rid_domain:80",
-        "rid_domain:85"
+        "rid_domain:85",
+        "rid_domain:87"
       ],
-      "separation_rule": "When evaluating alongside rid_domain:80, rid_domain:85, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
+      "separation_rule": "When evaluating alongside rid_domain:40, rid_domain:80, rid_domain:85, rid_domain:87, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     },
     {
       "id": 82,
@@ -3451,7 +3551,7 @@
       "domain": "assumption_management",
       "domain_label": "Assumption Management",
       "definition": "Records and distinguishes assumptions from verified facts.",
-      "evaluation_protocol": "Evaluate Assumption Management only against its declared measurement target: explicit identification and labeling of premises not established as facts. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (assumption register, source distinction and impact if false) and negative/control cases that test the exclusion criteria (general unknowns; provenance metadata; probabilistic confidence). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. When evaluating alongside rid_domain:79, rid_domain:22, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores. Do not infer a score from self-report, XP, uptime, or message volume.",
+      "evaluation_protocol": "Evaluate Assumption Management only against its declared measurement target: explicit identification and labeling of premises not established as facts. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (assumption register, source distinction and impact if false) and negative/control cases that test the exclusion criteria (general unknowns; provenance metadata; probabilistic confidence). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. When evaluating alongside rid_domain:22, rid_domain:79, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores. Do not infer a score from self-report, XP, uptime, or message volume.",
       "status": "taxonomy_reconciled_evaluator_adapter_pending",
       "initial_state": "unrated",
       "domain_id": "rid_domain:82",
@@ -3460,10 +3560,10 @@
       "inclusion_criteria": "assumption register, source distinction and impact if false",
       "exclusion_criteria": "general unknowns; provenance metadata; probabilistic confidence",
       "overlap_with": [
-        "rid_domain:79",
-        "rid_domain:22"
+        "rid_domain:22",
+        "rid_domain:79"
       ],
-      "separation_rule": "When evaluating alongside rid_domain:79, rid_domain:22, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
+      "separation_rule": "When evaluating alongside rid_domain:22, rid_domain:79, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     },
     {
       "id": 83,
@@ -3494,7 +3594,7 @@
       "domain": "resource_estimation",
       "domain_label": "Resource Estimation",
       "definition": "Estimates effort, time, resources, and completion likelihood with calibrated uncertainty.",
-      "evaluation_protocol": "Evaluate Resource Estimation only against its declared measurement target: error in estimating required time, cost, memory or effort before execution. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (forecast intervals and calibration for task resource demand) and negative/control cases that test the exclusion criteria (predicting external event outcomes; exact arithmetic; optimization of actual consumption). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. When evaluating alongside rid_domain:29, rid_domain:30, rid_domain:78, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores. Do not infer a score from self-report, XP, uptime, or message volume.",
+      "evaluation_protocol": "Evaluate Resource Estimation only against its declared measurement target: error in estimating required time, cost, memory or effort before execution. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (forecast intervals and calibration for task resource demand) and negative/control cases that test the exclusion criteria (predicting external event outcomes; exact arithmetic; optimization of actual consumption). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. When evaluating alongside rid_domain:29, rid_domain:30, rid_domain:43, rid_domain:78, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores. Do not infer a score from self-report, XP, uptime, or message volume.",
       "status": "taxonomy_reconciled_evaluator_adapter_pending",
       "initial_state": "unrated",
       "domain_id": "rid_domain:84",
@@ -3505,9 +3605,10 @@
       "overlap_with": [
         "rid_domain:29",
         "rid_domain:30",
+        "rid_domain:43",
         "rid_domain:78"
       ],
-      "separation_rule": "When evaluating alongside rid_domain:29, rid_domain:30, rid_domain:78, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
+      "separation_rule": "When evaluating alongside rid_domain:29, rid_domain:30, rid_domain:43, rid_domain:78, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     },
     {
       "id": 85,
@@ -3517,7 +3618,7 @@
       "domain": "outcome_reflection",
       "domain_label": "Outcome Reflection",
       "definition": "Extracts actionable lessons from completed work and observed outcomes.",
-      "evaluation_protocol": "Evaluate Outcome Reflection only against its declared measurement target: quality of extracting lessons after a completed task from observed outcomes. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (post-hoc causal hypotheses, retained lessons and counterfactual awareness) and negative/control cases that test the exclusion criteria (changing future behavior immediately; checklist self-review; collecting feedback). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. When evaluating alongside rid_domain:80, rid_domain:86, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores. Do not infer a score from self-report, XP, uptime, or message volume.",
+      "evaluation_protocol": "Evaluate Outcome Reflection only against its declared measurement target: quality of extracting lessons after a completed task from observed outcomes. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (post-hoc causal hypotheses, retained lessons and counterfactual awareness) and negative/control cases that test the exclusion criteria (changing future behavior immediately; checklist self-review; collecting feedback). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. When evaluating alongside rid_domain:80, rid_domain:81, rid_domain:86, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores. Do not infer a score from self-report, XP, uptime, or message volume.",
       "status": "taxonomy_reconciled_evaluator_adapter_pending",
       "initial_state": "unrated",
       "domain_id": "rid_domain:85",
@@ -3527,9 +3628,10 @@
       "exclusion_criteria": "changing future behavior immediately; checklist self-review; collecting feedback",
       "overlap_with": [
         "rid_domain:80",
+        "rid_domain:81",
         "rid_domain:86"
       ],
-      "separation_rule": "When evaluating alongside rid_domain:80, rid_domain:86, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
+      "separation_rule": "When evaluating alongside rid_domain:80, rid_domain:81, rid_domain:86, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     },
     {
       "id": 86,
@@ -3562,7 +3664,7 @@
       "domain": "baseline_drift_detection",
       "domain_label": "Baseline Drift Detection",
       "definition": "Notices when behavior, results, or stored knowledge diverge from an established baseline.",
-      "evaluation_protocol": "Evaluate Baseline Drift Detection only against its declared measurement target: detection of sustained deviation from a defined historical or expected baseline. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (change-point detection, trend deviation and false-alarm control) and negative/control cases that test the exclusion criteria (monitoring current state only; correcting the deviation; self-error detection on one output). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. When evaluating alongside rid_domain:83, rid_domain:81, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores. Do not infer a score from self-report, XP, uptime, or message volume.",
+      "evaluation_protocol": "Evaluate Baseline Drift Detection only against its declared measurement target: detection of sustained deviation from a defined historical or expected baseline. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (change-point detection, trend deviation and false-alarm control) and negative/control cases that test the exclusion criteria (monitoring current state only; correcting the deviation; self-error detection on one output). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. When evaluating alongside rid_domain:81, rid_domain:83, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores. Do not infer a score from self-report, XP, uptime, or message volume.",
       "status": "taxonomy_reconciled_evaluator_adapter_pending",
       "initial_state": "unrated",
       "domain_id": "rid_domain:87",
@@ -3571,10 +3673,10 @@
       "inclusion_criteria": "change-point detection, trend deviation and false-alarm control",
       "exclusion_criteria": "monitoring current state only; correcting the deviation; self-error detection on one output",
       "overlap_with": [
-        "rid_domain:83",
-        "rid_domain:81"
+        "rid_domain:81",
+        "rid_domain:83"
       ],
-      "separation_rule": "When evaluating alongside rid_domain:83, rid_domain:81, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
+      "separation_rule": "When evaluating alongside rid_domain:81, rid_domain:83, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     },
     {
       "id": 88,
@@ -3607,7 +3709,7 @@
       "domain": "viewpoint_model",
       "domain_label": "Perspective Modeling",
       "definition": "Models another party's stated viewpoint and constraints without assuming private feelings.",
-      "evaluation_protocol": "Evaluate Perspective Modeling only against its declared measurement target: accuracy of representing another participant's explicitly stated viewpoint and constraints. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (faithful viewpoint summary with uncertainty about unstated beliefs) and negative/control cases that test the exclusion criteria (listening to literal instructions; assuming private emotions; negotiating an outcome). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. When evaluating alongside rid_domain:50, rid_domain:91, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores. Do not infer a score from self-report, XP, uptime, or message volume.",
+      "evaluation_protocol": "Evaluate Perspective Modeling only against its declared measurement target: accuracy of representing another participant's explicitly stated viewpoint and constraints. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (faithful viewpoint summary with uncertainty about unstated beliefs) and negative/control cases that test the exclusion criteria (listening to literal instructions; assuming private emotions; negotiating an outcome). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. When evaluating alongside rid_domain:22, rid_domain:50, rid_domain:54, rid_domain:91, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores. Do not infer a score from self-report, XP, uptime, or message volume.",
       "status": "taxonomy_reconciled_evaluator_adapter_pending",
       "initial_state": "unrated",
       "domain_id": "rid_domain:89",
@@ -3616,10 +3718,12 @@
       "inclusion_criteria": "faithful viewpoint summary with uncertainty about unstated beliefs",
       "exclusion_criteria": "listening to literal instructions; assuming private emotions; negotiating an outcome",
       "overlap_with": [
+        "rid_domain:22",
         "rid_domain:50",
+        "rid_domain:54",
         "rid_domain:91"
       ],
-      "separation_rule": "When evaluating alongside rid_domain:50, rid_domain:91, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
+      "separation_rule": "When evaluating alongside rid_domain:22, rid_domain:50, rid_domain:54, rid_domain:91, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     },
     {
       "id": 90,
@@ -3741,7 +3845,7 @@
       "domain": "interaction_repair",
       "domain_label": "Interaction Repair",
       "definition": "Detects and corrects communication breakdowns or misunderstandings.",
-      "evaluation_protocol": "Evaluate Interaction Repair only against its declared measurement target: successful correction of a specific communication breakdown. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (misunderstanding identification, correction and shared confirmation) and negative/control cases that test the exclusion criteria (de-escalating emotional conflict; adapting tone proactively; dialogue continuity). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. When evaluating alongside rid_domain:94, rid_domain:54, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores. Do not infer a score from self-report, XP, uptime, or message volume.",
+      "evaluation_protocol": "Evaluate Interaction Repair only against its declared measurement target: successful correction of a specific communication breakdown. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (misunderstanding identification, correction and shared confirmation) and negative/control cases that test the exclusion criteria (de-escalating emotional conflict; adapting tone proactively; dialogue continuity). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. When evaluating alongside rid_domain:54, rid_domain:94, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores. Do not infer a score from self-report, XP, uptime, or message volume.",
       "status": "taxonomy_reconciled_evaluator_adapter_pending",
       "initial_state": "unrated",
       "domain_id": "rid_domain:95",
@@ -3750,10 +3854,10 @@
       "inclusion_criteria": "misunderstanding identification, correction and shared confirmation",
       "exclusion_criteria": "de-escalating emotional conflict; adapting tone proactively; dialogue continuity",
       "overlap_with": [
-        "rid_domain:94",
-        "rid_domain:54"
+        "rid_domain:54",
+        "rid_domain:94"
       ],
-      "separation_rule": "When evaluating alongside rid_domain:94, rid_domain:54, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
+      "separation_rule": "When evaluating alongside rid_domain:54, rid_domain:94, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     },
     {
       "id": 96,
@@ -3829,7 +3933,7 @@
       "domain": "reliability",
       "domain_label": "Commitment Reliability",
       "definition": "Demonstrates reliability through consistency, transparency, evidence, and honoring commitments over time.",
-      "evaluation_protocol": "Evaluate Commitment Reliability only against its declared measurement target: rate of honoring explicit commitments across independent repeated tasks and time windows. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (promise-to-outcome consistency, truthful status reporting and reproducible follow-through) and negative/control cases that test the exclusion criteria (single-task completion; surviving one interruption; subjective trust or personal worth). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. When evaluating alongside rid_domain:42, rid_domain:63, rid_domain:44, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores. Do not infer a score from self-report, XP, uptime, or message volume.",
+      "evaluation_protocol": "Evaluate Commitment Reliability only against its declared measurement target: rate of honoring explicit commitments across independent repeated tasks and time windows. Use a versioned held-out task set with explicit ground truth or acceptance criteria. Include cases that satisfy the inclusion criteria (promise-to-outcome consistency, truthful status reporting and reproducible follow-through) and negative/control cases that test the exclusion criteria (single-task completion; surviving one interruption; subjective trust or personal worth). Record correct outcomes, failure modes, sample count, confidence, evidence references, evaluator identity, timestamp, and rubric version. When evaluating alongside rid_domain:42, rid_domain:44, rid_domain:63, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores. Do not infer a score from self-report, XP, uptime, or message volume.",
       "status": "taxonomy_reconciled_evaluator_adapter_pending",
       "initial_state": "unrated",
       "domain_id": "rid_domain:99",
@@ -3839,10 +3943,10 @@
       "exclusion_criteria": "single-task completion; surviving one interruption; subjective trust or personal worth",
       "overlap_with": [
         "rid_domain:42",
-        "rid_domain:63",
-        "rid_domain:44"
+        "rid_domain:44",
+        "rid_domain:63"
       ],
-      "separation_rule": "When evaluating alongside rid_domain:42, rid_domain:63, rid_domain:44, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
+      "separation_rule": "When evaluating alongside rid_domain:42, rid_domain:44, rid_domain:63, score only this domain's stated measurement target; use separate observable outcomes and do not reuse one outcome as evidence for multiple scores."
     }
   ],
   "overlap_policy": {
