@@ -63,6 +63,16 @@ impl MemoryProposal {
     }
 }
 
+#[derive(Clone, Debug)]
+pub struct MemoryProposalCandidate {
+    pub kind: MemoryKind,
+    pub content: String,
+    pub tags: Vec<String>,
+    pub source_turn_reference: String,
+    pub provenance: String,
+    pub expires_at_unix: Option<u64>,
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 struct ProposalStore {
     schema_version: u16,
@@ -139,14 +149,17 @@ impl ProposalStore {
 
 pub fn create(
     directory: &Path,
-    kind: MemoryKind,
-    content: String,
-    tags: Vec<String>,
-    source_turn_reference: String,
-    provenance: String,
-    expires_at_unix: Option<u64>,
+    candidate: MemoryProposalCandidate,
     now: u64,
 ) -> Result<MemoryProposal> {
+    let MemoryProposalCandidate {
+        kind,
+        content,
+        tags,
+        source_turn_reference,
+        provenance,
+        expires_at_unix,
+    } = candidate;
     validate_candidate(
         kind,
         &content,
