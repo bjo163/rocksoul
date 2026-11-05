@@ -169,7 +169,7 @@ impl MemoryStore {
     }
 
     /// Load the current store, recover its last known-good backup when needed,
-    /// or migrate the legacy v1 document without modifying the original file.
+    /// or migrate a supported v1/v2/v3 document without modifying the original file.
     pub fn load(directory: &Path) -> Result<Self> {
         fs::create_dir_all(directory).with_context(|| {
             format!("could not create memory directory {}", directory.display())
@@ -832,11 +832,9 @@ fn apply_claim_status_ledger(directory: &Path, store: &mut MemoryStore) -> Resul
             bail!("claim status ledger contains an invalid event on line {}", index + 1);
         }
         if let Some(record) = store.records.iter_mut().find(|record| record.id == event.record_id) {
-            if event.occurred_at_unix >= record.updated_at_unix
-                && record.claim_status != event.status
-            {
+            if record.claim_status != event.status {
                 record.claim_status = event.status;
-                record.updated_at_unix = event.occurred_at_unix;
+                record.updated_at_unix = record.updated_at_unix.max(event.occurred_at_unix);
                 changed = true;
             }
         }
@@ -848,6 +846,9 @@ fn apply_claim_status_ledger(directory: &Path, store: &mut MemoryStore) -> Resul
 }
 
 pub fn supersede_claim(directory: &Path, record_id: &str, now: u64) -> Result<()> {
+    if now == 0 {
+        bail!("claim supersession requires a valid timestamp");
+    }
     fs::create_dir_all(directory)?;
     let _lock = acquire_store_lock(directory)?;
     let mut store = MemoryStore::load_unlocked(directory)?;
@@ -874,6 +875,9 @@ pub fn downgrade_revoked_receipt_claims(
     verification_id: &str,
     now: u64,
 ) -> Result<usize> {
+    if now == 0 || verification_id.trim().is_empty() {
+        bail!("receipt downgrade requires a valid receipt ID and timestamp");
+    }
     fs::create_dir_all(directory)?;
     let _lock = acquire_store_lock(directory)?;
     let mut store = MemoryStore::load_unlocked(directory)?;
