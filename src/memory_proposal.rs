@@ -1234,7 +1234,7 @@ mod tests {
         let directory = temp_dir();
         let proposal = create_one(&directory);
         fs::write(
-            directory.join("store.v3.json"),
+            directory.join("store.v4.json"),
             br#"{"schema_version":99,"revision":0,"records":[]}"#,
         )
         .unwrap();
