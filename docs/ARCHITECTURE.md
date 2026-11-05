@@ -45,9 +45,10 @@ The model adapter communicates with an OpenAI-compatible chat-completions endpoi
 The REPL cognition path currently:
 1. Creates a bounded turn request.
 2. Requests and validates a structured plan with one to three steps and required acceptance checks.
-3. Executes each step as another model call, not as an external action.
+3. Executes each step as another model call, not as a general external action.
 4. Requests a structured model reflection over the plan and generated outputs.
-5. Completes or fails the in-memory turn based on the structured reflection.
+5. Allows one narrowly scoped workspace-artifact intent to be dispatched through the CLI's exact human-approval boundary; the artifact executor independently reads back the published bytes and persists a verification receipt.
+6. Keeps broader multi-tool plan acceptance and complete model-conversation recovery out of scope.
 
 The maximum is five model calls, 16,000 aggregate output tokens, and 120 seconds per turn. The reflector is not an independent verifier. No shell, arbitrary function tools, plugin execution, or external side-effect executor is exposed in the seed runtime. Plan acceptance checks are not yet connected to independent observed effects; model-only turn completion does not award XP.
 
@@ -104,12 +105,11 @@ External agent-trajectory, memory-transfer, and generalization benchmarks are pl
 
 The workspace artifact command is a narrow first application service, not general agent tool access. Its executor retries only transient filesystem I/O errors for at most three attempts with 20/40 ms backoff; operation and XP idempotency identity is deterministic for the exact filename/content pair. Model-provider requests retry only connection/timeout failures and HTTP 408/425/429/5xx, at most three attempts, with each attempt charged to the shared turn call budget; in-flight requests and workspace approval/execution support cooperative Ctrl+C cancellation. Filesystem work is checked at safe pre-publication boundaries; an already-published artifact completes verification and receipt persistence. The planner may propose an optional typed artifact intent, but cannot approve it; dispatch always returns to the interactive CLI for exact human confirmation. A version-1 JSONL trace records workspace proposal, approval/denial, execution/failure, and verification events without artifact bodies. Trace appends use cross-process OS file locks, reject partial tails, and validate schema versions. The portable `fs2` adapter preserves the Rust 1.85 MSRV. Complete planner/turn/reflection state recovery remains unimplemented. Verification receipts are persisted as create-only JSON files and shown by `rocksoul workspace trace`. Filesystem checks fail closed for detected symlinks but do not claim protection against a hostile local process racing filesystem changes.
 
-The following are future roadmap stages, not available seed-release behavior:
+The following remain future work beyond the delivered Stage 1 workspace-artifact slice:
 
-- Independent verification of plan acceptance checks against observed runtime effects.
-- Typed application services and permissioned tool execution.
-- Provider-aware model retries, complete persisted turn traces, and user-interrupt wiring through workspace execution.
-- Memory migrations, concurrency control, retention, retrieval ranking, and evaluated context injection.
+- Generalize independent plan acceptance verification across multiple typed application services; do not infer task success from model reflection.
+- Persist and resume complete planner/turn/reflection conversation state across process restarts; current durable recovery covers the bounded workspace operation and verification/XP receipt replay, not model conversation history.
+- Memory migrations, concurrency control, retention/forgetting, retrieval ranking, and evaluated context injection.
 - Read-only capability registry, sandboxed workspace tools, and human approval for side effects.
 - Project builder, isolated candidate evolution, benchmarked promotion/rollback.
 - Multi-agent workforce and desktop/web/API interfaces.
