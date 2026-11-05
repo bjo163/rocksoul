@@ -820,12 +820,14 @@ async fn run_memory(command: MemoryCommand) -> Result<()> {
                 .transpose()?;
             let proposal = memory_proposal::create(
                 &paths.memory_dir,
-                kind,
-                content,
-                tags,
-                source_turn_reference,
-                provenance,
-                expires_at,
+                memory_proposal::MemoryProposalCandidate {
+                    kind,
+                    content,
+                    tags,
+                    source_turn_reference,
+                    provenance,
+                    expires_at_unix: expires_at,
+                },
                 now,
             )?;
             println!("Memory proposal saved for review; no memory record was written.");
