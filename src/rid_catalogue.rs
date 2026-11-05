@@ -122,11 +122,11 @@ impl RidCatalogue {
             self.catalogue_id == "rocksoul.rid.universal_stats.v2",
             "unexpected universal RID catalogue identifier"
         );
-        ensure!(self.catalogue_version == "2.3.1", "unexpected universal RID catalogue version");
+        ensure!(self.catalogue_version == "2.3.2", "unexpected universal RID catalogue version");
         ensure!(self.total_domains == 99 && self.total_stats == 99, "catalogue totals must both equal 99");
         ensure!(self.domains.len() == 99, "RID catalogue must contain exactly 99 domains");
         ensure!(self.entries.len() == 99, "RID catalogue must contain exactly 99 stats");
-        ensure!(self.overlap_pairs.len() == 137, "RID catalogue must contain exactly 137 unique overlap pairs");
+        ensure!(self.overlap_pairs.len() == 149, "RID catalogue must contain exactly 149 unique overlap pairs");
         ensure!(
             self.domain_stat_relationship.relationship == "one_to_one"
                 && self.domain_stat_relationship.independent_capability_count == 99
@@ -326,9 +326,9 @@ mod tests {
     #[test]
     fn overlap_graph_counts_and_domain_specific_rules_are_pinned() {
         let catalogue = RidCatalogue::embedded().unwrap();
-        assert_eq!(catalogue.overlap_policy.directed_edge_count, 274);
-        assert_eq!(catalogue.overlap_policy.unique_pair_count, 137);
-        assert_eq!(catalogue.overlap_pairs.len(), 137);
+        assert_eq!(catalogue.overlap_policy.directed_edge_count, 298);
+        assert_eq!(catalogue.overlap_policy.unique_pair_count, 149);
+        assert_eq!(catalogue.overlap_pairs.len(), 149);
         assert!(catalogue.overlap_pairs.iter().all(|pair| pair.contrast_rule.contains(pair.measurement_target_a.as_str()) && pair.contrast_rule.contains(pair.measurement_target_b.as_str())));
         assert_eq!(catalogue.domains.iter().map(|domain| domain.separation_rule.as_str()).collect::<std::collections::HashSet<_>>().len(), 99);
     }
