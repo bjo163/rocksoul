@@ -1,6 +1,6 @@
 # Rocksoul Project Progress
 
-**Last updated:** 2026-11-06 (Asia/Jakarta, Universal 99 independent domains overlap reconciliation v2.1.0 published)  
+**Last updated:** 2026-11-06 (Asia/Jakarta, Universal 99 domains deep overlap reconciliation v2.2.1 published)  
 **Repository:** [bjo163/rocksoul](https://github.com/bjo163/rocksoul)  
 **Canonical branch:** `main`  
 **Current principle:** One Core. Infinite Evolution.
@@ -199,33 +199,34 @@ A feature is complete only when:
 Never label an in-progress workflow as passed. Never close an issue because a branch or PR merely exists.
 
 
-## RID Universal 99 Domains & Stats — overlap reconciliation and runtime migration implemented (CI pending)
+## RID Universal 99 Domains & Stats — deep overlap reconciliation v2.2.1 (runtime migration implemented; CI pending)
 
 **Canonical taxonomy:** `data/rid/universal_stats.v2.json`  
-**Version:** `2.1.0`  
-**Commit:** `86b60a6d7c5545423c623f842c07ad7e4676f50b`  
+**Version:** `2.2.1`  
+**Taxonomy refinement commit:** `55d4bb68727f691b5558cd37155a5ae2a144ac9b`  
+**Runtime validator commit:** `1f943cc15aead7112f9cbda3cf4bcfa132bfd7ee`  
 **Human-readable audit:** [docs/rid-universal-stats.md](rid-universal-stats.md)
 
 Delivered:
 - Exactly 99 independent first-class domains and 99 linked stat dimensions; no nine-domain parent grouping.
-- All 99 domains now declare a primary measurement target, inclusion criteria, exclusion criteria, adjacent-overlap IDs, and a separation rule.
-- 223 directed overlap guards document the high-risk construct boundaries.
-- Added a no-double-counting evidence policy: one outcome cannot be reused to score multiple dimensions; multiple scores from one task require separately observable outcomes and separate rubric checks.
-- Refined ambiguous labels including POLICY_CHECK, BOUNDARY, AUTHORIZE, UNCERTAINTY_DETECTION, ERROR_DETECTION, VIEWPOINT_MODEL, GOAL_TRACK, COLLAB_CONTEXT, and RELIABILITY.
-- Catalogue version advanced to 2.1.0; IDs remain stable and all new measurements remain unrated.
-- Religious inspiration data remains separate from technical taxonomy.
+- Exactly 99 unique domain IDs, keys, labels, measurement targets, stat IDs, stat keys, and stat labels.
+- **274 directed overlap guards / 137 reciprocal pairs**, with sorted unique adjacency references and no self-links.
+- All 99 separation rules are distinct and explicitly state the primary target, inclusion boundary, exclusion boundary, adjacent constructs, and no-double-counting rule.
+- Evaluation protocols now embed their matching domain-specific separation rule.
+- Sharpened adjacent constructs: spatial localization vs. event memory; episodic encoding vs. direct recall vs. delayed retention; one-step inference vs. multi-step reasoning; rubric evaluation vs. independent verification; completion vs. handoff; interruption recovery vs. long-run reliability; and other high-risk pairs.
+- Stat 42 label refined from PERSIST to RESUME to make interruption recovery distinct from long-term commitment reliability; stable stat ID retained.
+- Runtime validator checks case-insensitive uniqueness, normalized keys, sorted/unique overlap lists, reciprocal edges, graph counts, domain/stat metadata parity, and unique separation rules.
+- Runtime embeds v2.2.1; schema-v1 profile archival migration preserves exact original bytes, legacy records, identity, and XP while initializing all universal scores as unrated.
+- Religious inspiration data remains separate from technical capability taxonomy.
 
-Audit findings / remaining work:
-- The taxonomy data and documentation are reconciled, but independent psychometric validation is not complete.
-- **Runtime migration code is now on main:** `src/rid_catalogue.rs` embeds universal v2.1.0; `StatId` uses `rid_stat:NN`; CLI and Cockpit show universal domain labels and construct boundaries.
-- Schema-v1 profiles are migrated to schema v2 with exact-byte backup `profile.json.v1.bak`, immutable 99-record legacy archive, preserved identity/XP, and 99 fresh unrated universal stats. Ordinal score mapping is prohibited.
-- Migration fixture and overlap-validator tests are committed; latest GitHub Actions run is still queued, so green CI is not yet claimed.
-- Do not map historical scores by ordinal slot. The migration code archives legacy records unchanged, creates new `rid_stat:NN` measurements as unrated, preserves identity and XP, and keeps a byte-for-byte pre-migration backup.
-- CI and Rust test results for this taxonomy-only change have not yet been verified.
+Audit conclusions and remaining gates:
+- No duplicate IDs, keys, labels, primary measurement targets, or separation rules were found in the current 99-entry catalogue.
+- Correlation between capabilities is expected; the control is distinct measurement targets and non-reused outcome evidence, not a claim that capabilities are statistically independent.
+- Structural validation and editorial boundary review do **not** constitute independent psychometric validation. Trusted evaluator design, held-out benchmark quality, inter-rater reliability, and empirical discriminant validity remain pending.
+- Latest CI must be checked against the exact current `main` SHA before claiming green status. No issue is closed solely because implementation commits exist.
 
-Next implementation slice:
-1. Migrate Rust catalogue types/validator to v2.1.0 and validate 99 unique domain IDs, keys, stat IDs, and complete overlap metadata.
-2. Add explicit schema-v1 profile migration with immutable legacy stat archive and fresh unrated universal records.
-3. Update CLI, Cockpit, tests, docs and Windows CI to display universal domain names only.
-4. Add overlap-regression tests that reject duplicate measurement targets and evidence double-counting.
-5. Keep evaluator integration pending until a trusted independent evaluator and domain-specific rubrics exist.
+Next:
+1. Verify exact-head Linux and Windows CI for v2.2.1 and fix any failures.
+2. Design trusted per-domain evaluator adapters with held-out benchmark suites, negative controls, calibrated confidence, and auditable evidence.
+3. Run independent expert review and empirical discriminant-validity studies before treating scores as comparable capability measurements.
+4. Keep all 99 dimensions `unrated` until trusted evidence exists; do not map historical Asmaul Husna scores by ordinal slot.
