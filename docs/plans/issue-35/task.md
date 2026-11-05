@@ -1,6 +1,6 @@
 # Issue #35 — Autonomous task breakdown
 
-**Base:** Refresh `main` immediately before starting. Planned base at handoff: `260d29852bb30f2f63129271a07cd368fafccc3f`.  
+**Base:** Refresh `main` immediately before starting. Planned base at handoff: `b76bf36740056e41933f8510c22a8376f49d997a`.  
 **Branch:** `feat/stage1-crash-window-recovery`  
 **PR base:** `main` only.
 
