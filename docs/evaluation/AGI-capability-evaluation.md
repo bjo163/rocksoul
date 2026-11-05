@@ -1,6 +1,6 @@
 # AGI-Oriented Capability Evaluation
 
-**Status:** Core Integrity v1 is implemented. External agent and generalization suites are planned or candidate integrations, not integrated benchmarks.
+**Status:** Offline deterministic Core Integrity v1.3.0 is implemented. External agent and generalization suites are planned or candidate integrations, not integrated benchmarks.
 
 ## Purpose and limits
 
@@ -10,7 +10,7 @@ Do not publish one scalar "AGI score". Publish a versioned capability vector wit
 
 ## Evaluation layers
 
-1. **Core Integrity (offline, deterministic):** turn lifecycle and retry invariants, terminal-state immutability, verified-XP evidence gating and replay behavior, RID identity and 99-stat catalogue integrity, level curve, and explicit-memory baseline.
+1. **Core Integrity v1.3.0 (offline, deterministic):** turn lifecycle and retry invariants, terminal-state immutability, verified-XP evidence gating and replay behavior, RID identity and 99-stat catalogue integrity, level curve, explicit-memory baseline, workspace crash-window recovery, replay/receipt idempotency, immutable receipt conflict and malformed receipt preservation.
 2. **Agent trajectories (planned):** planning quality, permissioned tool selection, observed task success, verifier precision/recall, retries, recovery, action efficiency, and truthful completion reporting.
 3. **Learning and generalization (planned):** memory recall, provenance, retention, forgetting, continual-learning stability/plasticity, held-out cross-domain transfer, world-model prediction, and calibration.
 4. **External benchmarks (candidate adapters):** see `data/evaluation/benchmark-manifest.v1.json`. Candidate status does not mean downloaded, licensed, integrated, validated, or scored.
@@ -40,6 +40,10 @@ The suite is offline and deterministic apart from report timestamp/platform meta
 - XP award only after required evidence passes.
 - Rejected required evidence awards no XP.
 - Replaying the same verification ID does not duplicate XP.
+- Workspace recovery after artifact publication but before XP persistence re-verifies the exact existing artifact and records XP once.
+- Repeated replay preserves one XP event, stable receipt and bounded trace behavior.
+- Conflicting immutable receipts and malformed receipt JSON fail closed without overwriting evidence.
+- Versioned acceptance checks reject unsupported versions, missing required evidence, duplicate/blank IDs, oversized fields and more than 64 checks before XP mutation.
 - RID initializes 99 unrated stat slots.
 - The embedded catalogue contains 99 entries with unique technical-stat keys.
 - Level thresholds match the deterministic v1 curve.
@@ -70,7 +74,7 @@ Unknown fields must be explicitly unavailable, never fabricated.
 
 ## Roadmap
 
-- [x] Deterministic Core Integrity v1 and JSON report.
+- [x] Deterministic Core Integrity v1.3.0 and JSON report.
 - [ ] Agent trajectory suite with sandboxed tools and independent verifiers.
 - [ ] Memory retention/transfer suite with held-out tasks.
 - [ ] Trusted RID evaluator with rubric-specific evidence aggregation.
