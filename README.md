@@ -38,7 +38,7 @@ The current seed runtime includes:
 - **Native Rust CLI and REPL** — one Cargo project and one executable.
 - **Model connectivity** — OpenAI-compatible chat completions, including local endpoints such as Ollama.
 - **Portable root** — configuration and runtime state live beside the executable, not scattered through AppData or the user profile.
-- **RID profile** — local instance identity, age, append-only XP events, deterministic level progression, and 99 Universal Stats across 99 independent capability domains (taxonomy v2.2.1; overlap validation hardened and runtime migration implemented, CI verification pending). Canonical taxonomy: `data/rid/universal_stats.v2.json`; the separate Asmaul Husna reference catalogue is not used as a technical scoring map.
+- **RID profile** — local instance identity, age, append-only XP events, deterministic level progression, and 99 Universal Stats across 99 independent capability domains (taxonomy v2.3.0; overlap validation hardened and runtime migration implemented, CI verification pending). Canonical taxonomy: `data/rid/universal_stats.v2.json`; the separate Asmaul Husna reference catalogue is not used as a technical scoring map.
 - **Cognitive Cockpit** — keyboard-first Ratatui terminal interface.
 - **Bounded cognition loop** — structured planning, up to three model-only reasoning steps, a structured reflector, and explicit per-turn budgets.
 - **Explicit local memory** — versioned local JSON store with retention metadata, dry-run expiry pruning, managed forgetting tombstones, provenance-aware ranked retrieval, explicit claim status, kernel-receipt-gated task outcomes, and offline retrieval evaluation.
