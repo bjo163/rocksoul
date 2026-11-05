@@ -115,7 +115,8 @@ impl Snapshot {
             rid_profile,
             rid_error,
             catalogue: RidCatalogue::embedded().ok(),
-            evaluation: crate::eval::latest().map_err(|_| "evaluation report is unreadable".to_owned()),
+            evaluation: crate::eval::latest()
+                .map_err(|_| "evaluation report is unreadable".to_owned()),
         })
     }
 
@@ -838,7 +839,13 @@ fn render_diagnostics(frame: &mut Frame<'_>, area: Rect, app: &App) {
         Line::from(match &app.snapshot.evaluation {
             Ok(Some(report)) if !report.passed => format!(
                 "Failed checks: {}",
-                report.checks.iter().filter(|check| !check.passed).map(|check| check.id.as_str()).collect::<Vec<_>>().join(", ")
+                report
+                    .checks
+                    .iter()
+                    .filter(|check| !check.passed)
+                    .map(|check| check.id.as_str())
+                    .collect::<Vec<_>>()
+                    .join(", ")
             ),
             Ok(Some(_)) => "Failed checks: none".to_owned(),
             Ok(None) => "Evaluation report: not run".to_owned(),
