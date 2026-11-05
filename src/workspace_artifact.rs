@@ -159,13 +159,7 @@ impl WorkspaceArtifactService {
     where
         G: FnOnce() -> Result<()>,
     {
-        self.execute_approved_with_hooks(
-            proposal,
-            approval,
-            cancellation,
-            || {},
-            after_publish,
-        )
+        self.execute_approved_with_hooks(proposal, approval, cancellation, || {}, after_publish)
     }
 
     fn execute_approved_with_publish_hook<F>(
@@ -178,9 +172,13 @@ impl WorkspaceArtifactService {
     where
         F: FnOnce(),
     {
-        self.execute_approved_with_hooks(proposal, approval, cancellation, before_publish, || {
-            Ok(())
-        })
+        self.execute_approved_with_hooks(
+            proposal,
+            approval,
+            cancellation,
+            before_publish,
+            || Ok(()),
+        )
     }
 
     fn execute_approved_with_hooks<F, G>(
@@ -222,9 +220,14 @@ impl WorkspaceArtifactService {
                         .context("existing artifact is not valid UTF-8")?,
                 })
             }
-            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
-                self.create_and_verify(&root, &target, proposal, cancellation, before_publish, after_publish)
-            }
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => self.create_and_verify(
+                &root,
+                &target,
+                proposal,
+                cancellation,
+                before_publish,
+                after_publish,
+            ),
             Err(error) => Err(error).context("could not inspect artifact target"),
         }
     }
@@ -448,7 +451,10 @@ mod tests {
     #[test]
     fn simulated_crash_after_publish_keeps_artifact_for_idempotent_replay() {
         let root = workspace();
-        let item = proposal("crash-window.txt", "published before simulated process loss");
+        let item = proposal(
+            "crash-window.txt",
+            "published before simulated process loss",
+        );
         let service = WorkspaceArtifactService::new(&root);
         let result = service.execute_approved_with_hooks(
             &item,
