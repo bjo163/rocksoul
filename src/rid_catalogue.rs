@@ -3,71 +3,65 @@ use std::collections::HashSet;
 use anyhow::{Context, Result, ensure};
 use serde::Deserialize;
 
-const EMBEDDED_CATALOGUE: &str = include_str!("../data/rid/asmaul_husna.v1.json");
+const EMBEDDED_CATALOGUE: &str = include_str!("../data/rid/universal_stats.v2.json");
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct RidCatalogue {
     pub schema_version: u16,
     pub catalogue_id: String,
     pub catalogue_version: String,
-    pub enumeration: EnumerationMetadata,
+    pub total_domains: usize,
+    pub total_stats: usize,
+    pub scoring: ScoringPolicy,
+    pub domains: Vec<UniversalDomain>,
     pub entries: Vec<CatalogueEntry>,
 }
 
 #[derive(Clone, Debug, Deserialize)]
-pub struct EnumerationMetadata {
-    pub selected_variant: String,
-    pub primary_reference: String,
-    pub primary_reference_url: String,
-    pub primary_reference_grade_as_displayed: String,
-    pub corroborating_count_report: String,
-    pub corroborating_count_report_url: String,
-    pub corroborating_report_grade_as_displayed: String,
-    pub corroborating_report_note: String,
-    pub selection_note: String,
-    pub translation_note: String,
-    pub review_status: String,
+pub struct ScoringPolicy {
+    pub default_minimum_samples: u32,
+    pub safety_sensitive_evaluation_minimum_samples: u32,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+pub struct UniversalDomain {
+    pub id: String,
+    pub key: String,
+    pub label: String,
+    pub definition: String,
+    pub stat_id: String,
+    pub slot: u8,
+    pub measurement_target: String,
+    pub inclusion_criteria: String,
+    pub exclusion_criteria: String,
+    pub overlap_with: Vec<String>,
+    pub separation_rule: String,
 }
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct CatalogueEntry {
-    pub slot_id: u8,
-    pub catalogue_entry_id: String,
-    pub name: CatalogueName,
-    pub technical_stat: TechnicalStat,
-}
-
-#[derive(Clone, Debug, Deserialize)]
-pub struct CatalogueName {
-    pub arabic: String,
-    pub transliteration: String,
-    pub gloss: Gloss,
-    pub gloss_status: String,
-}
-
-#[derive(Clone, Debug, Deserialize)]
-pub struct Gloss {
-    pub id: String,
-    pub en: String,
-}
-
-#[derive(Clone, Debug, Deserialize)]
-pub struct TechnicalStat {
+    pub id: u8,
+    pub stat_id: String,
     pub key: String,
     pub label: String,
     pub domain: String,
     pub domain_label: String,
     pub definition: String,
     pub evaluation_protocol: String,
-    pub minimum_samples: u32,
-    pub score_rubric: String,
     pub status: String,
+    pub initial_state: String,
+    pub domain_id: String,
+    pub measurement_target: String,
+    pub inclusion_criteria: String,
+    pub exclusion_criteria: String,
+    pub overlap_with: Vec<String>,
+    pub separation_rule: String,
 }
 
 impl RidCatalogue {
     pub fn embedded() -> Result<Self> {
         let catalogue: Self = serde_json::from_str(EMBEDDED_CATALOGUE)
-            .context("embedded RID catalogue is not valid JSON")?;
+            .context("embedded universal RID catalogue is not valid JSON")?;
         catalogue.validate()?;
         Ok(catalogue)
     }
@@ -75,65 +69,88 @@ impl RidCatalogue {
     pub fn by_slot(&self, slot_id: u8) -> Option<&CatalogueEntry> {
         self.entries
             .get(usize::from(slot_id.saturating_sub(1)))
-            .filter(|entry| entry.slot_id == slot_id)
+            .filter(|entry| entry.id == slot_id)
+    }
+
+    pub fn minimum_samples_for_slot(&self, slot_id: u8) -> Option<u32> {
+        self.by_slot(slot_id)?;
+        let safety_sensitive = (56..=66).contains(&slot_id);
+        Some(if safety_sensitive {
+            self.scoring.safety_sensitive_evaluation_minimum_samples
+        } else {
+            self.scoring.default_minimum_samples
+        })
     }
 
     pub fn validate(&self) -> Result<()> {
-        ensure!(self.schema_version == 1, "unsupported RID catalogue schema");
+        ensure!(self.schema_version == 2, "unsupported universal RID catalogue schema");
         ensure!(
-            self.catalogue_id == "rocksoul.rid.asmaul_husna_inspired.v1",
-            "unexpected RID catalogue identifier"
+            self.catalogue_id == "rocksoul.rid.universal_stats.v2",
+            "unexpected universal RID catalogue identifier"
         );
+        ensure!(self.catalogue_version == "2.1.0", "unexpected universal RID catalogue version");
+        ensure!(self.total_domains == 99 && self.total_stats == 99, "catalogue totals must both equal 99");
+        ensure!(self.domains.len() == 99, "RID catalogue must contain exactly 99 domains");
+        ensure!(self.entries.len() == 99, "RID catalogue must contain exactly 99 stats");
         ensure!(
-            self.entries.len() == 99,
-            "RID catalogue must contain exactly 99 entries"
-        );
-        ensure!(
-            !self.catalogue_version.trim().is_empty(),
-            "RID catalogue version must not be empty"
-        );
-        ensure!(
-            !self.enumeration.primary_reference_url.trim().is_empty()
-                && !self
-                    .enumeration
-                    .corroborating_count_report_url
-                    .trim()
-                    .is_empty()
-                && !self.enumeration.review_status.trim().is_empty(),
-            "RID catalogue source metadata is incomplete"
+            self.scoring.default_minimum_samples > 0
+                && self.scoring.safety_sensitive_evaluation_minimum_samples
+                    >= self.scoring.default_minimum_samples,
+            "RID scoring sample policy is invalid"
         );
 
-        let mut keys = HashSet::with_capacity(99);
+        let mut domain_ids = HashSet::with_capacity(99);
+        let mut domain_keys = HashSet::with_capacity(99);
+        let mut stat_ids = HashSet::with_capacity(99);
+        let mut stat_keys = HashSet::with_capacity(99);
+        for (index, domain) in self.domains.iter().enumerate() {
+            let slot = index as u8 + 1;
+            ensure!(domain.slot == slot, "RID domain slot order mismatch at {slot}");
+            ensure!(domain.id == format!("rid_domain:{slot:02}"), "RID domain ID mismatch at {slot}");
+            ensure!(domain.stat_id == format!("rid_stat:{slot:02}"), "RID domain stat link mismatch at {slot}");
+            ensure!(
+                !domain.key.trim().is_empty()
+                    && !domain.label.trim().is_empty()
+                    && !domain.definition.trim().is_empty()
+                    && !domain.measurement_target.trim().is_empty()
+                    && !domain.inclusion_criteria.trim().is_empty()
+                    && !domain.exclusion_criteria.trim().is_empty()
+                    && !domain.separation_rule.trim().is_empty(),
+                "RID domain construct metadata is incomplete at {slot}"
+            );
+            ensure!(domain_ids.insert(domain.id.as_str()), "duplicate RID domain ID: {}", domain.id);
+            ensure!(domain_keys.insert(domain.key.as_str()), "duplicate RID domain key: {}", domain.key);
+        }
+
         for (index, entry) in self.entries.iter().enumerate() {
-            let expected = index as u8 + 1;
+            let slot = index as u8 + 1;
+            let domain = &self.domains[index];
+            ensure!(entry.id == slot, "RID stat slot order mismatch at {slot}");
+            ensure!(entry.stat_id == format!("rid_stat:{slot:02}"), "RID stat ID mismatch at {slot}");
+            ensure!(entry.domain_id == domain.id, "RID stat/domain link mismatch at {slot}");
+            ensure!(entry.domain == domain.key && entry.domain_label == domain.label, "RID stat domain metadata mismatch at {slot}");
             ensure!(
-                entry.slot_id == expected,
-                "RID catalogue slot order mismatch at index {}",
-                index + 1
+                entry.measurement_target == domain.measurement_target
+                    && entry.inclusion_criteria == domain.inclusion_criteria
+                    && entry.exclusion_criteria == domain.exclusion_criteria
+                    && entry.overlap_with == domain.overlap_with
+                    && entry.separation_rule == domain.separation_rule,
+                "RID stat construct-boundary metadata mismatch at {slot}"
             );
             ensure!(
-                entry.catalogue_entry_id == format!("asmaul_husna:{expected:02}"),
-                "RID catalogue ID mismatch at slot {expected}"
+                !entry.key.trim().is_empty()
+                    && !entry.label.trim().is_empty()
+                    && !entry.definition.trim().is_empty()
+                    && !entry.evaluation_protocol.trim().is_empty()
+                    && entry.initial_state == "unrated",
+                "RID stat metadata or initial state is invalid at {slot}"
             );
-            ensure!(
-                !entry.name.arabic.trim().is_empty()
-                    && !entry.name.transliteration.trim().is_empty()
-                    && !entry.name.gloss.id.trim().is_empty()
-                    && !entry.name.gloss.en.trim().is_empty(),
-                "RID name metadata is incomplete at slot {expected}"
-            );
-            ensure!(
-                !entry.technical_stat.key.trim().is_empty()
-                    && !entry.technical_stat.definition.trim().is_empty()
-                    && !entry.technical_stat.evaluation_protocol.trim().is_empty()
-                    && entry.technical_stat.minimum_samples > 0,
-                "RID technical stat metadata is incomplete at slot {expected}"
-            );
-            ensure!(
-                keys.insert(entry.technical_stat.key.as_str()),
-                "duplicate RID technical stat key: {}",
-                entry.technical_stat.key
-            );
+            ensure!(stat_ids.insert(entry.stat_id.as_str()), "duplicate RID stat ID: {}", entry.stat_id);
+            ensure!(stat_keys.insert(entry.key.as_str()), "duplicate RID stat key: {}", entry.key);
+            for adjacent in &entry.overlap_with {
+                ensure!(domain_ids.contains(adjacent.as_str()), "unknown overlap domain {adjacent} at stat {slot}");
+                ensure!(adjacent != &entry.domain_id, "domain cannot overlap itself at stat {slot}");
+            }
         }
 
         Ok(())
@@ -145,53 +162,44 @@ mod tests {
     use super::RidCatalogue;
 
     #[test]
-    fn embedded_catalogue_has_99_ordered_unique_stat_dimensions() {
+    fn embedded_catalogue_has_99_independent_domains_and_stats() {
         let catalogue = RidCatalogue::embedded().unwrap();
-
+        assert_eq!(catalogue.domains.len(), 99);
         assert_eq!(catalogue.entries.len(), 99);
-        assert_eq!(
-            catalogue.by_slot(1).unwrap().technical_stat.key,
-            "input_modality_detection"
-        );
-        assert_eq!(
-            catalogue.by_slot(99).unwrap().technical_stat.key,
-            "long_horizon_trustworthiness"
-        );
-        assert!(catalogue.by_slot(0).is_none());
-        assert!(catalogue.by_slot(100).is_none());
+        assert_eq!(catalogue.by_slot(1).unwrap().label, "SEE");
+        assert_eq!(catalogue.by_slot(99).unwrap().label, "RELIABILITY");
+        assert_eq!(catalogue.by_slot(0), None);
+        assert_eq!(catalogue.by_slot(100), None);
     }
 
     #[test]
-    fn catalogue_discloses_enumeration_grade_and_review_boundary() {
+    fn every_domain_has_distinct_construct_boundaries() {
         let catalogue = RidCatalogue::embedded().unwrap();
-
-        assert_eq!(
-            catalogue.enumeration.primary_reference_grade_as_displayed,
-            "Da'if (Darussalam)"
-        );
-        assert_eq!(
-            catalogue
-                .enumeration
-                .corroborating_report_grade_as_displayed,
-            "Sahih (Darussalam)"
-        );
-        assert_eq!(
-            catalogue.enumeration.review_status,
-            "requires_religious_and_language_review"
-        );
+        assert!(catalogue.domains.iter().all(|domain| {
+            !domain.measurement_target.is_empty()
+                && !domain.inclusion_criteria.is_empty()
+                && !domain.exclusion_criteria.is_empty()
+                && !domain.separation_rule.is_empty()
+        }));
     }
 
     #[test]
-    fn every_slot_has_a_distinct_technical_stat_key() {
+    fn overlap_references_are_valid_and_never_self_referential() {
         let catalogue = RidCatalogue::embedded().unwrap();
-        let mut keys = catalogue
-            .entries
-            .iter()
-            .map(|entry| entry.technical_stat.key.as_str())
-            .collect::<Vec<_>>();
-        keys.sort_unstable();
-        keys.dedup();
+        for domain in &catalogue.domains {
+            assert!(!domain.overlap_with.contains(&domain.id));
+            for adjacent in &domain.overlap_with {
+                assert!(catalogue.domains.iter().any(|candidate| &candidate.id == adjacent));
+            }
+        }
+    }
 
-        assert_eq!(keys.len(), 99);
+    #[test]
+    fn safety_sensitive_domains_use_higher_sample_floor() {
+        let catalogue = RidCatalogue::embedded().unwrap();
+        assert_eq!(catalogue.minimum_samples_for_slot(1), Some(20));
+        assert_eq!(catalogue.minimum_samples_for_slot(56), Some(30));
+        assert_eq!(catalogue.minimum_samples_for_slot(66), Some(30));
+        assert_eq!(catalogue.minimum_samples_for_slot(100), None);
     }
 }
