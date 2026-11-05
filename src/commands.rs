@@ -1268,13 +1268,17 @@ mod tests {
             UserApproval::from_typed_confirmation(&proposal, &proposal.approval_phrase()).unwrap();
         let service = WorkspaceArtifactService::new(&paths.workspace_dir);
 
-        // Deterministically stop after real publication and read-back, before the
-        // command's verification/XP persistence boundary.
-        let failed = service.execute_approved_with_after_publish_hook(
+        // Publish and independently read back the real artifact, then inject
+        // process loss at the command completion boundary before XP persistence.
+        let published = service
+            .execute_approved(&proposal, &approval, &CancellationToken::default())
+            .unwrap();
+        let failed = complete_workspace_operation_with_hook(
+            &paths,
             &proposal,
-            &approval,
-            &CancellationToken::default(),
-            || anyhow::bail!("simulated process loss after artifact publication"),
+            published,
+            1_700_000_001,
+            || anyhow::bail!("simulated process loss after artifact read-back"),
         );
         assert!(failed.is_err());
         assert_eq!(
@@ -1299,7 +1303,7 @@ mod tests {
             &paths,
             &proposal,
             replay,
-            1_700_000_001,
+            1_700_000_002,
             || Ok(()),
         )
         .unwrap();
@@ -1327,7 +1331,7 @@ mod tests {
             &paths,
             &proposal,
             replay_again,
-            1_700_000_002,
+            1_700_000_003,
             || Ok(()),
         )
         .unwrap();
