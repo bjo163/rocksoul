@@ -103,7 +103,7 @@ PR #34 merged at `0f5ca4bc4d1c65322cb02963fcc23c53fa990f5d`; Linux/Windows CI #2
 - Create-only UTF-8 `.txt` artifact publication and independent read-back verification.
 - Bounded retries, cancellation checkpoints, content-free traces and persisted verification receipts.
 - XP only after trusted verification; replay idempotency.
-- Issue #35 / PR #53 adds a bounded versioned `AcceptanceCheckSet` schema v1 and crash-window recovery tests; until PR #53 is merged, treat those changes as proposed branch behavior, not accepted main behavior.
+- Issue #35 / PR #53 is merged: bounded versioned `AcceptanceCheckSet` schema v1, deterministic post-publication crash recovery, fail-closed receipt conflict/corruption handling, and Core Integrity v1.3.0 checks are accepted on main.
 - Still not implemented: full planner/turn/reflection conversation recovery across restart, acceptance-check adapters for additional typed services, arbitrary shell or unrestricted tool access.
 
 ### Stage 2 — persistent memory (merged main baseline)
@@ -156,10 +156,10 @@ The final validated head passed:
 
 ## 6. Completed implementation — issue #35 / PR #53
 
-**PR:** https://github.com/bjo163/rocksoul/pull/53 (draft; not merged at this checkpoint)  
-**Issue:** https://github.com/bjo163/rocksoul/issues/35 (open)  
-**Base:** `b76bf36740056e41933f8510c22a8376f49d997a`  
-**Latest branch head at documentation checkpoint:** `8db6160f4c07b120195068bd137da29f459dec2a`
+**PR:** https://github.com/bjo163/rocksoul/pull/53 (merged)  
+**Issue:** https://github.com/bjo163/rocksoul/issues/35 (closed)  
+**Validated PR head:** `c9c605d6896930e5a36f30bb8d3fbe2ecfdd5484`  
+**Merge commit on main:** `458df81f87ae0b328dbc12c2b2829ca3a0ff75d9`
 
 The merged implementation contains:
 - A private, test-only post-read-back failpoint; production passes a no-op and there is no CLI/environment/config switch.
@@ -174,13 +174,12 @@ Final CI [#42044132321](https://github.com/bjo163/rocksoul/actions/runs/42044132
 
 Optional temp-file/rename interruption injection was reviewed but not added: the current receipt publication uses create-only temporary file + sync + hard-link and has no existing deterministic seam. Do not introduce a production failpoint or broad filesystem abstraction solely for this optional subcase.
 
-### Next actions for the local agent
-1. Fetch PR #53 and current branch head; compare against the exact PR base.
-2. Run/inspect fresh Linux and Windows CI for the latest head. Fix formatting, Clippy, tests, Core Integrity, memory retrieval, Windows packaging or smoke failures.
-3. Inspect all PR diffs and verify the new evaluation check IDs appear in the generated Core Integrity report.
-4. Update PR #53 body with the exact validated head and CI run ID; mark ready only after checks pass.
-5. Merge PR #53 to main, verify the merge commit is on latest main, then close issue #35 with evidence.
-6. Update this handoff and progress snapshot with the actual merge SHA and CI run IDs. Never mark issue #35 complete before merge and main verification.
+### Merged acceptance evidence
+1. PR #53 is merged and issue #35 is closed.
+2. Main was verified at merge SHA `458df81f87ae0b328dbc12c2b2829ca3a0ff75d9`.
+3. Final CI #42044132321 is green on Linux and Windows, including packaging and installer/portable smoke.
+4. Core Integrity v1.3.0 reports 23/23 checks passed; Linux has 108 tests and Windows has 107 tests.
+5. Progress, roadmap, README and the Issue #9 execution plan are included in the post-merge documentation handoff.
 
 ## 7. Build, test and validate
 
