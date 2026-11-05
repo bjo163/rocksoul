@@ -186,7 +186,10 @@ mod tests {
     fn read_recent_rejects_oversized_trace_before_reading() {
         let path = std::env::temp_dir().join(format!(
             "rocksoul-trace-large-{}.jsonl",
-            SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos()
+            SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
         ));
         fs::write(&path, vec![b'x'; 32]).unwrap();
         assert!(read_recent(&path, 16, 10).is_err());
