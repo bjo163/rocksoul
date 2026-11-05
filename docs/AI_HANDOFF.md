@@ -288,7 +288,7 @@ For every new task, write/update an execution plan with:
 ## 12. Active handoff — Issue #9 implementation in progress
 
 **Issue:** [#9 Cognitive Cockpit](https://github.com/bjo163/rocksoul/issues/9)  
-**PR:** Refresh after final task-branch head validation (earlier draft PR #55 was superseded)  
+**Draft PR:** [#63](https://github.com/bjo163/rocksoul/pull/63)  
 **Task branch:** `feat/tui-cockpit-completion`  
 **PR base SHA:** `0e89bcec834880d3e6aca3f066507c44834c2eb7`  
 **Current task branch head:** c4a58d986a28c01a1ee8208d53f9e2eefeb45259 (final-head CI pending)
@@ -308,7 +308,7 @@ For every new task, write/update an execution plan with:
 
 - Linux [CI #42059872680](https://github.com/bjo163/rocksoul/actions/runs/42059872680): formatting, Clippy, 113 tests, Core Integrity 23/23 and memory retrieval precision@2/recall@2 1.000 passed.
 - Windows [CI #42059339120](https://github.com/bjo163/rocksoul/actions/runs/42059339120): release build, tests, installer/portable packaging, portable smoke and installer install/init/uninstall-preservation smoke passed on the same functional code before the latest task-selection and test-only commits. Final-head Windows validation is still required.
-- PR #55 is draft and issue #9 remains open. Do not merge or close until final-head CI and remaining acceptance criteria pass.
+- PR #63 is draft and issue #9 remains open. Do not merge or close until final-head CI and remaining acceptance criteria pass.
 
 ### Remaining work — continue in this order
 
