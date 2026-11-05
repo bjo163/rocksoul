@@ -126,7 +126,11 @@ pub fn read(path: &Path) -> Result<Vec<serde_json::Value>> {
 
 /// Read a bounded newest-first window for interactive inspectors.
 /// Refuse oversized files rather than allocating without limit in the TUI.
-pub fn read_recent(path: &Path, max_bytes: u64, max_records: usize) -> Result<Vec<serde_json::Value>> {
+pub fn read_recent(
+    path: &Path,
+    max_bytes: u64,
+    max_records: usize,
+) -> Result<Vec<serde_json::Value>> {
     if !path.exists() {
         return Ok(Vec::new());
     }
@@ -151,7 +155,7 @@ mod tests {
     };
 
     use super::{TaskTraceEvent, append, read, read_recent};
-    
+
     #[test]
     fn read_recent_returns_newest_records_first_and_respects_limit() {
         let path = std::env::temp_dir().join(format!(
@@ -159,7 +163,14 @@ mod tests {
             SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos()
         ));
         for index in 0..3 {
-            append(&path, &format!("op-{index}"), TaskTraceEvent::Proposed, "note.txt", "safe metadata").unwrap();
+            append(
+                &path,
+                &format!("op-{index}"),
+                TaskTraceEvent::Proposed,
+                "note.txt",
+                "safe metadata",
+            )
+            .unwrap();
         }
         let records = read_recent(&path, 16_384, 2).unwrap();
         assert_eq!(records.len(), 2);
