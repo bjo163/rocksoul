@@ -20,6 +20,7 @@ use crate::{
     rid::{RuhProfile, StatId},
     rid_catalogue::{CatalogueEntry, RidCatalogue},
     rid_store, task_trace,
+    tui_preferences::{DensityMode, LocaleMode, PREFERENCES_FILE, ThemeMode, TuiPreferences},
 };
 
 const BG: Color = Color::Rgb(15, 17, 18);
@@ -105,6 +106,7 @@ struct Snapshot {
     memory_evaluation:
         std::result::Result<Option<crate::eval::MemoryRetrievalEvaluationReport>, String>,
     memory_store_health: std::result::Result<MemoryStoreHealth, String>,
+    preferences: std::result::Result<TuiPreferences, String>,
 }
 
 impl Snapshot {
@@ -118,6 +120,8 @@ impl Snapshot {
         } else {
             (None, None)
         };
+        let preferences = TuiPreferences::load(&paths.config_dir.join(PREFERENCES_FILE))
+            .map_err(|_| "preferences are invalid or unsupported".to_owned());
         let memory_store_health = MemoryStore::load(&paths.memory_dir)
             .map(|store| MemoryStoreHealth {
                 schema_version: store.schema_version,
@@ -136,6 +140,7 @@ impl Snapshot {
             memory_evaluation: crate::eval::latest_memory_retrieval()
                 .map_err(|_| "memory retrieval report is unreadable".to_owned()),
             memory_store_health,
+            preferences,
         })
     }
 
@@ -161,6 +166,8 @@ struct App {
     help_open: bool,
     quit: bool,
     snapshot: Snapshot,
+    preferences: TuiPreferences,
+    preferences_error: bool,
     memory_query: String,
     memory_search_active: bool,
     memory_detail_open: bool,
@@ -182,6 +189,8 @@ impl App {
             help_open: false,
             quit: false,
             snapshot,
+            preferences,
+            preferences_error,
             memory_query: String::new(),
             memory_search_active: false,
             memory_detail_open: false,
@@ -265,6 +274,27 @@ impl App {
             KeyCode::Char('f') if self.screen == Screen::Memory => {
                 self.memory_kind_filter = next_memory_kind(self.memory_kind_filter)
             }
+            KeyCode::Char('t') if self.screen == Screen::Settings => {
+                self.preferences.theme = match self.preferences.theme {
+                    ThemeMode::Dark => ThemeMode::Light,
+                    ThemeMode::Light => ThemeMode::Dark,
+                };
+                self.persist_preferences();
+            }
+            KeyCode::Char('d') if self.screen == Screen::Settings => {
+                self.preferences.density = match self.preferences.density {
+                    DensityMode::Compact => DensityMode::Comfortable,
+                    DensityMode::Comfortable => DensityMode::Compact,
+                };
+                self.persist_preferences();
+            }
+            KeyCode::Char('l') if self.screen == Screen::Settings => {
+                self.preferences.locale = match self.preferences.locale {
+                    LocaleMode::English => LocaleMode::Indonesian,
+                    LocaleMode::Indonesian => LocaleMode::English,
+                };
+                self.persist_preferences();
+            }
             KeyCode::Char('c') if self.screen == Screen::Memory => {
                 self.memory_claim_filter = next_memory_claim_status(self.memory_claim_filter)
             }
@@ -279,6 +309,11 @@ impl App {
             }
             _ => {}
         }
+    }
+
+    fn persist_preferences(&mut self) {
+        let path = self.snapshot.paths.config_dir.join(PREFERENCES_FILE);
+        self.preferences_error = self.preferences.save(&path).is_err();
     }
 
     fn move_stat(&mut self, delta: isize) {
@@ -442,7 +477,7 @@ fn render_body(frame: &mut Frame<'_>, area: Rect, app: &mut App) {
         Screen::Rid => render_rid(frame, columns[0], app),
         Screen::Tools => render_tools(frame, columns[0]),
         Screen::Diagnostics => render_diagnostics(frame, columns[0], app),
-        Screen::Settings => render_settings(frame, columns[0]),
+        Screen::Settings => render_settings(frame, columns[0], app),
     }
     if columns.len() > 1 {
         render_inspector(frame, columns[1], app);
@@ -1114,18 +1149,23 @@ fn render_diagnostics(frame: &mut Frame<'_>, area: Rect, app: &App) {
     );
 }
 
-fn render_settings(frame: &mut Frame<'_>, area: Rect) {
+fn render_settings(frame: &mut Frame<'_>, area: Rect, app: &App) {
     let lines = vec![
-        Line::from("Theme          dark industrial / amber"),
-        Line::from("Density        compact"),
+        Line::from(format!("Theme          {:?}", app.preferences.theme)),
+        Line::from(format!("Density        {:?}", app.preferences.density)),
         Line::from("Keymap         keyboard-first"),
         Line::from("Motion         reduced"),
-        Line::from("Language       English default"),
+        Line::from(format!("Language       {:?}", app.preferences.locale)),
         Line::from(""),
+        Line::from("t Theme · d Density · l Language · saved to portable config"),
+        Line::from(if app.preferences_error {
+            "Preferences invalid/unsupported; existing file is preserved."
+        } else {
+            "Preferences loaded and version-checked."
+        }),
         Line::from(
             "Presentation settings cannot change routing, tool permissions or remote data-egress policy.",
         ),
-        Line::from("Persistent preferences will follow a shared settings contract."),
     ];
     frame.render_widget(
         Paragraph::new(lines)
