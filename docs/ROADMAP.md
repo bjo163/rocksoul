@@ -53,7 +53,7 @@ The roadmap is capability-driven. Each stage must deliver a working, tested incr
 
 ## Stage 2 — Persistent memory
 
-**Status:** First explicit, local-only memory store implemented; automated cognition-to-memory remains disabled.
+**Status:** Local-only schema v3 memory lifecycle is implemented on this branch; automatic cognition-to-memory and retrieval injection remain disabled.
 
 - [x] Add a root-local JSON store with schema versioning and atomic replacement/backup recovery.
 - [x] Separate episodic, semantic, procedural, working, and derived record kinds.
