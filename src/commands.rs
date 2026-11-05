@@ -202,6 +202,11 @@ fn persist_workspace_receipt(
         "required_checks_passed": receipt.required_checks_passed(),
         "total_checks": receipt.total_checks(),
         "evidence_refs": receipt.evidence_refs(),
+        "claim_sha256": receipt.claim_sha256(),
+        "evidence_sha256": receipt.evidence_sha256(),
+        "verifier_id": receipt.verifier_id(),
+        "verifier_version": receipt.verifier_version(),
+        "policy_version": receipt.policy_version(),
         "xp_awarded": receipt.xp_awarded(),
     });
     let mut encoded =
