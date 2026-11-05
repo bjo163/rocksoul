@@ -285,42 +285,40 @@ For every new task, write/update an execution plan with:
 - Rollback/recovery notes.
 - Handoff summary for the next agent.
 
-## 12. Active handoff — Issue #9 implementation in progress
+## 12. Active handoff — Issue #9 final integration
 
 **Issue:** [#9 Cognitive Cockpit](https://github.com/bjo163/rocksoul/issues/9)  
-**Draft PR:** use the current open Issue #9 PR; fetch its head before continuing  
+**PR:** [#65 — feat(tui): complete Rocksoul Cognitive Cockpit](https://github.com/bjo163/rocksoul/pull/65)  
 **Task branch:** `feat/tui-cockpit-completion`  
 **PR base SHA:** `0e89bcec834880d3e6aca3f066507c44834c2eb7`  
-**Current task branch head:** c4a58d986a28c01a1ee8208d53f9e2eefeb45259 (final-head CI pending)
+**Validated head:** `e6cac1fbee4f99bbbdef3f7190161c0e9a8941f1`  
+**Validation:** [CI #42070438679](https://github.com/bjo163/rocksoul/actions/runs/42070438679) — Linux and Windows both passed.
 
 ### Implemented on the PR branch (not yet on main)
 
-- Typed Snapshot::load projections for task history and the memory store; bounded newest-first task JSONL trace (1 MiB hard cap, density-limited UI records).
-- Task Monitor event selection and detail navigation; no live queue or active task is fabricated.
-- Sanitized metadata rendering; event detail never displays trace detail/body fields.
-- Memory browser with bounded metadata-only records, local search, kind/claim filters and exact `source:<value>` filter.
-- Creation/expiry, provenance, claim status and approval metadata; content remains hidden.
-- Corrected displayed memory file path to `store.v4.json`.
-- Latest evaluation report moved into the refreshable snapshot; render does not execute evaluation.
-- Focused tests for bounded trace reads, malformed/unsupported trace behavior, metadata sanitization and memory filter cycling.
+- Typed snapshot projections load RID, model configuration presence, memory store/health, bounded task history, Core Integrity and memory retrieval reports, and presentation preferences once; render functions are read-only.
+- Task Monitor reads a bounded content-free JSONL trace (1 MiB ceiling), newest-first, with keyboard selection/detail and sanitized metadata only.
+- Memory browser supports bounded local search and kind/claim/source filters, provenance/approval/expiry metadata, and explicit Enter-to-reveal through the shared sensitive-content guard. Content remains hidden by default and is clipped/sanitized when revealed.
+- Diagnostics report memory-store health and latest offline evaluation states without executing evaluations during render; errors are sanitized.
+- Versioned portable preferences support dark/light theme, compact/comfortable density and English/Indonesian locale. Missing files use defaults; malformed and unknown schemas are preserved rather than overwritten.
+- Semantic palettes and locale are applied across screens/overlays. TestBackend covers all eight screens at 80×24, 120×40 and 60×20, both themes/locales, overlays and keyboard transitions.
+- No model/backend calls, tool invocation, remote egress, task execution, memory mutation, automatic capture or context injection originates from the Cockpit.
 
-### Verified evidence
+### Exact-head validation evidence
 
-- Linux [CI #42059872680](https://github.com/bjo163/rocksoul/actions/runs/42059872680): formatting, Clippy, 113 tests, Core Integrity 23/23 and memory retrieval precision@2/recall@2 1.000 passed.
-- Windows [CI #42059339120](https://github.com/bjo163/rocksoul/actions/runs/42059339120): release build, tests, installer/portable packaging, portable smoke and installer install/init/uninstall-preservation smoke passed on the same functional code before the latest task-selection and test-only commits. Final-head Windows validation is still required.
-- The current PR is draft and issue #9 remains open. Do not merge or close until final-head CI and remaining acceptance criteria pass.
+- Linux CI #42070438679: formatting and Clippy passed; 130 tests passed; Core Integrity 23/23; memory retrieval precision@2 1.000 and recall@2 1.000.
+- Windows CI #42070438679: release build and 129 tests passed; Core Integrity 22/22; memory retrieval precision@2 1.000 and recall@2 1.000; installer/portable packaging, clean portable smoke, installer install/init/uninstall-preservation smoke and artifact uploads passed.
+- Full eight-file diff reviewed against Issue #9 and safety invariants. Earlier CI defects (rustfmt, missing Palette argument, unused/recursive tool-registry helper) were fixed before this validated head.
 
-### Remaining work — continue in this order
+### Remaining integration actions
 
-1. Add memory focused UI tests for empty/corrupt stores, search/filter results, expiry and claim states; keep content hidden by default.
-2. Add focused memory UI tests for empty/corrupt stores, search/filter results, expiry and claim states.
-3. Move diagnostics report parsing/redaction into typed snapshot projections and test missing, corrupt and failed reports.
-4. Implement versioned portable presentation preferences without overwriting unknown future schemas; actually apply theme, density and locale across all screens.
-5. Add TestBackend coverage for all eight screens, navigation, empty/error states, focus and 80×24/narrow layouts.
-6. Update task plan, README, terminal-ui, progress and handoff from final evidence.
-7. Run final Linux and Windows CI on the exact PR head, inspect full diff, mark PR ready, merge to main, verify main SHA and close issue #9 with evidence.
+1. Confirm PR #65 is still open and its head remains the validated SHA above.
+2. Mark the PR ready for review and merge into `main` only after confirming required checks remain green.
+3. Fetch `main`; record the merge commit SHA and verify all eight PR files are present on main.
+4. Close Issue #9 with the merge SHA and CI #42070438679 evidence.
+5. Update this handoff and progress snapshot with the actual post-merge main SHA and select the next dependency-safe task.
 
-The canonical task-level status is `docs/plans/issue-9/task.md`. Do not mark implemented as verified; do not claim the Cockpit or Issue #9 complete until final cross-platform acceptance passes.
+Do not claim Issue #9 complete until steps 2–5 are verified on GitHub.
 
 ## 11. Known deferred work (do not mark complete prematurely)
 
