@@ -158,6 +158,7 @@ struct TaskTraceView {
 impl TaskTraceView {
     fn from_value(value: &serde_json::Value) -> Self {
         let target = safe_trace_text(value.get("target"), 96);
+        let target = target.replace('\\', "/");
         Self {
             event: safe_trace_text(value.get("event"), 24),
             operation_id: safe_trace_text(value.get("operation_id"), 64),
@@ -1610,7 +1611,7 @@ mod tests {
         let value = serde_json::json!({
             "event": "proposed\u{001b}[31m",
             "operation_id": "op-123",
-            "target": "workspace/src/main.rs",
+            "target": "workspace\\\\src\\\\main.rs",
             "timestamp_unix_ms": 1234,
             "detail": "must never enter the view model"
         });
