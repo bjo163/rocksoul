@@ -964,10 +964,28 @@ fn run_eval(command: EvalCommand) -> Result<()> {
                 anyhow::bail!("one or more core integrity checks failed")
             }
         }
+        EvalCommand::Run {
+            suite: EvalSuite::MemoryRetrieval,
+        } => {
+            let report = crate::eval::run_memory_retrieval()?;
+            crate::eval::print_memory_retrieval_report(&report);
+            if report.passed {
+                Ok(())
+            } else {
+                anyhow::bail!("memory retrieval evaluation failed its regression gates")
+            }
+        }
         EvalCommand::Latest => {
             match crate::eval::latest()? {
                 Some(report) => crate::eval::print_report(&report),
                 None => println!("No evaluation report yet. Run: rocksoul eval run core"),
+            }
+            Ok(())
+        }
+        EvalCommand::MemoryLatest => {
+            match crate::eval::latest_memory_retrieval()? {
+                Some(report) => crate::eval::print_memory_retrieval_report(&report),
+                None => println!("No memory retrieval report yet. Run: rocksoul eval run memory-retrieval"),
             }
             Ok(())
         }
