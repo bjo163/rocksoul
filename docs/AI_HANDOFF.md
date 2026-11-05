@@ -12,7 +12,7 @@
 
 Before doing anything:
 
-1. Read `AGENTS.md`, `blueprint.md`, `README.md`, this file, `docs/ARCHITECTURE.md`, `docs/COGNITIVE_CORE.md`, and `docs/ROADMAP.md`.
+1. Read `AGENTS.md`, `blueprint.md`, `README.md`, `docs/PROGRESS.md`, this file, `docs/ARCHITECTURE.md`, `docs/COGNITIVE_CORE.md`, and `docs/ROADMAP.md`.
 2. Fetch the latest `origin/main`. Record its exact SHA. Do not assume the current checkout is current.
 3. Inspect open PRs and issues. Check whether the task is already implemented, in progress, superseded, or blocked.
 4. Compare actual code and tests with docs. Treat code on latest `main` as the accepted implementation; a PR is only proposed work until merged.
