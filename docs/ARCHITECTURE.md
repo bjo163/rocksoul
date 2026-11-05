@@ -20,7 +20,7 @@ The long-term aspiration is increasingly general, transferable, reliable, and ac
 | Portable paths | Resolve all mutable runtime paths beside the executable | `paths.rs` |
 | Workspace artifact capability | Create-only, approved UTF-8 `.txt` artifacts with read-back verification; CLI and bounded planner proposal | `workspace_artifact.rs`, `commands.rs`, `repl.rs` |
 | RID | Instance identity, age, XP ledger, deterministic level curve, 99 stat slots | `rid.rs`, `rid_store.rs`, `rid_catalogue.rs` |
-| Memory | Explicit user-approved local records, schema v1, search/export/delete and backup recovery | `memory.rs`, `commands.rs` |
+| Memory | Explicit user-approved local records, schema v4, provenance, retention/forgetting, retrieval and backup recovery | `memory.rs`, `memory_proposal.rs`, `commands.rs` |
 | Evaluation | Offline deterministic Core Integrity checks and latest JSON report | `eval.rs` |
 | Cognitive Cockpit | Opt-in Ratatui terminal inspection/navigation | `tui.rs` |
 
@@ -52,7 +52,11 @@ The REPL cognition path currently:
 
 The maximum is five model calls, 16,000 aggregate output tokens, and 120 seconds per turn. The reflector is not an independent verifier. No shell, arbitrary function tools, plugin execution, or external side-effect executor is exposed in the seed runtime. Plan acceptance checks are not yet connected to independent observed effects; model-only turn completion does not award XP.
 
-The core also contains a trusted evidence-verification contract that can award XP only after required evidence checks pass. This contract is covered by deterministic evaluation, but the interactive planner does not yet produce independently observed evidence for its own checks.
+The core also contains a trusted evidence-verification contract that can award XP only after required evidence checks pass. `AcceptanceCheckSet` schema v1 bounds a set to 64 checks, requires at least one required check, enforces unique non-empty IDs and bounded values/evidence references, and rejects unsupported versions. Its evidence hash includes the versioned contract. The workspace artifact adapter is the first consumer; future typed services may supply their own observed evidence without adding generic tool dispatch. The interactive planner still does not produce independently observed evidence for its own checks.
+
+### Workspace crash recovery and receipt persistence
+
+The workspace command publishes an approved create-only artifact, independently reads it back, and only then enters the shared completion helper that reloads RID, verifies observed evidence, persists XP, writes the receipt, and appends the verified trace. A private test-only hook injects a simulated process stop after read-back and before the completion helper mutates/persists XP; production passes a no-op. Offline Core Integrity v1.3.0 proves the artifact remains byte-identical, RID has no XP event and no receipt exists after the injected stop, and replay returns `AlreadyPresent`, re-verifies the bytes, and persists one XP event/receipt. A subsequent replay remains idempotent. Conflicting immutable receipt content and malformed receipt JSON fail closed and preserve the original bytes. This is process-crash/replay coverage, not a claim of power-loss durability beyond the filesystem operations actually used. Complete planner, reflection, and model conversation history still does not resume after restart.
 
 ## Portable data model
 
