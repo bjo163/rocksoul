@@ -94,7 +94,7 @@ One Rust Cargo package (`Cargo.toml`, Rust 1.85 MSRV, edition 2024). Important m
 | `memory_proposal.rs` | Pending model memory proposals and human approval |
 | `workspace_artifact.rs` | Narrow create-only approved text artifact executor |
 | `task_trace.rs` | Content-free JSONL task lifecycle traces |
-| `eval.rs` | Offline deterministic Core Integrity evaluation |
+| `eval.rs` | Offline deterministic Core Integrity and memory-retrieval evaluation; JSON reports include source revision |
 | `tui.rs` | Ratatui Cognitive Cockpit |
 
 Do not split crates or add layers just for theoretical future extensibility. Extract only when real ownership, compile-time, or reuse pressure justifies it.
@@ -273,6 +273,8 @@ A task is complete only when:
 5. PR is merged to main and main is re-checked.
 6. Related issue is closed with the merge evidence.
 7. The next task is recorded with dependencies and acceptance criteria.
+
+Build metadata: `build.rs` exposes `ROCKSOUL_GIT_SHA` to the binary. CI sets it from `${{ github.sha }}`; local builds without the variable report `unknown`. Both deterministic JSON report types include a backward-compatible `rocksoul_commit` field, and the CLI prints it. Current implementation does not yet emit Markdown reports or model-dependent trajectory/learning reports.
 
 ## 10. Next task selected — Issue #13 technical evaluation harness
 
