@@ -1565,6 +1565,30 @@ mod tests {
     }
 
     #[test]
+    fn keyboard_focus_and_memory_detail_transitions_are_explicit() {
+        use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+
+        let mut app = App::new(Snapshot::load().unwrap());
+        app.screen = Screen::Tasks;
+        app.handle_key(KeyEvent::new(KeyCode::Down, KeyModifiers::NONE));
+        assert_eq!(app.task_selected, 1);
+
+        app.screen = Screen::Memory;
+        app.handle_key(KeyEvent::new(KeyCode::Char('/'), KeyModifiers::NONE));
+        assert!(app.memory_search_active);
+        app.handle_key(KeyEvent::new(KeyCode::Char('x'), KeyModifiers::NONE));
+        assert_eq!(app.memory_query, "x");
+        app.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE));
+        assert!(!app.memory_search_active);
+
+        app.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE));
+        assert!(app.memory_detail_open);
+        app.handle_key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE));
+        assert!(!app.memory_detail_open);
+        assert!(!app.quit);
+    }
+
+    #[test]
     fn navigation_labels_are_localized() {
         assert_eq!(Screen::Memory.label(LocaleMode::English), "MEMORY");
         assert_eq!(Screen::Memory.label(LocaleMode::Indonesian), "MEMORI");
