@@ -233,7 +233,7 @@ impl VerificationReceipt {
     pub fn receipt_hash(&self) -> &str { &self.receipt_hash }
     pub fn outcome(&self) -> &str { &self.outcome }
 
-    /// Detect accidental or unauthorized mutation of a persisted receipt document.
+    /// Detect accidental or partial mutation; this digest is not a digital signature.
     pub fn integrity_valid(&self) -> bool {
         let payload = serde_json::to_vec(&(
             &self.verification_id,
