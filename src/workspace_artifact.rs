@@ -148,6 +148,26 @@ impl WorkspaceArtifactService {
         self.execute_approved_with_publish_hook(proposal, approval, cancellation, || {})
     }
 
+    #[cfg(test)]
+    pub(crate) fn execute_approved_with_after_publish_hook<G>(
+        &self,
+        proposal: &WorkspaceArtifactProposal,
+        approval: &UserApproval,
+        cancellation: &CancellationToken,
+        after_publish: G,
+    ) -> Result<ArtifactOutcome>
+    where
+        G: FnOnce() -> Result<()>,
+    {
+        self.execute_approved_with_hooks(
+            proposal,
+            approval,
+            cancellation,
+            || {},
+            after_publish,
+        )
+    }
+
     fn execute_approved_with_publish_hook<F>(
         &self,
         proposal: &WorkspaceArtifactProposal,
