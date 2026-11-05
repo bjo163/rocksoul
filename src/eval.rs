@@ -1202,5 +1202,6 @@ mod tests {
         let encoded = serde_json::to_vec(&report).unwrap();
         let decoded: EvaluationReport = serde_json::from_slice(&encoded).unwrap();
         assert_eq!(decoded.failed_count(), 1);
+        assert_eq!(decoded.rocksoul_commit, "test-revision");
     }
 }
