@@ -40,7 +40,7 @@ Persistent local memory is implemented separately from the REPL:
 - CLI commands provide explicit user-controlled add, list, search, export, delete, and clear operations.
 - The model cannot silently write or delete memory.
 - Conversation history is session-only; it is not automatically ingested into memory or injected from memory into prompts.
-- Schema migrations, multi-process locking, retrieval ranking, and evaluated context injection remain planned.
+- Schema v1-to-v2 migration and multi-process locking are implemented. CLI read-modify-write transactions use a stable OS lock file with a bounded five-second wait; network filesystems and storage layers that do not honor OS advisory locks are unsupported for concurrent access. Retrieval ranking and evaluated context injection remain planned.
 
 The current runtime exposes no shell executor, arbitrary function tools, plugin marketplace, or autonomous filesystem mutation. Model-only reasoning steps do not perform external actions. Self-modification and autonomous code execution are not enabled.
 

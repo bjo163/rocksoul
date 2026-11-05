@@ -1,9 +1,14 @@
 use std::{
     collections::HashSet,
     fs,
+    fs::{File, OpenOptions},
+    io::ErrorKind,
     path::{Path, PathBuf},
-    time::{SystemTime, UNIX_EPOCH},
+    thread,
+    time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
+
+use fs2::FileExt;
 
 use anyhow::{Context, Result, anyhow, bail};
 use clap::ValueEnum;
@@ -12,6 +17,9 @@ use serde::{Deserialize, Serialize};
 pub const MEMORY_SCHEMA_VERSION: u16 = 2;
 const STORE_FILE: &str = "store.v2.json";
 const LEGACY_STORE_FILE: &str = "store.v1.json";
+const LOCK_FILE: &str = ".memory.lock";
+const LOCK_TIMEOUT: Duration = Duration::from_secs(5);
+const LOCK_RETRY_INTERVAL: Duration = Duration::from_millis(25);
 
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize, ValueEnum)]
 #[serde(rename_all = "snake_case")]
@@ -71,19 +79,28 @@ impl MemoryStore {
         fs::create_dir_all(directory).with_context(|| {
             format!("could not create memory directory {}", directory.display())
         })?;
+        let _lock = acquire_store_lock(directory)?;
         let path = store_path(directory);
         let legacy = legacy_store_path(directory);
         if path.exists() || backup_path(&path).exists() || legacy.exists() {
-            return Ok((Self::load(directory)?, false));
+            return Ok((Self::load_unlocked(directory)?, false));
         }
         let store = Self::default();
-        store.save(directory)?;
+        store.save_unlocked(directory)?;
         Ok((store, true))
     }
 
     /// Load the current store, recover its last known-good backup when needed,
     /// or migrate the legacy v1 document without modifying the original file.
     pub fn load(directory: &Path) -> Result<Self> {
+        fs::create_dir_all(directory).with_context(|| {
+            format!("could not create memory directory {}", directory.display())
+        })?;
+        let _lock = acquire_store_lock(directory)?;
+        Self::load_unlocked(directory)
+    }
+
+    fn load_unlocked(directory: &Path) -> Result<Self> {
         let path = store_path(directory);
         let backup = backup_path(&path);
         if path.exists() {
@@ -145,7 +162,7 @@ impl MemoryStore {
             // so future schema changes can add typed transformations here.
             store.schema_version = MEMORY_SCHEMA_VERSION;
             store.validate()?;
-            store.save(directory)?;
+            store.save_unlocked(directory)?;
             eprintln!(
                 "Migrated memory store schema v1 to v{}; original retained at {}",
                 MEMORY_SCHEMA_VERSION,
@@ -275,16 +292,52 @@ impl MemoryStore {
         }
     }
 
-    pub fn save(&self, directory: &Path) -> Result<()> {
+    #[cfg(test)]
+    fn save(&self, directory: &Path) -> Result<()> {
         self.validate()?;
         fs::create_dir_all(directory).with_context(|| {
             format!("could not create memory directory {}", directory.display())
         })?;
+        let _lock = acquire_store_lock(directory)?;
+        self.save_unlocked(directory)
+    }
+
+    fn save_unlocked(&self, directory: &Path) -> Result<()> {
+        self.validate()?;
+        write_json_atomic(&store_path(directory), self)
+    }
+
+    pub fn transact<T>(
+        directory: &Path,
+        operation: impl FnOnce(&mut Self) -> Result<T>,
+    ) -> Result<T> {
+        fs::create_dir_all(directory).with_context(|| {
+            format!("could not create memory directory {}", directory.display())
+        })?;
+        let _lock = acquire_store_lock(directory)?;
         let path = store_path(directory);
-        write_json_atomic(&path, self)
+        let existed = path.is_file()
+            || backup_path(&path).is_file()
+            || legacy_store_path(directory).is_file();
+        let mut store = Self::load_unlocked(directory)?;
+        let previous = store.clone();
+        let output = operation(&mut store)?;
+        if !existed || store != previous {
+            store.save_unlocked(directory)?;
+        }
+        Ok(output)
     }
 
     pub fn export(&self, directory: &Path) -> Result<PathBuf> {
+        self.validate()?;
+        fs::create_dir_all(directory).with_context(|| {
+            format!("could not create memory directory {}", directory.display())
+        })?;
+        let _lock = acquire_store_lock(directory)?;
+        self.export_unlocked(directory)
+    }
+
+    fn export_unlocked(&self, directory: &Path) -> Result<PathBuf> {
         self.validate()?;
         let export_dir = directory.join("exports");
         fs::create_dir_all(&export_dir).with_context(|| {
@@ -315,6 +368,77 @@ pub fn now_unix() -> Result<u64> {
         .duration_since(UNIX_EPOCH)
         .context("system clock is before the Unix epoch")?
         .as_secs())
+}
+
+fn acquire_store_lock(directory: &Path) -> Result<File> {
+    fs::create_dir_all(directory)?;
+    let lock_path = directory.join(LOCK_FILE);
+    let started = Instant::now();
+    let file = loop {
+        match OpenOptions::new()
+            .create(true)
+            .truncate(false)
+            .read(true)
+            .write(true)
+            .open(&lock_path)
+        {
+            Ok(file) => break file,
+            Err(error) if is_lock_contention(&error) => {
+                if started.elapsed() >= LOCK_TIMEOUT {
+                    bail!(
+                        "memory store is busy; could not open lock {} within {} seconds. Close other Rocksoul operations and retry",
+                        lock_path.display(),
+                        LOCK_TIMEOUT.as_secs()
+                    );
+                }
+                thread::sleep(LOCK_RETRY_INTERVAL);
+            }
+            Err(error) => {
+                return Err(error).with_context(|| {
+                    format!("could not open memory lock {}", lock_path.display())
+                });
+            }
+        }
+    };
+
+    loop {
+        match file.try_lock_exclusive() {
+            Ok(()) => return Ok(file),
+            Err(error) if is_lock_contention(&error) => {
+                if started.elapsed() >= LOCK_TIMEOUT {
+                    bail!(
+                        "memory store is busy; could not acquire {} within {} seconds. Close other Rocksoul operations and retry",
+                        lock_path.display(),
+                        LOCK_TIMEOUT.as_secs()
+                    );
+                }
+                thread::sleep(LOCK_RETRY_INTERVAL);
+            }
+            Err(error) => {
+                return Err(error).with_context(|| {
+                    format!("could not lock memory store {}", lock_path.display())
+                });
+            }
+        }
+    }
+}
+
+fn is_lock_contention(error: &std::io::Error) -> bool {
+    if error.kind() == ErrorKind::WouldBlock {
+        return true;
+    }
+
+    #[cfg(windows)]
+    {
+        // Windows reports LockFileEx contention as ERROR_LOCK_VIOLATION or
+        // ERROR_SHARING_VIOLATION, which Rust may classify as PermissionDenied.
+        matches!(error.raw_os_error(), Some(32 | 33))
+    }
+
+    #[cfg(not(windows))]
+    {
+        false
+    }
 }
 
 fn store_path(directory: &Path) -> PathBuf {
@@ -423,8 +547,11 @@ mod tests {
     use std::{
         fs,
         path::PathBuf,
+        process::Command,
         time::{SystemTime, UNIX_EPOCH},
     };
+
+    use fs2::FileExt;
 
     use super::{
         MEMORY_SCHEMA_VERSION, MemoryKind, MemoryStore, backup_path, legacy_store_path, store_path,
@@ -504,6 +631,122 @@ mod tests {
         assert_eq!(recovered, previous);
         let on_disk = MemoryStore::load(&directory).unwrap();
         assert_eq!(on_disk, previous);
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn transaction_persists_only_committed_revision_changes() {
+        let directory = temp_dir();
+        MemoryStore::transact(&directory, |store| {
+            store.add_user_entry(
+                MemoryKind::Semantic,
+                "committed under lock".into(),
+                vec![],
+                None,
+                20,
+            )?;
+            Ok(())
+        })
+        .unwrap();
+
+        let loaded = MemoryStore::load(&directory).unwrap();
+        assert_eq!(loaded.revision, 1);
+        assert_eq!(loaded.records.len(), 1);
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn cross_process_lock_contention_has_bounded_timeout() {
+        if let Ok(directory) = std::env::var("ROCKSOUL_LOCK_CHILD_DIR") {
+            let directory = PathBuf::from(directory);
+            if std::env::var_os("ROCKSOUL_LOCK_CHILD_WRITE").is_some() {
+                let content = std::env::var("ROCKSOUL_LOCK_CHILD_WRITE").unwrap();
+                MemoryStore::transact(&directory, |store| {
+                    store.add_user_entry(MemoryKind::Semantic, content, vec![], None, 30)?;
+                    Ok(())
+                })
+                .unwrap();
+                return;
+            }
+            if std::env::var_os("ROCKSOUL_LOCK_CHILD_EXIT").is_some() {
+                let _lock = super::acquire_store_lock(&directory).unwrap();
+                std::process::exit(0);
+            }
+            let error = MemoryStore::load(&directory).unwrap_err();
+            assert!(
+                format!("{error:#}").contains("memory store is busy"),
+                "unexpected lock contention result: {error:#}"
+            );
+            return;
+        }
+
+        let directory = temp_dir();
+        fs::create_dir_all(&directory).unwrap();
+        let lock_path = directory.join(super::LOCK_FILE);
+        let held = fs::OpenOptions::new()
+            .create(true)
+            .truncate(false)
+            .read(true)
+            .write(true)
+            .open(&lock_path)
+            .unwrap();
+        held.try_lock_exclusive().unwrap();
+
+        let status = Command::new(std::env::current_exe().unwrap())
+            .arg("--exact")
+            .arg("memory::tests::cross_process_lock_contention_has_bounded_timeout")
+            .arg("--nocapture")
+            .env("ROCKSOUL_LOCK_CHILD_DIR", &directory)
+            .status()
+            .unwrap();
+        assert!(
+            status.success(),
+            "child process should report bounded lock timeout"
+        );
+        FileExt::unlock(&held).unwrap();
+
+        let exit_status = Command::new(std::env::current_exe().unwrap())
+            .arg("--exact")
+            .arg("memory::tests::cross_process_lock_contention_has_bounded_timeout")
+            .arg("--nocapture")
+            .env("ROCKSOUL_LOCK_CHILD_DIR", &directory)
+            .env("ROCKSOUL_LOCK_CHILD_EXIT", "1")
+            .status()
+            .unwrap();
+        assert!(
+            exit_status.success(),
+            "child process should exit while holding the OS lock"
+        );
+        assert!(
+            MemoryStore::load(&directory).is_ok(),
+            "OS lock must be released when its process exits"
+        );
+
+        let executable = std::env::current_exe().unwrap();
+        let child_a = Command::new(&executable)
+            .arg("--exact")
+            .arg("memory::tests::cross_process_lock_contention_has_bounded_timeout")
+            .arg("--nocapture")
+            .env("ROCKSOUL_LOCK_CHILD_DIR", &directory)
+            .env("ROCKSOUL_LOCK_CHILD_WRITE", "writer A")
+            .spawn()
+            .unwrap();
+        let child_b = Command::new(&executable)
+            .arg("--exact")
+            .arg("memory::tests::cross_process_lock_contention_has_bounded_timeout")
+            .arg("--nocapture")
+            .env("ROCKSOUL_LOCK_CHILD_DIR", &directory)
+            .env("ROCKSOUL_LOCK_CHILD_WRITE", "writer B")
+            .spawn()
+            .unwrap();
+        assert!(child_a.wait_with_output().unwrap().status.success());
+        assert!(child_b.wait_with_output().unwrap().status.success());
+        let combined = MemoryStore::load(&directory).unwrap();
+        assert_eq!(
+            combined.records.len(),
+            2,
+            "concurrent writers must not lose either committed record"
+        );
         fs::remove_dir_all(directory).unwrap();
     }
 

@@ -62,7 +62,7 @@ The roadmap is capability-driven. Each stage must deliver a working, tested incr
 - [x] Support expiry for working-memory records.
 - [x] Show real store counts and provenance in the Cognitive Cockpit.
 - [x] Add explicit v1-to-v2 schema migration with metadata-preserving validation and durable backup recovery diagnostics.
-- [ ] Add memory locking for multiple concurrent Rocksoul processes.
+- [x] Serialize memory read-modify-write CLI transactions with a stable OS lock file, bounded five-second acquisition timeout, and subprocess tests for contention, process-exit release, and concurrent writers.
 - [ ] Add retention policies, forgetting workflows, and cross-session evaluation.
 - [ ] Add retrieval ranking and memory context injection only after provenance and relevance tests.
 - [ ] Add model-proposed memory with human approval; never enable silent model writes.
