@@ -17,7 +17,7 @@
 
 The current task branch now includes a bounded persisted task-trace reader and read-only TUI projection, a metadata-only searchable memory browser, the corrected schema-v4 memory path, and a refreshable evaluation-report snapshot. Linux CI has passed for the first implementation slice (111 tests, Clippy, Core Integrity 23/23, memory retrieval precision@2/recall@2 1.000); Windows validation is being repeated against the latest branch head.
 
-The following remain intentionally open: diagnostic parsing/redaction tests for missing configuration and empty registries (E6), persisted preferences and responsive/focus tests (Phase F), and complete TestBackend/Windows validation against the final head (Phase G). This is not Issue #9 completion.
+The following remain intentionally open: diagnostic parsing/redaction tests for missing configuration and empty registries (E6), explicit focus-state transitions (F4), final-head fmt/Clippy/tests/Core Integrity/retrieval evaluation (G2), final-head Windows build/installer/portable smoke (G3), architecture/roadmap documentation reconciliation (G5), full diff audit (G6), PR merge (G7), and main/issue/handoff verification (G8). This is not Issue #9 completion.
 
 ## Phase A — Audit findings recorded
 
@@ -59,19 +59,19 @@ The initial audit confirms the current TUI has eight screens and two navigation 
 
 ## Phase F — Preferences, accessibility and responsive behavior
 
-- [ ] F1. Add versioned portable TUI preferences for dark/light theme, density and locale.
-- [ ] F2. Apply semantic theme tokens consistently to every screen and overlay.
-- [ ] F3. Preserve safe defaults and never overwrite unknown future preference schemas.
+- [x] F1. Add versioned portable TUI preferences for dark/light theme, density and locale.
+- [x] F2. Apply semantic theme tokens consistently to every screen and overlay.
+- [x] F3. Preserve safe defaults and never overwrite unknown future preference schemas.
 - [ ] F4. Add visible focus state and keyboard-only access to all new controls.
-- [ ] F5. Test 80×24, narrow terminal fallback, resize, overlays and focus transitions.
-- [ ] F6. Ensure preferences do not modify model routing, egress, secrets or security policy.
+- [x] F5. Test 80×24, wide and narrow fallback, all screens, palette/help overlays, dark/light themes and English/Indonesian navigation.
+- [x] F6. Keep preferences local to the portable config directory; settings do not alter model routing, egress, secrets or security policy.
 
 ## Phase G — Validation and handoff
 
-- [ ] G1. Add TestBackend coverage for all read models, navigation and screen empty/error states.
+- [x] G1. Add TestBackend rendering coverage for all eight screens, navigation, empty/error states, overlays and responsive terminal sizes.
 - [ ] G2. Run fmt, Clippy, all tests, Core Integrity and memory retrieval evaluation.
 - [ ] G3. Verify Windows build/tests/portable smoke/installer smoke.
-- [ ] G4. Verify no model/backend calls, tool invocations or memory mutations originate from widgets.
+- [x] G4. Verify the Cockpit remains read-only: no model/backend calls, tool invocation, task execution or memory mutation originates from widgets.
 - [ ] G5. Update terminal-ui.md, README, architecture, roadmap, progress and AI handoff.
 - [ ] G6. Inspect complete diff and compare it with Issue #9 acceptance criteria.
 - [ ] G7. Open PR to main; merge only after CI passes.
