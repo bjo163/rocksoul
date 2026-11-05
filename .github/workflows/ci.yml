@@ -147,8 +147,11 @@ jobs:
             $fingerprint = (($proposalOutput | Select-String '^Fingerprint: ').ToString() -replace '^Fingerprint: ', '')
             if (!$proposalId -or !$fingerprint) { throw "Memory proposal ID/fingerprint missing" }
             $approvalPhrase = "APPROVE $proposalId $fingerprint"
-            $approvalPhrase | & $exe memory approve $proposalId
-            if ($LASTEXITCODE -ne 0) { throw "Portable memory proposal approval failed" }
+            $approvalFile = Join-Path $env:RUNNER_TEMP "rocksoul-memory-approval.txt"
+            [System.IO.File]::WriteAllText($approvalFile, $approvalPhrase + [Environment]::NewLine, [System.Text.Encoding]::ASCII)
+            $approvalProcess = Start-Process -FilePath $exe -ArgumentList @("memory", "approve", $proposalId) -RedirectStandardInput $approvalFile -NoNewWindow -Wait -PassThru
+            Remove-Item $approvalFile -Force
+            if ($approvalProcess.ExitCode -ne 0) { throw "Portable memory proposal approval failed" }
             $memoryList = & $exe memory list
             if ($LASTEXITCODE -ne 0) { throw "Portable memory list after proposal approval failed" }
             if (!(($memoryList -join "`n").Contains("model_proposal:$proposalId"))) { throw "Approved proposal provenance missing from memory" }
