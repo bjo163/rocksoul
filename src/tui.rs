@@ -630,12 +630,12 @@ fn render_brains(frame: &mut Frame<'_>, area: Rect, app: &App) {
 }
 
 fn render_tasks(frame: &mut Frame<'_>, area: Rect, app: &mut App) {
-    const MAX_EVENTS: usize = 12;
+    let max_events = task_event_limit(app.preferences.density);
     let lines = match AppPaths::discover().and_then(|paths| {
         let records = task_trace::read_recent(
             &paths.logs_dir.join("task-trace.v1.jsonl"),
             262_144,
-            MAX_EVENTS,
+            max_events,
         )?;
         if records.is_empty() {
             app.task_selected = 0;
@@ -764,7 +764,7 @@ fn safe_trace_text(value: Option<&serde_json::Value>, limit: usize) -> String {
 }
 
 fn render_memory(frame: &mut Frame<'_>, area: Rect, app: &App) {
-    const MAX_RECORDS: usize = 40;
+    let max_records = memory_record_limit(app.preferences.density);
     let lines = match AppPaths::discover().and_then(|paths| {
         let store = MemoryStore::load(&paths.memory_dir)?;
         let now = now_unix();
@@ -803,7 +803,7 @@ fn render_memory(frame: &mut Frame<'_>, area: Rect, app: &App) {
             if records.is_empty() {
                 lines.push(Line::from("No active memory records."));
             }
-            for (index, record) in records.iter().take(MAX_RECORDS).enumerate() {
+            for (index, record) in records.iter().take(max_records).enumerate() {
                 lines.push(Line::from(format!(
                     "{} {:<12} {:<10} {:<24} {:<26} {}",
                     if index == app.memory_selected { "▸" } else { " " },
@@ -923,6 +923,20 @@ fn push_memory_detail(lines: &mut Vec<Line<'static>>, content: &str) {
         Err(reason) => lines.push(Line::from(format!(
             "Content blocked by privacy guard: {reason}"
         ))),
+    }
+}
+
+fn task_event_limit(density: DensityMode) -> usize {
+    match density {
+        DensityMode::Compact => 12,
+        DensityMode::Comfortable => 8,
+    }
+}
+
+fn memory_record_limit(density: DensityMode) -> usize {
+    match density {
+        DensityMode::Compact => 40,
+        DensityMode::Comfortable => 20,
     }
 }
 
@@ -1509,6 +1523,14 @@ mod tests {
             crate::memory_proposal::sensitive_content_reason("my medical diagnosis is private"),
             Some("sensitive_personal_category")
         );
+    }
+
+    #[test]
+    fn density_preferences_bound_task_and_memory_lists() {
+        assert_eq!(super::task_event_limit(DensityMode::Compact), 12);
+        assert_eq!(super::task_event_limit(DensityMode::Comfortable), 8);
+        assert_eq!(super::memory_record_limit(DensityMode::Compact), 40);
+        assert_eq!(super::memory_record_limit(DensityMode::Comfortable), 20);
     }
 
     #[test]
