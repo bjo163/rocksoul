@@ -158,6 +158,23 @@ impl WorkspaceArtifactService {
     where
         F: FnOnce(),
     {
+        self.execute_approved_with_hooks(proposal, approval, cancellation, before_publish, || {
+            Ok(())
+        })
+    }
+
+    fn execute_approved_with_hooks<F, G>(
+        &self,
+        proposal: &WorkspaceArtifactProposal,
+        approval: &UserApproval,
+        cancellation: &CancellationToken,
+        before_publish: F,
+        after_publish: G,
+    ) -> Result<ArtifactOutcome>
+    where
+        F: FnOnce(),
+        G: FnOnce() -> Result<()>,
+    {
         cancellation.check()?;
         proposal.validate()?;
         if approval.operation_id != proposal.operation_id() {
@@ -186,7 +203,7 @@ impl WorkspaceArtifactService {
                 })
             }
             Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
-                self.create_and_verify(&root, &target, proposal, cancellation, before_publish)
+                self.create_and_verify(&root, &target, proposal, cancellation, before_publish, after_publish)
             }
             Err(error) => Err(error).context("could not inspect artifact target"),
         }
@@ -208,16 +225,18 @@ impl WorkspaceArtifactService {
         Ok(())
     }
 
-    fn create_and_verify<F>(
+    fn create_and_verify<F, G>(
         &self,
         root: &Path,
         target: &Path,
         proposal: &WorkspaceArtifactProposal,
         cancellation: &CancellationToken,
         before_publish: F,
+        after_publish: G,
     ) -> Result<ArtifactOutcome>
     where
         F: FnOnce(),
+        G: FnOnce() -> Result<()>,
     {
         let nonce = SystemTime::now()
             .duration_since(UNIX_EPOCH)
@@ -264,6 +283,9 @@ impl WorkspaceArtifactService {
         if observed != proposal.content.as_bytes() {
             bail!("independent artifact read-back did not match proposed bytes");
         }
+
+        // Test-only callers can model process loss after publication/read-back but before XP.
+        after_publish()?;
 
         if published {
             Ok(ArtifactOutcome::Created {
@@ -400,6 +422,31 @@ mod tests {
         assert!(result.is_err());
         assert!(!root.join("cancel-at-publish.txt").exists());
         assert_eq!(fs::read_dir(&root).unwrap().count(), 0);
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn simulated_crash_after_publish_keeps_artifact_for_idempotent_replay() {
+        let root = workspace();
+        let item = proposal("crash-window.txt", "published before simulated process loss");
+        let service = WorkspaceArtifactService::new(&root);
+        let result = service.execute_approved_with_hooks(
+            &item,
+            &approve(&item),
+            &CancellationToken::default(),
+            || {},
+            || Err(anyhow!("simulated process loss after publication")),
+        );
+        assert!(result.is_err());
+        assert_eq!(
+            fs::read(root.join(&item.filename)).unwrap(),
+            item.content.as_bytes()
+        );
+
+        let replay = service
+            .execute_approved(&item, &approve(&item), &CancellationToken::default())
+            .unwrap();
+        assert!(matches!(replay, ArtifactOutcome::AlreadyPresent { .. }));
         fs::remove_dir_all(root).unwrap();
     }
 
