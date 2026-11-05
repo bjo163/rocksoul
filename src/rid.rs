@@ -340,6 +340,13 @@ impl RuhProfile {
         &self.stats
     }
 
+    pub fn archived_legacy_stat_count(&self) -> usize {
+        self.legacy_stat_archive
+            .as_ref()
+            .map(|archive| archive.records.len())
+            .unwrap_or(0)
+    }
+
     pub fn stat(&self, id: StatId) -> Option<&StatRecord> {
         self.stats.iter().find(|record| record.id == id)
     }
