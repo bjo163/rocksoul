@@ -36,7 +36,7 @@ This verifier is not yet wired to the interactive planner's acceptance checks or
 ## Memory and other runtime boundaries
 
 Persistent local memory is implemented separately from the REPL:
-- The memory store is schema v1 JSON under the executable root.
+- The memory store is schema v2 JSON under the executable root. Existing v1 stores are migrated on first load to v2 while preserving the original v1 file as a rollback source; each subsequent successful save retains one validated v2 backup.
 - CLI commands provide explicit user-controlled add, list, search, export, delete, and clear operations.
 - The model cannot silently write or delete memory.
 - Conversation history is session-only; it is not automatically ingested into memory or injected from memory into prompts.
