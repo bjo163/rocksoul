@@ -682,6 +682,13 @@ mod tests {
                 "test://empty-id",
                 true,
             )]),
+            super::AcceptanceCheckSet::new(vec![VerificationEvidence::new(
+                "missing-evidence-ref",
+                "present",
+                "present",
+                " ",
+                true,
+            )]),
             super::AcceptanceCheckSet::new(Vec::new()),
             super::AcceptanceCheckSet::new(
                 (0..65)
