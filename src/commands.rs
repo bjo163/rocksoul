@@ -839,9 +839,35 @@ fn run_memory(command: MemoryCommand) -> Result<()> {
                         print_memory_records(&store.active_records(now_unix()?), "Rocksoul memory");
                         println!("{} total records", store.records.len());
                     }
-                    MemoryCommand::Search { query } => {
-                        let matches = store.search(&query, now_unix()?);
-                        print_memory_records(&matches, "Memory search");
+                    MemoryCommand::Search {
+                        query,
+                        kind,
+                        source,
+                        created_after,
+                        created_before,
+                        limit,
+                    } => {
+                        let filters = MemorySearchFilters {
+                            kind,
+                            source,
+                            created_after_unix: created_after,
+                            created_before_unix: created_before,
+                        };
+                        let matches = store.search_ranked(&query, &filters, now_unix()?, limit);
+                        println!("Memory search — deterministic lexical ranking");
+                        for result in &matches {
+                            println!(
+                                "- [{}] {} ({}, source={}, created={}, source-confidence={:?})",
+                                result.lexical_score,
+                                result.record_id,
+                                result.kind,
+                                result.source,
+                                result.created_at_unix,
+                                result.source_confidence
+                            );
+                            println!("  {}", result.content);
+                            println!("  {}", result.relevance_explanation);
+                        }
                         println!("{} matching records", matches.len());
                     }
                     MemoryCommand::Delete { id } => {
