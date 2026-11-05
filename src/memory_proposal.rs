@@ -123,6 +123,12 @@ impl ProposalStore {
             }
             match proposal.status {
                 ProposalStatus::Pending => {
+                    if !matches!(proposal.claim_status, MemoryClaimStatus::Inference | MemoryClaimStatus::UnverifiedTaskOutcome)
+                        || (proposal.verification_receipt_id.is_some()
+                            && proposal.claim_status != MemoryClaimStatus::UnverifiedTaskOutcome)
+                    {
+                        bail!("pending model proposal has an unsupported claim authority status");
+                    }
                     if proposal.decided_at_unix.is_some() || proposal.memory_record_id.is_some() {
                         bail!("pending memory proposal has decision metadata");
                     }
