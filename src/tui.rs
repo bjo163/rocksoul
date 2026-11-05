@@ -143,6 +143,32 @@ struct MemoryStoreHealth {
     total_records: usize,
 }
 
+struct MemoryView {
+    store: MemoryStore,
+    health: MemoryStoreHealth,
+}
+
+struct TaskTraceView {
+    event: String,
+    operation_id: String,
+    target_name: String,
+    timestamp_unix_ms: Option<u64>,
+}
+
+impl TaskTraceView {
+    fn from_value(value: &serde_json::Value) -> Self {
+        let target = safe_trace_text(value.get("target"), 96);
+        Self {
+            event: safe_trace_text(value.get("event"), 24),
+            operation_id: safe_trace_text(value.get("operation_id"), 64),
+            target_name: target.rsplit('/').next().unwrap_or("target").to_owned(),
+            timestamp_unix_ms: value
+                .get("timestamp_unix_ms")
+                .and_then(serde_json::Value::as_u64),
+        }
+    }
+}
+
 struct Snapshot {
     paths: AppPaths,
     model_configured: bool,
@@ -152,7 +178,8 @@ struct Snapshot {
     evaluation: std::result::Result<Option<crate::eval::EvaluationReport>, String>,
     memory_evaluation:
         std::result::Result<Option<crate::eval::MemoryRetrievalEvaluationReport>, String>,
-    memory_store_health: std::result::Result<MemoryStoreHealth, String>,
+    memory: std::result::Result<MemoryView, String>,
+    task_history: std::result::Result<Vec<TaskTraceView>, String>,
     preferences: std::result::Result<TuiPreferences, String>,
 }
 
@@ -169,13 +196,23 @@ impl Snapshot {
         };
         let preferences = TuiPreferences::load(&paths.config_dir.join(PREFERENCES_FILE))
             .map_err(|_| "preferences are invalid or unsupported".to_owned());
-        let memory_store_health = MemoryStore::load(&paths.memory_dir)
-            .map(|store| MemoryStoreHealth {
-                schema_version: store.schema_version,
-                active_records: store.active_records(now_unix()).len(),
-                total_records: store.records.len(),
+        let memory = MemoryStore::load(&paths.memory_dir)
+            .map(|store| MemoryView {
+                health: MemoryStoreHealth {
+                    schema_version: store.schema_version,
+                    active_records: store.active_records(now_unix()).len(),
+                    total_records: store.records.len(),
+                },
+                store,
             })
             .map_err(|_| "memory store is unreadable".to_owned());
+        let task_history = task_trace::read_recent(
+            &paths.logs_dir.join("task-trace.v1.jsonl"),
+            262_144,
+            task_event_limit(preferences.as_ref().map(|value| value.density).unwrap_or_default()),
+        )
+        .map(|records| records.iter().map(TaskTraceView::from_value).collect())
+        .map_err(|_| "task trace is malformed, oversized or unavailable".to_owned());
         Ok(Self {
             paths,
             model_configured: ModelConfig::from_env().is_some(),
@@ -186,7 +223,8 @@ impl Snapshot {
                 .map_err(|_| "evaluation report is unreadable".to_owned()),
             memory_evaluation: crate::eval::latest_memory_retrieval()
                 .map_err(|_| "memory retrieval report is unreadable".to_owned()),
-            memory_store_health,
+            memory,
+            task_history,
             preferences,
         })
     }
