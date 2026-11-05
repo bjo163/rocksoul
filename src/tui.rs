@@ -634,6 +634,22 @@ fn render_tasks(frame: &mut Frame<'_>, area: Rect, app: &mut App) {
     );
 }
 
+fn safe_rid_error(error: &str) -> &'static str {
+    let normalized = error.to_ascii_lowercase();
+    if normalized.contains("unsupported") || normalized.contains("schema") {
+        "unsupported schema/version"
+    } else if normalized.contains("json")
+        || normalized.contains("parse")
+        || normalized.contains("malformed")
+    {
+        "invalid profile data"
+    } else if normalized.contains("permission") || normalized.contains("access denied") {
+        "profile inaccessible"
+    } else {
+        "profile invalid; details withheld"
+    }
+}
+
 fn report_state<T>(report: &std::result::Result<Option<T>, String>) -> &'static str {
     match report {
         Ok(Some(_)) => "available",
@@ -998,6 +1014,14 @@ fn render_diagnostics(frame: &mut Frame<'_>, area: Rect, app: &App) {
         )),
         Line::from(format!("RID profile   {rid}")),
         Line::from(format!(
+            "RID detail    {}",
+            app.snapshot
+                .rid_error
+                .as_deref()
+                .map(safe_rid_error)
+                .unwrap_or("none")
+        )),
+        Line::from(format!(
             "RID catalogue {}",
             app.snapshot
                 .catalogue
@@ -1309,6 +1333,17 @@ fn now_unix() -> u64 {
 #[cfg(test)]
 mod tests {
     use super::{App, Screen, Snapshot};
+
+    #[test]
+    fn rid_diagnostic_redacts_paths_and_raw_error_details() {
+        let detail = super::safe_rid_error("invalid JSON at C:/Users/example/secret/rid.json");
+        assert_eq!(detail, "invalid profile data");
+        assert!(!detail.contains("secret"));
+        assert_eq!(
+            super::safe_rid_error("unsupported schema version 99"),
+            "unsupported schema/version"
+        );
+    }
 
     #[test]
     fn report_state_distinguishes_missing_from_unreadable_without_leaking_errors() {
