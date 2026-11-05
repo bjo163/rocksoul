@@ -1014,7 +1014,7 @@ fn render_memory(frame: &mut Frame<'_>, area: Rect, app: &App) {
                     if let Some(record) =
                         results.get(app.memory_selected.min(results.len().saturating_sub(1)))
                     {
-                        push_memory_detail(&mut lines, &record.content);
+                        push_memory_detail(&mut lines, &record.content, &app.palette);
                     }
                 } else if !results.is_empty() {
                     lines.push(Line::from(
@@ -1454,7 +1454,11 @@ fn render_inspector(frame: &mut Frame<'_>, area: Rect, app: &App) {
             .as_ref()
             .and_then(|cat| cat.entries.get(app.selected_stat))
         {
-            lines.extend(rid_detail(entry, app.snapshot.rid_profile.as_ref(), &app.palette));
+            lines.extend(rid_detail(
+                entry,
+                app.snapshot.rid_profile.as_ref(),
+                &app.palette,
+            ));
         }
     } else {
         lines.push(Line::from("No active selection."));
