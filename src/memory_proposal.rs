@@ -123,9 +123,11 @@ impl ProposalStore {
             }
             match proposal.status {
                 ProposalStatus::Pending => {
-                    if !matches!(proposal.claim_status, MemoryClaimStatus::Inference | MemoryClaimStatus::UnverifiedTaskOutcome)
-                        || (proposal.verification_receipt_id.is_some()
-                            && proposal.claim_status != MemoryClaimStatus::UnverifiedTaskOutcome)
+                    if !matches!(
+                        proposal.claim_status,
+                        MemoryClaimStatus::Inference | MemoryClaimStatus::UnverifiedTaskOutcome
+                    ) || (proposal.verification_receipt_id.is_some()
+                        && proposal.claim_status != MemoryClaimStatus::UnverifiedTaskOutcome)
                     {
                         bail!("pending model proposal has an unsupported claim authority status");
                     }
@@ -200,7 +202,10 @@ pub fn create(
         expires_at_unix,
         now,
     )?;
-    if !matches!(claim_status, MemoryClaimStatus::Inference | MemoryClaimStatus::UnverifiedTaskOutcome) {
+    if !matches!(
+        claim_status,
+        MemoryClaimStatus::Inference | MemoryClaimStatus::UnverifiedTaskOutcome
+    ) {
         bail!("model proposals may only be classified as inference or unverified task outcome");
     }
     if verification_receipt_id.as_ref().is_some_and(|id| {
@@ -208,7 +213,8 @@ pub fn create(
     }) {
         bail!("verification receipt ID is invalid");
     }
-    if verification_receipt_id.is_some() && claim_status != MemoryClaimStatus::UnverifiedTaskOutcome {
+    if verification_receipt_id.is_some() && claim_status != MemoryClaimStatus::UnverifiedTaskOutcome
+    {
         bail!("verification receipts may only be attached to task-outcome claims");
     }
     let _lock = acquire_lock(directory)?;
@@ -306,11 +312,13 @@ pub fn approve_with_receipts(
     let receipt_candidate = proposal_snapshot
         .verification_receipt_id
         .as_deref()
-        .and_then(|receipt_id| receipts_directory.and_then(|directory| {
-            load_verified_receipt(directory, receipt_id, &proposal_snapshot.content, now)
-                .ok()
-                .flatten()
-        }));
+        .and_then(|receipt_id| {
+            receipts_directory.and_then(|directory| {
+                load_verified_receipt(directory, receipt_id, &proposal_snapshot.content, now)
+                    .ok()
+                    .flatten()
+            })
+        });
     let memory_record_id = MemoryStore::transact(directory, |memory| {
         if let Some(existing) = memory.records.iter().find(|record| record.source == source) {
             return Ok(existing.id.clone());
@@ -333,11 +341,16 @@ pub fn approve_with_receipts(
             .find(|record| record.id == record_id)
             .context("newly added memory record disappeared before commit")?;
         record.source = source.clone();
-        record.claim_status = if proposal_snapshot.claim_status == MemoryClaimStatus::UnverifiedTaskOutcome
+        record.claim_status = if proposal_snapshot.claim_status
+            == MemoryClaimStatus::UnverifiedTaskOutcome
             && receipt_is_unused
         {
-            record.verification_receipt_id = receipt_candidate.as_ref().map(|receipt| receipt.verification_id().to_owned());
-            record.evidence_hash = receipt_candidate.as_ref().map(|receipt| receipt.evidence_hash().to_owned());
+            record.verification_receipt_id = receipt_candidate
+                .as_ref()
+                .map(|receipt| receipt.verification_id().to_owned());
+            record.evidence_hash = receipt_candidate
+                .as_ref()
+                .map(|receipt| receipt.evidence_hash().to_owned());
             MemoryClaimStatus::VerifiedTaskOutcome
         } else {
             proposal_snapshot.claim_status
@@ -385,7 +398,6 @@ fn decide_without_memory(
     save_unlocked(directory, &store)
 }
 
-
 const RECEIPT_MAX_AGE_SECONDS: u64 = 7 * 24 * 60 * 60;
 const TRUSTED_VERIFIER_ID: &str = "rocksoul.core.verifier";
 const TRUSTED_VERIFIER_VERSION: u16 = 1;
@@ -418,11 +430,14 @@ pub fn revoke_receipt(
     fs::create_dir_all(receipts_directory)?;
     let path = receipts_directory.join("revoked.jsonl");
     let mut file = OpenOptions::new().create(true).append(true).open(&path)?;
-    serde_json::to_writer(&mut file, &ReceiptRevocation {
-        verification_id: verification_id.to_owned(),
-        revoked_at_unix: now,
-        reason_code: reason_code.to_owned(),
-    })?;
+    serde_json::to_writer(
+        &mut file,
+        &ReceiptRevocation {
+            verification_id: verification_id.to_owned(),
+            revoked_at_unix: now,
+            reason_code: reason_code.to_owned(),
+        },
+    )?;
     file.write_all(&[10])?;
     file.sync_all()?;
     crate::memory::downgrade_revoked_receipt_claims(memory_directory, verification_id, now)?;
@@ -468,20 +483,24 @@ fn load_verified_receipt(
     let expected_claim_hash = format!("{:x}", Sha256::digest(expected_claim.as_bytes()));
     for entry in fs::read_dir(receipts_directory)? {
         let path = entry?.path();
-        if !path.is_file()
-            || path.file_name().is_some_and(|name| name == "revoked.jsonl")
-        {
+        if !path.is_file() || path.file_name().is_some_and(|name| name == "revoked.jsonl") {
             continue;
         }
         let bytes = fs::read(&path)?;
         let document: serde_json::Value = serde_json::from_slice(&bytes)
             .with_context(|| format!("invalid verification receipt {}", path.display()))?;
-        if document.get("verification_id").and_then(serde_json::Value::as_str)
+        if document
+            .get("verification_id")
+            .and_then(serde_json::Value::as_str)
             != Some(verification_id)
         {
             continue;
         }
-        if document.get("schema_version").and_then(serde_json::Value::as_u64) != Some(2) {
+        if document
+            .get("schema_version")
+            .and_then(serde_json::Value::as_u64)
+            != Some(2)
+        {
             return Ok(None);
         }
         let receipt: VerificationReceipt = serde_json::from_value(document)?;
@@ -672,12 +691,20 @@ fn load_unlocked(directory: &Path) -> Result<ProposalStore> {
             let Some(legacy_source) = legacy_source else {
                 return Ok(ProposalStore::default());
             };
-            let bytes = fs::read(&legacy_source)
-                .with_context(|| format!("could not read legacy proposal store {}", legacy_source.display()))?;
-            let mut store: ProposalStore = serde_json::from_slice(&bytes)
-                .with_context(|| format!("invalid legacy proposal store {}", legacy_source.display()))?;
+            let bytes = fs::read(&legacy_source).with_context(|| {
+                format!(
+                    "could not read legacy proposal store {}",
+                    legacy_source.display()
+                )
+            })?;
+            let mut store: ProposalStore = serde_json::from_slice(&bytes).with_context(|| {
+                format!("invalid legacy proposal store {}", legacy_source.display())
+            })?;
             if store.schema_version != 1 {
-                bail!("unsupported legacy memory proposal schema version {}", store.schema_version);
+                bail!(
+                    "unsupported legacy memory proposal schema version {}",
+                    store.schema_version
+                );
             }
             store.schema_version = PROPOSAL_SCHEMA_VERSION;
             for proposal in &mut store.proposals {
@@ -692,7 +719,10 @@ fn load_unlocked(directory: &Path) -> Result<ProposalStore> {
             for old_path in [legacy, legacy_backup] {
                 if old_path.is_file() {
                     fs::remove_file(&old_path).with_context(|| {
-                        format!("could not remove migrated proposal snapshot {}", old_path.display())
+                        format!(
+                            "could not remove migrated proposal snapshot {}",
+                            old_path.display()
+                        )
                     })?;
                 }
             }
@@ -707,7 +737,10 @@ fn load_unlocked(directory: &Path) -> Result<ProposalStore> {
     let backup = directory.join(format!("{PROPOSAL_FILE}.bak"));
     if backup.exists() {
         fs::remove_file(&backup).with_context(|| {
-            format!("could not remove stale proposal backup {}", backup.display())
+            format!(
+                "could not remove stale proposal backup {}",
+                backup.display()
+            )
         })?;
     }
     Ok(store)
@@ -869,15 +902,16 @@ mod tests {
         timestamp: u64,
     ) {
         use crate::core::{
-            TurnEvent, TurnState, VerificationEvidence, VerificationOutcome,
-            VerificationRequest, verify_turn_and_award_xp,
+            TurnEvent, TurnState, VerificationEvidence, VerificationOutcome, VerificationRequest,
+            verify_turn_and_award_xp,
         };
         use crate::rid::{RuhIdentity, RuhProfile};
 
         let mut profile = RuhProfile::new(RuhIdentity {
             instance_id: "receipt-fixture".to_owned(),
             created_at_unix: 1,
-        }).unwrap();
+        })
+        .unwrap();
         let mut turn = TurnState::new("receipt-task", 0);
         turn.apply(TurnEvent::Start).unwrap();
         turn.apply(TurnEvent::PlanAccepted).unwrap();
@@ -895,19 +929,27 @@ mod tests {
                 "test-evidence:artifact",
                 true,
             )],
-        ).with_claim(claim);
+        )
+        .with_claim(claim);
         let receipt = match verify_turn_and_award_xp(&mut turn, &mut profile, request).unwrap() {
             VerificationOutcome::Verified { receipt, .. } => receipt,
             other => panic!("expected a verified fixture receipt, got {other:?}"),
         };
         fs::create_dir_all(receipts_directory).unwrap();
         let mut document = serde_json::to_value(&receipt).unwrap();
-        document.as_object_mut().unwrap().insert("schema_version".into(), serde_json::json!(2));
-        document.as_object_mut().unwrap().insert("operation_id".into(), serde_json::json!("test-operation"));
+        document
+            .as_object_mut()
+            .unwrap()
+            .insert("schema_version".into(), serde_json::json!(2));
+        document
+            .as_object_mut()
+            .unwrap()
+            .insert("operation_id".into(), serde_json::json!("test-operation"));
         fs::write(
             receipts_directory.join("fixture-receipt.json"),
             serde_json::to_vec_pretty(&document).unwrap(),
-        ).unwrap();
+        )
+        .unwrap();
     }
 
     fn task_candidate(content: &str, receipt_id: Option<&str>) -> MemoryProposalCandidate {
