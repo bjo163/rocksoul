@@ -1167,6 +1167,35 @@ mod tests {
     use super::{App, Screen, Snapshot};
 
     #[test]
+    fn memory_filters_cycle_through_known_values_and_reset() {
+        assert_eq!(
+            super::next_memory_kind(None),
+            Some(crate::memory::MemoryKind::Episodic)
+        );
+        assert_eq!(
+            super::next_memory_kind(Some(crate::memory::MemoryKind::Derived)),
+            None
+        );
+        assert_eq!(
+            super::next_memory_claim_status(None),
+            Some(crate::memory::MemoryClaimStatus::UserAssertion)
+        );
+        assert_eq!(
+            super::next_memory_claim_status(Some(
+                crate::memory::MemoryClaimStatus::ContradictedSuperseded
+            )),
+            None
+        );
+    }
+
+    #[test]
+    fn memory_metadata_clipping_removes_controls_and_bounds_length() {
+        let text = super::clip_text("source\u{001b}[31m-private", 10);
+        assert!(!text.chars().any(char::is_control));
+        assert!(text.chars().count() <= 10);
+    }
+
+    #[test]
     fn trace_metadata_is_control_free_and_bounded() {
         let value = serde_json::json!("safe\u{001b}[31m-secret");
         let text = super::safe_trace_text(Some(&value), 8);
