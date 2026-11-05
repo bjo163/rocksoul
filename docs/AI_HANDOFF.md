@@ -256,11 +256,11 @@ A task is complete only when:
 6. Related issue is closed with the merge evidence.
 7. The next task is recorded with dependencies and acceptance criteria.
 
-## 10. Next task selected — issue #9 Cognitive Cockpit completion
+## 10. Next task selected — Issue #8 independent catalogue review
 
-Issue #35 is complete. The next selected implementation task is [#9 — Cognitive Cockpit completion](https://github.com/bjo163/rocksoul/issues/9), based on the existing TUI rather than a new interface.
+Issue #35 and Issue #9 are complete. Issue #9's Cognitive Cockpit was merged by PR #65 as `6474cd130bd8146f03dcacb757d9c341d4b1161a`, and Issue #9 is closed. The next dependency gate is an independent human religious/language review of the existing 99-entry catalogue in [Issue #8](https://github.com/bjo163/rocksoul/issues/8). AI self-review must not be used as religious or language approval.
 
-Execution plan: [spec](plans/issue-9/spec.md), [design](plans/issue-9/design.md), [small autonomous tasks](plans/issue-9/task.md), and [agent rules](plans/issue-9/rules.md).
+Completed execution record: [Issue #9 spec](plans/issue-9/spec.md), [design](plans/issue-9/design.md), [task ledger](plans/issue-9/task.md), and [agent rules](plans/issue-9/rules.md).
 
 Audit findings from main:
 - Eight screens, keyboard navigation, command palette/help and Ratatui terminal lifecycle already exist.
@@ -285,16 +285,15 @@ For every new task, write/update an execution plan with:
 - Rollback/recovery notes.
 - Handoff summary for the next agent.
 
-## 12. Active handoff — Issue #9 final integration
+## 12. Completed handoff — Issue #9 Cognitive Cockpit
 
-**Issue:** [#9 Cognitive Cockpit](https://github.com/bjo163/rocksoul/issues/9)  
-**PR:** [#65 — feat(tui): complete Rocksoul Cognitive Cockpit](https://github.com/bjo163/rocksoul/pull/65)  
-**Task branch:** `feat/tui-cockpit-completion`  
-**PR base SHA:** `0e89bcec834880d3e6aca3f066507c44834c2eb7`  
-**Validated head:** `e6cac1fbee4f99bbbdef3f7190161c0e9a8941f1`  
-**Validation:** [CI #42070438679](https://github.com/bjo163/rocksoul/actions/runs/42070438679) — Linux and Windows both passed.
+**Issue:** [#9 Cognitive Cockpit](https://github.com/bjo163/rocksoul/issues/9) — closed  
+**PR:** [#65 — feat(tui): complete Rocksoul Cognitive Cockpit](https://github.com/bjo163/rocksoul/pull/65) — merged  
+**Validated PR head:** `383d8cfa3998105d34f6897b93bc14bce5329a55`  
+**Merge commit / verified main SHA:** `6474cd130bd8146f03dcacb757d9c341d4b1161a`  
+**Validation:** [CI #42071047960](https://github.com/bjo163/rocksoul/actions/runs/42071047960) — Linux and Windows passed.
 
-### Implemented on the PR branch (not yet on main)
+### Merged capabilities
 
 - Typed snapshot projections load RID, model configuration presence, memory store/health, bounded task history, Core Integrity and memory retrieval reports, and presentation preferences once; render functions are read-only.
 - Task Monitor reads a bounded content-free JSONL trace (1 MiB ceiling), newest-first, with keyboard selection/detail and sanitized metadata only.
@@ -306,19 +305,20 @@ For every new task, write/update an execution plan with:
 
 ### Exact-head validation evidence
 
-- Linux CI #42070438679: formatting and Clippy passed; 130 tests passed; Core Integrity 23/23; memory retrieval precision@2 1.000 and recall@2 1.000.
-- Windows CI #42070438679: release build and 129 tests passed; Core Integrity 22/22; memory retrieval precision@2 1.000 and recall@2 1.000; installer/portable packaging, clean portable smoke, installer install/init/uninstall-preservation smoke and artifact uploads passed.
-- Full eight-file diff reviewed against Issue #9 and safety invariants. Earlier CI defects (rustfmt, missing Palette argument, unused/recursive tool-registry helper) were fixed before this validated head.
+- Linux CI #42071047960: formatting and Clippy passed; 130 tests passed; Core Integrity 23/23; memory retrieval precision@2 1.000 and recall@2 1.000.
+- Windows CI #42071047960: release build and 129 tests passed; Core Integrity 22/22; memory retrieval precision@2 1.000 and recall@2 1.000; installer/portable packaging, clean portable smoke, installer install/init/uninstall-preservation smoke and artifact uploads passed.
+- Full 13-file diff reviewed against Issue #9 and safety invariants. Earlier CI defects (rustfmt, missing Palette argument, unused/recursive tool-registry helper) were fixed before validation.
 
-### Remaining integration actions
+### Integration verified
 
-1. Confirm PR #65 is still open and its head remains the validated SHA above.
-2. Mark the PR ready for review and merge into `main` only after confirming required checks remain green.
-3. Fetch `main`; record the merge commit SHA and verify all eight PR files are present on main.
-4. Close Issue #9 with the merge SHA and CI #42070438679 evidence.
-5. Update this handoff and progress snapshot with the actual post-merge main SHA and select the next dependency-safe task.
+1. PR #65 was marked ready and squash-merged into `main`.
+2. `main` was fetched after merge and verified at `6474cd130bd8146f03dcacb757d9c341d4b1161a`.
+3. Issue #9 was closed as completed with merge and CI evidence.
+4. README, progress, roadmap, terminal UI guide, architecture and task ledger were synchronized after merge.
 
-Do not claim Issue #9 complete until steps 2–5 are verified on GitHub.
+### Next dependency-safe task
+
+Issue #8 requires independent human religious/language review of the 99-entry catalogue. Do not self-approve this review with an AI model. Issue #13's evaluation harness remains blocked until dependencies #4, #5, #8 and #9 are audited and closed.
 
 ## 11. Known deferred work (do not mark complete prematurely)
 
