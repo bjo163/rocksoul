@@ -274,6 +274,9 @@ impl MemoryStore {
         if expires_at_unix.is_some_and(|expires| expires <= now) {
             bail!("memory expiry must be in the future");
         }
+        if expires_at_unix.is_some() && kind != MemoryKind::Working {
+            bail!("expiry retention is currently supported only for working memory");
+        }
 
         let nanos = SystemTime::now()
             .duration_since(UNIX_EPOCH)
@@ -439,7 +442,8 @@ impl MemoryStore {
         })?;
         let path = export_dir.join("latest.json");
         let now = now_unix()?;
-        let forgotten_ids = load_forgetting_ids(directory)?.into_iter().collect();
+        let mut forgotten_ids = load_forgetting_ids(directory)?.into_iter().collect::<Vec<_>>();
+        forgotten_ids.sort();
         let export = MemoryExport {
             schema_version: self.schema_version,
             retention_policy_version: RETENTION_POLICY_VERSION,
@@ -791,7 +795,10 @@ mod tests {
             retention_policy: RetentionPolicy::ExpireAt,
         });
         let legacy_path = legacy_store_path(&directory);
-        fs::write(&legacy_path, serde_json::to_vec_pretty(&legacy).unwrap()).unwrap();
+        let mut legacy_json = serde_json::to_value(&legacy).unwrap();
+        legacy_json["records"][0].as_object_mut().unwrap().remove("retention_policy_version");
+        legacy_json["records"][0].as_object_mut().unwrap().remove("retention_policy");
+        fs::write(&legacy_path, serde_json::to_vec_pretty(&legacy_json).unwrap()).unwrap();
 
         let migrated = MemoryStore::load(&directory).unwrap();
         assert_eq!(migrated.schema_version, MEMORY_SCHEMA_VERSION);
