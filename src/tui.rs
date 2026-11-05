@@ -211,9 +211,15 @@ impl App {
             KeyCode::BackTab => self.select_screen(Screen::from_index(self.screen.index() + 7)),
             KeyCode::Up if self.screen == Screen::Rid => self.move_stat(-1),
             KeyCode::Down if self.screen == Screen::Rid => self.move_stat(1),
-            KeyCode::Up if self.screen == Screen::Memory => self.memory_selected = self.memory_selected.saturating_sub(1),
-            KeyCode::Down if self.screen == Screen::Memory => self.memory_selected = self.memory_selected.saturating_add(1).min(99),
-            KeyCode::Char('/') if self.screen == Screen::Memory => self.memory_search_active = true,
+            KeyCode::Up if self.screen == Screen::Memory => {
+                self.memory_selected = self.memory_selected.saturating_sub(1)
+            }
+            KeyCode::Down if self.screen == Screen::Memory => {
+                self.memory_selected = self.memory_selected.saturating_add(1).min(99)
+            }
+            KeyCode::Char('/') if self.screen == Screen::Memory => {
+                self.memory_search_active = true
+            }
             KeyCode::Char('k') if key.modifiers.contains(KeyModifiers::CONTROL) => {
                 self.palette_open = true
             }
