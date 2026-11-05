@@ -461,10 +461,7 @@ impl MemoryStore {
             .into_iter()
             .collect::<Vec<_>>();
         forgotten_ids.sort();
-        let forgotten_set = forgotten_ids
-            .iter()
-            .map(String::as_str)
-            .collect::<HashSet<_>>();
+        let forgotten_set = forgotten_ids.iter().cloned().collect::<HashSet<_>>();
         let export = MemoryExport {
             schema_version: self.schema_version,
             retention_policy_version: RETENTION_POLICY_VERSION,
@@ -474,7 +471,7 @@ impl MemoryStore {
             records: self
                 .active_records(now)
                 .into_iter()
-                .filter(|record| !forgotten_set.contains(record.id.as_str()))
+                .filter(|record| !forgotten_set.contains(&record.id))
                 .cloned()
                 .collect(),
         };
