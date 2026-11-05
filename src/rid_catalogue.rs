@@ -168,8 +168,8 @@ mod tests {
         assert_eq!(catalogue.entries.len(), 99);
         assert_eq!(catalogue.by_slot(1).unwrap().label, "SEE");
         assert_eq!(catalogue.by_slot(99).unwrap().label, "RELIABILITY");
-        assert_eq!(catalogue.by_slot(0), None);
-        assert_eq!(catalogue.by_slot(100), None);
+        assert!(catalogue.by_slot(0).is_none());
+        assert!(catalogue.by_slot(100).is_none());
     }
 
     #[test]
