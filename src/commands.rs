@@ -4,6 +4,7 @@ use std::{
 };
 
 use anyhow::{Context, Result};
+use sha2::{Digest, Sha256};
 
 use crate::{
     cli::{Command, EvalCommand, EvalSuite, MemoryCommand, RidCommand, WorkspaceCommand},
@@ -170,6 +171,7 @@ fn receipt_matches_ignoring_verification_time(existing: &[u8], expected: &[u8]) 
     for document in [&mut existing, &mut expected] {
         if let Some(object) = document.as_object_mut() {
             object.remove("verified_at_unix");
+            object.remove("receipt_hash");
         }
     }
     Ok(existing == expected)
@@ -193,17 +195,13 @@ fn persist_workspace_receipt(
     })?;
     let operation_key = operation_id.rsplit(':').next().unwrap_or("unknown");
     let destination = receipt_dir.join(format!("workspace-{operation_key}.json"));
-    let document = serde_json::json!({
-        "schema_version": 1,
-        "operation_id": operation_id,
-        "task_id": receipt.task_id(),
-        "verification_id": receipt.verification_id(),
-        "verified_at_unix": receipt.verified_at_unix(),
-        "required_checks_passed": receipt.required_checks_passed(),
-        "total_checks": receipt.total_checks(),
-        "evidence_refs": receipt.evidence_refs(),
-        "xp_awarded": receipt.xp_awarded(),
-    });
+    let mut document = serde_json::to_value(receipt)
+        .context("could not serialize kernel verification receipt")?;
+    let object = document
+        .as_object_mut()
+        .context("verification receipt did not serialize as an object")?;
+    object.insert("schema_version".to_owned(), serde_json::json!(2));
+    object.insert("operation_id".to_owned(), serde_json::json!(operation_id));
     let mut encoded =
         serde_json::to_vec_pretty(&document).context("could not serialize verification receipt")?;
     encoded.push(b'\n');
@@ -440,6 +438,11 @@ async fn run_workspace(command: WorkspaceCommand) -> Result<()> {
             turn.apply(TurnEvent::PlanAccepted)?;
             turn.apply(TurnEvent::ActionCompleted)?;
             let verification_id = format!("workspace-artifact:{operation_id}");
+            let artifact_digest = format!("{:x}", Sha256::digest(proposal.content.as_bytes()));
+            let normalized_claim = format!(
+                "created workspace artifact {} sha256 {}",
+                proposal.filename, artifact_digest
+            );
             let request = VerificationRequest::new(
                 operation_id.clone(),
                 verification_id,
@@ -466,7 +469,8 @@ async fn run_workspace(command: WorkspaceCommand) -> Result<()> {
                         true,
                     ),
                 ],
-            );
+            )
+            .with_claim(normalized_claim);
             let verification = verify_turn_and_award_xp(&mut turn, &mut profile, request)?;
             rid_store::save(&paths.rid_file, &profile)
                 .context("could not persist RID after verification")?;
@@ -1244,7 +1248,7 @@ mod tests {
         assert_eq!(recovered_profile.total_xp(), xp_before_replay);
         let document: serde_json::Value =
             serde_json::from_slice(&fs::read(&path).unwrap()).unwrap();
-        assert_eq!(document["schema_version"], 1);
+        assert_eq!(document["schema_version"], 2);
         assert_eq!(document["operation_id"], "workspace:note.txt:abc123");
         assert_eq!(document["verification_id"], "workspace-verification:abc123");
         assert_eq!(document["evidence_refs"][0], "workspace-readback:abc123");
