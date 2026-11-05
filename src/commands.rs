@@ -742,7 +742,9 @@ fn rid_stats() -> Result<()> {
         profile.stats().len(),
         catalogue.catalogue_version
     );
-    println!("Each domain has a distinct measurement target; one evidence outcome must not be double-counted.");
+    println!(
+        "Each domain has a distinct measurement target; one evidence outcome must not be double-counted."
+    );
 
     for stat in profile.stats() {
         let entry = catalogue
