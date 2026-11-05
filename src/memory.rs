@@ -420,12 +420,13 @@ impl MemoryStore {
             let events = removed
                 .iter()
                 .map(|record| ForgetEvent {
-                id: record.id.clone(),
-                forgotten_at_unix: now,
-                reason: if record.expires_at_unix.is_some_and(|expires| expires <= now) {
-                    "retention_expired".to_owned()
-                } else {
-                    "user_forget".to_owned()
+                    id: record.id.clone(),
+                    forgotten_at_unix: now,
+                    reason: if record.expires_at_unix.is_some_and(|expires| expires <= now) {
+                        "retention_expired".to_owned()
+                    } else {
+                        "user_forget".to_owned()
+                    },
                 })
                 .collect::<Vec<_>>();
             append_forgetting_events(directory, &events)?;
