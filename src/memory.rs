@@ -1414,6 +1414,108 @@ mod tests {
     }
 
     #[test]
+    fn ranked_search_is_deterministic_and_returns_source_provenance() {
+        let directory = temp_dir();
+        MemoryStore::transact(&directory, |store| {
+            store.add_user_entry(
+                MemoryKind::Semantic,
+                "The canonical branch is main".into(),
+                vec!["git".into(), "branch".into()],
+                None,
+                10,
+            )?;
+            store.add_user_entry(
+                MemoryKind::Procedural,
+                "Use cargo fmt before Rust commits".into(),
+                vec!["rust".into()],
+                None,
+                20,
+            )?;
+            Ok(())
+        })
+        .unwrap();
+        let store = MemoryStore::load(&directory).unwrap();
+        let filters = super::MemorySearchFilters::default();
+        let first = store.search_ranked("cargo fmt rust", &filters, 30, 10);
+        let second = store.search_ranked("cargo fmt rust", &filters, 30, 10);
+        assert_eq!(first, second);
+        assert_eq!(first[0].kind, MemoryKind::Procedural);
+        assert_eq!(first[0].source, "user_explicit");
+        assert_eq!(first[0].source_confidence, None);
+        assert!(first[0].relevance_explanation.contains("matched"));
+        assert!(first[0].lexical_score > 0);
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn ranked_search_applies_kind_source_time_and_expiry_filters() {
+        let directory = temp_dir();
+        MemoryStore::transact(&directory, |store| {
+            store.add_user_entry(
+                MemoryKind::Semantic,
+                "canonical branch main".into(),
+                vec!["git".into()],
+                None,
+                10,
+            )?;
+            store.add_user_entry(
+                MemoryKind::Working,
+                "temporary canonical branch main".into(),
+                vec![],
+                Some(20),
+                11,
+            )?;
+            Ok(())
+        })
+        .unwrap();
+        let store = MemoryStore::load(&directory).unwrap();
+        let filters = super::MemorySearchFilters {
+            kind: Some(MemoryKind::Semantic),
+            source: Some("user_explicit".into()),
+            created_after_unix: Some(10),
+            created_before_unix: Some(10),
+        };
+        let results = store.search_ranked("canonical branch", &filters, 30, 10);
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].kind, MemoryKind::Semantic);
+        assert_eq!(store.search_ranked("canonical branch", &filters, 30, 0).len(), 0);
+        assert!(store.search_ranked("   ", &filters, 30, 10).is_empty());
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn ranked_search_never_returns_user_forgotten_records() {
+        let directory = temp_dir();
+        MemoryStore::transact(&directory, |store| {
+            store.add_user_entry(
+                MemoryKind::Semantic,
+                "secret project codename".into(),
+                vec![],
+                None,
+                10,
+            )?;
+            Ok(())
+        })
+        .unwrap();
+        let id = MemoryStore::load(&directory).unwrap().records[0].id.clone();
+        MemoryStore::transact(&directory, |store| {
+            assert!(store.delete(&id));
+            Ok(())
+        })
+        .unwrap();
+        let loaded = MemoryStore::load(&directory).unwrap();
+        assert!(loaded
+            .search_ranked(
+                "secret project codename",
+                &super::MemorySearchFilters::default(),
+                30,
+                10
+            )
+            .is_empty());
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
     fn export_is_written_under_the_memory_root() {
         let directory = temp_dir();
         let (store, _) = MemoryStore::initialize(&directory).unwrap();
