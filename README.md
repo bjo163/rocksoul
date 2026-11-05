@@ -41,7 +41,8 @@ The current seed runtime includes:
 - **RID profile** — local instance identity, age, append-only XP events, deterministic level progression, and 99 unrated capability slots.
 - **Cognitive Cockpit** — keyboard-first Ratatui terminal interface.
 - **Bounded cognition loop** — structured planning, up to three model-only reasoning steps, a structured reflector, and explicit per-turn budgets.
-- **Explicit local memory** — versioned local JSON store with retention metadata, dry-run expiry pruning, and tombstones that prevent forgotten records from returning through managed backup recovery.
+- **Explicit local memory** — versioned local JSON store with retention metadata, dry-run expiry pruning, managed forgetting tombstones, provenance-aware ranked retrieval, and offline retrieval evaluation.
+- **Human-reviewed model memory proposals** — candidates are redacted/validated, stored as pending proposals, and persisted only after an exact SHA-256-bound interactive approval. Candidate content is scrubbed from proposal audit records after approval, denial, or cancellation; silent writes remain disabled.
 - **Core Integrity evaluation** — deterministic offline checks for runtime invariants.
 
 The current release does **not** provide unrestricted shell execution, autonomous filesystem mutation, automatic code execution, multi-agent orchestration, or automatic self-modification. These are deliberate boundaries, not hidden capabilities.
@@ -124,6 +125,10 @@ rocksoul eval latest
 rocksoul eval memory-latest
 
 rocksoul memory list
+rocksoul memory propose semantic --content "Candidate fact" --source-turn-reference "turn-42" --provenance "model-name"
+rocksoul memory proposals
+rocksoul memory approve <proposal-id>   # exact interactive approval required
+rocksoul memory deny <proposal-id>
 rocksoul workspace write note.txt --content "A verified workspace artifact"
 rocksoul workspace trace
 rocksoul memory add semantic --content "A user-approved fact"

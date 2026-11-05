@@ -133,4 +133,28 @@ pub enum MemoryCommand {
     },
     /// Export active memory to data/memory/exports/latest.json.
     Export,
+    /// Create a pending candidate suggested by a model; does not write memory.
+    Propose {
+        #[arg(value_enum)]
+        kind: MemoryKind,
+        #[arg(long)]
+        content: String,
+        #[arg(long = "tag")]
+        tags: Vec<String>,
+        #[arg(long)]
+        source_turn_reference: String,
+        #[arg(long)]
+        provenance: String,
+        /// Suggest expiry after this many hours (working memory only).
+        #[arg(long)]
+        expires_in_hours: Option<u64>,
+    },
+    /// List pending and decided model memory proposals.
+    Proposals,
+    /// Review and approve one exact pending proposal interactively.
+    Approve { id: String },
+    /// Explicitly deny one pending proposal.
+    Deny { id: String },
+    /// Cancel one pending proposal without creating a memory record.
+    CancelProposal { id: String },
 }
