@@ -13,8 +13,19 @@ pub struct RidCatalogue {
     pub total_domains: usize,
     pub total_stats: usize,
     pub scoring: ScoringPolicy,
+    pub overlap_policy: OverlapPolicy,
     pub domains: Vec<UniversalDomain>,
     pub entries: Vec<CatalogueEntry>,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+pub struct OverlapPolicy {
+    pub directed_edge_count: usize,
+    pub unique_pair_count: usize,
+    pub principle: String,
+    pub evidence_reuse: String,
+    pub boundary_resolution: String,
+    pub review_status: String,
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -88,7 +99,7 @@ impl RidCatalogue {
             self.catalogue_id == "rocksoul.rid.universal_stats.v2",
             "unexpected universal RID catalogue identifier"
         );
-        ensure!(self.catalogue_version == "2.1.0", "unexpected universal RID catalogue version");
+        ensure!(self.catalogue_version == "2.2.0", "unexpected universal RID catalogue version");
         ensure!(self.total_domains == 99 && self.total_stats == 99, "catalogue totals must both equal 99");
         ensure!(self.domains.len() == 99, "RID catalogue must contain exactly 99 domains");
         ensure!(self.entries.len() == 99, "RID catalogue must contain exactly 99 stats");
@@ -103,8 +114,11 @@ impl RidCatalogue {
         let mut domain_keys = HashSet::with_capacity(99);
         let mut domain_labels = HashSet::with_capacity(99);
         let mut measurement_targets = HashSet::with_capacity(99);
+        let mut separation_rules = HashSet::with_capacity(99);
         let mut stat_ids = HashSet::with_capacity(99);
         let mut stat_keys = HashSet::with_capacity(99);
+        let mut stat_labels = HashSet::with_capacity(99);
+        let mut directed_edge_count = 0usize;
         for (index, domain) in self.domains.iter().enumerate() {
             let slot = index as u8 + 1;
             ensure!(domain.slot == slot, "RID domain slot order mismatch at {slot}");
@@ -121,9 +135,17 @@ impl RidCatalogue {
                 "RID domain construct metadata is incomplete at {slot}"
             );
             ensure!(domain_ids.insert(domain.id.as_str()), "duplicate RID domain ID: {}", domain.id);
-            ensure!(domain_keys.insert(domain.key.as_str()), "duplicate RID domain key: {}", domain.key);
-            ensure!(domain_labels.insert(domain.label.as_str()), "duplicate RID domain label: {}", domain.label);
-            ensure!(measurement_targets.insert(domain.measurement_target.as_str()), "duplicate RID measurement target at slot {slot}");
+            ensure!(domain_keys.insert(domain.key.to_ascii_lowercase()), "duplicate RID domain key: {}", domain.key);
+            ensure!(domain_labels.insert(domain.label.trim().to_ascii_lowercase()), "duplicate RID domain label: {}", domain.label);
+            ensure!(measurement_targets.insert(domain.measurement_target.trim().to_ascii_lowercase()), "duplicate RID measurement target at slot {slot}");
+            ensure!(separation_rules.insert(domain.separation_rule.trim().to_ascii_lowercase()), "duplicate or generic RID separation rule at slot {slot}");
+            ensure!(domain.key.chars().all(|ch| ch.is_ascii_lowercase() || ch.is_ascii_digit() || ch == '_'), "RID domain key must be lowercase snake_case at slot {slot}");
+            let mut adjacent_ids = HashSet::with_capacity(domain.overlap_with.len());
+            ensure!(domain.overlap_with.windows(2).all(|pair| pair[0] < pair[1]), "RID overlap list must be sorted and unique at slot {slot}");
+            for adjacent in &domain.overlap_with {
+                ensure!(adjacent_ids.insert(adjacent.as_str()), "duplicate overlap reference {adjacent} at slot {slot}");
+                directed_edge_count += 1;
+            }
         }
 
         for (index, entry) in self.entries.iter().enumerate() {
@@ -150,7 +172,10 @@ impl RidCatalogue {
                 "RID stat metadata or initial state is invalid at {slot}"
             );
             ensure!(stat_ids.insert(entry.stat_id.as_str()), "duplicate RID stat ID: {}", entry.stat_id);
-            ensure!(stat_keys.insert(entry.key.as_str()), "duplicate RID stat key: {}", entry.key);
+            ensure!(stat_keys.insert(entry.key.to_ascii_lowercase()), "duplicate RID stat key: {}", entry.key);
+            ensure!(stat_labels.insert(entry.label.trim().to_ascii_lowercase()), "duplicate RID stat label: {}", entry.label);
+            ensure!(entry.key.chars().all(|ch| ch.is_ascii_lowercase() || ch.is_ascii_digit() || ch == '_'), "RID stat key must be lowercase snake_case at slot {slot}");
+            ensure!(entry.evaluation_protocol.contains(&domain.separation_rule), "RID evaluation protocol omits its domain-specific separation rule at slot {slot}");
             for adjacent in &entry.overlap_with {
                 ensure!(domain_ids.contains(adjacent.as_str()), "unknown overlap domain {adjacent} at stat {slot}");
                 ensure!(adjacent != &entry.domain_id, "domain cannot overlap itself at stat {slot}");
@@ -159,6 +184,17 @@ impl RidCatalogue {
                 ensure!(reverse, "overlap relation must be symmetric: {} ↔ {adjacent}", entry.domain_id);
             }
         }
+
+        ensure!(directed_edge_count == self.overlap_policy.directed_edge_count, "RID overlap directed-edge count mismatch");
+        ensure!(directed_edge_count % 2 == 0, "RID overlap graph must have reciprocal edge pairs");
+        ensure!(self.overlap_policy.unique_pair_count == directed_edge_count / 2, "RID overlap unique-pair count mismatch");
+        ensure!(
+            !self.overlap_policy.principle.trim().is_empty()
+                && !self.overlap_policy.evidence_reuse.trim().is_empty()
+                && !self.overlap_policy.boundary_resolution.trim().is_empty()
+                && !self.overlap_policy.review_status.trim().is_empty(),
+            "RID overlap policy metadata is incomplete"
+        );
 
         Ok(())
     }
@@ -199,6 +235,27 @@ mod tests {
                 assert!(catalogue.domains.iter().any(|candidate| &candidate.id == adjacent));
             }
         }
+    }
+
+    #[test]
+    fn overlap_graph_counts_and_domain_specific_rules_are_pinned() {
+        let catalogue = RidCatalogue::embedded().unwrap();
+        assert_eq!(catalogue.overlap_policy.directed_edge_count, 274);
+        assert_eq!(catalogue.overlap_policy.unique_pair_count, 137);
+        assert_eq!(catalogue.domains.iter().map(|domain| domain.separation_rule.as_str()).collect::<std::collections::HashSet<_>>().len(), 99);
+    }
+
+    #[test]
+    fn validator_rejects_duplicate_stat_labels_and_overlap_edges() {
+        let mut catalogue = RidCatalogue::embedded().unwrap();
+        let duplicate_label = catalogue.entries[0].label.clone();
+        catalogue.entries[1].label = duplicate_label;
+        assert!(catalogue.validate().is_err());
+
+        let mut catalogue = RidCatalogue::embedded().unwrap();
+        let duplicate_edge = catalogue.domains[4].overlap_with[0].clone();
+        catalogue.domains[4].overlap_with.push(duplicate_edge);
+        assert!(catalogue.validate().is_err());
     }
 
     #[test]
