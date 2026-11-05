@@ -195,8 +195,8 @@ fn persist_workspace_receipt(
     })?;
     let operation_key = operation_id.rsplit(':').next().unwrap_or("unknown");
     let destination = receipt_dir.join(format!("workspace-{operation_key}.json"));
-    let mut document = serde_json::to_value(receipt)
-        .context("could not serialize kernel verification receipt")?;
+    let mut document =
+        serde_json::to_value(receipt).context("could not serialize kernel verification receipt")?;
     let object = document
         .as_object_mut()
         .context("verification receipt did not serialize as an object")?;
@@ -844,7 +844,13 @@ async fn run_memory(command: MemoryCommand) -> Result<()> {
             println!("Source turn: {}", proposal.source_turn_reference);
             println!("Provenance: {}", proposal.provenance);
             println!("Claim status: {}", proposal.claim_status);
-            println!("Verification receipt: {}", proposal.verification_receipt_id.as_deref().unwrap_or("none"));
+            println!(
+                "Verification receipt: {}",
+                proposal
+                    .verification_receipt_id
+                    .as_deref()
+                    .unwrap_or("none")
+            );
             println!("Fingerprint: {}", proposal.fingerprint);
             println!("Review with: rocksoul memory approve {}", proposal.id);
         }
@@ -861,7 +867,10 @@ async fn run_memory(command: MemoryCommand) -> Result<()> {
                     proposal.status,
                     proposal.claim_status,
                     proposal.source_turn_reference,
-                    proposal.verification_receipt_id.as_deref().unwrap_or("none"),
+                    proposal
+                        .verification_receipt_id
+                        .as_deref()
+                        .unwrap_or("none"),
                     proposal.fingerprint
                 );
                 if let Some(memory_id) = proposal.memory_record_id {
@@ -911,14 +920,19 @@ async fn run_memory(command: MemoryCommand) -> Result<()> {
                 now_unix()?,
             )?;
             let store = MemoryStore::load(&paths.memory_dir)?;
-            let record = store.records.iter().find(|record| record.id == memory_id)
+            let record = store
+                .records
+                .iter()
+                .find(|record| record.id == memory_id)
                 .context("approved memory record was not found after persistence")?;
             println!("Approved exact proposal and persisted memory record {memory_id}.");
             println!("Claim status: {}", record.claim_status);
             if let Some(receipt_id) = &record.verification_receipt_id {
                 println!("Kernel receipt: {receipt_id}");
             } else if record.claim_status == MemoryClaimStatus::UnverifiedTaskOutcome {
-                println!("Outcome remains UNVERIFIED: no fresh, exact, unused, non-revoked kernel receipt matched.");
+                println!(
+                    "Outcome remains UNVERIFIED: no fresh, exact, unused, non-revoked kernel receipt matched."
+                );
             }
         }
         MemoryCommand::Deny { id } => {
@@ -931,9 +945,14 @@ async fn run_memory(command: MemoryCommand) -> Result<()> {
         }
         MemoryCommand::Supersede { id } => {
             crate::memory::supersede_claim(&paths.memory_dir, &id, now_unix()?)?;
-            println!("Memory claim {id} marked contradicted/superseded; correction history was appended.");
+            println!(
+                "Memory claim {id} marked contradicted/superseded; correction history was appended."
+            );
         }
-        MemoryCommand::RevokeReceipt { verification_id, reason_code } => {
+        MemoryCommand::RevokeReceipt {
+            verification_id,
+            reason_code,
+        } => {
             memory_proposal::revoke_receipt(
                 &paths.logs_dir.join("receipts"),
                 &paths.memory_dir,
@@ -941,7 +960,9 @@ async fn run_memory(command: MemoryCommand) -> Result<()> {
                 now_unix()?,
                 &reason_code,
             )?;
-            println!("Revoked kernel receipt {verification_id}; it cannot verify future memory claims.");
+            println!(
+                "Revoked kernel receipt {verification_id}; it cannot verify future memory claims."
+            );
         }
         MemoryCommand::Export => {
             let store = MemoryStore::load(&paths.memory_dir)?;
