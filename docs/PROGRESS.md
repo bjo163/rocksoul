@@ -1,6 +1,6 @@
 # Rocksoul Project Progress
 
-**Last updated:** 2026-11-05 (Asia/Jakarta, PR #53 validation passed; merge pending)  
+**Last updated:** 2026-11-05 (Asia/Jakarta, after PR #53 merge; preparing Issue #9 handoff)  
 **Repository:** [bjo163/rocksoul](https://github.com/bjo163/rocksoul)  
 **Canonical branch:** `main`  
 **Current principle:** One Core. Infinite Evolution.
@@ -14,7 +14,7 @@ This is the durable progress snapshot for maintainers and delegated/local AI age
 | Product foundation | **In place** | One Rust Cargo package, one portable native executable, CLI/REPL and optional Ratatui cockpit |
 | Stage 0 — Seed CLI | **Implemented** | Windows release build and automated installer/portable smoke tests; manual clean-device upgrade test remains |
 | Stage 1 — Reliable cognition | **Vertical slice merged** | PR #34, merge commit `0f5ca4bc4d1c65322cb02963fcc23c53fa990f5d`; CI #248 passed |
-| Stage 1 follow-through | **Implementation + CI complete; merge pending** | Issue #35 / PR #53: crash recovery, receipt integrity, versioned acceptance checks, Core Integrity v1.3.0; Linux and Windows CI #42043396826 passed |
+| Stage 1 follow-through | **Merged and verified** | PR #53 merged as `458df81f`; issue #35 closed; CI #42044132321 passed on Linux and Windows |
 | Stage 2 — Persistent memory | **Complete on main** | Schema v4, locking, retention/forgetting, evaluated retrieval and human-reviewed proposals; see PRs #43/#46/#47/#49/#50/#51 |
 | Stage 2 claim integrity | **Merged** | PR #51 merged as `260d29852bb30f2f63129271a07cd368fafccc3f`; issue #44 closed; CI #42008862735 passed on Linux and Windows |
 | Stage 3 — Skills/tools | **Not started** | No general tool registry or arbitrary tool execution |
@@ -105,7 +105,7 @@ The receipt digest is tamper-evident integrity metadata, not a digital signature
 
 ## 3. Completed implementation — Issue #35 / PR #53
 
-**PR:** https://github.com/bjo163/rocksoul/pull/53 (ready for review; not merged)  
+**PR:** https://github.com/bjo163/rocksoul/pull/53 (merged)  
 **Issue:** https://github.com/bjo163/rocksoul/issues/35 (closed)  
 **Merge SHA:** `458df81f87ae0b328dbc12c2b2829ca3a0ff75d9`  
 **Validated PR head:** `c9c605d6896930e5a36f30bb8d3fbe2ecfdd5484`  
@@ -147,12 +147,12 @@ This progress snapshot was refreshed after PR #53 merged and `main` was verified
 
 ### Immediate
 
-1. Continue the existing [PR #53](https://github.com/bjo163/rocksoul/pull/53); do not create a duplicate branch or PR.
-2. Re-run full CI on the latest PR head after the formatting and evaluation/documentation commits.
-3. Fix any Linux/Windows failures, inspect the full diff and review threads, and verify Core Integrity v1.3.0 reports all new checks.
-4. Update the PR body with exact current head and CI evidence; mark ready only after checks pass.
-5. Merge to `main`, verify the resulting main SHA, then close issue #35 with the evidence.
-6. Keep arbitrary shell, unrestricted tools, automatic memory capture and memory context injection out of scope.
+1. Start [Issue #9 — Cognitive Cockpit completion](https://github.com/bjo163/rocksoul/issues/9) from the latest `main`; use [spec](plans/issue-9/spec.md), [design](plans/issue-9/design.md), [task list](plans/issue-9/task.md), and [agent rules](plans/issue-9/rules.md).
+2. Audit the existing eight-screen TUI before editing; preserve the one-core/read-only boundary and the current terminal lifecycle.
+3. Implement real read models for persisted task trace, memory browsing, diagnostics/evaluation report, and truthful Brains/Tools status.
+4. Add portable presentation preferences, accessibility/responsive tests, and correct the stale memory store path shown in the cockpit.
+5. Run Linux and Windows CI, update docs, merge through a PR to main, verify main and close issue #9.
+6. Keep arbitrary shell, generic tool execution, automatic memory capture and memory context injection out of scope.
 
 ### Current next task: #9 — Cognitive Cockpit completion
 
