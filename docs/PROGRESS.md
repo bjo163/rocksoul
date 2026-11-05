@@ -197,3 +197,30 @@ A feature is complete only when:
 - Next task has small, executable acceptance criteria.
 
 Never label an in-progress workflow as passed. Never close an issue because a branch or PR merely exists.
+
+
+## RID Universal 99 Stats — taxonomy finalized (runtime migration pending)
+
+**Canonical taxonomy:** `data/rid/universal_stats.v1.json`  
+**Version:** `1.0.0`  
+**Commit:** `10a59dbff72c71ef11833bf25634b9b27aa3d1e1`
+
+Delivered:
+- Exactly 99 universal capability stats, organized into nine domains with eleven stats each.
+- Short action-word labels such as SEE, HEAR, READ, REMEMBER, LEARN, UNDERSTAND, REASON, EXECUTE, VERIFY, CREATE, CALIBRATE, COORDINATE, and TRUST.
+- Stable universal identifiers `rid_stat:01` through `rid_stat:99`.
+- Operational definition and evidence-oriented evaluation protocol for every entry.
+- Explicit initial `unrated` state, score/confidence bounds, evaluator gate, and distinction between `not_applicable` and zero.
+- The Asmaul Husna catalogue is documented as a separate reference layer; its ordinal pairings do not define technical stat semantics.
+
+Important compatibility boundary:
+- Existing Rust RID structures and saved profiles still use `asmaul_husna:NN` identifiers. No runtime migration or score reinterpretation has been performed.
+- Do not replace the embedded runtime catalogue or migrate saved profiles until the Rust model, CLI, Cockpit, persistence migration, and profile-fixture tests are updated together.
+- Religious names, transliterations, glosses, and any optional editorial associations still require qualified independent religious/language review. This review is not represented as complete.
+
+Next:
+1. Implement versioned Rust catalogue loading/validation for the universal schema.
+2. Add explicit legacy-to-universal ID migration while preserving all score/evidence history and backup recovery.
+3. Update CLI and Cockpit to display universal labels and meanings.
+4. Add exhaustive schema, migration, duplicate/overlap, and profile compatibility tests.
+5. Keep Issue #8 open for independent religious/language review; close the technical catalogue work only when its acceptance gates are satisfied.
