@@ -14,9 +14,12 @@ use anyhow::{Context, Result, anyhow, bail};
 use clap::ValueEnum;
 use serde::{Deserialize, Serialize};
 
-pub const MEMORY_SCHEMA_VERSION: u16 = 2;
-const STORE_FILE: &str = "store.v2.json";
+pub const MEMORY_SCHEMA_VERSION: u16 = 3;
+pub const RETENTION_POLICY_VERSION: u16 = 1;
+const STORE_FILE: &str = "store.v3.json";
+const LEGACY_V2_STORE_FILE: &str = "store.v2.json";
 const LEGACY_STORE_FILE: &str = "store.v1.json";
+const FORGETTING_LEDGER_FILE: &str = "forgetting.jsonl";
 const LOCK_FILE: &str = ".memory.lock";
 const LOCK_TIMEOUT: Duration = Duration::from_secs(5);
 const LOCK_RETRY_INTERVAL: Duration = Duration::from_millis(25);
@@ -43,6 +46,14 @@ impl std::fmt::Display for MemoryKind {
     }
 }
 
+#[derive(Clone, Copy, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum RetentionPolicy {
+    #[default]
+    KeepUntilDeleted,
+    ExpireAt,
+}
+
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub struct MemoryRecord {
     pub id: String,
@@ -55,6 +66,10 @@ pub struct MemoryRecord {
     pub created_at_unix: u64,
     pub updated_at_unix: u64,
     pub expires_at_unix: Option<u64>,
+    #[serde(default = "default_retention_policy_version")]
+    pub retention_policy_version: u16,
+    #[serde(default)]
+    pub retention_policy: RetentionPolicy,
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
@@ -82,7 +97,11 @@ impl MemoryStore {
         let _lock = acquire_store_lock(directory)?;
         let path = store_path(directory);
         let legacy = legacy_store_path(directory);
-        if path.exists() || backup_path(&path).exists() || legacy.exists() {
+        if path.exists()
+            || backup_path(&path).exists()
+            || legacy.exists()
+            || legacy_v2_store_path(directory).exists()
+        {
             return Ok((Self::load_unlocked(directory)?, false));
         }
         let store = Self::default();
@@ -105,7 +124,10 @@ impl MemoryStore {
         let backup = backup_path(&path);
         if path.exists() {
             match read_current_store(&path) {
-                Ok(store) => return Ok(store),
+                Ok(mut store) => {
+                    apply_forgetting_ledger(directory, &mut store)?;
+                    return Ok(store);
+                },
                 Err(primary_error) => {
                     // Unknown future versions must fail closed; never replace them
                     // with an older backup or legacy document.
@@ -120,6 +142,9 @@ impl MemoryStore {
                             )
                         })?;
                         restore_backup(&backup, &path)?;
+                        let mut recovered = recovered;
+                        apply_forgetting_ledger(directory, &mut recovered)?;
+                        scrub_forgotten_snapshots(directory)?;
                         eprintln!(
                             "Recovered memory store from validated backup: {}",
                             backup.display()
@@ -132,8 +157,10 @@ impl MemoryStore {
         }
 
         if backup.is_file() {
-            let recovered = read_current_store(&backup)?;
+            let mut recovered = read_current_store(&backup)?;
             restore_backup(&backup, &path)?;
+            apply_forgetting_ledger(directory, &mut recovered)?;
+            scrub_forgotten_snapshots(directory)?;
             eprintln!(
                 "Recovered missing memory store from validated backup: {}",
                 backup.display()
@@ -141,30 +168,42 @@ impl MemoryStore {
             return Ok(recovered);
         }
 
-        let legacy = legacy_store_path(directory);
-        if legacy.is_file() {
+        for (legacy, expected_version) in [
+            (legacy_v2_store_path(directory), 2_u16),
+            (legacy_store_path(directory), 1_u16),
+        ] {
+            if !legacy.is_file() {
+                continue;
+            }
             let bytes = fs::read(&legacy).with_context(|| {
                 format!("could not read legacy memory store {}", legacy.display())
             })?;
             let mut store: Self = serde_json::from_slice(&bytes).with_context(|| {
-                format!(
-                    "legacy memory store is not valid JSON: {}",
-                    legacy.display()
-                )
+                format!("legacy memory store is not valid JSON: {}", legacy.display())
             })?;
-            if store.schema_version != 1 {
+            if store.schema_version != expected_version {
                 bail!(
-                    "legacy memory store has unsupported schema version {}; expected 1",
-                    store.schema_version
+                    "legacy memory store {} has unsupported schema version {}; expected {}",
+                    legacy.display(),
+                    store.schema_version,
+                    expected_version
                 );
             }
-            // v1 and v2 currently share record fields. Keep this migration explicit
-            // so future schema changes can add typed transformations here.
             store.schema_version = MEMORY_SCHEMA_VERSION;
+            for record in &mut store.records {
+                record.retention_policy_version = RETENTION_POLICY_VERSION;
+                record.retention_policy = if record.expires_at_unix.is_some() {
+                    RetentionPolicy::ExpireAt
+                } else {
+                    RetentionPolicy::KeepUntilDeleted
+                };
+            }
             store.validate()?;
+            apply_forgetting_ledger(directory, &mut store)?;
             store.save_unlocked(directory)?;
             eprintln!(
-                "Migrated memory store schema v1 to v{}; original retained at {}",
+                "Migrated memory store schema v{} to v{}; original retained at {}",
+                expected_version,
                 MEMORY_SCHEMA_VERSION,
                 legacy.display()
             );
@@ -209,6 +248,14 @@ impl MemoryStore {
             if record.tags.iter().any(|tag| tag.trim().is_empty()) {
                 bail!("memory tags must not be empty");
             }
+            if record.retention_policy_version != RETENTION_POLICY_VERSION {
+                bail!("unsupported memory retention policy version {}", record.retention_policy_version);
+            }
+            if (record.retention_policy == RetentionPolicy::ExpireAt)
+                != record.expires_at_unix.is_some()
+            {
+                bail!("memory retention policy and expiry timestamp are inconsistent");
+            }
         }
         Ok(())
     }
@@ -244,6 +291,12 @@ impl MemoryStore {
             created_at_unix: now,
             updated_at_unix: now,
             expires_at_unix,
+            retention_policy_version: RETENTION_POLICY_VERSION,
+            retention_policy: if expires_at_unix.is_some() {
+                RetentionPolicy::ExpireAt
+            } else {
+                RetentionPolicy::KeepUntilDeleted
+            },
         };
         self.records.push(record);
         self.revision = self.revision.saturating_add(1);
