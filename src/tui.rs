@@ -1335,6 +1335,23 @@ mod tests {
     use super::{App, Screen, Snapshot};
 
     #[test]
+    fn all_screens_render_at_standard_wide_and_narrow_sizes() {
+        use ratatui::{backend::TestBackend, Terminal};
+
+        let mut app = App::new(Snapshot::load().unwrap());
+        for (width, height) in [(80, 24), (120, 40), (60, 20)] {
+            let backend = TestBackend::new(width, height);
+            let mut terminal = Terminal::new(backend).unwrap();
+            for index in 0..8 {
+                app.select_screen(Screen::from_index(index));
+                terminal
+                    .draw(|frame| super::render(frame, &mut app))
+                    .unwrap();
+            }
+        }
+    }
+
+    #[test]
     fn rid_diagnostic_redacts_paths_and_raw_error_details() {
         let detail = super::safe_rid_error("invalid JSON at C:/Users/example/secret/rid.json");
         assert_eq!(detail, "invalid profile data");
