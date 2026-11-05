@@ -38,7 +38,7 @@ The current seed runtime includes:
 - **Native Rust CLI and REPL** — one Cargo project and one executable.
 - **Model connectivity** — OpenAI-compatible chat completions, including local endpoints such as Ollama.
 - **Portable root** — configuration and runtime state live beside the executable, not scattered through AppData or the user profile.
-- **RID profile** — local instance identity, age, append-only XP events, deterministic level progression, and 99 Universal Stats across 99 independent capability domains (taxonomy v2.3.2; overlap validation hardened and runtime migration implemented, CI verification pending). Canonical taxonomy: `data/rid/universal_stats.v2.json`; the separate Asmaul Husna reference catalogue is not used as a technical scoring map.
+- **RID profile** — local instance identity, age, append-only XP events, deterministic level progression, and 99 Universal Stats across 99 independent capability domains (taxonomy v2.3.3; overlap validation hardened and runtime migration implemented, CI verification pending). Canonical taxonomy: `data/rid/universal_stats.v2.json`; the separate Asmaul Husna reference catalogue is not used as a technical scoring map.
 - **Cognitive Cockpit** — keyboard-first Ratatui terminal interface.
 - **Bounded cognition loop** — structured planning, up to three model-only reasoning steps, a structured reflector, and explicit per-turn budgets.
 - **Explicit local memory** — versioned local JSON store with retention metadata, dry-run expiry pruning, managed forgetting tombstones, provenance-aware ranked retrieval, explicit claim status, kernel-receipt-gated task outcomes, and offline retrieval evaluation.
@@ -196,11 +196,11 @@ The CLI is the first interface, not the owner of intelligence logic. Future inte
 
 Rocksoul is an AGI-oriented research and engineering project. It has not demonstrated AGI, consciousness, or general intelligence. We report bounded capability vectors, evidence, uncertainty, sample counts, and safety gates—not one inflated scalar score.
 
-### ASMA-99: 99 domains, 99 stats
+### RID Universal 99: 99 domains, 99 stats
 
 The target model is exactly **99 individual technical domains with 99 corresponding technical stats**, one-to-one. Each stat requires a trusted evaluator, a defined rubric, confidence, and reproducible evidence. All begin unrated.
 
-Asmaul Husna is a respectful naming/inspiration layer only. Rocksoul does not possess or measure divine attributes, faith, spiritual rank, or divine approval. Optional navigation families must never replace the 99 distinct domains.
+Asmaul Husna is a separate, respectful religious/inspiration reference layer only. It does not name, define, order, or score the technical domains. Rocksoul does not possess or measure divine attributes, faith, spiritual rank, or divine approval. Optional benchmark navigation families must never replace the 99 distinct domains.
 
 ### Four Kitab knowledge foundation
 
