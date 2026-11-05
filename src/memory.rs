@@ -375,8 +375,28 @@ impl MemoryStore {
         let mut store = Self::load_unlocked(directory)?;
         let previous = store.clone();
         let output = operation(&mut store)?;
+        let remaining = store.records.iter().map(|record| record.id.as_str()).collect::<HashSet<_>>();
+        let removed = previous.records.iter()
+            .filter(|record| !remaining.contains(record.id.as_str()))
+            .collect::<Vec<_>>();
+        if !removed.is_empty() {
+            let now = now_unix()?;
+            let events = removed.iter().map(|record| ForgetEvent {
+                id: record.id.clone(),
+                forgotten_at_unix: now,
+                reason: if record.expires_at_unix.is_some_and(|expires| expires <= now) {
+                    "retention_expired".to_owned()
+                } else {
+                    "user_forget".to_owned()
+                },
+            }).collect::<Vec<_>>();
+            append_forgetting_events(directory, &events)?;
+        }
         if !existed || store != previous {
             store.save_unlocked(directory)?;
+        }
+        if !removed.is_empty() {
+            scrub_forgotten_snapshots(directory)?;
         }
         Ok(output)
     }
@@ -397,11 +417,15 @@ impl MemoryStore {
             format!("could not create export directory {}", export_dir.display())
         })?;
         let path = export_dir.join("latest.json");
+        let now = now_unix()?;
+        let forgotten_ids = load_forgetting_ids(directory)?.into_iter().collect();
         let export = MemoryExport {
             schema_version: self.schema_version,
+            retention_policy_version: RETENTION_POLICY_VERSION,
             revision: self.revision,
-            exported_at_unix: now_unix()?,
-            records: self.records.clone(),
+            exported_at_unix: now,
+            forgotten_ids,
+            records: self.active_records(now).into_iter().cloned().collect(),
         };
         write_json_atomic(&path, &export)?;
         Ok(path)
@@ -411,8 +435,10 @@ impl MemoryStore {
 #[derive(Serialize)]
 struct MemoryExport {
     schema_version: u16,
+    retention_policy_version: u16,
     revision: u64,
     exported_at_unix: u64,
+    forgotten_ids: Vec<String>,
     records: Vec<MemoryRecord>,
 }
 
@@ -500,6 +526,105 @@ fn store_path(directory: &Path) -> PathBuf {
 
 fn legacy_store_path(directory: &Path) -> PathBuf {
     directory.join(LEGACY_STORE_FILE)
+}
+
+fn legacy_v2_store_path(directory: &Path) -> PathBuf {
+    directory.join(LEGACY_V2_STORE_FILE)
+}
+
+fn default_retention_policy_version() -> u16 {
+    RETENTION_POLICY_VERSION
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+struct ForgetEvent {
+    id: String,
+    forgotten_at_unix: u64,
+    reason: String,
+}
+
+fn forgetting_ledger_path(directory: &Path) -> PathBuf {
+    directory.join(FORGETTING_LEDGER_FILE)
+}
+
+fn load_forgetting_ids(directory: &Path) -> Result<HashSet<String>> {
+    let path = forgetting_ledger_path(directory);
+    if !path.is_file() {
+        return Ok(HashSet::new());
+    }
+    let content = fs::read_to_string(&path)
+        .with_context(|| format!("could not read forgetting ledger {}", path.display()))?;
+    let mut ids = HashSet::new();
+    for (index, line) in content.lines().enumerate() {
+        if line.trim().is_empty() {
+            continue;
+        }
+        let event: ForgetEvent = serde_json::from_str(line).with_context(|| {
+            format!(
+                "forgetting ledger {} has invalid event on line {}",
+                path.display(),
+                index + 1
+            )
+        })?;
+        if event.id.trim().is_empty()
+            || event.forgotten_at_unix == 0
+            || event.reason.trim().is_empty()
+        {
+            bail!("forgetting ledger contains an invalid event on line {}", index + 1);
+        }
+        ids.insert(event.id);
+    }
+    Ok(ids)
+}
+
+fn append_forgetting_events(directory: &Path, events: &[ForgetEvent]) -> Result<()> {
+    if events.is_empty() {
+        return Ok(());
+    }
+    let path = forgetting_ledger_path(directory);
+    let mut bytes = Vec::new();
+    for event in events {
+        serde_json::to_writer(&mut bytes, event)?;
+        bytes.push(10);
+    }
+    let mut file = OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(&path)
+        .with_context(|| format!("could not append forgetting ledger {}", path.display()))?;
+    use std::io::Write;
+    file.write_all(&bytes)?;
+    file.sync_all()?;
+    Ok(())
+}
+
+fn apply_forgetting_ledger(directory: &Path, store: &mut MemoryStore) -> Result<()> {
+    let forgotten = load_forgetting_ids(directory)?;
+    let before = store.records.len();
+    store.records.retain(|record| !forgotten.contains(&record.id));
+    if store.records.len() != before {
+        store.revision = store.revision.saturating_add(1);
+        store.save_unlocked(directory)?;
+        scrub_forgotten_snapshots(directory)?;
+    }
+    Ok(())
+}
+
+fn scrub_forgotten_snapshots(directory: &Path) -> Result<()> {
+    let current = store_path(directory);
+    for path in [
+        backup_path(&current),
+        legacy_store_path(directory),
+        legacy_v2_store_path(directory),
+        directory.join("exports/latest.json"),
+    ] {
+        if path.is_file() {
+            fs::remove_file(&path).with_context(|| {
+                format!("could not remove obsolete memory snapshot {}", path.display())
+            })?;
+        }
+    }
+    Ok(())
 }
 
 fn read_current_store(path: &Path) -> Result<MemoryStore> {
