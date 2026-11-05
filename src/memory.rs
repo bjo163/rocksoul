@@ -363,23 +363,6 @@ impl MemoryStore {
             .collect()
     }
 
-    pub fn search(&self, query: &str, now: u64) -> Vec<&MemoryRecord> {
-        let needle = query.trim().to_lowercase();
-        if needle.is_empty() {
-            return Vec::new();
-        }
-        self.active_records(now)
-            .into_iter()
-            .filter(|record| {
-                record.content.to_lowercase().contains(&needle)
-                    || record
-                        .tags
-                        .iter()
-                        .any(|tag| tag.to_lowercase().contains(&needle))
-            })
-            .collect()
-    }
-
     /// Deterministic offline lexical retrieval. Scores are ranking units, not confidence.
     pub fn search_ranked(
         &self,
@@ -424,7 +407,7 @@ impl MemoryStore {
                     .collect::<Vec<_>>();
                 let matched_terms = query_terms
                     .iter()
-                    .filter(|term| all_terms.iter().any(|candidate| *candidate == *term))
+                    .filter(|term| all_terms.contains(term))
                     .cloned()
                     .collect::<Vec<_>>();
                 if matched_terms.is_empty() {
