@@ -163,6 +163,8 @@ pub enum MemoryCommand {
     Deny { id: String },
     /// Cancel one pending proposal without creating a memory record.
     CancelProposal { id: String },
+    /// Mark a memory claim contradicted or superseded by a later correction.
+    Supersede { id: String },
     /// Revoke a kernel receipt so it cannot verify a future memory claim.
     RevokeReceipt {
         verification_id: String,
