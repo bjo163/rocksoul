@@ -261,7 +261,10 @@ impl StatRecord {
                         .rubric_version
                         .as_ref()
                         .is_some_and(|value| !value.trim().is_empty())
-                    && self.evaluator_id.as_ref().is_some_and(|value| !value.trim().is_empty()) =>
+                    && self
+                        .evaluator_id
+                        .as_ref()
+                        .is_some_and(|value| !value.trim().is_empty()) =>
             {
                 Ok(())
             }
@@ -404,10 +407,14 @@ impl RuhProfile {
             for (index, record) in archive.records.iter().enumerate() {
                 let expected = index as u64 + 1;
                 if record.get("id").and_then(serde_json::Value::as_u64) != Some(expected)
-                    || record.get("catalogue_entry_id").and_then(serde_json::Value::as_str)
+                    || record
+                        .get("catalogue_entry_id")
+                        .and_then(serde_json::Value::as_str)
                         != Some(format!("asmaul_husna:{expected:02}").as_str())
                 {
-                    return Err(RidError(format!("legacy stat archive slot mismatch at {expected}")));
+                    return Err(RidError(format!(
+                        "legacy stat archive slot mismatch at {expected}"
+                    )));
                 }
             }
         }
