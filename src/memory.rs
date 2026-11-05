@@ -373,18 +373,38 @@ pub fn now_unix() -> Result<u64> {
 fn acquire_store_lock(directory: &Path) -> Result<File> {
     fs::create_dir_all(directory)?;
     let lock_path = directory.join(LOCK_FILE);
-    let file = OpenOptions::new()
-        .create(true)
-        .truncate(false)
-        .read(true)
-        .write(true)
-        .open(&lock_path)
-        .with_context(|| format!("could not open memory lock {}", lock_path.display()))?;
     let started = Instant::now();
+    let file = loop {
+        match OpenOptions::new()
+            .create(true)
+            .truncate(false)
+            .read(true)
+            .write(true)
+            .open(&lock_path)
+        {
+            Ok(file) => break file,
+            Err(error) if is_lock_contention(&error) => {
+                if started.elapsed() >= LOCK_TIMEOUT {
+                    bail!(
+                        "memory store is busy; could not open lock {} within {} seconds. Close other Rocksoul operations and retry",
+                        lock_path.display(),
+                        LOCK_TIMEOUT.as_secs()
+                    );
+                }
+                thread::sleep(LOCK_RETRY_INTERVAL);
+            }
+            Err(error) => {
+                return Err(error).with_context(|| {
+                    format!("could not open memory lock {}", lock_path.display())
+                });
+            }
+        }
+    };
+
     loop {
         match file.try_lock_exclusive() {
             Ok(()) => return Ok(file),
-            Err(error) if error.kind() == ErrorKind::WouldBlock => {
+            Err(error) if is_lock_contention(&error) => {
                 if started.elapsed() >= LOCK_TIMEOUT {
                     bail!(
                         "memory store is busy; could not acquire {} within {} seconds. Close other Rocksoul operations and retry",
@@ -400,6 +420,24 @@ fn acquire_store_lock(directory: &Path) -> Result<File> {
                 });
             }
         }
+    }
+}
+
+fn is_lock_contention(error: &std::io::Error) -> bool {
+    if error.kind() == ErrorKind::WouldBlock {
+        return true;
+    }
+
+    #[cfg(windows)]
+    {
+        // Windows reports LockFileEx contention as ERROR_LOCK_VIOLATION or
+        // ERROR_SHARING_VIOLATION, which Rust may classify as PermissionDenied.
+        matches!(error.raw_os_error(), Some(32 | 33))
+    }
+
+    #[cfg(not(windows))]
+    {
+        false
     }
 }
 
@@ -635,7 +673,10 @@ mod tests {
                 std::process::exit(0);
             }
             let error = MemoryStore::load(&directory).unwrap_err();
-            assert!(format!("{error:#}").contains("memory store is busy"));
+            assert!(
+                format!("{error:#}").contains("memory store is busy"),
+                "unexpected lock contention result: {error:#}"
+            );
             return;
         }
 
