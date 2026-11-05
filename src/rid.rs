@@ -154,6 +154,7 @@ pub struct StatEvaluation {
     pub evidence_refs: Vec<String>,
     pub evaluated_at_unix: u64,
     pub rubric_version: String,
+    pub evaluator_id: String,
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -166,6 +167,7 @@ pub struct StatRecord {
     pub evidence_refs: Vec<String>,
     pub last_evaluated_at_unix: Option<u64>,
     pub rubric_version: Option<String>,
+    pub evaluator_id: Option<String>,
 }
 
 impl StatRecord {
@@ -179,6 +181,7 @@ impl StatRecord {
             evidence_refs: Vec::new(),
             last_evaluated_at_unix: None,
             rubric_version: None,
+            evaluator_id: None,
         }
     }
 
@@ -207,6 +210,7 @@ impl StatRecord {
                 .any(|value| value.trim().is_empty())
             || evaluation.evaluated_at_unix == 0
             || evaluation.rubric_version.trim().is_empty()
+            || evaluation.evaluator_id.trim().is_empty()
         {
             return Err(RidError(
                 "stat evaluation requires evidence, time, and rubric".into(),
@@ -219,6 +223,7 @@ impl StatRecord {
         self.evidence_refs = evaluation.evidence_refs;
         self.last_evaluated_at_unix = Some(evaluation.evaluated_at_unix);
         self.rubric_version = Some(evaluation.rubric_version);
+        self.evaluator_id = Some(evaluation.evaluator_id);
         Ok(())
     }
 
@@ -236,7 +241,8 @@ impl StatRecord {
                 && self.sample_count.is_none()
                 && self.evidence_refs.is_empty()
                 && self.last_evaluated_at_unix.is_none()
-                && self.rubric_version.is_none() =>
+                && self.rubric_version.is_none()
+                && self.evaluator_id.is_none() =>
             {
                 Ok(())
             }
@@ -253,7 +259,8 @@ impl StatRecord {
                     && self
                         .rubric_version
                         .as_ref()
-                        .is_some_and(|value| !value.trim().is_empty()) =>
+                        .is_some_and(|value| !value.trim().is_empty())
+                    && self.evaluator_id.as_ref().is_some_and(|value| !value.trim().is_empty()) =>
             {
                 Ok(())
             }
@@ -390,7 +397,7 @@ impl RuhProfile {
                 let expected = index as u64 + 1;
                 if record.get("id").and_then(serde_json::Value::as_u64) != Some(expected)
                     || record.get("catalogue_entry_id").and_then(serde_json::Value::as_str)
-                        != Some(&format!("asmaul_husna:{expected:02}"))
+                        != Some(format!("asmaul_husna:{expected:02}").as_str())
                 {
                     return Err(RidError(format!("legacy stat archive slot mismatch at {expected}")));
                 }
@@ -584,6 +591,7 @@ mod tests {
             evidence_refs: Vec::new(),
             evaluated_at_unix: 1_800_000_200,
             rubric_version: "v1".into(),
+            evaluator_id: "trusted-evaluator:test".into(),
         };
         assert!(
             profile
@@ -598,6 +606,7 @@ mod tests {
             evidence_refs: evidence.clone(),
             evaluated_at_unix: 1_800_000_200,
             rubric_version: "v1".into(),
+            evaluator_id: "trusted-evaluator:test".into(),
         };
         assert!(profile.record_stat_evaluation(id, too_few_samples).is_err());
 
@@ -608,6 +617,7 @@ mod tests {
             evidence_refs: evidence,
             evaluated_at_unix: 1_800_000_200,
             rubric_version: "v1".into(),
+            evaluator_id: "trusted-evaluator:test".into(),
         };
         profile
             .record_stat_evaluation(id, valid_evaluation)
@@ -636,6 +646,7 @@ mod tests {
             evidence_refs: evidence.clone(),
             evaluated_at_unix: 1_800_000_200,
             rubric_version: "v1".into(),
+            evaluator_id: "trusted-evaluator:test".into(),
         };
         assert!(profile.record_stat_evaluation(id, invalid_score).is_err());
 
@@ -646,6 +657,7 @@ mod tests {
             evidence_refs: evidence,
             evaluated_at_unix: 1_800_000_200,
             rubric_version: "v1".into(),
+            evaluator_id: "trusted-evaluator:test".into(),
         };
         assert!(
             profile
