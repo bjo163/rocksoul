@@ -2,14 +2,14 @@
 
 **Canonical catalogue:** `data/rid/universal_stats.v2.json`  
 **Catalogue ID:** `rocksoul.rid.universal_stats.v2`  
-**Version:** `2.3.0`  
+**Version:** `2.3.1`  
 **Structure:** **99 independent domains → 99 linked stat dimensions**  
 **Taxonomy review:** construct boundaries reconciled; independent psychometric validation pending.  
-**Runtime status:** Rust runtime embeds taxonomy v2.3.0; schema-v1 profile archival migration and CLI/Cockpit integration are implemented on `main`; exact-head CI verification is pending.
+**Runtime status:** Rust runtime embeds taxonomy v2.3.1; schema-v1 profile archival migration and CLI/Cockpit integration are implemented on `main`; exact-head CI verification is pending.
 
 ## 1. Model and non-overlap rule
 
-The 99 domains are 99 first-class peers. There is no canonical nine-domain parent taxonomy and no fixed 11-per-category grouping. Each domain has one stable `rid_domain:NN` ID and exactly one linked `rid_stat:NN` dimension.
+The 99 domains are 99 first-class peers. There is no canonical nine-domain parent taxonomy and no fixed 11-per-category grouping. Each domain has one stable `rid_domain:NN` ID and exactly one linked `rid_stat:NN` dimension. This one-to-one link represents **99 capability dimensions, not 198**: the domain defines what is measured; the linked stat is the per-profile slot that stores the score, confidence, evidence, and evaluation state. It is not a second capability construct.
 
 Capabilities can interact in real tasks. Therefore, **non-overlap does not mean capabilities never correlate**. It means each score has one declared primary measurement target, explicit inclusion/exclusion criteria, and a boundary rule against adjacent constructs. The same success/failure signal must not be counted twice. One task may inform multiple scores only when it yields separately observable outcomes, separately referenced evidence, and separate rubric checks.
 
@@ -150,7 +150,7 @@ High-risk boundaries that must use separate outcome measures:
 
 ## 6. Compatibility and runtime migration
 
-The prior `data/rid/universal_stats.v1.json` is a historical nine-group × eleven-stat catalogue. It is superseded and must not be used as a current parent-domain hierarchy. The current v2.3.0 taxonomy preserves the 99 stable ordinal stat slots but revises labels and construct boundaries; consumers must bind by explicit IDs, never by display text or inferred meaning.
+The prior `data/rid/universal_stats.v1.json` is a historical nine-group × eleven-stat catalogue. It is superseded and must not be used as a current parent-domain hierarchy. The current v2.3.1 taxonomy preserves the 99 stable ordinal stat slots but revises labels and construct boundaries; consumers must bind by explicit IDs, never by display text or inferred meaning.
 
 **Runtime migration implemented on main; exact-head CI verification pending:** `src/rid_catalogue.rs` now embeds `data/rid/universal_stats.v2.json`; `StatId` emits `rid_stat:NN`; CLI and Cockpit render universal domain labels and construct boundaries rather than Asmaul Husna names.
 
