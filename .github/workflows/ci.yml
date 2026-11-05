@@ -141,6 +141,27 @@ jobs:
             & $exe memory list
             if ($LASTEXITCODE -ne 0) { throw "Portable memory list failed" }
 
+            $proposalOutput = & $exe memory propose semantic --content "approved model proposal smoke" --source-turn-reference "ci:windows-smoke" --provenance "windows-smoke-model"
+            if ($LASTEXITCODE -ne 0) { throw "Portable memory proposal creation failed" }
+            $proposalId = (($proposalOutput | Select-String '^Proposal: ').ToString() -replace '^Proposal: ', '')
+            $fingerprint = (($proposalOutput | Select-String '^Fingerprint: ').ToString() -replace '^Fingerprint: ', '')
+            if (!$proposalId -or !$fingerprint) { throw "Memory proposal ID/fingerprint missing" }
+            $approvalPhrase = "APPROVE $proposalId $fingerprint"
+            $approveCommand = 'echo ' + $approvalPhrase + ' | "' + $exe + '" memory approve ' + $proposalId
+            Invoke-Expression $approveCommand
+            if ($LASTEXITCODE -ne 0) { throw "Portable memory proposal approval failed" }
+            $memoryList = & $exe memory list
+            if ($LASTEXITCODE -ne 0) { throw "Portable memory list after proposal approval failed" }
+            if (!(($memoryList -join "`n").Contains("model_proposal:$proposalId"))) { throw "Approved proposal provenance missing from memory" }
+
+            $deniedOutput = & $exe memory propose semantic --content "denied proposal must not persist" --source-turn-reference "ci:windows-deny" --provenance "windows-smoke-model"
+            if ($LASTEXITCODE -ne 0) { throw "Portable denied memory proposal creation failed" }
+            $deniedId = (($deniedOutput | Select-String '^Proposal: ').ToString() -replace '^Proposal: ', '')
+            & $exe memory deny $deniedId
+            if ($LASTEXITCODE -ne 0) { throw "Portable memory proposal denial failed" }
+            $memoryList = & $exe memory list
+            if (($memoryList -join "`n").Contains("denied proposal must not persist")) { throw "Denied proposal was persisted as memory" }
+
             $workspaceCommand = 'echo WRITE windows-smoke.txt | "' + $exe + '" workspace write windows-smoke.txt --content "Windows workspace smoke artifact"'
             cmd.exe /d /c $workspaceCommand
             if ($LASTEXITCODE -ne 0) { throw "Approved workspace artifact write failed" }
