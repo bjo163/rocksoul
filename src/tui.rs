@@ -795,7 +795,11 @@ fn render_memory(frame: &mut Frame<'_>, area: Rect, app: &App) {
             Line::from(""),
             Line::from("ID             KIND       CLAIM STATUS             SOURCE                       ACCESS"),
         ];
-        if app.memory_query.is_empty() {
+        if app.memory_query.is_empty()
+            || app.memory_query
+                .split_whitespace()
+                .all(|token| token.starts_with("source:"))
+        {
             let mut records = active
                 .into_iter()
                 .filter(|record| {
