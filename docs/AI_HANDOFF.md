@@ -231,6 +231,8 @@ A task is complete only when:
 
 PR #51 is merged and issue #44 is closed. The next unblocked reliability task is [#35 — crash-window recovery and generalized acceptance gates](https://github.com/bjo163/rocksoul/issues/35). Start from the latest `main` SHA; do not continue the old PR #51 branch.
 
+Execution plan: [spec](plans/issue-35/spec.md), [design notes](plans/issue-35/design.md), [small autonomous tasks](plans/issue-35/task.md), and [agent rules](plans/issue-35/rules.md).
+
 Required scope:
 1. Add deterministic crash injection after workspace artifact publication but before XP persistence; prove replay does not duplicate the artifact or award XP twice and reconstructs the durable outcome.
 2. Extend offline evaluation for this crash window and conflicting/corrupt receipt records; malformed records must fail closed.
