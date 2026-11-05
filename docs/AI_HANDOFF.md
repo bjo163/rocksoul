@@ -46,7 +46,8 @@ Keep these concepts separate:
 - **Age:** elapsed time from the identity creation timestamp; not XP or level.
 - **XP ledger:** append-only records for eligible verified work/events. Event identity must be idempotent; replay cannot award XP twice.
 - **Level:** deterministic, versioned derivation from XP; never independently edited.
-- **99 Stats:** 99 stable technical capability domains/slots, mapped one-to-one to the 99-name inspiration catalogue. The catalogue is a naming/navigation layer, not a claim about divine attributes.
+- **99 Universal Stats:** the canonical technical taxonomy is `data/rid/universal_stats.v1.json`: 99 observable capability dimensions in nine domains, each with a stable `rid_stat:NN` ID, action-word label, definition, and evidence-oriented evaluation protocol. Scores begin unrated and require trusted external evaluation.
+- **Asmaul Husna reference:** `data/rid/asmaul_husna.v1.json` is a separate optional religious/inspirational catalogue. It does not define stat identities, labels, scores, or evaluation. Never infer semantic or theological equivalence from matching ordinal positions. Religious/language review remains a human expert gate.
 - **Four Kitab context:** Al-Qur'an is the primary reference, with Taurat, Zabur, and Injil represented respectfully as the other three traditions in the product narrative. Do not turn religious text into a technical scoring system.
 
 Never score or quantify divine attributes, faith, spiritual rank, religious worth, or divine approval. Technical stats measure only observable software capability and evidence. Preserve stable stat IDs and history across catalogue changes.
@@ -58,6 +59,17 @@ Keep user statements, observations, inferences, and task outcomes distinct. Neve
 ### Portable-first data and security
 
 Mutable configuration and runtime state belong under the executable/install root (portable root), not scattered into AppData or the user profile. Preserve user data on upgrades. Keep secrets in local environment/configuration excluded from Git and logs. Validate paths and fail closed. Use bounded timeouts/retries, cross-process locks for read-modify-write stores, backups, schema migrations, and explicit deletion/forgetting semantics.
+
+
+### Universal 99 Stats — canonical taxonomy and migration guard
+
+- Canonical taxonomy file: `data/rid/universal_stats.v1.json`, catalogue version `1.0.0`.
+- Exactly nine domains × eleven stats = 99. Labels are concise universal capability verbs/nouns (SEE, HEAR, READ, REMEMBER, REASON, EXECUTE, CREATE, TRUST, etc.).
+- Every entry has an operational definition and evidence-oriented evaluation protocol. The catalogue defines the taxonomy; trusted evaluator integration is a separate implementation task.
+- The new catalogue IDs are `rid_stat:01` through `rid_stat:99`. Existing persisted profiles and Rust domain code still use `asmaul_husna:01` through `asmaul_husna:99`. Do not silently rewrite IDs or reinterpret historical scores.
+- Migration must be explicit, versioned, backed up, reversible/recoverable, and tested with legacy profile fixtures. Update Rust domain, persistence, CLI, Cockpit, docs, and tests as one coherent slice.
+- Keep all scores unrated until trusted evidence exists. `not_applicable` is not score zero. XP, level, and age are not proxies for stat capability.
+- Do not close the religious/language review gate for the separate Asmaul Husna catalogue without qualified independent reviewers.
 
 ## 3. Current repository shape
 
