@@ -191,6 +191,17 @@ pub fn create(
         expires_at_unix,
         now,
     )?;
+    if !matches!(claim_status, MemoryClaimStatus::Inference | MemoryClaimStatus::UnverifiedTaskOutcome) {
+        bail!("model proposals may only be classified as inference or unverified task outcome");
+    }
+    if verification_receipt_id.as_ref().is_some_and(|id| {
+        id.trim().is_empty() || id.len() > 256 || id.chars().any(char::is_control)
+    }) {
+        bail!("verification receipt ID is invalid");
+    }
+    if verification_receipt_id.is_some() && claim_status != MemoryClaimStatus::UnverifiedTaskOutcome {
+        bail!("verification receipts may only be attached to task-outcome claims");
+    }
     let _lock = acquire_lock(directory)?;
     let mut store = load_unlocked(directory)?;
     let id = format!(
