@@ -39,7 +39,7 @@ The selected legacy sequence is the popular enumeration reproduced in Jami at-Ti
 
 ### Compatibility and migration
 
-Existing RID profiles and the current Rust domain still use legacy slot identifiers `asmaul_husna:01` through `asmaul_husna:99`. Preserve those records and their history. The new catalogue reserves stable universal IDs `rid_stat:01` through `rid_stat:99`; runtime migration must be explicit, versioned, tested against real profile fixtures, and must not silently reinterpret old scores. Until that migration is implemented and verified, the new catalogue is the canonical product taxonomy while the legacy catalogue remains the runtime compatibility source.
+The Rust runtime now embeds the universal v2.1.0 catalogue and new profile schema v2 uses stable `rid_stat:01` through `rid_stat:99` identifiers. When a schema-v1 profile is loaded, migration preserves the exact original profile bytes in `profile.json.v1.bak`, stores all 99 legacy stat records in an immutable archive inside the migrated profile, preserves instance identity and XP, and initializes all 99 universal stats as `unrated`. Historical scores are never mapped by ordinal position because the constructs changed. The separate Asmaul Husna file remains a religious/inspirational reference only. Migration code and fixture coverage are now on main; CI verification is pending.
 
 ## XP integrity
 
