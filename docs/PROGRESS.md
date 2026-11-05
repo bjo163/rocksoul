@@ -107,9 +107,9 @@ CI evidence:
 
 The receipt digest is tamper-evident integrity metadata, not a digital signature against a local actor with write access to the executable root. Automatic conversation capture and memory context injection remain disabled.
 
-## 3. Documentation updated in active branch
+## 3. Documentation included in this update
 
-The PR branch now includes:
+This documentation update reconciles:
 - `docs/AI_HANDOFF.md` — local-agent onboarding, architecture map, mandatory workflow, build/test commands, safety invariants, active PR state, next-task selection and known deferred work.
 - `docs/PROGRESS.md` — this progress snapshot.
 - `docs/ARCHITECTURE.md` — describes the merged schema v4 baseline and task-bound receipt policy.
