@@ -147,8 +147,7 @@ jobs:
             $fingerprint = (($proposalOutput | Select-String '^Fingerprint: ').ToString() -replace '^Fingerprint: ', '')
             if (!$proposalId -or !$fingerprint) { throw "Memory proposal ID/fingerprint missing" }
             $approvalPhrase = "APPROVE $proposalId $fingerprint"
-            $approveCommand = 'echo ' + $approvalPhrase + ' | "' + $exe + '" memory approve ' + $proposalId
-            Invoke-Expression $approveCommand
+            $approvalPhrase | & $exe memory approve $proposalId
             if ($LASTEXITCODE -ne 0) { throw "Portable memory proposal approval failed" }
             $memoryList = & $exe memory list
             if ($LASTEXITCODE -ne 0) { throw "Portable memory list after proposal approval failed" }
