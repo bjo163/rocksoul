@@ -19,7 +19,7 @@ The roadmap is capability-driven. Each stage must deliver a working, tested incr
 
 ## Stage 1 — Reliable cognition loop
 
-**Status:** The bounded workspace-artifact slice from PR #34 is extended by the Issue #35 reliability work in PR #53: deterministic recovery after publication but before XP persistence, immutable receipt conflict/corruption handling, and a versioned bounded `AcceptanceCheckSet` schema v1 consumed by the trusted verifier. Core Integrity v1.3.0 covers both crash windows and receipt conflict/corruption. Full planner/reflection conversation resume and independent acceptance adapters for additional typed services remain deferred.
+**Status:** The bounded workspace-artifact slice from PR #34 is extended by Issue #35 / PR #53, merged as `458df81f87ae0b328dbc12c2b2829ca3a0ff75d9`; issue #35 is closed. The merged reliability work adds deterministic recovery after publication but before XP persistence, immutable receipt conflict/corruption handling, and a versioned bounded `AcceptanceCheckSet` schema v1 consumed by the trusted verifier. Core Integrity v1.3.0 covers both crash windows and receipt conflict/corruption; CI #42044132321 passed on Linux and Windows. Full planner/reflection conversation resume and independent acceptance adapters for additional typed services remain deferred.
 
 - [x] Explicit request and turn-state contracts.
 - [x] Structured plan and reflection data contracts.
@@ -51,6 +51,7 @@ The roadmap is capability-driven. Each stage must deliver a working, tested incr
 - [x] Persist create-only, versioned verification receipt JSON files and expose them through trace inspection.
 - [x] Serialize JSONL trace appends across processes with portable OS file locks and validate schema version/required fields (Rust 1.85 MSRV preserved).
 - [x] Extend offline Core Integrity v1.2 with workspace proposal/approval, create/read-back, verified XP, replay idempotency, pre-cancel, trace round-trip, and Unix target-symlink scenarios.
+- [x] Extend Core Integrity v1.3.0 with post-publication crash recovery, replayed XP/receipt/trace idempotency, immutable receipt conflict and malformed receipt preservation (PR #53, issue #35).
 - [x] Cover supported artifact approval, read-back, mismatch, replay, cancellation boundary, trace, and platform symlink cases in deterministic tests/CI.
 - [ ] Expand the evaluation matrix for future typed services and additional crash-injection points.
 - [ ] Persist complete planner/turn/reflection conversation state and resume interrupted model reasoning (deferred; current recovery replays the bounded operation and durable receipt, not model conversation history).
@@ -76,6 +77,12 @@ The roadmap is capability-driven. Each stage must deliver a working, tested incr
 - [x] Add typed model-proposal records with source-turn provenance, retention suggestions, credential/sensitive-category rejection, exact SHA-256 payload binding, one-time interactive approval, denial/cancellation, post-decision content scrubbing, and idempotent persistence; silent model writes and automatic context injection remain disabled.
 
 
+## Next implementation dependency
+
+The next selected task is [Issue #9 — Cognitive Cockpit completion](https://github.com/bjo163/rocksoul/issues/9). The initial eight-screen TUI exists, but persisted task history, searchable memory browsing, diagnostics/evaluation reporting, portable presentation preferences and deeper test coverage remain incomplete. See `docs/plans/issue-9/` for the autonomous execution plan.
+
+Issue #13's AGI-oriented evaluation harness depends on #4, #5, #8 and #9. Do not duplicate or begin the full harness until its dependencies are audited and closed. Issue #8's catalogue implementation exists, but its independent religious/language review remains outstanding and must not be self-approved by an AI model.
+
 ## Stage 3 — Skills and tools
 
 - [ ] Define a typed tool contract and capability registry.
@@ -94,7 +101,7 @@ The roadmap is capability-driven. Each stage must deliver a working, tested incr
 
 ## Stage 5 — Evaluation and isolated evolution
 
-- [x] Offline deterministic Core Integrity suite and JSON report.
+- [x] Offline deterministic Core Integrity v1.3.0 suite and JSON report.
 - [x] Versioned external benchmark candidate manifest; no external suite is claimed as integrated.
 - [ ] Add sandboxed agent trajectory and tool-use task suites.
 - [ ] Add memory retention, forgetting and held-out transfer suites.
