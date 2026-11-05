@@ -168,7 +168,7 @@ The merged implementation contains:
 - Fail-closed immutable receipt conflict and malformed/truncated receipt preservation tests.
 - `AcceptanceCheckSet` schema v1: max 64 checks; at least one required check; unique non-empty bounded IDs; bounded values/evidence references; unsupported versions rejected before XP mutation.
 - Core Integrity v1.3.0 machine-readable checks for the new crash boundary, replay/XP/receipt/trace idempotency, receipt conflicts and corruption.
-- Updated architecture, cognitive-core, roadmap, README, progress and plan documents on the PR branch.
+- Updated architecture, cognitive-core, roadmap, README, progress and plan documents in the merged PR.
 
 Final CI [#42044132321](https://github.com/bjo163/rocksoul/actions/runs/42044132321) passed all Linux and Windows jobs on PR head `c9c605d6896930e5a36f30bb8d3fbe2ecfdd5484`. Linux passed formatting, Clippy, 108 tests, Core Integrity 23/23, and memory retrieval (precision@2 1.000, recall@2 1.000). Windows passed release build, 107 tests, installer/portable packaging, clean portable smoke, installer install/init/uninstall-preservation smoke, and artifact uploads. PR #53 was squash-merged to main as `458df81f87ae0b328dbc12c2b2829ca3a0ff75d9`; issue #35 is closed.
 
