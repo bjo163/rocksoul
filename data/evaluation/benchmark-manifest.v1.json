@@ -108,21 +108,21 @@
       "purpose": "Tool-use trajectories and policy adherence."
     }
   ],
-  "manifest_version": "1.1.2",
+  "manifest_version": "1.1.3",
   "rid_taxonomy": {
     "catalogue_id": "rocksoul.rid.universal_stats.v2",
-    "catalogue_version": "2.3.2",
+    "catalogue_version": "2.3.3",
     "catalogue_path": "data/rid/universal_stats.v2.json",
     "domain_count": 99,
     "stat_count": 99,
     "overlap_registry_path": "data/rid/universal_stats.v2.json#overlap_pairs",
-    "overlap_pair_count": 149,
+    "overlap_pair_count": 161,
     "scoring_dimensions": "rid_domain:01-rid_domain:99 and linked rid_stat:01-rid_stat:99",
     "benchmark_families_are_navigation_tags_only": true,
     "no_family_level_stat_scores": true,
     "evidence_rule": "A task may contribute to multiple RID dimensions only when it yields separately observable outcomes, independent rubric judgments, and distinct evidence references. Never double-count one undifferentiated outcome.",
     "independent_capability_count": 99,
     "domain_stat_relationship": "one_to_one: domain defines the construct; linked stat is the per-profile measurement slot; total capability dimensions remain 99, not 198.",
-    "overlap_directed_edge_count": 298
+    "overlap_directed_edge_count": 322
   }
 }
