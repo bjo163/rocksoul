@@ -1,6 +1,6 @@
 # Rocksoul Project Progress
 
-**Last updated:** 2026-11-05 (Asia/Jakarta, PR #53 implementation checkpoint)  
+**Last updated:** 2026-11-05 (Asia/Jakarta, PR #53 validation passed; merge pending)  
 **Repository:** [bjo163/rocksoul](https://github.com/bjo163/rocksoul)  
 **Canonical branch:** `main`  
 **Current principle:** One Core. Infinite Evolution.
@@ -14,7 +14,7 @@ This is the durable progress snapshot for maintainers and delegated/local AI age
 | Product foundation | **In place** | One Rust Cargo package, one portable native executable, CLI/REPL and optional Ratatui cockpit |
 | Stage 0 — Seed CLI | **Implemented** | Windows release build and automated installer/portable smoke tests; manual clean-device upgrade test remains |
 | Stage 1 — Reliable cognition | **Vertical slice merged** | PR #34, merge commit `0f5ca4bc4d1c65322cb02963fcc23c53fa990f5d`; CI #248 passed |
-| Stage 1 follow-through | **In progress — PR draft** | Issue #35 / PR #53: post-publication crash replay, receipt conflict/corruption checks, versioned acceptance checks, Core Integrity v1.3.0; fresh CI pending |
+| Stage 1 follow-through | **Implementation + CI complete; merge pending** | Issue #35 / PR #53: crash recovery, receipt integrity, versioned acceptance checks, Core Integrity v1.3.0; Linux and Windows CI #42043396826 passed |
 | Stage 2 — Persistent memory | **Complete on main** | Schema v4, locking, retention/forgetting, evaluated retrieval and human-reviewed proposals; see PRs #43/#46/#47/#49/#50/#51 |
 | Stage 2 claim integrity | **Merged** | PR #51 merged as `260d29852bb30f2f63129271a07cd368fafccc3f`; issue #44 closed; CI #42008862735 passed on Linux and Windows |
 | Stage 3 — Skills/tools | **Not started** | No general tool registry or arbitrary tool execution |
@@ -105,11 +105,13 @@ The receipt digest is tamper-evident integrity metadata, not a digital signature
 
 ## 3. Active implementation — Issue #35 / PR #53
 
-**PR:** https://github.com/bjo163/rocksoul/pull/53 (draft; not merged)  
+**PR:** https://github.com/bjo163/rocksoul/pull/53 (ready for review; not merged)  
 **Issue:** https://github.com/bjo163/rocksoul/issues/35 (open)  
 **Base SHA:** `b76bf36740056e41933f8510c22a8376f49d997a`  
-**Latest branch head at this checkpoint:** `205d07526cb1191b43f69dee828197ae9e6de48e`  
-**First CI run:** [#42012045477](https://github.com/bjo163/rocksoul/actions/runs/42012045477) — Windows release build/tests/package/smoke passed; Linux stopped at formatting due to one extra blank line in `src/workspace_artifact.rs`. That formatting defect was corrected, then acceptance-bound tests, Core Integrity recovery checks and docs were added. The current head requires a new complete CI run; do not treat the first run as validation of the current head.
+**Latest branch head at this checkpoint:** `937b986fb54a0db82b3e3a2ee8519aaeee1fa2ad`  
+**Final CI:** [#42043396826](https://github.com/bjo163/rocksoul/actions/runs/42043396826) — all Linux and Windows jobs passed on source head `8a0876fe9a3020477f52de5bab7451754acc8f62`. Linux: formatting, Clippy, 108 tests, Core Integrity 23/23 and memory retrieval (precision@2 1.000, recall@2 1.000). Windows: release build, 107 tests, installer/portable packaging, clean portable smoke, installer install/init/uninstall-preservation smoke, and artifact uploads passed. The final `937b986f` branch commit only updates task-plan validation evidence; it does not change source code.
+
+Earlier CI diagnosis: run #42012045477 found a formatting issue, which was fixed. Run #42042937489 passed Linux but exposed a Windows-only collision in the existing memory v1 migration test: the helper named temporary roots with PID + timestamp, and Windows clock precision allowed parallel tests to reuse a path. `src/memory.rs` now adds a per-process atomic sequence to guarantee unique test roots. The final Windows run #42043396826 passed after that fix.
 
 ### Implemented on the PR branch (not yet accepted by main)
 
