@@ -811,7 +811,7 @@ fn model_configuration_label(configured: bool) -> &'static str {
 
 fn tool_registry_status(registered_tools: usize) -> &'static str {
     if registered_tools == 0 {
-        tool_registry_status(0)
+        "No tools are registered for execution in this seed runtime."
     } else {
         "Tool adapters are registered."
     }
@@ -1232,7 +1232,7 @@ fn render_tools(frame: &mut Frame<'_>, area: Rect, app: &App) {
                 .fg(app.palette.accent)
                 .add_modifier(Modifier::BOLD),
         )),
-        Line::from("No tools are registered for execution in this seed runtime."),
+        Line::from(tool_registry_status(0)),
         Line::from("Shell execution     disabled"),
         Line::from("Generated code      not executable"),
         Line::from("Filesystem writes   no tool adapter"),
