@@ -930,6 +930,41 @@ mod tests {
     }
 
     #[test]
+    fn migrates_v1_pending_proposals_without_promoting_claim_authority() {
+        use sha2::{Digest, Sha256};
+
+        let directory = temp_dir();
+        let proposal = create_one(&directory);
+        let old_payload = serde_json::to_vec(&(
+            proposal.kind,
+            &proposal.content,
+            &proposal.tags,
+            &proposal.source_turn_reference,
+            &proposal.provenance,
+            proposal.expires_at_unix,
+        )).unwrap();
+        let old_fingerprint = format!("{:x}", Sha256::digest(old_payload));
+        let mut document = serde_json::to_value(super::ProposalStore {
+            schema_version: 1,
+            proposals: vec![proposal.clone()],
+        }).unwrap();
+        document["proposals"][0]["fingerprint"] = serde_json::json!(old_fingerprint);
+        document["proposals"][0].as_object_mut().unwrap().remove("claim_status");
+        document["proposals"][0].as_object_mut().unwrap().remove("verification_receipt_id");
+        document["schema_version"] = serde_json::json!(1);
+        fs::write(directory.join("proposals.v1.json"), serde_json::to_vec_pretty(&document).unwrap()).unwrap();
+
+        let migrated = list(&directory).unwrap();
+        assert_eq!(migrated.len(), 1);
+        assert_eq!(migrated[0].claim_status, crate::memory::MemoryClaimStatus::Inference);
+        assert!(migrated[0].verification_receipt_id.is_none());
+        assert!(migrated[0].fingerprint != old_fingerprint);
+        assert!(directory.join("proposals.v2.json").is_file());
+        assert!(!directory.join("proposals.v1.json").exists());
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
     fn approval_persists_exact_candidate_with_immutable_provenance_and_rejects_replay() {
         let directory = temp_dir();
         let proposal = create_one(&directory);
