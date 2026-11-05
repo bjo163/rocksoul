@@ -935,6 +935,7 @@ mod tests {
 
         let directory = temp_dir();
         let proposal = create_one(&directory);
+        fs::remove_file(directory.join("proposals.v2.json")).unwrap();
         let old_payload = serde_json::to_vec(&(
             proposal.kind,
             &proposal.content,
