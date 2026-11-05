@@ -17,7 +17,7 @@
 
 The current task branch includes bounded persisted task history, the read-only task monitor, metadata-first searchable memory browser with guarded explicit detail, snapshot-based diagnostics/evaluation, and portable theme/density/locale preferences. Formatting, Clippy, full tests, Core Integrity and memory retrieval evaluation passed on exact validated head `e6cac1fbee4f99bbbdef3f7190161c0e9a8941f1` in CI #42070438679. Linux: 130 tests, Core Integrity 23/23, precision@2 1.000 and recall@2 1.000. Windows: 129 tests, Core Integrity 22/22, precision@2 1.000 and recall@2 1.000; release build, installer/portable packaging, clean portable smoke and installer install/init/uninstall-preservation smoke all passed. The earlier format, missing-palette and Clippy helper defects were corrected before this run.
 
-The exact-head validation gates G2 and G3 and full diff/safety audit G6 are complete with evidence above. Remaining: merge PR #65 into main (G7), then verify main ancestry/content and close Issue #9 with the merge SHA and CI evidence (G8). Until those integration checks finish, Issue #9 remains open.
+The exact-head validation gates G2 and G3 and full 13-file diff/safety audit G6 are complete with evidence above. PR #65 is merged, main is verified at `6474cd130bd8146f03dcacb757d9c341d4b1161a`, and Issue #9 is closed. All acceptance tasks G1–G8 are complete.
 
 ## Phase A — Audit findings recorded
 
@@ -69,14 +69,14 @@ The initial audit confirms the current TUI has eight screens and two navigation 
 ## Phase G — Validation and handoff
 
 - [x] G1. Add TestBackend rendering coverage for all eight screens, navigation, empty/error states, overlays and responsive terminal sizes.
-- [x] G2. Run fmt, Clippy, all tests, Core Integrity and memory retrieval evaluation on exact head `e6cac1f` (CI #42070438679, Linux passed).
-- [x] G3. Verify Windows build/tests/portable smoke/installer smoke on exact head `e6cac1f` (CI #42070438679, Windows passed).
+- [x] G2. Run fmt, Clippy, all tests, Core Integrity and memory retrieval evaluation on exact PR head `383d8cfa` (CI #42071047960, Linux passed).
+- [x] G3. Verify Windows build/tests/portable smoke/installer smoke on exact PR head `383d8cfa` (CI #42071047960, Windows passed).
 - [x] G4. Verify the Cockpit remains read-only: no model/backend calls, tool invocation, task execution or memory mutation originates from widgets.
 - [x] G5. Update terminal-ui.md, README, Cognitive Cockpit architecture, roadmap, progress and AI handoff.
-- [x] G6. Inspect complete eight-file diff and compare it with Issue #9 acceptance criteria; no model/tool/egress/memory mutation authority added to the TUI.
-- [ ] G7. Open PR to main; merge only after CI passes.
-- [ ] G8. Verify main SHA, close issue #9 with evidence, and update handoff with the next dependency-safe task.
+- [x] G6. Inspect complete 13-file diff and compare it with Issue #9 acceptance criteria; no model/tool/egress/memory mutation authority added to the TUI.
+- [x] G7. Open PR #65 to main; mark ready and squash-merge after exact-head CI passed. Merge commit `6474cd130bd8146f03dcacb757d9c341d4b1161a`.
+- [x] G8. Verify `main` at merge SHA `6474cd130bd8146f03dcacb757d9c341d4b1161a`; close Issue #9; update handoff and record next dependency-safe task.
 
 ## Completion output
 
-Record exact main base/head/merge SHA, PR URL, CI run IDs, test count, Core Integrity and retrieval report results, Windows smoke results, known limitations, issue closure, and next task. Do not mark issue #9 complete merely because the UI compiles.
+Completion evidence: base main `0e89bcec834880d3e6aca3f066507c44834c2eb7`; validated PR head `383d8cfa3998105d34f6897b93bc14bce5329a55`; merge commit/main SHA `6474cd130bd8146f03dcacb757d9c341d4b1161a`; PR [#65](https://github.com/bjo163/rocksoul/pull/65) merged; CI [#42071047960](https://github.com/bjo163/rocksoul/actions/runs/42071047960) green on Linux and Windows; Linux 130 tests/Core Integrity 23/23, Windows 129 tests/Core Integrity 22/22, retrieval precision@2 and recall@2 1.000 on both; installer/portable packaging and smoke tests passed; Issue #9 closed. Next dependency-safe task: independent human religious/language review for Issue #8 before Issue #13 is considered.
