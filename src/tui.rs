@@ -781,10 +781,14 @@ fn push_memory_detail(lines: &mut Vec<Line<'static>>, content: &str) {
         Style::default().fg(AMBER).add_modifier(Modifier::BOLD),
     )));
     if let Some(reason) = crate::memory_proposal::sensitive_content_reason(content) {
-        lines.push(Line::from(format!("Content blocked by privacy guard: {reason}")));
+        lines.push(Line::from(format!(
+            "Content blocked by privacy guard: {reason}"
+        )));
     } else {
         lines.push(Line::from(clip_text(content, 512)));
-        lines.push(Line::from("Content truncated to 512 characters; control characters removed."));
+        lines.push(Line::from(
+            "Content truncated to 512 characters; control characters removed.",
+        ));
     }
 }
 
