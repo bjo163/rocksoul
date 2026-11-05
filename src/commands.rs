@@ -1221,14 +1221,217 @@ mod tests {
 
     use crate::{
         core::{
-            TurnEvent, TurnState, VerificationEvidence, VerificationOutcome, VerificationRequest,
-            verify_turn_and_award_xp,
+            CancellationToken, TurnEvent, TurnState, VerificationEvidence, VerificationOutcome,
+            VerificationRequest, verify_turn_and_award_xp,
         },
+        paths::AppPaths,
         rid::{RuhIdentity, RuhProfile, XpRecordOutcome},
         rid_store,
+        workspace_artifact::{UserApproval, WorkspaceArtifactProposal, WorkspaceArtifactService},
     };
 
-    use super::{format_age, persist_workspace_receipt};
+    use super::{
+        complete_workspace_operation_with_hook, format_age, persist_workspace_receipt,
+    };
+
+    #[test]
+    fn crash_after_artifact_publication_before_xp_persistence_recovers_once() {
+        let nonce = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let root = std::env::temp_dir().join(format!("rocksoul-publish-crash-test-{nonce}"));
+        let paths = AppPaths::from_root(root.clone());
+        fs::create_dir_all(&paths.logs_dir).unwrap();
+        let initial_profile = RuhProfile::new(RuhIdentity {
+            instance_id: "publish-crash-recovery-test".to_owned(),
+            created_at_unix: 1_700_000_000,
+        })
+        .unwrap();
+        rid_store::save(&paths.rid_file, &initial_profile).unwrap();
+
+        let proposal = WorkspaceArtifactProposal {
+            filename: "recovered-note.txt".to_owned(),
+            content: "artifact published before XP persistence".to_owned(),
+        };
+        let approval =
+            UserApproval::from_typed_confirmation(&proposal, &proposal.approval_phrase()).unwrap();
+        let service = WorkspaceArtifactService::new(&paths.workspace_dir);
+
+        // Deterministically stop after real publication and read-back, before the
+        // command's verification/XP persistence boundary.
+        let failed = service.execute_approved_with_after_publish_hook(
+            &proposal,
+            &approval,
+            &CancellationToken::default(),
+            || anyhow::bail!("simulated process loss after artifact publication"),
+        );
+        assert!(failed.is_err());
+        assert_eq!(
+            fs::read(paths.workspace_dir.join(&proposal.filename)).unwrap(),
+            proposal.content.as_bytes()
+        );
+        let persisted_after_crash = rid_store::load(&paths.rid_file).unwrap();
+        assert_eq!(persisted_after_crash.total_xp(), 0);
+        assert!(persisted_after_crash.xp_events().is_empty());
+        assert!(!paths.logs_dir.join("receipts").exists());
+
+        // A fresh process replays the same operation. The service must read back
+        // the existing bytes, then the exact same completion helper awards XP once.
+        let replay = service
+            .execute_approved(&proposal, &approval, &CancellationToken::default())
+            .unwrap();
+        assert!(matches!(
+            replay,
+            crate::workspace_artifact::ArtifactOutcome::AlreadyPresent { .. }
+        ));
+        let first = complete_workspace_operation_with_hook(
+            &paths,
+            &proposal,
+            replay,
+            1_700_000_001,
+            || Ok(()),
+        )
+        .unwrap();
+        assert!(matches!(
+            &first.verification,
+            VerificationOutcome::Verified {
+                xp_record: XpRecordOutcome::Recorded,
+                ..
+            }
+        ));
+        assert!(first.profile.total_xp() > 0);
+        assert_eq!(first.profile.xp_events().len(), 1);
+        let receipt_path = paths
+            .logs_dir
+            .join("receipts")
+            .join(format!("workspace-{}.json", proposal.operation_id().rsplit(':').next().unwrap()));
+        assert!(receipt_path.is_file());
+        let first_receipt_bytes = fs::read(&receipt_path).unwrap();
+
+        // A second replay keeps the artifact, XP event, and original receipt stable.
+        let replay_again = service
+            .execute_approved(&proposal, &approval, &CancellationToken::default())
+            .unwrap();
+        let second = complete_workspace_operation_with_hook(
+            &paths,
+            &proposal,
+            replay_again,
+            1_700_000_002,
+            || Ok(()),
+        )
+        .unwrap();
+        assert!(matches!(
+            &second.verification,
+            VerificationOutcome::Verified {
+                xp_record: XpRecordOutcome::Duplicate,
+                ..
+            }
+        ));
+        assert_eq!(second.profile.total_xp(), first.profile.total_xp());
+        assert_eq!(second.profile.xp_events().len(), 1);
+        assert_eq!(fs::read(&receipt_path).unwrap(), first_receipt_bytes);
+        assert_eq!(
+            task_trace::read(&paths.logs_dir.join("task-trace.v1.jsonl"))
+                .unwrap()
+                .len(),
+            2
+        );
+
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    fn test_receipt(
+        task_id: &str,
+        verification_id: &str,
+        verified_at_unix: u64,
+        evidence_ref: &str,
+    ) -> crate::core::VerificationReceipt {
+        let mut turn = TurnState::new("receipt-persistence-test", 0);
+        turn.apply(TurnEvent::Start).unwrap();
+        turn.apply(TurnEvent::PlanAccepted).unwrap();
+        turn.apply(TurnEvent::ActionCompleted).unwrap();
+        let mut profile = RuhProfile::new(RuhIdentity {
+            instance_id: "receipt-persistence-test".to_owned(),
+            created_at_unix: 1_700_000_000,
+        })
+        .unwrap();
+        let request = VerificationRequest::new(
+            task_id,
+            verification_id,
+            verified_at_unix,
+            1,
+            1,
+            vec![VerificationEvidence::new(
+                "required-output",
+                "present",
+                "present",
+                evidence_ref,
+                true,
+            )],
+        );
+        match verify_turn_and_award_xp(&mut turn, &mut profile, request).unwrap() {
+            VerificationOutcome::Verified { receipt, .. } => *receipt,
+            other => panic!("expected a verified receipt, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn receipt_persistence_rejects_conflicts_and_preserves_corrupt_bytes() {
+        let nonce = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let root = std::env::temp_dir().join(format!("rocksoul-receipt-conflict-test-{nonce}"));
+        let logs = root.join("logs");
+        let operation_id = "workspace:receipt-conflict:abc123";
+        let verification_id = "workspace-verification:abc123";
+        let first = test_receipt(
+            operation_id,
+            verification_id,
+            1_700_000_101,
+            "workspace-readback:abc123",
+        );
+        let path = persist_workspace_receipt(&logs, operation_id, &first).unwrap();
+
+        let identical_replay = test_receipt(
+            operation_id,
+            verification_id,
+            1_700_000_102,
+            "workspace-readback:abc123",
+        );
+        assert_eq!(
+            persist_workspace_receipt(&logs, operation_id, &identical_replay).unwrap(),
+            path
+        );
+
+        let immutable_bytes = fs::read(&path).unwrap();
+        let conflicting = test_receipt(
+            operation_id,
+            verification_id,
+            1_700_000_103,
+            "workspace-readback:other-evidence",
+        );
+        assert!(persist_workspace_receipt(&logs, operation_id, &conflicting).is_err());
+        assert_eq!(fs::read(&path).unwrap(), immutable_bytes);
+
+        let corrupt_operation = "workspace:corrupt-receipt:def456";
+        let corrupt_receipt = test_receipt(
+            corrupt_operation,
+            "workspace-verification:def456",
+            1_700_000_104,
+            "workspace-readback:def456",
+        );
+        let corrupt_path = logs
+            .join("receipts")
+            .join("workspace-def456.json");
+        fs::write(&corrupt_path, b"{truncated").unwrap();
+        let corrupt_bytes = fs::read(&corrupt_path).unwrap();
+        assert!(persist_workspace_receipt(&logs, corrupt_operation, &corrupt_receipt).is_err());
+        assert_eq!(fs::read(&corrupt_path).unwrap(), corrupt_bytes);
+
+        fs::remove_dir_all(root).unwrap();
+    }
 
     #[test]
     fn formats_elapsed_instance_age() {
