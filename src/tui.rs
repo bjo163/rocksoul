@@ -444,10 +444,10 @@ fn panel(title: &'static str, palette: &Palette) -> Block<'static> {
     Block::default()
         .title(Span::styled(
             format!(" {title} "),
-            Style::default().fg(app.palette.accent).add_modifier(Modifier::BOLD),
+            Style::default().fg(palette.accent).add_modifier(Modifier::BOLD),
         ))
         .borders(Borders::ALL)
-        .border_style(Style::default().fg(Color::Rgb(66, 73, 73)))
+        .border_style(Style::default().fg(palette.border))
         .style(Style::default().bg(palette.panel).fg(palette.text))
 }
 
