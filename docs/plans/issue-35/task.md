@@ -48,9 +48,9 @@
 
 - [x] E1. Add offline Core Integrity checks for crash-after-publication, replayed XP idempotency, and receipt conflicts/corruption.
 - [x] E2. Include machine-readable check IDs and concise explanations in the evaluation report.
-- [ ] E3. Update COGNITIVE_CORE recovery semantics and distinguish tested guarantees from deferred conversation resume.
-- [ ] E4. Update ARCHITECTURE, ROADMAP, README, PROGRESS, and AI_HANDOFF.
-- [ ] E5. Update this plan with actual source paths, tests, evidence and remaining limitations.
+- [x] E3. Update COGNITIVE_CORE recovery semantics and distinguish tested guarantees from deferred conversation resume.
+- [x] E4. Update ARCHITECTURE, ROADMAP, README, PROGRESS, and AI_HANDOFF.
+- [x] E5. Update this plan with actual source paths, tests, evidence and remaining limitations.
 
 ## Phase F — Verification and merge
 
