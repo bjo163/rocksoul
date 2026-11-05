@@ -28,7 +28,7 @@ This is the durable progress snapshot for maintainers and delegated/local AI age
 ## Active implementation — Issue #9 Cognitive Cockpit
 
 **Task branch:** feat/tui-cockpit-completion  
-**Latest implementation/documentation head:** e9e50c168eb18af54ae6449cc1aaf908315c59da  
+**Latest implementation/documentation head:** c4a58d986a28c01a1ee8208d53f9e2eefeb45259  
 **Target:** main (no Cockpit completion changes merged yet)
 
 Delivered on the task branch:

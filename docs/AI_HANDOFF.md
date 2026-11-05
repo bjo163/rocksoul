@@ -291,7 +291,7 @@ For every new task, write/update an execution plan with:
 **PR:** Refresh after final task-branch head validation (earlier draft PR #55 was superseded)  
 **Task branch:** `feat/tui-cockpit-completion`  
 **PR base SHA:** `0e89bcec834880d3e6aca3f066507c44834c2eb7`  
-**Current task branch head:** e9e50c168eb18af54ae6449cc1aaf908315c59da (final-head CI pending)
+**Current task branch head:** c4a58d986a28c01a1ee8208d53f9e2eefeb45259 (final-head CI pending)
 
 ### Implemented on the PR branch (not yet on main)
 
