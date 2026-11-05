@@ -17,7 +17,7 @@
 
 The current task branch now includes a bounded persisted task-trace reader and read-only TUI projection, a metadata-only searchable memory browser, the corrected schema-v4 memory path, and a refreshable evaluation-report snapshot. Linux CI has passed for the first implementation slice (111 tests, Clippy, Core Integrity 23/23, memory retrieval precision@2/recall@2 1.000); Windows validation is being repeated against the latest branch head.
 
-The following remain intentionally open: diagnostic parsing/redaction tests for missing configuration and empty registries (E6), final-head fmt/Clippy/tests/Core Integrity/retrieval evaluation (G2), final-head Windows build/installer/portable smoke (G3), architecture/roadmap documentation reconciliation (G5), full diff audit (G6), PR merge (G7), and main/issue/handoff verification (G8). This is not Issue #9 completion.
+The following remain intentionally open: diagnostic parsing/redaction tests for missing configuration and empty registries (E6), final-head fmt/Clippy/tests/Core Integrity/retrieval evaluation (G2), final-head Windows build/installer/portable smoke (G3), full diff audit (G6), PR merge (G7), and main/issue/handoff verification (G8). This is not Issue #9 completion.
 
 ## Phase A — Audit findings recorded
 
@@ -72,7 +72,7 @@ The initial audit confirms the current TUI has eight screens and two navigation 
 - [ ] G2. Run fmt, Clippy, all tests, Core Integrity and memory retrieval evaluation.
 - [ ] G3. Verify Windows build/tests/portable smoke/installer smoke.
 - [x] G4. Verify the Cockpit remains read-only: no model/backend calls, tool invocation, task execution or memory mutation originates from widgets.
-- [ ] G5. Update terminal-ui.md, README, architecture, roadmap, progress and AI handoff.
+- [x] G5. Update terminal-ui.md, README, Cognitive Cockpit architecture, roadmap, progress and AI handoff.
 - [ ] G6. Inspect complete diff and compare it with Issue #9 acceptance criteria.
 - [ ] G7. Open PR to main; merge only after CI passes.
 - [ ] G8. Verify main SHA, close issue #9 with evidence, and update handoff with the next dependency-safe task.
