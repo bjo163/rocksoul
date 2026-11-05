@@ -3,6 +3,7 @@ mod commands;
 pub mod core;
 mod eval;
 mod memory;
+mod memory_proposal;
 mod model;
 mod paths;
 mod repl;
