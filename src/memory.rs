@@ -14,9 +14,10 @@ use anyhow::{Context, Result, anyhow, bail};
 use clap::ValueEnum;
 use serde::{Deserialize, Serialize};
 
-pub const MEMORY_SCHEMA_VERSION: u16 = 3;
+pub const MEMORY_SCHEMA_VERSION: u16 = 4;
 pub const RETENTION_POLICY_VERSION: u16 = 1;
-const STORE_FILE: &str = "store.v3.json";
+const STORE_FILE: &str = "store.v4.json";
+const LEGACY_V3_STORE_FILE: &str = "store.v3.json";
 const LEGACY_V2_STORE_FILE: &str = "store.v2.json";
 const LEGACY_STORE_FILE: &str = "store.v1.json";
 const FORGETTING_LEDGER_FILE: &str = "forgetting.jsonl";
@@ -46,6 +47,32 @@ impl std::fmt::Display for MemoryKind {
     }
 }
 
+
+#[derive(Clone, Copy, Debug, Default, Deserialize, Eq, PartialEq, Serialize, ValueEnum)]
+#[serde(rename_all = "snake_case")]
+pub enum MemoryClaimStatus {
+    UserAssertion,
+    ObservedEvidence,
+    #[default]
+    Inference,
+    UnverifiedTaskOutcome,
+    VerifiedTaskOutcome,
+    ContradictedSuperseded,
+}
+
+impl std::fmt::Display for MemoryClaimStatus {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter.write_str(match self {
+            Self::UserAssertion => "user_assertion",
+            Self::ObservedEvidence => "observed_evidence",
+            Self::Inference => "inference",
+            Self::UnverifiedTaskOutcome => "unverified_task_outcome",
+            Self::VerifiedTaskOutcome => "verified_task_outcome",
+            Self::ContradictedSuperseded => "contradicted_superseded",
+        })
+    }
+}
+
 #[derive(Clone, Copy, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum RetentionPolicy {
@@ -70,6 +97,12 @@ pub struct MemoryRecord {
     pub retention_policy_version: u16,
     #[serde(default)]
     pub retention_policy: RetentionPolicy,
+    #[serde(default)]
+    pub claim_status: MemoryClaimStatus,
+    #[serde(default)]
+    pub verification_receipt_id: Option<String>,
+    #[serde(default)]
+    pub evidence_hash: Option<String>,
 }
 
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -90,6 +123,8 @@ pub struct MemorySearchResult {
     pub updated_at_unix: u64,
     /// Source-record confidence only; not a retrieval relevance probability.
     pub source_confidence: Option<f32>,
+    pub claim_status: MemoryClaimStatus,
+    pub verification_receipt_id: Option<String>,
     pub lexical_score: u32,
     pub matched_terms: Vec<String>,
     pub relevance_explanation: String,
