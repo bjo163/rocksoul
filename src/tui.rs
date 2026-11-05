@@ -117,6 +117,13 @@ impl Snapshot {
         } else {
             (None, None)
         };
+        let memory_store_health = MemoryStore::load(&paths.memory_dir)
+            .map(|store| MemoryStoreHealth {
+                schema_version: store.schema_version,
+                active_records: store.active_records(now_unix()).len(),
+                total_records: store.records.len(),
+            })
+            .map_err(|_| "memory store is unreadable".to_owned());
         Ok(Self {
             paths,
             model_configured: ModelConfig::from_env().is_some(),
@@ -127,13 +134,7 @@ impl Snapshot {
                 .map_err(|_| "evaluation report is unreadable".to_owned()),
             memory_evaluation: crate::eval::latest_memory_retrieval()
                 .map_err(|_| "memory retrieval report is unreadable".to_owned()),
-            memory_store_health: MemoryStore::load(&paths.memory_dir)
-                .map(|store| MemoryStoreHealth {
-                    schema_version: store.schema_version,
-                    active_records: store.active_records(now_unix()).len(),
-                    total_records: store.records.len(),
-                })
-                .map_err(|_| "memory store is unreadable".to_owned()),
+            memory_store_health,
         })
     }
 
