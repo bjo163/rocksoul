@@ -1021,6 +1021,7 @@ fn persist_memory_retrieval_report(report: &MemoryRetrievalEvaluationReport) -> 
     if moved_previous {
         fs::remove_file(&backup)?;
     }
+    persist_markdown_report(&path.with_extension("md"), &render_memory_markdown(report))?;
     Ok(())
 }
 
@@ -1113,6 +1114,7 @@ fn persist_report(report: &EvaluationReport) -> Result<()> {
         fs::remove_file(&backup)
             .with_context(|| format!("could not remove {}", backup.display()))?;
     }
+    persist_markdown_report(&path.with_extension("md"), &render_core_markdown(report))?;
     Ok(())
 }
 
@@ -1122,6 +1124,92 @@ fn latest_report_path() -> Result<PathBuf> {
         .join("evaluations")
         .join("core")
         .join("latest.json"))
+}
+
+fn persist_markdown_report(path: &std::path::Path, content: &str) -> Result<()> {
+    let parent = path.parent().context("Markdown report path has no parent")?;
+    fs::create_dir_all(parent)?;
+    let temporary = path.with_extension("md.tmp");
+    let backup = path.with_extension("md.bak");
+    fs::write(&temporary, content.as_bytes())?;
+    let moved_previous = if path.exists() {
+        if backup.exists() {
+            fs::remove_file(&backup)?;
+        }
+        fs::rename(path, &backup)?;
+        true
+    } else {
+        false
+    };
+    if let Err(error) = fs::rename(&temporary, path) {
+        if moved_previous {
+            let _ = fs::rename(&backup, path);
+        }
+        let _ = fs::remove_file(&temporary);
+        return Err(error).with_context(|| format!("could not replace {}", path.display()));
+    }
+    if moved_previous {
+        fs::remove_file(&backup)?;
+    }
+    Ok(())
+}
+
+fn markdown_cell(value: &str) -> String {
+    value.replace('|', "\\|").replace('\r', " ").replace('\n', " ")
+}
+
+fn render_core_markdown(report: &EvaluationReport) -> String {
+    let mut output = format!(
+        "# Rocksoul Evaluation — {} v{}\n\n- Result: **{}** ({}/{} passed, {} failed)\n- Version: {}\n- Source commit: {}\n- Platform: {} / {}\n- Evaluated at (Unix): {}\n\n| Check | Result | Detail |\n|---|---|---|\n",
+        markdown_cell(&report.suite_id),
+        markdown_cell(&report.suite_version),
+        if report.passed { "PASS" } else { "FAIL" },
+        report.passed_count(),
+        report.checks.len(),
+        report.failed_count(),
+        markdown_cell(&report.rocksoul_version),
+        markdown_cell(&report.rocksoul_commit),
+        markdown_cell(&report.platform),
+        markdown_cell(&report.architecture),
+        report.evaluated_at_unix
+    );
+    for item in &report.checks {
+        output.push_str(&format!(
+            "| {} | {} | {} |\n",
+            markdown_cell(&item.id),
+            if item.passed { "PASS" } else { "FAIL" },
+            markdown_cell(&item.detail)
+        ));
+    }
+    output
+}
+
+fn render_memory_markdown(report: &MemoryRetrievalEvaluationReport) -> String {
+    let mut output = format!(
+        "# Memory Retrieval Evaluation — {} v{}\n\n- Result: **{}**\n- Source commit: {}\n- Evaluated at (Unix): {}\n- Precision@{}: {:.3}\n- Recall@{}: {:.3}\n- Stale results: {}\n- Expired leakage: {}\n- Deletion leakage: {}\n\n| Case | Precision@k | Recall@k | Retrieved IDs |\n|---|---:|---:|---|\n",
+        markdown_cell(&report.suite_id),
+        markdown_cell(&report.suite_version),
+        if report.passed { "PASS" } else { "FAIL" },
+        markdown_cell(&report.rocksoul_commit),
+        report.evaluated_at_unix,
+        report.top_k,
+        report.precision_at_k,
+        report.top_k,
+        report.recall_at_k,
+        report.stale_results_at_k,
+        report.expired_leakage,
+        report.deletion_leakage
+    );
+    for case in &report.cases {
+        output.push_str(&format!(
+            "| {} | {:.3} | {:.3} | {} |\n",
+            markdown_cell(&case.case_id),
+            case.precision_at_k,
+            case.recall_at_k,
+            markdown_cell(&format!("{:?}", case.retrieved_ids))
+        ));
+    }
+    output
 }
 
 fn check(id: &str, passed: bool, detail: &str) -> EvaluationCheck {
@@ -1209,5 +1297,8 @@ mod tests {
         let decoded: EvaluationReport = serde_json::from_slice(&encoded).unwrap();
         assert_eq!(decoded.failed_count(), 1);
         assert_eq!(decoded.rocksoul_commit, "test-revision");
+        let markdown = super::render_core_markdown(&decoded);
+        assert!(markdown.contains("test-revision"));
+        assert!(markdown.contains("| unsafe | FAIL | veto |"));
     }
 }
