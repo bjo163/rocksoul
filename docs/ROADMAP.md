@@ -88,8 +88,10 @@ The next engineering work is Issue #13's reproducible technical evaluation harne
 - [x] Define a typed tool metadata contract and deny-by-default capability registry.
 - [x] Add narrowly scoped in-memory fixture read/write tools; all production tool execution remains disabled.
 - [x] Add explicit allowlist/capability permission checks and input-byte budgets.
-- [ ] Add durable audit events and runtime timeouts for isolated production execution.
-- [ ] Add a genuine OS/WASM isolation boundary and human approval for writes or remote egress.
+- [x] Add a versioned content-free tool audit schema and append-only, file-locked JSONL store with bounded records, per-run sequence checks, duplicate-event rejection, corruption fail-closed behavior, and cross-process tests.
+- [x] Record fixture proposal, authorization, execution start/finish, failure, timeout and cancellation events without persisting raw tool input; enforce cooperative deadline, cancellation and call-budget checks before fixture dispatch.
+- [ ] Add production worker watchdogs that actually terminate and reap timed-out/cancelled workers; cooperative host checks alone do not stop a running process.
+- [ ] Add a genuine OS/WASM isolation boundary and human approval for production writes or remote egress.
 - [ ] Keep external runtimes optional rather than core dependencies.
 
 ## Stage 4 — Application builder

@@ -376,3 +376,13 @@ See [docs/plans/issue-13/sandbox-threat-model.md](plans/issue-13/sandbox-threat-
 ### Issue #13 — independent verifier protocol handoff
 
 Read [docs/plans/issue-13/independent-verifier-contract.md](plans/issue-13/independent-verifier-contract.md) together with the sandbox threat model before implementing production trajectory verification. The contract requires a host-created task-attempt envelope and single-use challenge nonce; an independently controlled observation adapter; authenticated, task-bound attestation; replay/freshness checks; three-valued pass/fail/indeterminate semantics; and real process/OS isolation tests. A mock, model self-report, guest tool output, or in-process fixture is not independent evidence. If platform isolation or verifier availability is missing, fail closed or report unsupported/indeterminate. This document is design-only and does not authorize marking the trajectory suite implemented.
+
+
+## Issue #67 — merged tool audit and fixture invocation boundary (2026-11-06)
+
+PR #69 is merged to `main` as `c845a9485a9b1b2882691c8dc268d6e6385b6be2`. Its exact implementation head `5151e47abfde528e95b4a0ded78e1469aacd7860` passed CI run [#42211510844](https://github.com/bjo163/rocksoul/actions/runs/42211510844) on Linux and Windows.
+
+- Read `src/tool_audit.rs` for the closed content-free event schema, locked append-only JSONL store, fail-closed corruption behavior, and cooperative invocation controls.
+- Read `src/fixture_runtime.rs` for audited fixture dispatch and pre-dispatch deadline/cancellation/call-budget enforcement.
+- The audited path is fixture-only. It does not terminate/reap processes or establish OS isolation. Do not use it as production execution authority.
+- Continue Issue #13 with worker isolation, parent watchdog/termination/reaping, independent effect verification, held-out task execution and trusted evaluation. Keep model-selected production tools disabled until those gates pass.

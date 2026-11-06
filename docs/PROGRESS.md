@@ -277,3 +277,29 @@ Runtime selection note: Wasmi 2.0.0 declares Rust 1.86 MSRV while Rocksoul remai
 - Linked the contract from evaluation methodology and local-agent handoff.
 - This is documentation/design only. No signature/key management, verifier process, IPC, OS sandbox, model-connected trajectory runner, or trusted RID scoring was implemented by this slice.
 - Keep `rocksoul.agent-trajectory` planned. The fixture verifier remains explicitly `independent=false`.
+
+
+## Issue #67 — content-free tool audit and fixture invocation controls (2026-11-06)
+
+**Status:** Implementation merged and exact-head CI passed.  
+**PR:** [#69](https://github.com/bjo163/rocksoul/pull/69)  
+**Implementation head:** `5151e47abfde528e95b4a0ded78e1469aacd7860`  
+**Merge commit:** `c845a9485a9b1b2882691c8dc268d6e6385b6be2`  
+**Exact-head CI:** [run #42211510844](https://github.com/bjo163/rocksoul/actions/runs/42211510844) — Linux and Windows jobs passed.
+
+Delivered:
+- Closed, versioned, content-free `ToolAuditEvent` schema with bounded identifiers/evidence references and event-specific authorization, approval, timeout, cancellation and failure metadata. Unknown fields/versions, invalid identifiers, oversized values, duplicate IDs and out-of-order per-run sequences are rejected.
+- Append-only JSONL `ToolAuditStore` with OS file locking, bounded file/record sizes, contiguous per-run sequences, duplicate event-ID rejection, shared reader locks, and fail-closed malformed/partial-history behavior that preserves prior bytes.
+- Cross-process append test, concurrent writer test, corruption preservation, redaction and schema validation tests.
+- Cooperative `InvocationControl` using an MSRV-compatible atomic compare/exchange call budget plus deadline and cancellation checks.
+- `FixtureExecutor::execute_audited` records content-free proposal/authorization/execution outcomes and checks timeout, cancellation and call budget before dispatch. Tests confirm denied, timed-out, cancelled and budget-exhausted calls do not mutate fixture state.
+- No new runtime dependencies.
+
+Exact-head validation:
+- Linux: `cargo fmt`, Clippy with warnings denied, all tests, Core Integrity and Memory Retrieval evaluations passed.
+- Windows: release build, all tests, installer and portable ZIP packaging, portable clean-runner smoke test, installer install/init/uninstall-preservation smoke test all passed.
+
+Still explicitly not implemented:
+- Production tool dispatch, OS/WASM sandbox, worker termination/reaping, independent effect-verifier process, production approval broker, or model-connected trajectory runner.
+- The fixture verifier remains `independent=false`; fixture results cannot award XP or RID scores.
+- Issue #13 remains open and is the controlling sandbox, independent-verifier and evaluation gate.
