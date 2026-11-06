@@ -1,6 +1,6 @@
 # AGI-Oriented Capability Evaluation
 
-**Status:** Offline deterministic Core Integrity v1.3.0 is implemented. External agent and generalization suites are planned or candidate integrations, not integrated benchmarks.
+**Status:** Offline deterministic Core Integrity v1.3.0 and Memory Retrieval v1.0.0 are implemented. Both emit JSON and Markdown reports with source-commit provenance. External agent and generalization suites are planned or candidate integrations, not integrated benchmarks.
 
 ## Purpose and limits
 
@@ -34,7 +34,7 @@ rocksoul eval run core
 rocksoul eval latest
 ```
 
-The suite is offline and deterministic apart from report timestamp/platform metadata. It checks:
+The suite is offline and deterministic apart from report timestamp/platform metadata. It writes `latest.json` and `latest.md` under `data/evaluations/core/`. Memory Retrieval writes the same pair under `data/evaluations/memory-retrieval/`. CI archives all four report files as workflow artifacts. Markdown is a readable projection of the canonical JSON; do not parse it as the machine contract. Both report types include the tested source revision (`ROCKSOUL_GIT_SHA`), or explicit `unknown` when revision metadata is unavailable. It checks:
 - Turn lifecycle and retry-budget invariants.
 - Terminal-state immutability.
 - XP award only after required evidence passes.
@@ -79,7 +79,8 @@ Unknown fields must be explicitly unavailable, never fabricated.
 ## Roadmap
 
 - [x] Deterministic Core Integrity v1.3.0 and JSON report.
-- [x] Deterministic Core Integrity suite records the tested source revision in its report.
+- [x] Deterministic Core Integrity and Memory Retrieval suites record the tested source revision in JSON and Markdown reports.
+- [x] CI archives both formats for both deterministic suites.
 - [ ] Agent trajectory suite with sandboxed tools and independent verifiers.
 - [ ] Memory retention/transfer suite with held-out tasks.
 - [ ] Trusted RID evaluator with rubric-specific evidence aggregation.
