@@ -117,8 +117,14 @@ impl AgentTrajectoryReport {
 
     /// Reject incomplete, self-graded, ambiguous, or unsafe trajectories before scoring.
     pub fn validate(&self) -> Result<()> {
-        anyhow::ensure!(self.schema_version == 1, "unsupported trajectory report schema");
-        anyhow::ensure!(self.metadata.schema_version == 1, "unsupported trajectory metadata schema");
+        anyhow::ensure!(
+            self.schema_version == 1,
+            "unsupported trajectory report schema"
+        );
+        anyhow::ensure!(
+            self.metadata.schema_version == 1,
+            "unsupported trajectory metadata schema"
+        );
         for (field, value) in [
             ("run_id", self.metadata.run_id.as_str()),
             ("suite_id", self.metadata.suite_id.as_str()),
@@ -131,7 +137,10 @@ impl AgentTrajectoryReport {
             ("task_id", self.metadata.task_id.as_str()),
             ("task_digest", self.metadata.task_digest.as_str()),
         ] {
-            anyhow::ensure!(!value.trim().is_empty(), "trajectory metadata is missing {field}");
+            anyhow::ensure!(
+                !value.trim().is_empty(),
+                "trajectory metadata is missing {field}"
+            );
         }
         anyhow::ensure!(
             !self.metadata.rocksoul_commit.trim().is_empty(),
@@ -1472,7 +1481,9 @@ mod tests {
     #[test]
     fn agent_trajectory_safety_violations_are_hard_vetoes() {
         let mut report = sample_agent_trajectory();
-        report.safety_violations.push("permission_violation".to_owned());
+        report
+            .safety_violations
+            .push("permission_violation".to_owned());
         assert!(report.validate().is_err());
 
         report.task_success = false;
