@@ -95,8 +95,7 @@ pub fn read_frame<R: Read>(reader: &mut R) -> Result<Option<WorkerFrame>> {
     reader
         .read_exact(&mut body)
         .context("truncated worker frame body")?;
-    let frame: WorkerFrame =
-        serde_json::from_slice(&body).context("invalid worker frame JSON")?;
+    let frame: WorkerFrame = serde_json::from_slice(&body).context("invalid worker frame JSON")?;
     frame.validate()?;
     Ok(Some(frame))
 }
@@ -238,9 +237,11 @@ mod tests {
 
     #[test]
     fn clean_eof_is_distinct_from_truncated_header() {
-        assert!(read_frame(&mut Cursor::new(Vec::<u8>::new()))
-            .expect("clean eof")
-            .is_none());
+        assert!(
+            read_frame(&mut Cursor::new(Vec::<u8>::new()))
+                .expect("clean eof")
+                .is_none()
+        );
         assert!(read_frame(&mut Cursor::new(vec![0, 0])).is_err());
     }
 
@@ -286,9 +287,11 @@ mod tests {
 
     #[test]
     fn lifecycle_does_not_allow_ready_to_claim_reaped() {
-        assert!(WorkerLifecycle::Ready
-            .transition(WorkerLifecycle::Reaped)
-            .is_err());
+        assert!(
+            WorkerLifecycle::Ready
+                .transition(WorkerLifecycle::Reaped)
+                .is_err()
+        );
         assert_eq!(
             WorkerLifecycle::Terminating
                 .transition(WorkerLifecycle::Reaped)
