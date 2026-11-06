@@ -1,6 +1,6 @@
 # Rocksoul Project Progress
 
-**Last updated:** 2026-11-06 (Asia/Jakarta, deterministic evaluation JSON/Markdown reports and source provenance)  
+**Last updated:** 2026-11-06 (Asia/Jakarta, evaluation report hardening and benchmark manifest reconciliation)  
 **Repository:** [bjo163/rocksoul](https://github.com/bjo163/rocksoul)  
 **Canonical branch:** `main`  
 **Current principle:** One Core. Infinite Evolution.
@@ -178,15 +178,17 @@ This progress snapshot was refreshed after PR #53 merged and `main` was verified
 4. Keep [Issue #8](https://github.com/bjo163/rocksoul/issues/8) as a separate independent human religious/language review; it does not block technical evaluation infrastructure.
 5. Keep arbitrary shell, generic tool execution, automatic memory capture and memory context injection out of scope until separately designed and gated.
 
-### Issue #13 — deterministic report provenance increment
+### Issue #13 — deterministic evaluation/report hardening
 
-**Main implementation:** evaluation reports now carry the source revision in both Core Integrity and memory-retrieval JSON. CI injects `ROCKSOUL_GIT_SHA=${{ github.sha }}`; local builds without that environment value explicitly report `unknown`. The CLI prints the source revision, old schema-v1 reports remain readable through a serde default, and a round-trip test covers the new field.
+**Implemented on main:** Core Integrity v1.3.0 and Memory Retrieval v1.0.0 are deterministic/offline suites. Both persist canonical JSON and Markdown reports, include source-commit provenance, and are archived by CI. The benchmark manifest v1.1.4 explicitly registers both implemented suites and keeps agent trajectory, learning/transfer, and external benchmarks in their honest planned/candidate states. Rust tests cover Markdown escaping, replacement of existing Markdown reports without leftover temporary files, report rendering, and manifest-to-runtime suite/RID consistency.
 
-**Remaining in Issue #13:** concise Markdown report output, richer run metadata (seed/task provenance/model/backend/resource fields where applicable), model-dependent agent trajectory suite, held-out learning/transfer suite, and independent evaluator evidence aggregation. These are not represented as implemented. CI for the latest main SHA is still queued; do not claim tests pass until exact-head Linux and Windows jobs complete.
+**CI correction history:** exact-head runs exposed a malformed escaped character literal, then a Clippy collapsible-string-replace lint promoted to error, and then a rustfmt layout mismatch. Each finding was corrected on main. The newest exact-head run must complete before this increment is marked validated; do not infer green status from older runs or from one platform.
+
+**Still open in Issue #13:** model-dependent agent trajectory execution with a real isolated sandbox and independent verifiers; complete run/task/model/resource provenance; held-out learning, retention, transfer and generalization; trusted evaluator aggregation and RID publication gates; candidate-vs-baseline regression and safe rollback. These are not implemented and no model-dependent capability scores are claimed.
 
 ### Current next task: Issue #13 — reproducible evaluation harness
 
-The deterministic Core Integrity and memory-retrieval suites are implemented and wired into CI. Both suites now persist canonical JSON plus a human-readable Markdown projection, record the tested source revision (`ROCKSOUL_GIT_SHA`, or `unknown` for builds without revision metadata), and CI archives all four files. The next implementation work is reproducible model-dependent trajectory runs, held-out learning/transfer evaluation, structured evidence manifests, independent verifiers, and confidence-aware evidence aggregation without hidden network calls.
+After exact-head CI passes, implement the trajectory layer in separately verifiable slices: define the task/run/evidence contract; add a deny-by-default sandbox boundary and resource limits; connect a configured model adapter only to allowlisted tools; require independent observable-effect verifiers; then add held-out learning/transfer and trusted-evaluator gates. Never treat a model's self-report or a synthetic fixture as a real agent benchmark result.
 
 Technical dependencies are #4, #5, and #9. Issue #4 and #9 are closed. Issue #5's runtime/catalogue implementation is on main but remains open pending exact-head Linux/Windows CI and trusted-evaluator gates. Issue #8's independent religious/language review is separate and does not block the technical harness. Stage 2 umbrella #36 and work packages #37–#41 plus follow-up #44 are closed. Do not start automatic memory injection until separate policy, privacy/contamination, forgetting/deletion and regression gates are reviewed.
 
