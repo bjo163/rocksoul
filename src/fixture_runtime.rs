@@ -14,8 +14,8 @@ use sha2::{Digest, Sha256};
 
 use crate::{
     tool_audit::{
-        ToolAuditEvent, ToolAuditKind, ToolAuditStore, ToolAuthorization,
-        ToolEffectClass, ToolFailureCategory,
+        ToolAuditEvent, ToolAuditKind, ToolAuditStore, ToolAuthorization, ToolEffectClass,
+        ToolFailureCategory,
     },
     tool_registry::{ToolCapability, ToolDescriptor, ToolEffect, ToolPolicy, ToolRegistry},
 };
@@ -175,12 +175,11 @@ impl FixtureExecutor {
             .get(&call.tool_id)
             .ok_or_else(|| anyhow::anyhow!("unknown fixture tool: {}", call.tool_id))?;
         let mut next_sequence = first_sequence;
-        let mut append_event = |
-            kind: ToolAuditKind,
-            authorization: Option<ToolAuthorization>,
-            failure: Option<ToolFailureCategory>,
-            evidence_refs: Vec<String>,
-        | -> Result<()> {
+        let mut append_event = |kind: ToolAuditKind,
+                                authorization: Option<ToolAuthorization>,
+                                failure: Option<ToolFailureCategory>,
+                                evidence_refs: Vec<String>|
+         -> Result<()> {
             let event = fixture_audit_event(
                 run_id,
                 next_sequence,
@@ -452,7 +451,9 @@ mod tests {
         use crate::tool_audit::{ToolAuditKind, ToolAuditStore};
 
         let (registry, mut policy) = configured();
-        policy.granted_capabilities.remove(&ToolCapability::WorkspaceWrite);
+        policy
+            .granted_capabilities
+            .remove(&ToolCapability::WorkspaceWrite);
         let mut executor = FixtureExecutor::new();
         let nonce = SystemTime::now()
             .duration_since(UNIX_EPOCH)
@@ -478,10 +479,7 @@ mod tests {
         let events = ToolAuditStore::read(&path).unwrap();
         assert_eq!(
             events.iter().map(|event| event.kind).collect::<Vec<_>>(),
-            vec![
-                ToolAuditKind::Proposed,
-                ToolAuditKind::AuthorizationDenied,
-            ]
+            vec![ToolAuditKind::Proposed, ToolAuditKind::AuthorizationDenied,]
         );
         std::fs::remove_file(path).unwrap();
     }
