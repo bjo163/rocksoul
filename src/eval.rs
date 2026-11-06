@@ -1271,6 +1271,9 @@ mod tests {
         assert_eq!(report.stale_results_at_k, 0);
         assert_eq!(report.expired_leakage, 0);
         assert_eq!(report.deletion_leakage, 0);
+        let markdown = super::render_memory_markdown(&report);
+        assert!(markdown.contains("Source commit:"));
+        assert!(markdown.contains("| Case | Precision@k | Recall@k | Retrieved IDs |"));
     }
 
     #[test]
