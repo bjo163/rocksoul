@@ -226,7 +226,10 @@ fn validate_version(value: &str, label: &str) -> Result<()> {
         !value.is_empty() && value.len() <= MAX_VERSION_BYTES,
         "{label} must be 1-64 bytes"
     );
-    ensure!(value.bytes().all(is_safe_metadata_byte), "{label} contains unsupported characters");
+    ensure!(
+        value.bytes().all(is_safe_metadata_byte),
+        "{label} contains unsupported characters"
+    );
     Ok(())
 }
 
