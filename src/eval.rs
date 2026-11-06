@@ -1157,7 +1157,10 @@ fn persist_markdown_report(path: &std::path::Path, content: &str) -> Result<()> 
 }
 
 fn markdown_cell(value: &str) -> String {
-    value.replace('|', "\\|").replace('\r', " ").replace('\n', " ")
+    value
+        .replace('|', "\\\\|")
+        .replace('\\r', " ")
+        .replace('\\n', " ")
 }
 
 fn render_core_markdown(report: &EvaluationReport) -> String {
