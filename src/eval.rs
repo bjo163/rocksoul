@@ -223,7 +223,9 @@ pub fn list() {
         "  Validates lifecycle, retry bounds, verified XP, workspace crash recovery/receipt conflicts, acceptance checks, cancellation, RID and catalogue invariants."
     );
     println!("rocksoul.memory-retrieval  v1.0.0  offline / deterministic");
-    println!("rocksoul.agent-runtime-fixtures  v0.1.0  offline / deterministic (in-process only; not a sandbox)");
+    println!(
+        "rocksoul.agent-runtime-fixtures  v0.1.0  offline / deterministic (in-process only; not a sandbox)"
+    );
     println!(
         "  Measures lexical precision/recall, stale ranking, expiry leakage, and forgetting leakage."
     );

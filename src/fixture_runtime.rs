@@ -8,9 +8,7 @@ use std::collections::BTreeMap;
 use anyhow::{Result, ensure};
 use sha2::{Digest, Sha256};
 
-use crate::tool_registry::{
-    ToolCapability, ToolDescriptor, ToolEffect, ToolPolicy, ToolRegistry,
-};
+use crate::tool_registry::{ToolCapability, ToolDescriptor, ToolEffect, ToolPolicy, ToolRegistry};
 
 pub const FIXTURE_WRITE_TOOL: &str = "fixture.state.write";
 pub const FIXTURE_READ_TOOL: &str = "fixture.state.read";
@@ -120,7 +118,12 @@ impl FixtureExecutor {
                 let evidence_ref = format!("fixture://state/{key}");
                 self.observed_effects
                     .insert(evidence_ref.clone(), key.to_owned());
-                Ok(observation(FIXTURE_WRITE_TOOL, "state updated", evidence_ref, value))
+                Ok(observation(
+                    FIXTURE_WRITE_TOOL,
+                    "state updated",
+                    evidence_ref,
+                    value,
+                ))
             }
             FIXTURE_READ_TOOL => {
                 ensure!(
@@ -190,9 +193,7 @@ fn validate_key(key: &str) -> Result<()> {
         !key.is_empty()
             && key.len() <= MAX_KEY_BYTES
             && key.bytes().all(|byte| {
-                byte.is_ascii_lowercase()
-                    || byte.is_ascii_digit()
-                    || matches!(byte, b'_' | b'-')
+                byte.is_ascii_lowercase() || byte.is_ascii_digit() || matches!(byte, b'_' | b'-')
             }),
         "fixture key must be 1-64 lowercase ASCII letters, digits, '_' or '-'"
     );
@@ -312,7 +313,9 @@ mod tests {
     #[test]
     fn missing_capability_is_rejected_before_mutation() {
         let (registry, mut policy) = configured();
-        policy.granted_capabilities.remove(&ToolCapability::WorkspaceWrite);
+        policy
+            .granted_capabilities
+            .remove(&ToolCapability::WorkspaceWrite);
         let mut executor = FixtureExecutor::new();
         assert!(
             executor
