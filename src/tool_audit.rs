@@ -11,7 +11,7 @@ use std::{
         Arc,
         atomic::{AtomicBool, AtomicU16, Ordering},
     },
-    time::{Duration, Instant, SystemTime, UNIX_EPOCH},
+    time::{Duration, Instant},
 };
 
 use anyhow::{Context, Result, ensure};
@@ -109,14 +109,24 @@ impl ToolAuditEvent {
             ensure!(reference.bytes().all(is_safe_metadata_byte), "evidence reference contains unsupported characters");
         }
         match self.kind {
-            ToolAuditKind::AuthorizationAllowed => ensure!(self.authorization == Some(ToolAuthorization::Allowed), "authorization event must record allowed"),
-            ToolAuditKind::AuthorizationDenied => ensure!(self.authorization == Some(ToolAuthorization::Denied), "authorization event must record denied"),
-            ToolAuditKind::TimedOut => ensure!(self.failure == Some(ToolFailureCategory::DeadlineExceeded), "timeout event must use deadline_exceeded"),
-            ToolAuditKind::Cancelled => ensure!(self.failure == Some(ToolFailureCategory::Cancelled), "cancel event must use cancelled"),
-            ToolAuditKind::Failed => ensure!(self.failure.is_some(), "failure event requires a failure category"),
-            _ => Ok(()),
+            ToolAuditKind::AuthorizationAllowed => {
+                ensure!(self.authorization == Some(ToolAuthorization::Allowed), "authorization event must record allowed");
+            }
+            ToolAuditKind::AuthorizationDenied => {
+                ensure!(self.authorization == Some(ToolAuthorization::Denied), "authorization event must record denied");
+            }
+            ToolAuditKind::TimedOut => {
+                ensure!(self.failure == Some(ToolFailureCategory::DeadlineExceeded), "timeout event must use deadline_exceeded");
+            }
+            ToolAuditKind::Cancelled => {
+                ensure!(self.failure == Some(ToolFailureCategory::Cancelled), "cancel event must use cancelled");
+            }
+            ToolAuditKind::Failed => {
+                ensure!(self.failure.is_some(), "failure event requires a failure category");
+            }
+            _ => {}
         }
-        .map_err(Into::into)
+        Ok(())
     }
 }
 
@@ -136,13 +146,6 @@ fn validate_version(value: &str, label: &str) -> Result<()> {
     Ok(())
 }
 
-fn now_unix_ms() -> Result<u64> {
-    let millis = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .context("system clock is before Unix epoch")?
-        .as_millis();
-    u64::try_from(millis).context("system timestamp exceeds supported range")
-}
 
 /// Append-only JSONL audit storage. A corrupt or partial existing file is never repaired
 /// automatically: append fails closed and preserves the original bytes.
@@ -263,7 +266,7 @@ impl InvocationControl {
         }
         self.remaining_calls
             .fetch_update(Ordering::SeqCst, Ordering::SeqCst, |remaining| {
-                (remaining > 0).then_some(remaining - 1)
+                if remaining > 0 { Some(remaining - 1) } else { None }
             })
             .map(|previous| previous - 1)
             .map_err(|_| InvocationStopReason::CallBudgetExhausted)
@@ -376,18 +379,18 @@ mod tests {
         let path = temp_path("concurrent");
         let barrier = Arc::new(Barrier::new(8));
         let mut workers = Vec::new();
-        for sequence in 1..=8 {
+        for index in 0..8 {
             let path = path.clone();
             let barrier = barrier.clone();
             workers.push(thread::spawn(move || {
                 barrier.wait();
-                ToolAuditStore::append(&path, &event("shared-run", sequence))
+                ToolAuditStore::append(&path, &event(&format!("run-{index}"), 1))
             }));
         }
-        // Writers may acquire the OS lock in any order. Retry is deliberately not
-        // hidden here: callers must sequence events before append.
-        let results: Vec<_> = workers.into_iter().map(|worker| worker.join().unwrap()).collect();
-        assert!(results.iter().any(Result::is_err));
+        for worker in workers {
+            worker.join().unwrap().unwrap();
+        }
+        assert_eq!(ToolAuditStore::read(&path).unwrap().len(), 8);
         let _ = fs::remove_file(path);
     }
 
