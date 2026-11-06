@@ -1,6 +1,6 @@
 # Rocksoul Project Progress
 
-**Last updated:** 2026-11-06 (Asia/Jakarta, evaluation report hardening and benchmark manifest reconciliation)  
+**Last updated:** 2026-11-06 (Asia/Jakarta, Issue #67 completion, worker IPC PR #72, and RID taxonomy reconciliation)  
 **Repository:** [bjo163/rocksoul](https://github.com/bjo163/rocksoul)  
 **Canonical branch:** `main`  
 **Current principle:** One Core. Infinite Evolution.
@@ -17,7 +17,7 @@ This is the durable progress snapshot for maintainers and delegated/local AI age
 | Stage 1 follow-through | **Merged and verified** | PR #53 merged as `458df81f`; issue #35 closed; CI #42044132321 passed on Linux and Windows |
 | Stage 2 — Persistent memory | **Complete on main** | Schema v4, locking, retention/forgetting, evaluated retrieval and human-reviewed proposals; see PRs #43/#46/#47/#49/#50/#51 |
 | Stage 2 claim integrity | **Merged** | PR #51 merged as `260d29852bb30f2f63129271a07cd368fafccc3f`; issue #44 closed; CI #42008862735 passed on Linux and Windows |
-| Stage 3 — Skills/tools | **Not started** | No general tool registry or arbitrary tool execution |
+| Stage 3 — Skills/tools | **In progress** | Typed deny-by-default registry, bounded fixtures, content-free audit and cooperative invocation controls merged; worker IPC foundation in PR #72 awaiting exact-head Linux CI rerun; production sandbox/dispatch remain disabled |
 | Stage 4 — Application builder | **Not started** | Future bounded project-generation workflow |
 | Stage 5 — Evaluation/evolution | **Partial foundation** | Offline Core Integrity exists; candidate benchmarking, isolated evolution and promotion/rollback remain |
 | Stage 6 — Multi-agent | **Not started** | Deliberately deferred until single-agent foundations justify delegation |
@@ -303,3 +303,12 @@ Still explicitly not implemented:
 - Production tool dispatch, OS/WASM sandbox, worker termination/reaping, independent effect-verifier process, production approval broker, or model-connected trajectory runner.
 - The fixture verifier remains `independent=false`; fixture results cannot award XP or RID scores.
 - Issue #13 remains open and is the controlling sandbox, independent-verifier and evaluation gate.
+
+
+## Issue #71 — bounded worker IPC foundation (PR #72; not merged)
+
+**Status:** Open. The protocol implementation is proposed on [PR #72](https://github.com/bjo163/rocksoul/pull/72), branch `feat/worker-ipc-contract`. The initial exact-head CI run [#42214701546](https://github.com/bjo163/rocksoul/actions/runs/42214701546) passed Windows release build/tests/installer/portable smoke, but Linux stopped at `cargo fmt --check`; Clippy, tests, and offline evaluations were skipped. The formatting-only differences in `src/lib.rs` and `src/worker_protocol.rs` have been corrected on the PR branch. A fresh exact-head CI run is required; no test pass is claimed yet.
+
+The PR adds only a bounded, versioned, length-prefixed JSON protocol contract (64 KiB frame / 48 KiB payload), parent-side run binding, sequence/request replay checks, and lifecycle transition rules. It does **not** provide authenticated IPC, process spawning/supervision, OS isolation, resource enforcement, hard timeout, kill/reap, WASM execution, or an independent verifier. Production dispatch remains disabled.
+
+**Next:** rerun exact-head CI for PR #72; merge only if Linux and Windows pass. Then implement parent supervisor and authenticated IPC, followed by Linux and Windows isolation backends and adversarial kill/reap tests. Keep Issue #13 open until its independent verifier and held-out evaluation gates pass.
