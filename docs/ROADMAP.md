@@ -102,7 +102,7 @@ The next engineering work is Issue #13's reproducible technical evaluation harne
 ## Stage 5 — Evaluation and isolated evolution
 
 - [x] Offline deterministic Core Integrity v1.3.0 suite and JSON report.
-- [x] Versioned external benchmark candidate manifest; no external suite is claimed as integrated.
+- [x] Versioned benchmark manifest registers both implemented deterministic suites and keeps external suites explicitly as candidates; a Rust consistency test checks the RID registry counts and suite statuses.
 - [ ] Add sandboxed agent trajectory and tool-use task suites.
 - [ ] Add memory retention, forgetting and held-out transfer suites.
 - [ ] Validate benchmark licenses, access, cost, environment and contamination risk before adapter integration.
