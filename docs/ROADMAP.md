@@ -85,10 +85,11 @@ The next engineering work is Issue #13's reproducible technical evaluation harne
 
 ## Stage 3 — Skills and tools
 
-- [ ] Define a typed tool contract and capability registry.
-- [ ] Start with read-only, narrowly scoped tools.
-- [ ] Add explicit permission checks, audit events, and timeouts.
-- [ ] Add workspace sandboxing and human approval for writes or remote egress.
+- [x] Define a typed tool metadata contract and deny-by-default capability registry.
+- [x] Add narrowly scoped in-memory fixture read/write tools; all production tool execution remains disabled.
+- [x] Add explicit allowlist/capability permission checks and input-byte budgets.
+- [ ] Add durable audit events and runtime timeouts for isolated production execution.
+- [ ] Add a genuine OS/WASM isolation boundary and human approval for writes or remote egress.
 - [ ] Keep external runtimes optional rather than core dependencies.
 
 ## Stage 4 — Application builder
@@ -102,9 +103,10 @@ The next engineering work is Issue #13's reproducible technical evaluation harne
 ## Stage 5 — Evaluation and isolated evolution
 
 - [x] Offline deterministic Core Integrity v1.3.0 suite and JSON report.
-- [x] Versioned benchmark manifest registers both implemented deterministic suites and keeps external suites explicitly as candidates; a Rust consistency test checks the RID registry counts and suite statuses.
+- [x] Versioned benchmark manifest registers three implemented offline suites (Core Integrity, Memory Retrieval, Agent Runtime Fixtures) and keeps external suites explicitly as candidates; a Rust consistency test checks the RID registry counts and suite statuses.
 - [x] Define a typed, bounded agent-trajectory evidence contract with independent-verifier and safety-veto validation (schema foundation; not an executable suite).
-- [ ] Add a deny-by-default tool registry and isolated sandboxed agent trajectory runner.
+- [x] Add deny-by-default tool metadata registry and bounded in-process fixture executor/verifier tests (not a sandbox or model benchmark).
+- [ ] Add genuine isolated agent execution and independent effect-verifier adapters.
 - [ ] Add memory retention, forgetting and held-out transfer suites with explicit held-out partitions and leakage controls.
 - [ ] Validate benchmark licenses, access, cost, environment and contamination risk before adapter integration.
 - [ ] Create candidate branches/worktrees and immutable baselines.

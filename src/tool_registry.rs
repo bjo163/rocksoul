@@ -113,8 +113,7 @@ impl ToolRegistry {
             "tool capability has not been granted"
         );
         ensure!(
-            input_bytes <= descriptor.max_input_bytes
-                && input_bytes <= policy.max_input_bytes,
+            input_bytes <= descriptor.max_input_bytes && input_bytes <= policy.max_input_bytes,
             "tool input exceeds the configured byte budget"
         );
         Ok(descriptor)
