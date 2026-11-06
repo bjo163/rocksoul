@@ -311,7 +311,9 @@ mod tests {
         let mut session = WorkerSession::new("run-1").expect("session");
         let mut first = frame(1, "req-1");
         first.kind = WorkerMessageKind::Hello;
-        session.accept_from_worker(&first).expect("first worker frame");
+        session
+            .accept_from_worker(&first)
+            .expect("first worker frame");
         assert!(session.accept_from_worker(&first).is_err());
         let mut out_of_order = frame(3, "req-3");
         out_of_order.kind = WorkerMessageKind::Heartbeat;
@@ -337,12 +339,16 @@ mod tests {
 
         let mut valid_parent = frame(1, "req-ready");
         valid_parent.kind = WorkerMessageKind::Ready;
-        session.validate_for_worker(&valid_parent).expect("parent Ready is permitted");
+        session
+            .validate_for_worker(&valid_parent)
+            .expect("parent Ready is permitted");
 
         let mut valid_worker = frame(1, "req-hello");
         valid_worker.kind = WorkerMessageKind::Hello;
         let mut worker_session = WorkerSession::new("run-1").expect("worker session");
-        worker_session.accept_from_worker(&valid_worker).expect("worker Hello is permitted");
+        worker_session
+            .accept_from_worker(&valid_worker)
+            .expect("worker Hello is permitted");
     }
 
     #[test]
