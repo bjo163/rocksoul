@@ -445,10 +445,12 @@ mod tests {
                     tool_id: FIXTURE_WRITE_TOOL.to_owned(),
                     input: "goal=done".to_owned(),
                 },
-                &path,
-                "fixture-run-1",
-                1,
-                &InvocationControl::new(std::time::Duration::from_secs(5), 1),
+                &FixtureAuditContext {
+                    audit_path: path.clone(),
+                    run_id: "fixture-run-1".to_owned(),
+                    first_sequence: 1,
+                    control: InvocationControl::new(std::time::Duration::from_secs(5), 1),
+                },
             )
             .unwrap();
         let events = ToolAuditStore::read(&path).unwrap();
@@ -496,10 +498,12 @@ mod tests {
                         tool_id: FIXTURE_WRITE_TOOL.to_owned(),
                         input: "goal=done".to_owned(),
                     },
-                    &path,
-                    "fixture-denied-1",
-                    1,
-                    &InvocationControl::new(std::time::Duration::from_secs(5), 1),
+                    &FixtureAuditContext {
+                        audit_path: path.clone(),
+                        run_id: "fixture-denied-1".to_owned(),
+                        first_sequence: 1,
+                        control: InvocationControl::new(std::time::Duration::from_secs(5), 1),
+                    },
                 )
                 .is_err()
         );
@@ -536,10 +540,12 @@ mod tests {
                     &registry,
                     &policy,
                     &call,
-                    &timeout_path,
-                    "fixture-timeout",
-                    1,
-                    &InvocationControl::new(Duration::ZERO, 1),
+                    &FixtureAuditContext {
+                        audit_path: timeout_path.clone(),
+                        run_id: "fixture-timeout".to_owned(),
+                        first_sequence: 1,
+                        control: InvocationControl::new(Duration::ZERO, 1),
+                    },
                 )
                 .is_err()
         );
@@ -568,10 +574,12 @@ mod tests {
                     &registry,
                     &policy,
                     &call,
-                    &cancel_path,
-                    "fixture-cancel",
-                    1,
-                    &control,
+                    &FixtureAuditContext {
+                        audit_path: cancel_path.clone(),
+                        run_id: "fixture-cancel".to_owned(),
+                        first_sequence: 1,
+                        control: control.clone(),
+                    },
                 )
                 .is_err()
         );
@@ -613,10 +621,12 @@ mod tests {
                         tool_id: FIXTURE_WRITE_TOOL.to_owned(),
                         input: "goal=done".to_owned(),
                     },
-                    &path,
-                    "fixture-budget",
-                    1,
-                    &InvocationControl::new(Duration::from_secs(5), 0),
+                    &FixtureAuditContext {
+                        audit_path: path.clone(),
+                        run_id: "fixture-budget".to_owned(),
+                        first_sequence: 1,
+                        control: InvocationControl::new(Duration::from_secs(5), 0),
+                    },
                 )
                 .is_err()
         );
