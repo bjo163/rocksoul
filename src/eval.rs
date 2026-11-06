@@ -223,6 +223,7 @@ pub fn list() {
         "  Validates lifecycle, retry bounds, verified XP, workspace crash recovery/receipt conflicts, acceptance checks, cancellation, RID and catalogue invariants."
     );
     println!("rocksoul.memory-retrieval  v1.0.0  offline / deterministic");
+    println!("rocksoul.agent-runtime-fixtures  v0.1.0  offline / deterministic (in-process only; not a sandbox)");
     println!(
         "  Measures lexical precision/recall, stale ranking, expiry leakage, and forgetting leakage."
     );
@@ -1537,7 +1538,7 @@ mod tests {
         ))
         .unwrap();
         assert_eq!(manifest["schema_version"], 1);
-        assert_eq!(manifest["manifest_version"], "1.1.4");
+        assert_eq!(manifest["manifest_version"], "1.1.5");
         assert_eq!(manifest["rid_taxonomy"]["domain_count"], 99);
         assert_eq!(manifest["rid_taxonomy"]["stat_count"], 99);
         assert_eq!(manifest["rid_taxonomy"]["overlap_pair_count"], 161);
@@ -1553,6 +1554,7 @@ mod tests {
         for (id, version) in [
             (CORE_SUITE_ID, CORE_SUITE_VERSION),
             ("rocksoul.memory-retrieval", "1.0.0"),
+            ("rocksoul.agent-runtime-fixtures", "0.1.0"),
         ] {
             let suite = suites
                 .iter()

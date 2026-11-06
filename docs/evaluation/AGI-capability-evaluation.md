@@ -1,6 +1,6 @@
 # AGI-Oriented Capability Evaluation
 
-**Status:** Offline deterministic Core Integrity v1.3.0 and Memory Retrieval v1.0.0 are implemented. Both emit JSON and Markdown reports with source-commit provenance. External agent and generalization suites are planned or candidate integrations, not integrated benchmarks.
+**Status:** Offline deterministic Core Integrity v1.3.0, Memory Retrieval v1.0.0, and Agent Runtime Fixtures v0.1.0 are implemented. Both emit JSON and Markdown reports with source-commit provenance. External agent and generalization suites are planned or candidate integrations, not integrated benchmarks.
 
 ## Purpose and limits
 
@@ -12,8 +12,9 @@ Do not publish one scalar "AGI score". Publish a versioned capability vector wit
 
 1. **Core Integrity v1.3.0 (offline, deterministic):** turn lifecycle and retry invariants, terminal-state immutability, verified-XP evidence gating and replay behavior, RID identity and 99-stat catalogue integrity, level curve, explicit-memory baseline, workspace crash-window recovery, replay/receipt idempotency, immutable receipt conflict and malformed receipt preservation.
 2. **Agent trajectories (planned):** planning quality, permissioned tool selection, observed task success, verifier precision/recall, retries, recovery, action efficiency, and truthful completion reporting.
-3. **Learning and generalization (planned):** memory recall, provenance, retention, forgetting, continual-learning stability/plasticity, held-out cross-domain transfer, world-model prediction, and calibration.
-4. **External benchmarks (candidate adapters):** see `data/evaluation/benchmark-manifest.v1.json`. Candidate status does not mean downloaded, licensed, integrated, validated, or scored.
+3. **Agent runtime fixtures v0.1.0 (offline deterministic):** deny-by-default tool registry, explicit capability grants, bounded in-memory fixture read/write operations, and verifier checks against observed fixture state. This is a runtime safety/evidence-flow test suite only; its verifier is not an independent production evaluator and it is not an OS sandbox or model benchmark.
+4. **Learning and generalization (planned):** memory recall, provenance, retention, forgetting, continual-learning stability/plasticity, held-out cross-domain transfer, world-model prediction, and calibration.
+5. **External benchmarks (candidate adapters):** see `data/evaluation/benchmark-manifest.v1.json`. Candidate status does not mean downloaded, licensed, integrated, validated, or scored.
 
 ## Hard gates
 
@@ -80,7 +81,7 @@ Unknown fields must be explicitly unavailable, never fabricated.
 
 `src/eval.rs` now defines a versioned typed trajectory record with run/build provenance, model/provider/quantization identity, seed, dataset/task digest, bounded ordered steps, redacted input digests, observation/trace references, token/cost/time fields, and independent-verifier evidence. Its validator rejects duplicate/non-contiguous steps, incomplete provenance, self-grading, missing verifier evidence for claimed success, invalid confidence bounds, and safety violations being reported as success. Unit tests cover these rejection paths.
 
-This is deliberately **not** an executable agent benchmark yet. The model adapter currently exposes chat completion only. A deny-by-default tool metadata registry requires an explicit tool-ID allowlist, a separate capability grant, and descriptor/policy input-byte budgets. A deterministic in-process fixture executor now exercises only two bounded key-value operations over a private memory map; a fixture verifier reads the executor's observed state rather than trusting a model-provided result. This is a test harness, not an OS sandbox: it has no shell, network, filesystem, process, environment-variable, or arbitrary-code capability. Production isolation, independently operated verifier adapters, and model-connected held-out task execution remain unimplemented. The manifest therefore keeps `rocksoul.agent-trajectory` at `planned`; no trajectory capability result or RID score is emitted from this contract alone.
+This is deliberately **not** an executable agent benchmark yet. The model adapter currently exposes chat completion only. A deny-by-default tool metadata registry requires an explicit tool-ID allowlist, a separate capability grant, and descriptor/policy input-byte budgets. A deterministic in-process fixture executor now exercises only two bounded key-value operations over a private memory map; a fixture verifier reads the executor's observed state rather than trusting a model-provided result. This is a test harness, not an OS sandbox: it has no shell, network, filesystem, process, environment-variable, or arbitrary-code capability. Production isolation, independently operated verifier adapters, and model-connected held-out task execution remain unimplemented. The manifest registers `rocksoul.agent-runtime-fixtures` separately as implemented offline CI tests. The model-dependent `rocksoul.agent-trajectory` remains `planned`; no trajectory capability result or RID score is emitted from fixture tests or the schema contract.
 
 ## Roadmap
 

@@ -251,3 +251,15 @@ Next:
 - Added negative tests for self-grading/missing verifier, safety-veto handling, duplicate steps, and invalid confidence.
 - This is a schema/validation foundation, not an executable agent suite. No sandbox/tool runner, independent effect verifier, held-out dataset runner, or model trajectory result exists yet. Manifest status remains `planned`.
 - CI must pass on the exact latest `main` before this change is called validated.
+
+
+## Issue #13 — bounded fixture runtime foundation (2026-11-06)
+
+- `src/tool_registry.rs`: explicit tool allowlist + capability grant + descriptor/policy byte ceilings; registry/policy deny by default.
+- `src/fixture_runtime.rs`: two built-in in-memory key/value fixture tools only. No OS/host capabilities, shell, network, filesystem, process, env, or arbitrary code execution.
+- Fixture verifier reads executor-observed state, validates evidence references, and explicitly sets `independent=false`. This is not a trusted independent verifier and cannot certify model success.
+- Six negative/positive fixture tests are part of the normal Rust test run.
+- Benchmark manifest v1.1.5 adds `rocksoul.agent-runtime-fixtures` as implemented offline deterministic CI coverage. `rocksoul.agent-trajectory` remains planned.
+- CI failure on commit `e3fca0b4...` was caused by a literal `\\n` in `src/lib.rs`; fixed in `e62c9bc...`. The subsequent executor and docs changes are on current main; exact-head CI is required before declaring this slice validated.
+
+Next: design and implement a genuine OS-isolated executor with explicit resource and syscall/network/filesystem boundaries, then external effect verifiers, held-out model task runner, trusted RID gates, and baseline/rollback evaluation. Do not treat in-process fixtures as a sandbox or benchmark result.

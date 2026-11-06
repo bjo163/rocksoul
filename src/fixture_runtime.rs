@@ -129,7 +129,7 @@ impl FixtureExecutor {
         Ok(FixtureVerification {
             verifier_id: "rocksoul.fixture-state-verifier".to_owned(),
             rubric_version: "1.0.0".to_owned(),
-            independent: true,
+            independent: false,
             passed: observed == expected_value,
             confidence_basis_points: 10_000,
             evidence_refs: vec![evidence_ref.to_owned()],
@@ -243,7 +243,7 @@ mod tests {
         let verified = executor
             .verify_state_equals(&write.evidence_ref, "done")
             .unwrap();
-        assert!(verified.independent);
+        assert!(!verified.independent);
         assert!(verified.passed);
         let rejected = executor
             .verify_state_equals(&write.evidence_ref, "model-says-done")
