@@ -1263,7 +1263,7 @@ mod tests {
     #[test]
     fn markdown_cell_escapes_table_delimiters_and_collapses_line_breaks() {
         assert_eq!(
-            super::markdown_cell("left|right\\r\\nnext"),
+            super::markdown_cell("left|right\r\nnext"),
             "left\\\\|right  next"
         );
     }
