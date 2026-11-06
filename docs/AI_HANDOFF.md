@@ -386,3 +386,26 @@ PR #69 is merged to `main` as `c845a9485a9b1b2882691c8dc268d6e6385b6be2`. Its ex
 - Read `src/fixture_runtime.rs` for audited fixture dispatch and pre-dispatch deadline/cancellation/call-budget enforcement.
 - The audited path is fixture-only. It does not terminate/reap processes or establish OS isolation. Do not use it as production execution authority.
 - Continue Issue #13 with worker isolation, parent watchdog/termination/reaping, independent effect verification, held-out task execution and trusted evaluation. Keep model-selected production tools disabled until those gates pass.
+
+
+## Current handoff — 2026-11-06 (Issue #71 / PR #72)
+
+Refresh GitHub and `main` before starting. Issue #67 is complete: PR #69 and documentation PR #70 are merged, and exact-head Linux/Windows CI passed. Do not reopen fixture audit work unless a regression is found.
+
+**Current branch:** `feat/worker-ipc-contract`  
+**PR:** https://github.com/bjo163/rocksoul/pull/72  
+**Issue:** https://github.com/bjo163/rocksoul/issues/71  
+**Current PR head after formatting correction:** check the live PR head SHA before any further action.  
+**Initial CI:** run #42214701546 — Windows passed; Linux failed only at rustfmt, so Clippy/tests/evaluations did not execute. The rustfmt differences were corrected on the branch; rerun exact-head CI before merge.
+
+PR #72 is a protocol-only foundation. It adds bounded length-prefixed JSON framing, strict envelope validation, parent-side run binding, monotonic sequence/replay checks, and lifecycle state transitions. It is not an authenticated channel or sandbox. No worker supervisor, OS restrictions, resource limits, hard kill/reap, WASM guest runtime, independent verifier, or production dispatch is present.
+
+Next safe sequence:
+1. Confirm PR #72 head and exact-head Linux/Windows CI; merge only when both are green.
+2. Implement parent supervisor with authenticated IPC, bounded handshake/heartbeat, deadlines, cancellation, process termination and OS-observed reaping.
+3. Implement Linux isolation and negative tests (namespaces, seccomp, cgroups v2, minimal read-only mounts, no network).
+4. Implement Windows isolation and negative tests (restricted token/AppContainer policy, Job Object limits, explicit handle inheritance, kill-on-close and reaping).
+5. Select a WASM runtime only after an explicit MSRV/license/security decision; no WASI and no default imports.
+6. Keep the independent effect verifier in a separate trust domain; then implement held-out model task evaluation and trusted RID publication gates.
+
+Never enable production tool dispatch from the protocol contract alone. Issue #13 remains the controlling acceptance gate.
