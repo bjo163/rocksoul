@@ -16,6 +16,7 @@ pub mod tool_audit;
 pub mod tool_registry;
 mod tui;
 mod tui_preferences;
+pub mod worker_protocol;
 pub mod workspace_artifact;
 
 use anyhow::Result;

@@ -90,6 +90,7 @@ The next engineering work is Issue #13's reproducible technical evaluation harne
 - [x] Add explicit allowlist/capability permission checks and input-byte budgets.
 - [x] Add a versioned content-free tool audit schema and append-only, file-locked JSONL store with bounded records, per-run sequence checks, duplicate-event rejection, corruption fail-closed behavior, and cross-process tests.
 - [x] Record fixture proposal, authorization, execution start/finish, failure, timeout and cancellation events without persisting raw tool input; enforce cooperative deadline, cancellation and call-budget checks before fixture dispatch.
+- [x] Define bounded, versioned worker IPC framing, payload ceilings, parent-side run/sequence/replay validation, and lifecycle transition contract (protocol foundation only; not an OS supervisor).
 - [ ] Add production worker watchdogs that actually terminate and reap timed-out/cancelled workers; cooperative host checks alone do not stop a running process.
 - [ ] Add a genuine OS/WASM isolation boundary and human approval for production writes or remote egress.
 - [ ] Keep external runtimes optional rather than core dependencies.
