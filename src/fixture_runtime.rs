@@ -5,7 +5,6 @@
 //! private in-memory map and exists to test authorization and evidence flow.
 use std::{
     collections::BTreeMap,
-    path::Path,
     time::{SystemTime, UNIX_EPOCH},
 };
 
