@@ -57,7 +57,7 @@ CI runs Rust unit tests, the offline Core Integrity evaluation, and Windows rele
 
 ## Capability taxonomy and RID mapping
 
-RID Universal 99 v2.3.3 is the canonical measurement registry, referenced by `data/evaluation/benchmark-manifest.v1.json` (manifest version 1.1.3). Future adapters must emit explicit `rid_domain:NN` and `rid_stat:NN` references and preserve all 99 dimensions. Never create a second competing 99-stat taxonomy or aggregate scores into a replacement family score.
+RID Universal 99 v2.3.3 is the canonical measurement registry, referenced by `data/evaluation/benchmark-manifest.v1.json` (manifest version 1.1.4). Future adapters must emit explicit `rid_domain:NN` and `rid_stat:NN` references and preserve all 99 dimensions. Never create a second competing 99-stat taxonomy or aggregate scores into a replacement family score.
 
 The ten families are benchmark coverage/navigation tags only: perception, generation, attention, learning, memory, reasoning, metacognition, executive functions, problem solving, and social cognition. They are not parent domains and are not additional RID scores. Cross-cutting tags include safety, robustness, calibration, recovery, retention, transfer, long-horizon consistency, latency, tokens, cost, and resource usage; tags describe test coverage, not new capability dimensions.
 
@@ -81,6 +81,7 @@ Unknown fields must be explicitly unavailable, never fabricated.
 - [x] Deterministic Core Integrity v1.3.0 and JSON report.
 - [x] Deterministic Core Integrity and Memory Retrieval suites record the tested source revision in JSON and Markdown reports.
 - [x] CI archives both formats for both deterministic suites.
+- [x] Versioned benchmark manifest registers Core Integrity and Memory Retrieval as implemented offline suites; a Rust test checks suite IDs, versions, statuses and RID registry counts.
 - [ ] Agent trajectory suite with sandboxed tools and independent verifiers.
 - [ ] Memory retention/transfer suite with held-out tasks.
 - [ ] Trusted RID evaluator with rubric-specific evidence aggregation.
