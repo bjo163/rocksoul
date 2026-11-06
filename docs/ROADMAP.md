@@ -92,7 +92,7 @@ The next engineering work is Issue #13's reproducible technical evaluation harne
 - [x] Add explicit allowlist/capability permission checks and input-byte budgets.
 - [x] Add a versioned content-free tool audit schema and append-only, file-locked JSONL store with bounded records, per-run sequence checks, duplicate-event rejection, corruption fail-closed behavior, and cross-process tests.
 - [x] Record fixture proposal, authorization, execution start/finish, failure, timeout and cancellation events without persisting raw tool input; enforce cooperative deadline, cancellation and call-budget checks before fixture dispatch.
-- [ ] Merge the bounded worker IPC protocol foundation after exact-head Linux and Windows CI passes (PR #72; Linux formatting was corrected and CI rerun is pending).
+- [x] Merge the bounded worker IPC protocol foundation after exact-head Linux and Windows CI passed (PR #72; merge commit `b9450142becfe8446c8dc98455977fd4a3e1fe51`).
 - [ ] Add production worker watchdogs that actually terminate and reap timed-out/cancelled workers; cooperative host checks alone do not stop a running process.
 - [ ] Add a genuine OS/WASM isolation boundary and human approval for production writes or remote egress.
 - [ ] Keep external runtimes optional rather than core dependencies.
