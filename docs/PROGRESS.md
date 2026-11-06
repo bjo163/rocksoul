@@ -1,6 +1,6 @@
 # Rocksoul Project Progress
 
-**Last updated:** 2026-11-06 (Asia/Jakarta, Universal 99 domains third-pass overlap reconciliation v2.3.3 published)  
+**Last updated:** 2026-11-06 (Asia/Jakarta, deterministic evaluation JSON/Markdown reports and source provenance)  
 **Repository:** [bjo163/rocksoul](https://github.com/bjo163/rocksoul)  
 **Canonical branch:** `main`  
 **Current principle:** One Core. Infinite Evolution.
@@ -186,7 +186,7 @@ This progress snapshot was refreshed after PR #53 merged and `main` was verified
 
 ### Current next task: Issue #13 — reproducible evaluation harness
 
-The deterministic Core Integrity and memory-retrieval suites are implemented and wired into CI. The Core Integrity report now records the tested source revision (`ROCKSOUL_GIT_SHA`, or `unknown` for builds without revision metadata), preserving compatibility with older reports. The next implementation work is to add reproducible model-dependent trajectory runs, held-out learning/transfer evaluation, structured evidence manifests, and machine-readable plus human-readable reports without introducing hidden network calls.
+The deterministic Core Integrity and memory-retrieval suites are implemented and wired into CI. Both suites now persist canonical JSON plus a human-readable Markdown projection, record the tested source revision (`ROCKSOUL_GIT_SHA`, or `unknown` for builds without revision metadata), and CI archives all four files. The next implementation work is reproducible model-dependent trajectory runs, held-out learning/transfer evaluation, structured evidence manifests, independent verifiers, and confidence-aware evidence aggregation without hidden network calls.
 
 Technical dependencies are #4, #5, and #9. Issue #4 and #9 are closed. Issue #5's runtime/catalogue implementation is on main but remains open pending exact-head Linux/Windows CI and trusted-evaluator gates. Issue #8's independent religious/language review is separate and does not block the technical harness. Stage 2 umbrella #36 and work packages #37–#41 plus follow-up #44 are closed. Do not start automatic memory injection until separate policy, privacy/contamination, forgetting/deletion and regression gates are reviewed.
 
@@ -233,7 +233,7 @@ Audit conclusions and remaining gates:
 - The lexical screen is a candidate-discovery aid, not proof of independence. The second-pass and third-pass semantic reviews added 24 adjacency guards after reviewing candidate pairs that were not explicit in the prior graph.
 - Correlation between capabilities is expected; the control is distinct measurement targets and non-reused outcome evidence, not a claim that capabilities are statistically independent.
 - Structural validation and editorial boundary review do **not** constitute independent psychometric validation. Trusted evaluator design, held-out benchmark quality, inter-rater reliability, and empirical discriminant validity remain pending.
-- Exact-head Linux/Windows CI must be green before claiming verified completion.
+- Exact-head Linux/Windows CI must be green before claiming verified completion. Previous exact-head CI at `687e1534e8e7dd30b8d794a1cb17847b0b299470` passed; later report-generation changes require a fresh CI run.
 - Previous CI diagnosis and repairs: `cargo fmt --check` reported formatting drift in `commands.rs`, `rid.rs`, `rid_catalogue.rs`, `rid_store.rs`, and `tui.rs`; formatting is corrected. Windows tests exposed a fixture type mismatch (`Vec<&str>` vs `Vec<String>`), now fixed with owned strings. The next Windows run exposed `Access is denied` during legacy migration because a read-only archive handle was redundantly flushed after the staged file had already been synced; that read-only `sync_all` call is removed. The latest exact-main CI run is queued; do not mark it green until both Linux and Windows jobs finish.
 
 Next:
