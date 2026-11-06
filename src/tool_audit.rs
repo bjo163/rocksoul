@@ -3,7 +3,7 @@
 //! This module records metadata only. It does not dispatch tools, create workers,
 //! enforce OS isolation, or prove that a timed-out worker has stopped.
 use std::{
-    collections::BTreeMap,
+    collections::{BTreeMap, BTreeSet},
     fs::OpenOptions,
     io::{Read, Seek, SeekFrom, Write},
     path::Path,
@@ -194,19 +194,34 @@ impl ToolAuditStore {
         if !path.exists() {
             return Ok(Vec::new());
         }
-        let metadata = std::fs::metadata(path)?;
-        ensure!(metadata.len() <= MAX_AUDIT_FILE_BYTES, "tool audit store exceeds read limit");
-        let content = std::fs::read_to_string(path)
-            .with_context(|| format!("could not read tool audit store {}", path.display()))?;
-        validate_existing_records(&content)?;
-        content
-            .lines()
-            .filter(|line| !line.is_empty())
-            .map(|line| {
-                serde_json::from_str::<ToolAuditEvent>(line)
-                    .context("tool audit store contains an invalid record")
-            })
-            .collect()
+        let mut file = OpenOptions::new()
+            .read(true)
+            .open(path)
+            .with_context(|| format!("could not open tool audit store {}", path.display()))?;
+        FileExt::lock_shared(&file)
+            .with_context(|| format!("could not lock tool audit store {}", path.display()))?;
+        let result = (|| -> Result<Vec<ToolAuditEvent>> {
+            let metadata = file.metadata()?;
+            ensure!(metadata.len() <= MAX_AUDIT_FILE_BYTES, "tool audit store exceeds read limit");
+            let mut content = String::new();
+            file.read_to_string(&mut content)
+                .context("tool audit store is not valid UTF-8")?;
+            validate_existing_records(&content)?;
+            content
+                .lines()
+                .filter(|line| !line.is_empty())
+                .map(|line| {
+                    serde_json::from_str::<ToolAuditEvent>(line)
+                        .context("tool audit store contains an invalid record")
+                })
+                .collect()
+        })();
+        let unlock_result = FileExt::unlock(&file)
+            .with_context(|| format!("could not unlock tool audit store {}", path.display()));
+        result.and_then(|records| {
+            unlock_result?;
+            Ok(records)
+        })
     }
 }
 
@@ -216,11 +231,13 @@ fn validate_existing_records(content: &str) -> Result<BTreeMap<String, u64>> {
     }
     ensure!(content.ends_with('\n'), "tool audit store has an incomplete trailing record");
     let mut sequences = BTreeMap::new();
+    let mut event_ids = BTreeSet::new();
     for line in content.lines() {
         ensure!(!line.is_empty() && line.len() <= MAX_RECORD_BYTES, "tool audit store contains an empty or oversized record");
         let event: ToolAuditEvent = serde_json::from_str(line)
             .context("tool audit store contains a malformed record")?;
         event.validate()?;
+        ensure!(event_ids.insert(event.event_id.clone()), "tool audit store contains a duplicate event id");
         let expected = sequences.get(&event.run_id).copied().unwrap_or(0_u64) + 1;
         ensure!(event.sequence == expected, "tool audit store contains duplicate or out-of-order sequence");
         sequences.insert(event.run_id, event.sequence);
