@@ -372,3 +372,7 @@ Latest implementation on `main` adds:
 ## Production sandbox threat model
 
 See [docs/plans/issue-13/sandbox-threat-model.md](plans/issue-13/sandbox-threat-model.md) before implementing any production executor. It defines trust boundaries, no-WASI/no-network defaults, OS worker isolation, resource ceilings, verifier separation, adversarial tests, and the MSRV gate for Wasmi. Do not bypass these gates by reusing the in-process fixture executor.
+
+### Issue #13 — independent verifier protocol handoff
+
+Read [docs/plans/issue-13/independent-verifier-contract.md](plans/issue-13/independent-verifier-contract.md) together with the sandbox threat model before implementing production trajectory verification. The contract requires a host-created task-attempt envelope and single-use challenge nonce; an independently controlled observation adapter; authenticated, task-bound attestation; replay/freshness checks; three-valued pass/fail/indeterminate semantics; and real process/OS isolation tests. A mock, model self-report, guest tool output, or in-process fixture is not independent evidence. If platform isolation or verifier availability is missing, fail closed or report unsupported/indeterminate. This document is design-only and does not authorize marking the trajectory suite implemented.
