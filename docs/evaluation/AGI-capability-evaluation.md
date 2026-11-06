@@ -76,13 +76,20 @@ Every model-dependent run should record:
 
 Unknown fields must be explicitly unavailable, never fabricated.
 
+## Agent trajectory evidence contract (foundation only)
+
+`src/eval.rs` now defines a versioned typed trajectory record with run/build provenance, model/provider/quantization identity, seed, dataset/task digest, bounded ordered steps, redacted input digests, observation/trace references, token/cost/time fields, and independent-verifier evidence. Its validator rejects duplicate/non-contiguous steps, incomplete provenance, self-grading, missing verifier evidence for claimed success, invalid confidence bounds, and safety violations being reported as success. Unit tests cover these rejection paths.
+
+This is deliberately **not** an executable agent benchmark yet. The model adapter currently exposes chat completion only; the repository does not yet provide a deny-by-default tool registry, isolated execution sandbox, effect-observing verifier adapters, or held-out task runner. The manifest therefore keeps `rocksoul.agent-trajectory` at `planned`; no trajectory capability result or RID score is emitted from this contract alone.
+
 ## Roadmap
 
 - [x] Deterministic Core Integrity v1.3.0 and JSON report.
 - [x] Deterministic Core Integrity and Memory Retrieval suites record the tested source revision in JSON and Markdown reports.
 - [x] CI archives both formats for both deterministic suites.
 - [x] Versioned benchmark manifest registers Core Integrity and Memory Retrieval as implemented offline suites; a Rust test checks suite IDs, versions, statuses and RID registry counts.
-- [ ] Agent trajectory suite with sandboxed tools and independent verifiers.
+- [x] Typed trajectory evidence contract and fail-closed validation rules (schema foundation only).
+- [ ] Executable agent trajectory suite with deny-by-default sandboxed tools and independent verifiers.
 - [ ] Memory retention/transfer suite with held-out tasks.
 - [ ] Trusted RID evaluator with rubric-specific evidence aggregation.
 - [ ] External adapter review (license, terms, cost, environment, version, reproducibility).

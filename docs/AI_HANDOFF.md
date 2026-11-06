@@ -354,3 +354,10 @@ Issue #8 still requires independent human religious/language review of the optio
 ---
 
 **Handoff rule:** If uncertain, inspect the code and tests on latest `main`, state what is unknown, and fail closed. Never convert assumptions into completion claims.
+
+
+## Issue #13 — trajectory evidence handoff (2026-11-06)
+
+Latest implementation adds typed trajectory metadata and evidence contracts in `src/eval.rs`. The contract is versioned, bounded, records source/model/dataset/task provenance, enforces ordered unique steps, requires independent verifier evidence for successful outcomes, and treats safety violations as hard vetoes. Negative tests cover self-grading, missing verifier, duplicate steps, confidence overflow, and safety-veto behavior.
+
+**Important boundary:** the model adapter is still chat-completion-only. There is no deny-by-default tool registry, sandboxed executor, independent observed-effect verifier, or held-out task runner. Therefore the trajectory suite remains `planned` in the manifest; do not claim agent benchmark execution or RID capability scores. Next implementation order: (1) narrow tool contract/registry, (2) isolated deny-by-default workspace executor with resource/time/step budgets, (3) effect-observing verifier adapters, (4) held-out task/dataset partition and leakage controls, (5) trajectory runner/report persistence, (6) candidate-vs-baseline regression and rollback gates.

@@ -243,3 +243,11 @@ Next:
 2. Design trusted per-domain evaluator adapters with held-out benchmark suites, negative controls, calibrated confidence, and auditable evidence.
 3. Run independent expert review and empirical discriminant-validity studies before treating scores as comparable capability measurements.
 4. Keep all 99 dimensions `unrated` until trusted evidence exists; do not map historical Asmaul Husna scores by ordinal slot.
+
+## Issue #13 — agent trajectory contract foundation (2026-11-06)
+
+- Added typed `AgentTrajectoryReport`, metadata, ordered step, and independent-verifier evidence contracts in `src/eval.rs`.
+- Validation enforces source commit or explicit `unknown`, model/dataset/task provenance, bounded 1–256 step trajectories, contiguous sequence and unique step IDs, trace references, confidence bounds, independent evidence for passing verification, and safety violations as hard vetoes.
+- Added negative tests for self-grading/missing verifier, safety-veto handling, duplicate steps, and invalid confidence.
+- This is a schema/validation foundation, not an executable agent suite. No sandbox/tool runner, independent effect verifier, held-out dataset runner, or model trajectory result exists yet. Manifest status remains `planned`.
+- CI must pass on the exact latest `main` before this change is called validated.

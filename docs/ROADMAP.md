@@ -103,8 +103,9 @@ The next engineering work is Issue #13's reproducible technical evaluation harne
 
 - [x] Offline deterministic Core Integrity v1.3.0 suite and JSON report.
 - [x] Versioned benchmark manifest registers both implemented deterministic suites and keeps external suites explicitly as candidates; a Rust consistency test checks the RID registry counts and suite statuses.
-- [ ] Add sandboxed agent trajectory and tool-use task suites.
-- [ ] Add memory retention, forgetting and held-out transfer suites.
+- [x] Define a typed, bounded agent-trajectory evidence contract with independent-verifier and safety-veto validation (schema foundation; not an executable suite).
+- [ ] Add a deny-by-default tool registry and isolated sandboxed agent trajectory runner.
+- [ ] Add memory retention, forgetting and held-out transfer suites with explicit held-out partitions and leakage controls.
 - [ ] Validate benchmark licenses, access, cost, environment and contamination risk before adapter integration.
 - [ ] Create candidate branches/worktrees and immutable baselines.
 - [ ] Compare candidate results with matched baseline conditions.
