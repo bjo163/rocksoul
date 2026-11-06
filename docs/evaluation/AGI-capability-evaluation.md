@@ -97,3 +97,7 @@ This is deliberately **not** an executable agent benchmark yet. The model adapte
 - [ ] Trusted RID evaluator with rubric-specific evidence aggregation.
 - [ ] External adapter review (license, terms, cost, environment, version, reproducibility).
 - [ ] Candidate-vs-baseline evolution gates and automatic rollback.
+
+## Independent verifier contract (design only)
+
+The next trust-boundary specification is [Independent Effect Verifier Contract](../plans/issue-13/independent-verifier-contract.md). It defines host-created task-attempt challenges, verifier identity and observation requirements, authenticated attestation fields, replay/freshness controls, three-valued decisions (`pass` / `fail` / `indeterminate`), isolation requirements, and adversarial acceptance tests. It is a design contract only: no verifier process, signature/key-management implementation, IPC, or production sandbox exists yet. Keep `rocksoul.agent-trajectory` planned.
