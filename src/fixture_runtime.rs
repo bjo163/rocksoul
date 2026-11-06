@@ -3,12 +3,22 @@
 //! This is NOT an OS sandbox. It has no shell, network, filesystem, process,
 //! environment-variable, or arbitrary-code capability. It mutates only its
 //! private in-memory map and exists to test authorization and evidence flow.
-use std::collections::BTreeMap;
+use std::{
+    collections::BTreeMap,
+    path::Path,
+    time::{SystemTime, UNIX_EPOCH},
+};
 
-use anyhow::{Result, ensure};
+use anyhow::{Context, Result, ensure};
 use sha2::{Digest, Sha256};
 
-use crate::tool_registry::{ToolCapability, ToolDescriptor, ToolEffect, ToolPolicy, ToolRegistry};
+use crate::{
+    tool_audit::{
+        ToolApproval, ToolAuditEvent, ToolAuditKind, ToolAuditStore, ToolAuthorization,
+        ToolEffectClass, ToolFailureCategory,
+    },
+    tool_registry::{ToolCapability, ToolDescriptor, ToolEffect, ToolPolicy, ToolRegistry},
+};
 
 pub const FIXTURE_WRITE_TOOL: &str = "fixture.state.write";
 pub const FIXTURE_READ_TOOL: &str = "fixture.state.read";
@@ -148,6 +158,86 @@ impl FixtureExecutor {
         }
     }
 
+    /// Execute a fixture tool while persisting content-free audit events.
+    ///
+    /// This is test infrastructure only. It is not a production dispatcher, sandbox,
+    /// independent verifier, or human-approval workflow.
+    pub fn execute_audited(
+        &mut self,
+        registry: &ToolRegistry,
+        policy: &ToolPolicy,
+        call: &FixtureToolCall,
+        audit_path: &Path,
+        run_id: &str,
+        first_sequence: u64,
+    ) -> Result<FixtureToolObservation> {
+        let descriptor = registry
+            .get(&call.tool_id)
+            .ok_or_else(|| anyhow::anyhow!("unknown fixture tool: {}", call.tool_id))?;
+        let mut next_sequence = first_sequence;
+        let mut append_event = |
+            kind: ToolAuditKind,
+            authorization: Option<ToolAuthorization>,
+            failure: Option<ToolFailureCategory>,
+            evidence_refs: Vec<String>,
+        | -> Result<()> {
+            let event = fixture_audit_event(
+                run_id,
+                next_sequence,
+                kind,
+                descriptor,
+                authorization,
+                failure,
+                evidence_refs,
+            )?;
+            ToolAuditStore::append(audit_path, &event)?;
+            next_sequence = next_sequence
+                .checked_add(1)
+                .context("fixture audit sequence exhausted")?;
+            Ok(())
+        };
+
+        append_event(ToolAuditKind::Proposed, None, None, Vec::new())?;
+        if let Err(error) = registry.authorize(&call.tool_id, call.input.len(), policy) {
+            append_event(
+                ToolAuditKind::AuthorizationDenied,
+                Some(ToolAuthorization::Denied),
+                Some(ToolFailureCategory::PolicyDenied),
+                Vec::new(),
+            )?;
+            return Err(error);
+        }
+
+        append_event(
+            ToolAuditKind::AuthorizationAllowed,
+            Some(ToolAuthorization::Allowed),
+            None,
+            Vec::new(),
+        )?;
+        append_event(ToolAuditKind::ExecutionStarted, None, None, Vec::new())?;
+
+        match self.execute(registry, policy, call) {
+            Ok(observation) => {
+                append_event(
+                    ToolAuditKind::ExecutionFinished,
+                    None,
+                    None,
+                    vec![observation.evidence_ref.clone()],
+                )?;
+                Ok(observation)
+            }
+            Err(error) => {
+                append_event(
+                    ToolAuditKind::Failed,
+                    None,
+                    Some(ToolFailureCategory::WorkerFailure),
+                    Vec::new(),
+                )?;
+                Err(error)
+            }
+        }
+    }
+
     /// The verifier reads executor-observed state, never a model-provided result string.
     pub fn verify_state_equals(
         &self,
@@ -171,6 +261,55 @@ impl FixtureExecutor {
             evidence_refs: vec![evidence_ref.to_owned()],
         })
     }
+}
+
+fn fixture_audit_event(
+    run_id: &str,
+    sequence: u64,
+    kind: ToolAuditKind,
+    descriptor: &ToolDescriptor,
+    authorization: Option<ToolAuthorization>,
+    failure: Option<ToolFailureCategory>,
+    evidence_refs: Vec<String>,
+) -> Result<ToolAuditEvent> {
+    let timestamp_unix_ms = u64::try_from(
+        SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .context("system clock is before Unix epoch")?
+            .as_millis(),
+    )
+    .context("system timestamp exceeds supported range")?;
+    let run_digest = Sha256::digest(run_id.as_bytes());
+    let run_digest = format!("{run_digest:x}");
+    let capability = match descriptor.capability {
+        ToolCapability::WorkspaceRead => "workspace_read",
+        ToolCapability::WorkspaceWrite => "workspace_write",
+        ToolCapability::MemoryRead => "memory_read",
+        ToolCapability::MemoryWrite => "memory_write",
+    };
+    let effect = match descriptor.effect {
+        ToolEffect::ReadOnly => ToolEffectClass::ReadOnly,
+        ToolEffect::Mutating => ToolEffectClass::Mutating,
+    };
+    let event = ToolAuditEvent {
+        schema_version: 1,
+        run_id: run_id.to_owned(),
+        sequence,
+        event_id: format!("audit-{}-{sequence}", &run_digest[..64]),
+        kind,
+        tool_id: descriptor.id.clone(),
+        tool_version: descriptor.version.clone(),
+        capability: capability.to_owned(),
+        effect,
+        policy_version: "1.0.0".to_owned(),
+        timestamp_unix_ms,
+        authorization,
+        approval: None,
+        failure,
+        evidence_refs,
+    };
+    event.validate()?;
+    Ok(event)
 }
 
 pub fn register_fixture_tools(registry: &mut ToolRegistry) -> Result<()> {
@@ -258,6 +397,93 @@ mod tests {
                 .is_err()
         );
         assert_eq!(executor.state_len(), 0);
+    }
+
+    #[test]
+    fn audited_fixture_execution_records_content_free_ordered_events() {
+        use std::time::{SystemTime, UNIX_EPOCH};
+
+        use crate::tool_audit::{ToolAuditKind, ToolAuditStore};
+
+        let (registry, policy) = configured();
+        let mut executor = FixtureExecutor::new();
+        let nonce = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let path = std::env::temp_dir().join(format!("rocksoul-fixture-audit-{nonce}.jsonl"));
+        let observation = executor
+            .execute_audited(
+                &registry,
+                &policy,
+                &FixtureToolCall {
+                    tool_id: FIXTURE_WRITE_TOOL.to_owned(),
+                    input: "goal=done".to_owned(),
+                },
+                &path,
+                "fixture-run-1",
+                1,
+            )
+            .unwrap();
+        let events = ToolAuditStore::read(&path).unwrap();
+        assert_eq!(
+            events.iter().map(|event| event.kind).collect::<Vec<_>>(),
+            vec![
+                ToolAuditKind::Proposed,
+                ToolAuditKind::AuthorizationAllowed,
+                ToolAuditKind::ExecutionStarted,
+                ToolAuditKind::ExecutionFinished,
+            ]
+        );
+        assert_eq!(
+            events.last().unwrap().evidence_refs,
+            vec![observation.evidence_ref]
+        );
+        let persisted = std::fs::read_to_string(&path).unwrap();
+        assert!(!persisted.contains("goal=done"));
+        assert!(!persisted.contains("input"));
+        std::fs::remove_file(path).unwrap();
+    }
+
+    #[test]
+    fn audited_fixture_denial_is_recorded_before_any_mutation() {
+        use std::time::{SystemTime, UNIX_EPOCH};
+
+        use crate::tool_audit::{ToolAuditKind, ToolAuditStore};
+
+        let (registry, mut policy) = configured();
+        policy.granted_capabilities.remove(&ToolCapability::WorkspaceWrite);
+        let mut executor = FixtureExecutor::new();
+        let nonce = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let path = std::env::temp_dir().join(format!("rocksoul-fixture-denial-{nonce}.jsonl"));
+        assert!(
+            executor
+                .execute_audited(
+                    &registry,
+                    &policy,
+                    &FixtureToolCall {
+                        tool_id: FIXTURE_WRITE_TOOL.to_owned(),
+                        input: "goal=done".to_owned(),
+                    },
+                    &path,
+                    "fixture-denied-1",
+                    1,
+                )
+                .is_err()
+        );
+        assert_eq!(executor.state_len(), 0);
+        let events = ToolAuditStore::read(&path).unwrap();
+        assert_eq!(
+            events.iter().map(|event| event.kind).collect::<Vec<_>>(),
+            vec![
+                ToolAuditKind::Proposed,
+                ToolAuditKind::AuthorizationDenied,
+            ]
+        );
+        std::fs::remove_file(path).unwrap();
     }
 
     #[test]
