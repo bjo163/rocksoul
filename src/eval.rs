@@ -1159,8 +1159,7 @@ fn persist_markdown_report(path: &std::path::Path, content: &str) -> Result<()> 
 fn markdown_cell(value: &str) -> String {
     value
         .replace('|', "\\|")
-        .replace('\r', " ")
-        .replace('\n', " ")
+        .replace(['\r', '\n'], " ")
 }
 
 fn render_core_markdown(report: &EvaluationReport) -> String {
@@ -1254,7 +1253,39 @@ pub fn print_report(report: &EvaluationReport) {
 
 #[cfg(test)]
 mod tests {
+    use std::{
+        fs,
+        time::{SystemTime, UNIX_EPOCH},
+    };
+
     use super::EvaluationReport;
+
+    #[test]
+    fn markdown_cell_escapes_table_delimiters_and_collapses_line_breaks() {
+        assert_eq!(
+            super::markdown_cell("left|right\\r\\nnext"),
+            "left\\\\|right  next"
+        );
+    }
+
+    #[test]
+    fn markdown_report_replaces_existing_file_without_leaving_temporary_files() {
+        let nonce = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let directory = std::env::temp_dir().join(format!("rocksoul-eval-md-{nonce}"));
+        fs::create_dir_all(&directory).unwrap();
+        let path = directory.join("latest.md");
+
+        super::persist_markdown_report(&path, "old report").unwrap();
+        super::persist_markdown_report(&path, "new report").unwrap();
+
+        assert_eq!(fs::read_to_string(&path).unwrap(), "new report");
+        assert!(!directory.join("latest.md.tmp").exists());
+        assert!(!directory.join("latest.md.bak").exists());
+        fs::remove_dir_all(directory).unwrap();
+    }
 
     #[test]
     fn report_parser_rejects_invalid_json_without_echoing_payload_or_path() {
