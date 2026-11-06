@@ -1407,6 +1407,91 @@ mod tests {
 
     use super::{EvaluationReport, CORE_SUITE_ID, CORE_SUITE_VERSION};
 
+    fn sample_agent_trajectory() -> super::AgentTrajectoryReport {
+        super::AgentTrajectoryReport {
+            schema_version: 1,
+            metadata: super::AgentEvaluationMetadata {
+                schema_version: 1,
+                run_id: "run-001".to_owned(),
+                rocksoul_commit: "unknown".to_owned(),
+                suite_id: "rocksoul.agent-trajectory".to_owned(),
+                suite_version: "0.1.0".to_owned(),
+                model_provider: "local-openai-compatible".to_owned(),
+                model_id: "test-model".to_owned(),
+                quantization: None,
+                platform: "test".to_owned(),
+                seed: 7,
+                dataset_id: "held-out-smoke".to_owned(),
+                dataset_version: "1".to_owned(),
+                task_id: "task-001".to_owned(),
+                task_digest: "sha256:task".to_owned(),
+                started_at_unix_ms: 1,
+                duration_ms: 20,
+                input_tokens: Some(10),
+                output_tokens: Some(5),
+                estimated_cost_microunits: None,
+            },
+            steps: vec![super::AgentTrajectoryStep {
+                sequence: 0,
+                step_id: "step-001".to_owned(),
+                phase: "planning".to_owned(),
+                action: "inspect_task".to_owned(),
+                tool: None,
+                input_digest: None,
+                observation_ref: Some("observation:001".to_owned()),
+                outcome: "observed".to_owned(),
+                retry_index: 0,
+                duration_ms: 20,
+            }],
+            task_success: true,
+            verifier: Some(super::IndependentVerifierEvidence {
+                verifier_id: "deterministic-test-verifier".to_owned(),
+                rubric_version: "1".to_owned(),
+                independent: true,
+                passed: true,
+                confidence_basis_points: 10_000,
+                evidence_refs: vec!["evidence:001".to_owned()],
+            }),
+            safety_violations: Vec::new(),
+            trace_refs: vec!["trace:001".to_owned()],
+        }
+    }
+
+    #[test]
+    fn agent_trajectory_requires_independent_verifier_evidence() {
+        let mut report = sample_agent_trajectory();
+        assert!(report.validate().is_ok());
+
+        report.verifier.as_mut().unwrap().independent = false;
+        assert!(report.validate().is_err());
+
+        report.verifier = None;
+        assert!(report.validate().is_err());
+    }
+
+    #[test]
+    fn agent_trajectory_safety_violations_are_hard_vetoes() {
+        let mut report = sample_agent_trajectory();
+        report.safety_violations.push("permission_violation".to_owned());
+        assert!(report.validate().is_err());
+
+        report.task_success = false;
+        assert!(report.validate().is_ok());
+    }
+
+    #[test]
+    fn agent_trajectory_rejects_duplicate_steps_and_invalid_confidence() {
+        let mut report = sample_agent_trajectory();
+        let mut duplicate = report.steps[0].clone();
+        duplicate.sequence = 1;
+        report.steps.push(duplicate);
+        assert!(report.validate().is_err());
+
+        report.steps.pop();
+        report.verifier.as_mut().unwrap().confidence_basis_points = 10_001;
+        assert!(report.validate().is_err());
+    }
+
     #[test]
     fn markdown_cell_escapes_table_delimiters_and_collapses_line_breaks() {
         assert_eq!(
