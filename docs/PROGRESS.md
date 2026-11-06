@@ -1,6 +1,6 @@
 # Rocksoul Project Progress
 
-**Last updated:** 2026-11-06 (Asia/Jakarta, Issue #67 completion, worker IPC PR #72, and RID taxonomy reconciliation)  
+**Last updated:** 2026-11-06 (Asia/Jakarta, Issue #71 worker IPC merge and RID taxonomy reconciliation)  
 **Repository:** [bjo163/rocksoul](https://github.com/bjo163/rocksoul)  
 **Canonical branch:** `main`  
 **Current principle:** One Core. Infinite Evolution.
@@ -17,7 +17,7 @@ This is the durable progress snapshot for maintainers and delegated/local AI age
 | Stage 1 follow-through | **Merged and verified** | PR #53 merged as `458df81f`; issue #35 closed; CI #42044132321 passed on Linux and Windows |
 | Stage 2 — Persistent memory | **Complete on main** | Schema v4, locking, retention/forgetting, evaluated retrieval and human-reviewed proposals; see PRs #43/#46/#47/#49/#50/#51 |
 | Stage 2 claim integrity | **Merged** | PR #51 merged as `260d29852bb30f2f63129271a07cd368fafccc3f`; issue #44 closed; CI #42008862735 passed on Linux and Windows |
-| Stage 3 — Skills/tools | **In progress** | Typed deny-by-default registry, bounded fixtures, content-free audit and cooperative invocation controls merged; worker IPC foundation in PR #72 awaiting exact-head Linux CI rerun; production sandbox/dispatch remain disabled |
+| Stage 3 — Skills/tools | **In progress** | Typed deny-by-default registry, bounded fixtures, content-free audit and cooperative invocation controls merged; bounded worker IPC protocol PR #72 merged after exact-head Linux/Windows CI passed; production supervisor, OS sandbox, kill/reap and dispatch remain disabled |
 | Stage 4 — Application builder | **Not started** | Future bounded project-generation workflow |
 | Stage 5 — Evaluation/evolution | **Partial foundation** | Offline Core Integrity exists; candidate benchmarking, isolated evolution and promotion/rollback remain |
 | Stage 6 — Multi-agent | **Not started** | Deliberately deferred until single-agent foundations justify delegation |
