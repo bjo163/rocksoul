@@ -35,6 +35,14 @@ pub struct FixtureToolCall {
     pub input: String,
 }
 
+#[derive(Clone, Debug)]
+pub struct FixtureAuditContext {
+    pub audit_path: std::path::PathBuf,
+    pub run_id: String,
+    pub first_sequence: u64,
+    pub control: InvocationControl,
+}
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct FixtureToolObservation {
     pub tool_id: String,
@@ -167,22 +175,19 @@ impl FixtureExecutor {
         registry: &ToolRegistry,
         policy: &ToolPolicy,
         call: &FixtureToolCall,
-        audit_path: &Path,
-        run_id: &str,
-        first_sequence: u64,
-        control: &InvocationControl,
+        audit: &FixtureAuditContext,
     ) -> Result<FixtureToolObservation> {
         let descriptor = registry
             .get(&call.tool_id)
             .ok_or_else(|| anyhow::anyhow!("unknown fixture tool: {}", call.tool_id))?;
-        let mut next_sequence = first_sequence;
+        let mut next_sequence = audit.first_sequence;
         let mut append_event = |kind: ToolAuditKind,
                                 authorization: Option<ToolAuthorization>,
                                 failure: Option<ToolFailureCategory>,
                                 evidence_refs: Vec<String>|
          -> Result<()> {
             let event = fixture_audit_event(
-                run_id,
+                &audit.run_id,
                 next_sequence,
                 kind,
                 descriptor,
@@ -190,7 +195,7 @@ impl FixtureExecutor {
                 failure,
                 evidence_refs,
             )?;
-            ToolAuditStore::append(audit_path, &event)?;
+            ToolAuditStore::append(&audit.audit_path, &event)?;
             next_sequence = next_sequence
                 .checked_add(1)
                 .context("fixture audit sequence exhausted")?;
@@ -214,7 +219,7 @@ impl FixtureExecutor {
             None,
             Vec::new(),
         )?;
-        if let Err(reason) = control.check_and_consume() {
+        if let Err(reason) = audit.control.check_and_consume() {
             let (kind, failure) = match reason {
                 InvocationStopReason::TimedOut => (
                     ToolAuditKind::TimedOut,
@@ -377,10 +382,13 @@ fn observation(
 #[cfg(test)]
 mod tests {
     use super::{
-        FIXTURE_READ_TOOL, FIXTURE_WRITE_TOOL, FixtureExecutor, FixtureToolCall,
-        register_fixture_tools,
+        FIXTURE_READ_TOOL, FIXTURE_WRITE_TOOL, FixtureAuditContext, FixtureExecutor,
+        FixtureToolCall, register_fixture_tools,
     };
-    use crate::tool_registry::{ToolCapability, ToolPolicy, ToolRegistry};
+    use crate::{
+        tool_audit::InvocationControl,
+        tool_registry::{ToolCapability, ToolPolicy, ToolRegistry},
+    };
 
     fn configured() -> (ToolRegistry, ToolPolicy) {
         let mut registry = ToolRegistry::default();
