@@ -263,3 +263,10 @@ Next:
 - CI failure on commit `e3fca0b4...` was caused by a literal `\\n` in `src/lib.rs`; fixed in `e62c9bc...`. The subsequent executor and docs changes are on current main; exact-head CI is required before declaring this slice validated.
 
 Next: design and implement a genuine OS-isolated executor with explicit resource and syscall/network/filesystem boundaries, then external effect verifiers, held-out model task runner, trusted RID gates, and baseline/rollback evaluation. Do not treat in-process fixtures as a sandbox or benchmark result.
+
+
+## Issue #13 — production sandbox design baseline (2026-11-06)
+
+Added docs/plans/issue-13/sandbox-threat-model.md with explicit model/guest/policy/OS/verifier/persistence trust boundaries; no-WASI/no-network defaults; Windows Job Object/AppContainer and Linux namespaces/seccomp/cgroups requirements; proposed module/memory/fuel/time/call/step/I/O budgets; independent verifier requirements; adversarial test matrix; and staged completion gates. This is design documentation, not a production sandbox implementation.
+
+Runtime selection note: Wasmi 2.0.0 declares Rust 1.86 MSRV while Rocksoul remains Rust 1.85. Do not add it without an explicit MSRV decision; older runtime versions require their own maintenance/security/API review.

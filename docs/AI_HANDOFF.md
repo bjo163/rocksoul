@@ -367,3 +367,8 @@ Latest implementation on `main` adds:
 - Benchmark manifest v1.1.5 registers `rocksoul.agent-runtime-fixtures` as offline deterministic CI tests. The actual model-dependent `rocksoul.agent-trajectory` remains `planned`.
 
 **Important boundary:** this fixture runtime is not an OS sandbox and does not execute model-selected arbitrary tools. The model adapter remains chat-completion-only. Production OS isolation, independently operated verifier adapters, held-out task execution, trajectory report persistence, trusted RID publication, and candidate-vs-baseline rollback remain open. Next order: (1) threat-model and select an OS isolation backend, (2) implement bounded executor with hard wall-clock/CPU/memory/process/network/filesystem limits, (3) verifier adapters that observe effects outside the model/executor trust boundary, (4) held-out dataset/task partition and leakage controls, (5) model-connected trajectory runner/report persistence, (6) trusted evaluator and regression/rollback gates.
+
+
+## Production sandbox threat model
+
+See [docs/plans/issue-13/sandbox-threat-model.md](plans/issue-13/sandbox-threat-model.md) before implementing any production executor. It defines trust boundaries, no-WASI/no-network defaults, OS worker isolation, resource ceilings, verifier separation, adversarial tests, and the MSRV gate for Wasmi. Do not bypass these gates by reusing the in-process fixture executor.
