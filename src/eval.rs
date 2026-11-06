@@ -1405,7 +1405,7 @@ mod tests {
         time::{SystemTime, UNIX_EPOCH},
     };
 
-    use super::{EvaluationReport, CORE_SUITE_ID, CORE_SUITE_VERSION};
+    use super::{CORE_SUITE_ID, CORE_SUITE_VERSION, EvaluationReport};
 
     fn sample_agent_trajectory() -> super::AgentTrajectoryReport {
         super::AgentTrajectoryReport {
