@@ -256,7 +256,7 @@ Next:
 ## Issue #13 — bounded fixture runtime foundation (2026-11-06)
 
 - `src/tool_registry.rs`: explicit tool allowlist + capability grant + descriptor/policy byte ceilings; registry/policy deny by default.
-- `src/fixture_runtime.rs`: two built-in in-memory key/value fixture tools only. No OS/host capabilities, shell, network, filesystem, process, env, or arbitrary code execution.
+- `src/fixture_runtime.rs`: two built-in in-memory key/value fixture tools only, capped at 16 calls, 16 KiB aggregate input, 32 keys and 4 KiB per value. No OS/host capabilities, shell, network, filesystem, process, env, or arbitrary code execution.
 - Fixture verifier reads executor-observed state, validates evidence references, and explicitly sets `independent=false`. This is not a trusted independent verifier and cannot certify model success.
 - Six negative/positive fixture tests are part of the normal Rust test run.
 - Benchmark manifest v1.1.5 adds `rocksoul.agent-runtime-fixtures` as implemented offline deterministic CI coverage. `rocksoul.agent-trajectory` remains planned.

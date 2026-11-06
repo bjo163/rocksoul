@@ -361,7 +361,7 @@ Issue #8 still requires independent human religious/language review of the optio
 Latest implementation on `main` adds:
 - Typed, bounded trajectory metadata/evidence contracts in `src/eval.rs`.
 - Public deny-by-default tool metadata registry in `src/tool_registry.rs`: explicit tool-ID allowlist, separate capability grants, duplicate/invalid descriptor rejection, and descriptor/policy input-byte budgets.
-- Deterministic in-process fixture executor in `src/fixture_runtime.rs`: only bounded key-value read/write over a private memory map; no shell, network, filesystem, process, environment-variable, or arbitrary-code capability.
+- Deterministic in-process fixture executor in `src/fixture_runtime.rs`: only bounded key-value read/write over a private memory map, capped at 16 calls, 16 KiB aggregate input, 32 keys and 4 KiB per value; no shell, network, filesystem, process, environment-variable, or arbitrary-code capability.
 - Fixture verification reads executor-observed state and rejects forged evidence references. It deliberately marks its verifier as **not independent**; it is not eligible to establish a model trajectory success or RID score.
 - Six fixture-runtime tests cover default-deny, observed-state verification, read-after-write, missing capability, unknown tool/evidence, and path-like key rejection.
 - Benchmark manifest v1.1.5 registers `rocksoul.agent-runtime-fixtures` as offline deterministic CI tests. The actual model-dependent `rocksoul.agent-trajectory` remains `planned`.

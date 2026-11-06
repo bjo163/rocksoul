@@ -17,6 +17,8 @@ pub const FIXTURE_READ_TOOL: &str = "fixture.state.read";
 const MAX_KEY_BYTES: usize = 64;
 const MAX_VALUE_BYTES: usize = 4_096;
 const MAX_STATE_ENTRIES: usize = 32;
+const MAX_EXECUTION_STEPS: u16 = 16;
+const MAX_TOTAL_INPUT_BYTES: usize = 16_384;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct FixtureToolCall {
@@ -44,19 +46,40 @@ pub struct FixtureVerification {
 }
 
 /// A deliberately tiny executor with no ambient host capabilities.
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct FixtureExecutor {
     state: BTreeMap<String, String>,
     observed_effects: BTreeMap<String, String>,
+    remaining_steps: u16,
+    remaining_input_bytes: usize,
+}
+
+impl Default for FixtureExecutor {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl FixtureExecutor {
     pub fn new() -> Self {
-        Self::default()
+        Self {
+            state: BTreeMap::new(),
+            observed_effects: BTreeMap::new(),
+            remaining_steps: MAX_EXECUTION_STEPS,
+            remaining_input_bytes: MAX_TOTAL_INPUT_BYTES,
+        }
     }
 
     pub fn state_len(&self) -> usize {
         self.state.len()
+    }
+
+    pub fn remaining_steps(&self) -> u16 {
+        self.remaining_steps
+    }
+
+    pub fn remaining_input_bytes(&self) -> usize {
+        self.remaining_input_bytes
     }
 
     pub fn execute(
@@ -66,6 +89,13 @@ impl FixtureExecutor {
         call: &FixtureToolCall,
     ) -> Result<FixtureToolObservation> {
         let descriptor = registry.authorize(&call.tool_id, call.input.len(), policy)?;
+        ensure!(self.remaining_steps > 0, "fixture execution step budget exhausted");
+        ensure!(
+            call.input.len() <= self.remaining_input_bytes,
+            "fixture aggregate input-byte budget exhausted"
+        );
+        self.remaining_steps -= 1;
+        self.remaining_input_bytes -= call.input.len();
         match call.tool_id.as_str() {
             FIXTURE_WRITE_TOOL => {
                 ensure!(
@@ -317,6 +347,65 @@ mod tests {
                     &FixtureToolCall {
                         tool_id: "process.shell".to_owned(),
                         input: "echo unsafe".to_owned(),
+                    },
+                )
+                .is_err()
+        );
+    }
+
+    #[test]
+    fn fixture_runtime_enforces_step_and_aggregate_input_budgets() {
+        let (registry, policy) = configured();
+        let mut executor = FixtureExecutor::new();
+        for index in 0..16 {
+            executor
+                .execute(
+                    &registry,
+                    &policy,
+                    &FixtureToolCall {
+                        tool_id: FIXTURE_WRITE_TOOL.to_owned(),
+                        input: format!("key{index}=v"),
+                    },
+                )
+                .unwrap();
+        }
+        assert_eq!(executor.remaining_steps(), 0);
+        assert!(
+            executor
+                .execute(
+                    &registry,
+                    &policy,
+                    &FixtureToolCall {
+                        tool_id: FIXTURE_WRITE_TOOL.to_owned(),
+                        input: "overflow=v".to_owned(),
+                    },
+                )
+                .is_err()
+        );
+
+        let mut byte_limited = FixtureExecutor::new();
+        let large_value = "x".repeat(4_096);
+        for key in ["a", "b", "c"] {
+            byte_limited
+                .execute(
+                    &registry,
+                    &policy,
+                    &FixtureToolCall {
+                        tool_id: FIXTURE_WRITE_TOOL.to_owned(),
+                        input: format!("{key}={large_value}"),
+                    },
+                )
+                .unwrap();
+        }
+        assert!(byte_limited.remaining_input_bytes() < 4_096);
+        assert!(
+            byte_limited
+                .execute(
+                    &registry,
+                    &policy,
+                    &FixtureToolCall {
+                        tool_id: FIXTURE_WRITE_TOOL.to_owned(),
+                        input: format!("d={large_value}"),
                     },
                 )
                 .is_err()
