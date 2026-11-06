@@ -220,10 +220,9 @@ impl FixtureExecutor {
                     ToolAuditKind::TimedOut,
                     ToolFailureCategory::DeadlineExceeded,
                 ),
-                InvocationStopReason::Cancelled => (
-                    ToolAuditKind::Cancelled,
-                    ToolFailureCategory::Cancelled,
-                ),
+                InvocationStopReason::Cancelled => {
+                    (ToolAuditKind::Cancelled, ToolFailureCategory::Cancelled)
+                }
                 InvocationStopReason::CallBudgetExhausted => (
                     ToolAuditKind::Failed,
                     ToolFailureCategory::ResourceExhausted,
@@ -539,7 +538,10 @@ mod tests {
         assert_eq!(executor.state_len(), 0);
         let timeout_events = ToolAuditStore::read(&timeout_path).unwrap();
         assert_eq!(
-            timeout_events.iter().map(|event| event.kind).collect::<Vec<_>>(),
+            timeout_events
+                .iter()
+                .map(|event| event.kind)
+                .collect::<Vec<_>>(),
             vec![
                 ToolAuditKind::Proposed,
                 ToolAuditKind::AuthorizationAllowed,
@@ -568,7 +570,10 @@ mod tests {
         assert_eq!(executor.state_len(), 0);
         let cancel_events = ToolAuditStore::read(&cancel_path).unwrap();
         assert_eq!(
-            cancel_events.iter().map(|event| event.kind).collect::<Vec<_>>(),
+            cancel_events
+                .iter()
+                .map(|event| event.kind)
+                .collect::<Vec<_>>(),
             vec![
                 ToolAuditKind::Proposed,
                 ToolAuditKind::AuthorizationAllowed,
@@ -609,10 +614,7 @@ mod tests {
         );
         assert_eq!(executor.state_len(), 0);
         let events = ToolAuditStore::read(&path).unwrap();
-        assert_eq!(
-            events.last().unwrap().kind,
-            ToolAuditKind::Failed
-        );
+        assert_eq!(events.last().unwrap().kind, ToolAuditKind::Failed);
         std::fs::remove_file(path).unwrap();
     }
 
