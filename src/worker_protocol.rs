@@ -14,6 +14,7 @@ use serde::{Deserialize, Serialize};
 pub const WORKER_PROTOCOL_VERSION: u16 = 1;
 pub const MAX_WORKER_FRAME_BYTES: usize = 64 * 1024;
 pub const MAX_WORKER_PAYLOAD_BYTES: usize = 48 * 1024;
+const MAX_WORKER_REQUESTS_PER_RUN: usize = 1_024;
 const MAX_PROTOCOL_ID_BYTES: usize = 96;
 
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -140,6 +141,10 @@ impl WorkerSession {
         ensure!(
             frame.sequence == self.next_sequence,
             "worker frame is replayed or out of order"
+        );
+        ensure!(
+            self.seen_request_ids.len() < MAX_WORKER_REQUESTS_PER_RUN,
+            "worker request count limit reached"
         );
         ensure!(
             self.seen_request_ids.insert(frame.request_id.clone()),
