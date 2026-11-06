@@ -11,7 +11,7 @@ pub mod rid;
 pub mod rid_catalogue;
 mod rid_store;
 pub(crate) mod task_trace;
-mod tui;
+pub mod tool_registry;\nmod tui;
 mod tui_preferences;
 pub mod workspace_artifact;
 
