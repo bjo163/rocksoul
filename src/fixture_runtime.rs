@@ -87,7 +87,10 @@ impl FixtureExecutor {
         call: &FixtureToolCall,
     ) -> Result<FixtureToolObservation> {
         let descriptor = registry.authorize(&call.tool_id, call.input.len(), policy)?;
-        ensure!(self.remaining_steps > 0, "fixture execution step budget exhausted");
+        ensure!(
+            self.remaining_steps > 0,
+            "fixture execution step budget exhausted"
+        );
         ensure!(
             call.input.len() <= self.remaining_input_bytes,
             "fixture aggregate input-byte budget exhausted"
