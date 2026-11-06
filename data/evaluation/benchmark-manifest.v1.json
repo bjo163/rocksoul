@@ -20,6 +20,14 @@
       "purpose": "Kernel lifecycle, retry bounds, terminal-state immutability, verified XP and replay, RID identity/catalogue invariants, workspace crash recovery, receipt integrity and versioned acceptance-check validation."
     },
     {
+      "id": "rocksoul.memory-retrieval",
+      "version": "1.0.0",
+      "status": "implemented",
+      "execution": "offline_deterministic_ci",
+      "dataset": "memory-retrieval-v1.json",
+      "purpose": "Deterministic lexical retrieval quality, provenance filters, stale-result ranking, expiry isolation and deletion non-leakage."
+    },
+    {
       "id": "rocksoul.agent-trajectory",
       "version": "0.1.0",
       "status": "planned",
@@ -108,7 +116,7 @@
       "purpose": "Tool-use trajectories and policy adherence."
     }
   ],
-  "manifest_version": "1.1.3",
+  "manifest_version": "1.1.4",
   "rid_taxonomy": {
     "catalogue_id": "rocksoul.rid.universal_stats.v2",
     "catalogue_version": "2.3.3",
