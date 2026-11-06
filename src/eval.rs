@@ -49,6 +49,155 @@ pub struct EvaluationReport {
     pub checks: Vec<EvaluationCheck>,
 }
 
+/// Typed, bounded evidence contract for model-dependent agent trajectories.
+/// This is a storage/validation contract only: it does not execute tools or create a sandbox.
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct AgentTrajectoryReport {
+    pub schema_version: u16,
+    pub metadata: AgentEvaluationMetadata,
+    pub steps: Vec<AgentTrajectoryStep>,
+    pub task_success: bool,
+    pub verifier: Option<IndependentVerifierEvidence>,
+    /// Any safety, privacy, security, or permission violation is a hard veto.
+    pub safety_violations: Vec<String>,
+    pub trace_refs: Vec<String>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct AgentEvaluationMetadata {
+    pub schema_version: u16,
+    pub run_id: String,
+    pub rocksoul_commit: String,
+    pub suite_id: String,
+    pub suite_version: String,
+    pub model_provider: String,
+    pub model_id: String,
+    pub quantization: Option<String>,
+    pub platform: String,
+    pub seed: u64,
+    pub dataset_id: String,
+    pub dataset_version: String,
+    pub task_id: String,
+    /// Digest of the immutable task specification, not the task contents.
+    pub task_digest: String,
+    pub started_at_unix_ms: u64,
+    pub duration_ms: u64,
+    pub input_tokens: Option<u64>,
+    pub output_tokens: Option<u64>,
+    pub estimated_cost_microunits: Option<u64>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct AgentTrajectoryStep {
+    pub sequence: u32,
+    pub step_id: String,
+    pub phase: String,
+    pub action: String,
+    pub tool: Option<String>,
+    /// Store a digest/reference rather than raw secrets or private tool arguments.
+    pub input_digest: Option<String>,
+    pub observation_ref: Option<String>,
+    pub outcome: String,
+    pub retry_index: u16,
+    pub duration_ms: u64,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct IndependentVerifierEvidence {
+    pub verifier_id: String,
+    pub rubric_version: String,
+    pub independent: bool,
+    pub passed: bool,
+    pub confidence_basis_points: u16,
+    pub evidence_refs: Vec<String>,
+}
+
+impl AgentTrajectoryReport {
+    pub const MAX_STEPS: usize = 256;
+
+    /// Reject incomplete, self-graded, ambiguous, or unsafe trajectories before scoring.
+    pub fn validate(&self) -> Result<()> {
+        anyhow::ensure!(self.schema_version == 1, "unsupported trajectory report schema");
+        anyhow::ensure!(self.metadata.schema_version == 1, "unsupported trajectory metadata schema");
+        for (field, value) in [
+            ("run_id", self.metadata.run_id.as_str()),
+            ("suite_id", self.metadata.suite_id.as_str()),
+            ("suite_version", self.metadata.suite_version.as_str()),
+            ("model_provider", self.metadata.model_provider.as_str()),
+            ("model_id", self.metadata.model_id.as_str()),
+            ("platform", self.metadata.platform.as_str()),
+            ("dataset_id", self.metadata.dataset_id.as_str()),
+            ("dataset_version", self.metadata.dataset_version.as_str()),
+            ("task_id", self.metadata.task_id.as_str()),
+            ("task_digest", self.metadata.task_digest.as_str()),
+        ] {
+            anyhow::ensure!(!value.trim().is_empty(), "trajectory metadata is missing {field}");
+        }
+        anyhow::ensure!(
+            !self.metadata.rocksoul_commit.trim().is_empty(),
+            "trajectory metadata must record a commit or explicit unknown"
+        );
+        anyhow::ensure!(
+            !self.steps.is_empty() && self.steps.len() <= Self::MAX_STEPS,
+            "trajectory step count must be between 1 and {}",
+            Self::MAX_STEPS
+        );
+        let mut step_ids = std::collections::HashSet::new();
+        for (index, step) in self.steps.iter().enumerate() {
+            anyhow::ensure!(
+                step.sequence == index as u32,
+                "trajectory step sequence must be contiguous and zero-based"
+            );
+            anyhow::ensure!(
+                !step.step_id.trim().is_empty() && step_ids.insert(step.step_id.as_str()),
+                "trajectory step IDs must be non-empty and unique"
+            );
+            anyhow::ensure!(
+                !step.phase.trim().is_empty()
+                    && !step.action.trim().is_empty()
+                    && !step.outcome.trim().is_empty(),
+                "trajectory steps require phase, action, and outcome"
+            );
+        }
+        anyhow::ensure!(
+            !self.trace_refs.is_empty(),
+            "trajectory must reference at least one trace"
+        );
+        if let Some(verifier) = &self.verifier {
+            anyhow::ensure!(
+                !verifier.verifier_id.trim().is_empty()
+                    && !verifier.rubric_version.trim().is_empty(),
+                "verifier identity and rubric version are required"
+            );
+            anyhow::ensure!(
+                verifier.confidence_basis_points <= 10_000,
+                "verifier confidence must be between 0 and 10000 basis points"
+            );
+            if verifier.passed {
+                anyhow::ensure!(
+                    verifier.independent && !verifier.evidence_refs.is_empty(),
+                    "passing verification requires an independent verifier and evidence references"
+                );
+            }
+        }
+        if self.task_success {
+            let verifier = self
+                .verifier
+                .as_ref()
+                .context("successful trajectories require independent verifier evidence")?;
+            anyhow::ensure!(
+                verifier.independent && verifier.passed && !verifier.evidence_refs.is_empty(),
+                "model self-report cannot establish trajectory success"
+            );
+        }
+        anyhow::ensure!(
+            self.safety_violations.is_empty() || !self.task_success,
+            "safety violations are hard vetoes and cannot be averaged away"
+        );
+        Ok(())
+    }
+}
+
 impl EvaluationReport {
     pub fn passed_count(&self) -> usize {
         self.checks.iter().filter(|check| check.passed).count()
