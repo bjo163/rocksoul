@@ -1,7 +1,7 @@
 mod cli;
 mod commands;
 pub mod core;
-mod eval;
+pub mod eval;
 mod memory;
 mod memory_proposal;
 mod model;
