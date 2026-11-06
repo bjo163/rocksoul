@@ -144,7 +144,9 @@ impl ToolAuditEvent {
                 ensure!(
                     self.authorization == Some(ToolAuthorization::Denied)
                         && self.approval.is_none()
-                        && self.failure.is_none_or(|failure| failure == ToolFailureCategory::PolicyDenied),
+                        && self
+                            .failure
+                            .is_none_or(|failure| failure == ToolFailureCategory::PolicyDenied),
                     "authorization-denied event metadata is inconsistent"
                 );
             }
@@ -160,7 +162,9 @@ impl ToolAuditEvent {
                 ensure!(
                     self.approval == Some(ToolApproval::Denied)
                         && self.authorization.is_none()
-                        && self.failure.is_none_or(|failure| failure == ToolFailureCategory::ApprovalDenied),
+                        && self
+                            .failure
+                            .is_none_or(|failure| failure == ToolFailureCategory::ApprovalDenied),
                     "approval-denied event metadata is inconsistent"
                 );
             }
