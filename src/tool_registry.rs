@@ -50,6 +50,19 @@ impl ToolDescriptor {
             (1..=1_048_576).contains(&self.max_input_bytes),
             "tool input limit must be between 1 byte and 1 MiB"
         );
+        ensure!(
+            matches!(
+                (self.capability, self.effect),
+                (
+                    ToolCapability::WorkspaceRead | ToolCapability::MemoryRead,
+                    ToolEffect::ReadOnly
+                ) | (
+                    ToolCapability::WorkspaceWrite | ToolCapability::MemoryWrite,
+                    ToolEffect::Mutating
+                )
+            ),
+            "tool effect must match its read or write capability"
+        );
         Ok(())
     }
 }
@@ -188,6 +201,26 @@ mod tests {
         let mut invalid = descriptor();
         invalid.id = "Workspace.Read".to_owned();
         assert!(registry.register(invalid).is_err());
+    }
+
+    #[test]
+    fn descriptor_rejects_mutating_read_capabilities_and_read_only_write_capabilities() {
+        let mut registry = ToolRegistry::default();
+        let mut invalid = descriptor();
+        invalid.effect = ToolEffect::Mutating;
+        assert!(registry.register(invalid).is_err());
+
+        let mut invalid = descriptor();
+        invalid.capability = ToolCapability::WorkspaceWrite;
+        invalid.effect = ToolEffect::ReadOnly;
+        assert!(registry.register(invalid).is_err());
+
+        let mut valid = descriptor();
+        valid.capability = ToolCapability::MemoryWrite;
+        valid.effect = ToolEffect::Mutating;
+        valid.id = "memory.write".to_owned();
+        registry.register(valid).unwrap();
+        assert_eq!(registry.len(), 1);
     }
 
     #[test]
