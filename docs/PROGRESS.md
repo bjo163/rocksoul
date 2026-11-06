@@ -270,3 +270,10 @@ Next: design and implement a genuine OS-isolated executor with explicit resource
 Added docs/plans/issue-13/sandbox-threat-model.md with explicit model/guest/policy/OS/verifier/persistence trust boundaries; no-WASI/no-network defaults; Windows Job Object/AppContainer and Linux namespaces/seccomp/cgroups requirements; proposed module/memory/fuel/time/call/step/I/O budgets; independent verifier requirements; adversarial test matrix; and staged completion gates. This is design documentation, not a production sandbox implementation.
 
 Runtime selection note: Wasmi 2.0.0 declares Rust 1.86 MSRV while Rocksoul remains Rust 1.85. Do not add it without an explicit MSRV decision; older runtime versions require their own maintenance/security/API review.
+
+## Issue #13 — independent verifier protocol contract (2026-11-06)
+
+- Added `docs/plans/issue-13/independent-verifier-contract.md` defining task-attempt challenge envelopes, verifier trust domains, independently observed effects, authenticated evidence fields, nonce/replay/freshness controls, three-valued decisions, isolation constraints, adversarial tests, and staged acceptance gates.
+- Linked the contract from evaluation methodology and local-agent handoff.
+- This is documentation/design only. No signature/key management, verifier process, IPC, OS sandbox, model-connected trajectory runner, or trusted RID scoring was implemented by this slice.
+- Keep `rocksoul.agent-trajectory` planned. The fixture verifier remains explicitly `independent=false`.
