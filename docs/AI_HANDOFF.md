@@ -388,10 +388,17 @@ PR #69 is merged to `main` as `c845a9485a9b1b2882691c8dc268d6e6385b6be2`. Its ex
 - Continue Issue #13 with worker isolation, parent watchdog/termination/reaping, independent effect verification, held-out task execution and trusted evaluation. Keep model-selected production tools disabled until those gates pass.
 
 
-## Issue #71 — worker IPC protocol handoff (2026-11-06)
+## Current handoff — 2026-11-06 (Issue #71 / PR #72 merged)
 
-The branch `feat/worker-ipc-contract` adds `src/worker_protocol.rs`, a bounded versioned framing/session/lifecycle contract. Read [the Issue #71 worker IPC plan](plans/issue-71/worker-ipc-contract.md).
+PR #72 is merged to `main` as `b9450142becfe8446c8dc98455977fd4a3e1fe51`. Exact-head CI run [#42227907571](https://github.com/bjo163/rocksoul/actions/runs/42227907571) passed Linux format/Clippy/tests/offline evaluations and Windows release build/tests/installer/portable smoke tests.
 
-This is protocol-only. It does not start or supervise a process, authenticate an IPC peer, enforce OS isolation, terminate/reap a process, or enable production dispatch. Preserve Rust 1.85; no runtime dependency or lockfile change was made. Keep the production tool path disabled.
+Read `src/worker_protocol.rs` and [the Issue #71 worker IPC plan](plans/issue-71/worker-ipc-contract.md). The merged contract is protocol-only: it does not start or supervise a process, authenticate an IPC peer, enforce OS isolation, terminate/reap a process, or enable production dispatch. Rust 1.85 is preserved; no runtime dependency or lockfile change was made.
 
-Next required work remains: authenticated local IPC, parent watchdog and OS-observed process cleanup, Linux namespace/seccomp/cgroup backend, Windows restricted-token/AppContainer/Job Object backend, no-WASI guest runtime after MSRV/license/security review, adversarial OS integration tests, and independent verifier process. Unsupported isolation must fail closed; never add an unsandboxed fallback.
+Next safe sequence:
+1. Implement parent supervisor with authenticated local IPC, bounded handshake/heartbeat, deadlines, cancellation, process termination and OS-observed reaping.
+2. Implement Linux isolation and negative tests (namespaces, seccomp, cgroups v2, minimal read-only mounts, no network).
+3. Implement Windows isolation and negative tests (restricted token/AppContainer policy, Job Object limits, explicit handle inheritance, kill-on-close and reaping).
+4. Select a WASM runtime only after an explicit MSRV/license/security decision; no WASI and no default imports.
+5. Keep the independent effect verifier in a separate trust domain; then implement held-out model task evaluation and trusted RID publication gates.
+
+Never enable production tool dispatch from the protocol contract alone. Issue #13 remains the controlling acceptance gate.
