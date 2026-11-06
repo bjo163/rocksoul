@@ -422,6 +422,42 @@ mod tests {
     }
 
     #[test]
+    fn append_helper_process() {
+        if let (Ok(path), Ok(run_id)) = (
+            std::env::var("ROCKSOUL_AUDIT_HELPER_PATH"),
+            std::env::var("ROCKSOUL_AUDIT_HELPER_RUN"),
+        ) {
+            ToolAuditStore::append(std::path::Path::new(&path), &event(&run_id, 1)).unwrap();
+        }
+    }
+
+    #[test]
+    fn cross_process_appends_are_serialized_and_remain_parseable() {
+        use std::process::Command;
+
+        let path = temp_path("process");
+        let executable = std::env::current_exe().unwrap();
+        let mut children = Vec::new();
+        for index in 0..4 {
+            children.push(
+                Command::new(&executable)
+                    .arg("--exact")
+                    .arg("tool_audit::tests::append_helper_process")
+                    .arg("--nocapture")
+                    .env("ROCKSOUL_AUDIT_HELPER_PATH", &path)
+                    .env("ROCKSOUL_AUDIT_HELPER_RUN", format!("process-{index}"))
+                    .spawn()
+                    .unwrap(),
+            );
+        }
+        for mut child in children {
+            assert!(child.wait().unwrap().success());
+        }
+        assert_eq!(ToolAuditStore::read(&path).unwrap().len(), 4);
+        fs::remove_file(path).unwrap();
+    }
+
+    #[test]
     fn invocation_control_classifies_cancel_timeout_and_call_budget() {
         let control = InvocationControl::new(Duration::from_secs(5), 1);
         assert_eq!(control.check_and_consume(), Ok(0));
