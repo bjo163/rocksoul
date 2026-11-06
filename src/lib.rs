@@ -13,6 +13,7 @@ pub mod rid_catalogue;
 mod rid_store;
 pub(crate) mod task_trace;
 pub mod tool_registry;
+pub mod tool_audit;
 mod tui;
 mod tui_preferences;
 pub mod workspace_artifact;
