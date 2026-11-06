@@ -14,9 +14,9 @@ mod rid_store;
 pub(crate) mod task_trace;
 pub mod tool_audit;
 pub mod tool_registry;
-pub mod worker_protocol;
 mod tui;
 mod tui_preferences;
+pub mod worker_protocol;
 pub mod workspace_artifact;
 
 use anyhow::Result;
