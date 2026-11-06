@@ -14,7 +14,7 @@ use sha2::{Digest, Sha256};
 
 use crate::{
     tool_audit::{
-        ToolApproval, ToolAuditEvent, ToolAuditKind, ToolAuditStore, ToolAuthorization,
+        ToolAuditEvent, ToolAuditKind, ToolAuditStore, ToolAuthorization,
         ToolEffectClass, ToolFailureCategory,
     },
     tool_registry::{ToolCapability, ToolDescriptor, ToolEffect, ToolPolicy, ToolRegistry},
