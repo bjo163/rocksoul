@@ -274,7 +274,7 @@ A task is complete only when:
 6. Related issue is closed with the merge evidence.
 7. The next task is recorded with dependencies and acceptance criteria.
 
-Build metadata: `build.rs` exposes `ROCKSOUL_GIT_SHA` to the binary. CI sets it from `${{ github.sha }}`; local builds without the variable report `unknown`. Both deterministic JSON report types include a backward-compatible `rocksoul_commit` field, and the CLI prints it. Current implementation does not yet emit Markdown reports or model-dependent trajectory/learning reports.
+Build metadata: `build.rs` exposes `ROCKSOUL_GIT_SHA` to the binary. CI sets it from `${{ github.sha }}`; local builds without the variable report `unknown`. Both deterministic report types include a backward-compatible `rocksoul_commit` field. Core Integrity and Memory Retrieval each persist canonical `latest.json` plus a human-readable `latest.md`; CI archives all four files. The CLI prints the source revision. Model-dependent trajectory/learning reports are not yet implemented.
 
 ## 10. Next task selected — Issue #13 technical evaluation harness
 
