@@ -332,13 +332,12 @@ mod tests {
     #[test]
     fn unknown_evidence_and_unknown_tools_fail_closed() {
         let (registry, policy) = configured();
-        let executor = FixtureExecutor::new();
+        let mut executor = FixtureExecutor::new();
         assert!(
             executor
                 .verify_state_equals("fixture://state/forged", "done")
                 .is_err()
         );
-        let mut executor = executor;
         assert!(
             executor
                 .execute(
