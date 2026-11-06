@@ -115,6 +115,12 @@ impl ToolAuditEvent {
             ToolAuditKind::AuthorizationDenied => {
                 ensure!(self.authorization == Some(ToolAuthorization::Denied), "authorization event must record denied");
             }
+            ToolAuditKind::ApprovalGranted => {
+                ensure!(self.authorization != Some(ToolAuthorization::Denied), "approval-granted event cannot record denied authorization");
+            }
+            ToolAuditKind::ApprovalDenied => {
+                ensure!(self.authorization == Some(ToolAuthorization::Denied), "approval-denied event must record denied");
+            }
             ToolAuditKind::TimedOut => {
                 ensure!(self.failure == Some(ToolFailureCategory::DeadlineExceeded), "timeout event must use deadline_exceeded");
             }
@@ -168,7 +174,15 @@ impl ToolAuditStore {
 
         let result = (|| -> Result<()> {
             let end = file.seek(SeekFrom::End(0))?;
-            ensure!(end <= MAX_AUDIT_FILE_BYTES, "tool audit store exceeds size limit");
+            let appended_len = u64::try_from(encoded.len())
+                .context("tool audit record length exceeds supported range")?
+                .checked_add(1)
+                .context("tool audit record length overflow")?;
+            ensure!(
+                end.checked_add(appended_len)
+                    .is_some_and(|size| size <= MAX_AUDIT_FILE_BYTES),
+                "tool audit store exceeds size limit"
+            );
             file.seek(SeekFrom::Start(0))?;
             let mut existing = String::new();
             file.read_to_string(&mut existing)
