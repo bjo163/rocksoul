@@ -45,11 +45,23 @@ jobs:
       - name: Run offline memory retrieval evaluation
         run: cargo run --locked -- eval run memory-retrieval
 
+      - name: Upload core integrity evaluation reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: core-integrity-evaluation
+          path: |
+            target/debug/data/evaluations/core/latest.json
+            target/debug/data/evaluations/core/latest.md
+          if-no-files-found: error
+          retention-days: 14
+
       - name: Upload memory retrieval evaluation report
         uses: actions/upload-artifact@v4
         with:
           name: memory-retrieval-evaluation
-          path: target/debug/data/evaluations/memory-retrieval/latest.json
+          path: |
+            target/debug/data/evaluations/memory-retrieval/latest.json
+            target/debug/data/evaluations/memory-retrieval/latest.md
           if-no-files-found: error
           retention-days: 14
 
