@@ -1287,9 +1287,10 @@ mod tests {
 
     #[test]
     fn benchmark_manifest_matches_implemented_suites_and_rid_contract() {
-        let manifest: serde_json::Value =
-            serde_json::from_str(include_str!("../data/evaluation/benchmark-manifest.v1.json"))
-                .unwrap();
+        let manifest: serde_json::Value = serde_json::from_str(include_str!(
+            "../data/evaluation/benchmark-manifest.v1.json"
+        ))
+        .unwrap();
         assert_eq!(manifest["schema_version"], 1);
         assert_eq!(manifest["manifest_version"], "1.1.4");
         assert_eq!(manifest["rid_taxonomy"]["domain_count"], 99);
