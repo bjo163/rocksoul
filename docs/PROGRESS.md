@@ -303,3 +303,20 @@ Still explicitly not implemented:
 - Production tool dispatch, OS/WASM sandbox, worker termination/reaping, independent effect-verifier process, production approval broker, or model-connected trajectory runner.
 - The fixture verifier remains `independent=false`; fixture results cannot award XP or RID scores.
 - Issue #13 remains open and is the controlling sandbox, independent-verifier and evaluation gate.
+
+
+## Issue #71 — bounded worker IPC protocol foundation (2026-11-06)
+
+**Branch:** `feat/worker-ipc-contract`  
+**Status:** Protocol foundation proposed; awaiting exact-head Linux/Windows CI. This is not production sandbox completion.
+
+Implemented in `src/worker_protocol.rs`:
+- Versioned JSON envelope over four-byte big-endian length-prefixed frames.
+- 64 KiB encoded-frame and 48 KiB payload ceilings; strict unknown-field rejection.
+- Bounded run/request IDs, positive sequence and deadline validation.
+- Parent-owned run binding, contiguous sequence and request-ID replay guard.
+- Explicit worker lifecycle transitions; a protocol message cannot claim OS process reaping.
+- Unit tests for framing round-trip, clean EOF/truncation, oversized frame/payload, invalid identifiers, unknown fields/version, replay/order/run mismatch and lifecycle transitions.
+- No new dependency; Rust 1.85 MSRV and Cargo.lock remain unchanged.
+
+Limitations: no worker process, authenticated IPC transport, process supervisor, OS resource controls, filesystem/network isolation, hard timeout kill/reap, WASM runtime or independent verifier. Production tool dispatch remains disabled. See [Issue #71 worker IPC contract](plans/issue-71/worker-ipc-contract.md).
