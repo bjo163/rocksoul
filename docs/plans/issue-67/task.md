@@ -3,7 +3,7 @@
 **Parent:** [Issue #13](https://github.com/bjo163/rocksoul/issues/13)  
 **Implementation issue:** [Issue #67](https://github.com/bjo163/rocksoul/issues/67)  
 **Target:** `main`  
-**Status:** Execution contract only; no production tool execution is enabled by this plan.
+**Status:** Implementation merged and validated on `main`; no production tool execution is enabled. PR #69 merged as `c845a9485a9b1b2882691c8dc268d6e6385b6be2`; exact-head CI #42211510844 passed Linux and Windows.
 
 ## Current verified boundary
 
@@ -60,3 +60,30 @@ Do not describe either component as a production executor or OS sandbox.
 ## Local-agent handoff
 
 Start from the latest `origin/main`, inspect `AGENTS.md`, `src/tool_registry.rs`, the existing trace and locking implementations, and Issue #13's sandbox threat model and independent-verifier contract. Implement one coherent slice per PR. Do not stack on historical feature branches. Record exact tested SHA and Linux/Windows CI run IDs before merge.
+
+
+## Completed implementation record — 2026-11-06
+
+Implemented in `src/tool_audit.rs` and `src/fixture_runtime.rs`:
+- Versioned content-free audit schema with strict event-specific metadata validation, safe bounded identifiers/evidence references, unknown-field rejection, and explicit `VerifierReported*` event names that cannot be confused with trusted attestations.
+- Append-only JSONL storage with exclusive writer/shared reader OS locks, file/record ceilings, contiguous per-run sequencing, global event-ID uniqueness, and corruption/partial-tail fail-closed behavior that preserves existing bytes.
+- Tests for schema/version/content rejection, identifier/field ceilings, event metadata consistency, duplicate/out-of-order sequence, malformed/partial history preservation, concurrent writers and cross-process appends.
+- Cooperative invocation deadline, cancellation and atomic call-budget control.
+- Audited fixture dispatch writes proposal/authorization/execution outcome events and checks the invocation control before dispatch. Denial, timeout, cancellation and exhausted budget are recorded without fixture-state mutation.
+- No new runtime dependency.
+
+Validation evidence:
+- PR #69: https://github.com/bjo163/rocksoul/pull/69
+- Validated head: `5151e47abfde528e95b4a0ded78e1469aacd7860`
+- Merge commit: `c845a9485a9b1b2882691c8dc268d6e6385b6be2`
+- Exact-head CI: https://github.com/bjo163/rocksoul/actions/runs/42211510844 — Linux and Windows passed.
+
+## Remaining work — parent Issue #13
+
+- Real OS-isolated worker process and WASM runtime selection under the Rust 1.85 MSRV gate.
+- Parent-owned watchdog that terminates and reaps workers; cooperative cancellation alone is insufficient.
+- Platform-specific resource/network/filesystem/process isolation on Linux and Windows.
+- Independent verifier process/adapters and authenticated task-bound evidence.
+- Model-connected held-out task runner, trajectory persistence, leakage controls and trusted RID publication gates.
+
+Do not close Issue #13 or enable production tools based on this completed fixture/audit slice.
