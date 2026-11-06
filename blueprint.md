@@ -54,26 +54,23 @@ No single scalar score, model self-report, or successful chat response demonstra
 
 RID Universal 99 is the technical capability taxonomy for **99 distinct, independently identified capability domains and 99 corresponding per-profile stat slots**. The domain defines the construct; its linked stat stores the measurement. Together they represent 99 capabilities, not 198.
 
-The required architecture is:
+The canonical architecture is **99 independently identified technical capability domains, each linked to exactly one technical stat slot**. The domain defines the construct; its stat stores the measurement. This is 99 capabilities, not 198 dimensions and not nine domains containing eleven stats each.
 
-**99 Asma references → 99 individual domains → 99 individual technical stats.**
-
-This is a one-to-one mapping. It is not nine domains containing eleven stats each.
-
-Each of the 99 slots must have its own stable identity and technical definition. Optional navigation families may group domains for presentation, but families are not domains and must never reduce or replace the 99-domain model.
+Navigation families may group domains for browsing, but families are metadata only: they are not parent domains, additional scores, or a substitute for the 99 independent records. The current evaluation taxonomy defines ten benchmark-coverage families; those labels do not alter the domain count.
 
 Each domain/stat record must define:
 
-1. Stable slot number and immutable identifier (01–99).
-2. Asma reference and source/provenance metadata.
-3. Domain key and domain name.
-4. One corresponding technical stat key and label.
-5. Operational capability definition.
-6. Evaluation protocol and benchmark references.
-7. Minimum sample requirement.
-8. Scoring rubric and version.
-9. Evidence references, confidence, and timestamp.
-10. Review status and change history.
+1. Stable slot number and immutable domain/stat identifiers (01–99).
+2. Domain key, name, and operational capability definition.
+3. Exactly one corresponding technical stat key and label.
+4. Primary measurement target and inclusion criteria.
+5. Exclusion criteria, reciprocal overlap guards, and a domain-specific separation rule.
+6. Evaluation protocol, benchmark, and rubric versions.
+7. Minimum sample requirement and acceptance criteria.
+8. Evidence references, evaluator identity, confidence, and timestamp.
+9. Review status, schema version, and change history.
+
+Asmaul Husna is maintained as a **separate religious/inspirational reference catalogue**. It does not define domain identities, technical labels, scoring, or ordinal pairings. Any Arabic names, transliterations, glosses, enumeration, or editorial associations require independent qualified religious and language review.
 
 **Religious boundary:** Asmaul Husna is a respectful naming/inspiration layer only. Rocksoul does not possess, embody, measure, or claim to reproduce any divine attribute. Technical stats measure bounded software capabilities, not Allah, divine qualities, a person's iman, spiritual rank, or divine approval. The 99-name enumeration, Arabic, transliteration, glosses, and editorial associations require appropriate independent religious and language review.
 
@@ -89,9 +86,9 @@ Each domain/stat record must define:
 
 #### Migration from the current catalogue
 
-The current repository catalogue contains 99 unique technical stat entries grouped into nine technical group labels of eleven entries each. This is the existing implementation baseline, not the final 99-domain architecture.
+The canonical repository catalogue is `data/rid/universal_stats.v2.json` (v2.3.3): 99 independent first-class domains, 99 linked stat dimensions, unique stable IDs, and explicit reciprocal overlap guards plus pairwise contrast records. The former `data/rid/universal_stats.v1.json` nine-groups-by-eleven catalogue is historical only and is superseded by v2; it must not be described as the current taxonomy.
 
-The target schema must promote each of the 99 slots into its own domain with exactly one corresponding stat. The existing nine group labels may be retained as optional `family` or `category` metadata for navigation only. They must not remain the authoritative domain count. This migration must be versioned, tested, and preserve stable slot IDs and historical evaluations.
+The Rust runtime embeds v2.3.3, and profile schema v2 migration is implemented. Migration preserves the original v1 profile bytes and legacy stat records, preserves instance identity and XP, and initializes the new 99 dimensions as `unrated`; it does not map historical scores by ordinal position because the constructs changed. **Exact-head Linux and Windows CI verification for this migration remains pending** until the current validation run completes.
 
 ### 2.3 Four Kitab Allah — knowledge foundation
 
