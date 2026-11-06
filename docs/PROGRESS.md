@@ -305,10 +305,15 @@ Still explicitly not implemented:
 - Issue #13 remains open and is the controlling sandbox, independent-verifier and evaluation gate.
 
 
-## Issue #71 — bounded worker IPC foundation (PR #72; not merged)
+## Issue #71 — bounded worker IPC protocol foundation (merged 2026-11-06)
 
-**Status:** Open. The protocol implementation is proposed on [PR #72](https://github.com/bjo163/rocksoul/pull/72), branch `feat/worker-ipc-contract`. The initial exact-head CI run [#42214701546](https://github.com/bjo163/rocksoul/actions/runs/42214701546) passed Windows release build/tests/installer/portable smoke, but Linux stopped at `cargo fmt --check`; Clippy, tests, and offline evaluations were skipped. The formatting-only differences in `src/lib.rs` and `src/worker_protocol.rs` have been corrected on the PR branch. A fresh exact-head CI run is required; no test pass is claimed yet.
+**Status:** Protocol contract merged; Issue #71 remains open for the production supervisor and OS isolation work.  
+**PR:** [#72](https://github.com/bjo163/rocksoul/pull/72)  
+**Merge commit:** `b9450142becfe8446c8dc98455977fd4a3e1fe51`  
+**Exact-head CI:** [run #42227907571](https://github.com/bjo163/rocksoul/actions/runs/42227907571) — Linux format, Clippy, tests, Core Integrity and Memory Retrieval evaluations passed; Windows release build, tests, installer/portable packaging and both smoke tests passed.
 
-The PR adds only a bounded, versioned, length-prefixed JSON protocol contract (64 KiB frame / 48 KiB payload), parent-side run binding, sequence/request replay checks, and lifecycle transition rules. It does **not** provide authenticated IPC, process spawning/supervision, OS isolation, resource enforcement, hard timeout, kill/reap, WASM execution, or an independent verifier. Production dispatch remains disabled.
+The merged `src/worker_protocol.rs` provides a bounded, versioned, length-prefixed JSON protocol contract (64 KiB frame / 48 KiB payload), strict envelope validation, parent-owned run binding, contiguous sequence/request replay checks, and lifecycle transition rules. No dependency was added; Rust 1.85 and Cargo.lock remain unchanged.
 
-**Next:** rerun exact-head CI for PR #72; merge only if Linux and Windows pass. Then implement parent supervisor and authenticated IPC, followed by Linux and Windows isolation backends and adversarial kill/reap tests. Keep Issue #13 open until its independent verifier and held-out evaluation gates pass.
+It does **not** provide authenticated IPC, process spawning/supervision, OS isolation, resource enforcement, hard timeout, kill/reap, WASM execution, or an independent verifier. Production dispatch remains disabled.
+
+**Next:** define and implement the parent supervisor with authenticated local IPC, bounded handshake/heartbeat, deadline/cancel enforcement, process termination and OS-observed reaping. Then implement Linux and Windows isolation backends and adversarial kill/reap tests. Keep Issue #13 open until its independent verifier and held-out evaluation gates pass.
