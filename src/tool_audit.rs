@@ -410,16 +410,21 @@ impl InvocationControl {
         if Instant::now() >= self.deadline {
             return Err(InvocationStopReason::TimedOut);
         }
-        self.remaining_calls
-            .fetch_update(Ordering::SeqCst, Ordering::SeqCst, |remaining| {
-                if remaining > 0 {
-                    Some(remaining - 1)
-                } else {
-                    None
-                }
-            })
-            .map(|previous| previous - 1)
-            .map_err(|_| InvocationStopReason::CallBudgetExhausted)
+        let mut remaining = self.remaining_calls.load(Ordering::SeqCst);
+        loop {
+            if remaining == 0 {
+                return Err(InvocationStopReason::CallBudgetExhausted);
+            }
+            match self.remaining_calls.compare_exchange(
+                remaining,
+                remaining - 1,
+                Ordering::SeqCst,
+                Ordering::SeqCst,
+            ) {
+                Ok(_) => return Ok(remaining - 1),
+                Err(actual) => remaining = actual,
+            }
+        }
     }
 
     pub fn remaining_calls(&self) -> u16 {
