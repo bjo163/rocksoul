@@ -69,17 +69,13 @@ XP is not a reward for chatting, generating tokens, remaining online, or claimin
 
 The 99 capability stats are a separate system. They begin unrated and require trusted evaluators and reproducible evidence. XP, level, and capability scores must never be merged into one vague power number.
 
-## ASMA-99: a map of 99 technical domains
+## RID Universal 99: 99 independent technical domains
 
-The ASMA-99 framework is inspired by the 99 names of Allah as a respectful naming and reflection layer for software capability domains.
+RID Universal 99 is an engineering taxonomy of 99 distinct capability domains, each linked to one technical stat slot. Every domain has its own stable identity, operational definition, measurement target, inclusion/exclusion criteria, overlap guards, evaluator protocol, rubric, confidence, evidence, and history. Optional benchmark families are navigation tags only; they are not parent domains or additional scores.
 
-Its engineering structure is exact:
+The Asmaul Husna catalogue is a separate religious/inspirational reference layer. It does not define or score technical domains, and no ordinal or semantic equivalence between a divine name and a software capability is implied. The catalogue's Arabic, transliteration, glosses, enumeration, and editorial associations require independent qualified religious and language review.
 
-**99 Asma references → 99 individual technical domains → 99 individual capability stats.**
-
-Each domain has its own identity, operational definition, evaluator, rubric, confidence, evidence, and history. Optional families may help people navigate the catalogue, but they do not replace the 99 distinct domains.
-
-This framework does not mean Rocksoul possesses, measures, or embodies divine attributes. Scores describe bounded software behavior only. They do not describe Allah, divine qualities, human faith, spiritual rank, or divine approval. Religious names and source associations require careful language and appropriate review.
+Technical scores describe bounded software behavior only. They do not describe Allah, divine qualities, human faith, spiritual rank, or divine approval.
 
 ## Four Kitab: a source-aware knowledge foundation
 
