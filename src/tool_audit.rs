@@ -102,7 +102,10 @@ pub struct ToolAuditEvent {
 
 impl ToolAuditEvent {
     pub fn validate(&self) -> Result<()> {
-        ensure!(self.schema_version == TOOL_AUDIT_SCHEMA_VERSION, "unsupported tool audit schema version");
+        ensure!(
+            self.schema_version == TOOL_AUDIT_SCHEMA_VERSION,
+            "unsupported tool audit schema version"
+        );
         validate_identifier(&self.run_id, "run id")?;
         validate_identifier(&self.event_id, "event id")?;
         validate_identifier(&self.tool_id, "tool id")?;
@@ -110,33 +113,66 @@ impl ToolAuditEvent {
         validate_identifier(&self.capability, "capability")?;
         validate_version(&self.policy_version, "policy version")?;
         ensure!(self.sequence > 0, "tool audit sequence must be positive");
-        ensure!(self.timestamp_unix_ms > 0, "tool audit timestamp must be positive");
-        ensure!(self.evidence_refs.len() <= MAX_EVIDENCE_REFS, "too many evidence references");
+        ensure!(
+            self.timestamp_unix_ms > 0,
+            "tool audit timestamp must be positive"
+        );
+        ensure!(
+            self.evidence_refs.len() <= MAX_EVIDENCE_REFS,
+            "too many evidence references"
+        );
         for reference in &self.evidence_refs {
-            ensure!(!reference.is_empty() && reference.len() <= MAX_EVIDENCE_REF_BYTES, "invalid evidence reference length");
-            ensure!(reference.bytes().all(is_safe_metadata_byte), "evidence reference contains unsupported characters");
+            ensure!(
+                !reference.is_empty() && reference.len() <= MAX_EVIDENCE_REF_BYTES,
+                "invalid evidence reference length"
+            );
+            ensure!(
+                reference.bytes().all(is_safe_metadata_byte),
+                "evidence reference contains unsupported characters"
+            );
         }
         match self.kind {
             ToolAuditKind::AuthorizationAllowed => {
-                ensure!(self.authorization == Some(ToolAuthorization::Allowed), "authorization event must record allowed");
+                ensure!(
+                    self.authorization == Some(ToolAuthorization::Allowed),
+                    "authorization event must record allowed"
+                );
             }
             ToolAuditKind::AuthorizationDenied => {
-                ensure!(self.authorization == Some(ToolAuthorization::Denied), "authorization event must record denied");
+                ensure!(
+                    self.authorization == Some(ToolAuthorization::Denied),
+                    "authorization event must record denied"
+                );
             }
             ToolAuditKind::ApprovalGranted => {
-                ensure!(self.approval == Some(ToolApproval::Granted), "approval event must record granted");
+                ensure!(
+                    self.approval == Some(ToolApproval::Granted),
+                    "approval event must record granted"
+                );
             }
             ToolAuditKind::ApprovalDenied => {
-                ensure!(self.approval == Some(ToolApproval::Denied), "approval event must record denied");
+                ensure!(
+                    self.approval == Some(ToolApproval::Denied),
+                    "approval event must record denied"
+                );
             }
             ToolAuditKind::TimedOut => {
-                ensure!(self.failure == Some(ToolFailureCategory::DeadlineExceeded), "timeout event must use deadline_exceeded");
+                ensure!(
+                    self.failure == Some(ToolFailureCategory::DeadlineExceeded),
+                    "timeout event must use deadline_exceeded"
+                );
             }
             ToolAuditKind::Cancelled => {
-                ensure!(self.failure == Some(ToolFailureCategory::Cancelled), "cancel event must use cancelled");
+                ensure!(
+                    self.failure == Some(ToolFailureCategory::Cancelled),
+                    "cancel event must use cancelled"
+                );
             }
             ToolAuditKind::Failed => {
-                ensure!(self.failure.is_some(), "failure event requires a failure category");
+                ensure!(
+                    self.failure.is_some(),
+                    "failure event requires a failure category"
+                );
             }
             _ => {}
         }
@@ -149,17 +185,25 @@ fn is_safe_metadata_byte(byte: u8) -> bool {
 }
 
 fn validate_identifier(value: &str, label: &str) -> Result<()> {
-    ensure!(!value.is_empty() && value.len() <= MAX_ID_BYTES, "{label} must be 1-96 bytes");
-    ensure!(value.bytes().all(is_safe_metadata_byte), "{label} contains unsupported characters");
+    ensure!(
+        !value.is_empty() && value.len() <= MAX_ID_BYTES,
+        "{label} must be 1-96 bytes"
+    );
+    ensure!(
+        value.bytes().all(is_safe_metadata_byte),
+        "{label} contains unsupported characters"
+    );
     Ok(())
 }
 
 fn validate_version(value: &str, label: &str) -> Result<()> {
-    ensure!(!value.is_empty() && value.len() <= MAX_VERSION_BYTES, "{label} must be 1-64 bytes");
+    ensure!(
+        !value.is_empty() && value.len() <= MAX_VERSION_BYTES,
+        "{label} must be 1-64 bytes"
+    );
     ensure!(value.bytes().all(is_safe_metadata_byte), "{label} contains unsupported characters");
     Ok(())
 }
-
 
 /// Append-only JSONL audit storage. A corrupt or partial existing file is never repaired
 /// automatically: append fails closed and preserves the original bytes.
@@ -169,7 +213,10 @@ impl ToolAuditStore {
     pub fn append(path: &Path, event: &ToolAuditEvent) -> Result<()> {
         event.validate()?;
         let encoded = serde_json::to_vec(event).context("could not serialize tool audit event")?;
-        ensure!(encoded.len() <= MAX_RECORD_BYTES, "tool audit record exceeds size limit");
+            ensure!(
+            encoded.len() <= MAX_RECORD_BYTES,
+            "tool audit record exceeds size limit"
+        );
 
         let mut file = OpenOptions::new()
             .create(true)
@@ -202,11 +249,17 @@ impl ToolAuditStore {
                 .unwrap_or(0)
                 .checked_add(1)
                 .context("tool audit sequence exhausted")?;
-            ensure!(event.sequence == expected, "tool audit sequence must be contiguous for each run");
+            ensure!(
+                event.sequence == expected,
+                "tool audit sequence must be contiguous for each run"
+            );
             file.seek(SeekFrom::End(0))?;
-            file.write_all(&encoded).context("could not append tool audit event")?;
-            file.write_all(b"\n").context("could not terminate tool audit record")?;
-            file.sync_data().context("could not persist tool audit event")?;
+            file.write_all(&encoded)
+                .context("could not append tool audit event")?;
+            file.write_all(b"\n")
+                .context("could not terminate tool audit record")?;
+            file.sync_data()
+                .context("could not persist tool audit event")?;
             Ok(())
         })();
 
@@ -229,7 +282,10 @@ impl ToolAuditStore {
             .with_context(|| format!("could not lock tool audit store {}", path.display()))?;
         let result = (|| -> Result<Vec<ToolAuditEvent>> {
             let metadata = file.metadata()?;
-            ensure!(metadata.len() <= MAX_AUDIT_FILE_BYTES, "tool audit store exceeds read limit");
+            ensure!(
+                metadata.len() <= MAX_AUDIT_FILE_BYTES,
+                "tool audit store exceeds read limit"
+            );
             let mut content = String::new();
             file.read_to_string(&mut content)
                 .context("tool audit store is not valid UTF-8")?;
@@ -256,22 +312,34 @@ fn validate_existing_records(content: &str) -> Result<BTreeMap<String, u64>> {
     if content.is_empty() {
         return Ok(BTreeMap::new());
     }
-    ensure!(content.ends_with('\n'), "tool audit store has an incomplete trailing record");
+    ensure!(
+        content.ends_with('\n'),
+        "tool audit store has an incomplete trailing record"
+    );
     let mut sequences = BTreeMap::new();
     let mut event_ids = BTreeSet::new();
     for line in content.lines() {
-        ensure!(!line.is_empty() && line.len() <= MAX_RECORD_BYTES, "tool audit store contains an empty or oversized record");
-        let event: ToolAuditEvent = serde_json::from_str(line)
-            .context("tool audit store contains a malformed record")?;
+        ensure!(
+            !line.is_empty() && line.len() <= MAX_RECORD_BYTES,
+            "tool audit store contains an empty or oversized record"
+        );
+        let event: ToolAuditEvent =
+            serde_json::from_str(line).context("tool audit store contains a malformed record")?;
         event.validate()?;
-        ensure!(event_ids.insert(event.event_id.clone()), "tool audit store contains a duplicate event id");
+        ensure!(
+            event_ids.insert(event.event_id.clone()),
+            "tool audit store contains a duplicate event id"
+        );
         let expected = sequences
             .get(&event.run_id)
             .copied()
             .unwrap_or(0_u64)
             .checked_add(1)
             .context("tool audit sequence exhausted")?;
-        ensure!(event.sequence == expected, "tool audit store contains duplicate or out-of-order sequence");
+        ensure!(
+            event.sequence == expected,
+            "tool audit store contains duplicate or out-of-order sequence"
+        );
         sequences.insert(event.run_id, event.sequence);
     }
     Ok(sequences)
@@ -315,7 +383,11 @@ impl InvocationControl {
         }
         self.remaining_calls
             .fetch_update(Ordering::SeqCst, Ordering::SeqCst, |remaining| {
-                if remaining > 0 { Some(remaining - 1) } else { None }
+                if remaining > 0 {
+                    Some(remaining - 1)
+                } else {
+                    None
+                }
             })
             .map(|previous| previous - 1)
             .map_err(|_| InvocationStopReason::CallBudgetExhausted)
@@ -328,15 +400,23 @@ impl InvocationControl {
 
 #[cfg(test)]
 mod tests {
-    use std::{fs, sync::{Arc, Barrier}, thread, time::{Duration, SystemTime, UNIX_EPOCH}};
+    use std::{
+        fs,
+        sync::{Arc, Barrier},
+        thread,
+        time::{Duration, SystemTime, UNIX_EPOCH},
+    };
 
     use super::{
-        InvocationControl, InvocationStopReason, ToolAuditEvent, ToolAuditKind, ToolAuditStore,
-        ToolApproval, ToolAuthorization, ToolEffectClass, ToolFailureCategory,
+        InvocationControl, InvocationStopReason, ToolApproval, ToolAuditEvent, ToolAuditKind,
+        ToolAuditStore, ToolAuthorization, ToolEffectClass, ToolFailureCategory,
     };
 
     fn temp_path(label: &str) -> std::path::PathBuf {
-        let nonce = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos();
+        let nonce = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
         std::env::temp_dir().join(format!("rocksoul-tool-audit-{label}-{nonce}.jsonl"))
     }
 
@@ -488,11 +568,20 @@ mod tests {
     fn invocation_control_classifies_cancel_timeout_and_call_budget() {
         let control = InvocationControl::new(Duration::from_secs(5), 1);
         assert_eq!(control.check_and_consume(), Ok(0));
-        assert_eq!(control.check_and_consume(), Err(InvocationStopReason::CallBudgetExhausted));
+        assert_eq!(
+            control.check_and_consume(),
+            Err(InvocationStopReason::CallBudgetExhausted)
+        );
         control.cancel();
-        assert_eq!(control.check_and_consume(), Err(InvocationStopReason::Cancelled));
+        assert_eq!(
+            control.check_and_consume(),
+            Err(InvocationStopReason::Cancelled)
+        );
 
         let expired = InvocationControl::new(Duration::ZERO, 1);
-        assert_eq!(expired.check_and_consume(), Err(InvocationStopReason::TimedOut));
+        assert_eq!(
+            expired.check_and_consume(),
+            Err(InvocationStopReason::TimedOut)
+        );
     }
 }
