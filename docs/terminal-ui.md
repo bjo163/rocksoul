@@ -128,7 +128,7 @@ RID is a first-class cockpit screen.
 Header metrics: instance age, level, total XP, XP progress to next level, and rated/unrated stat count.
 
 The 99-stat browser:
-- Group by the nine technical domains.
+- Browse the 99 independent domains; optional benchmark families are navigation filters only (ten coverage families, not parent domains or additional scores).
 - Filter all / rated / unrated / needs review.
 - Search by stable stat key, technical label, transliteration, or catalogue ID.
 - Detail pane shows Arabic display label, transliteration, Indonesian/English draft gloss, technical capability definition, evaluation protocol, rubric version, confidence, sample count, evidence references, and last evaluation time.
