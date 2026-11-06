@@ -14,8 +14,8 @@ use sha2::{Digest, Sha256};
 
 use crate::{
     tool_audit::{
-        ToolAuditEvent, ToolAuditKind, ToolAuditStore, ToolAuthorization, ToolEffectClass,
-        ToolFailureCategory,
+        InvocationControl, InvocationStopReason, ToolAuditEvent, ToolAuditKind, ToolAuditStore,
+        ToolAuthorization, ToolEffectClass, ToolFailureCategory,
     },
     tool_registry::{ToolCapability, ToolDescriptor, ToolEffect, ToolPolicy, ToolRegistry},
 };
@@ -170,6 +170,7 @@ impl FixtureExecutor {
         audit_path: &Path,
         run_id: &str,
         first_sequence: u64,
+        control: &InvocationControl,
     ) -> Result<FixtureToolObservation> {
         let descriptor = registry
             .get(&call.tool_id)
@@ -213,6 +214,24 @@ impl FixtureExecutor {
             None,
             Vec::new(),
         )?;
+        if let Err(reason) = control.check_and_consume() {
+            let (kind, failure) = match reason {
+                InvocationStopReason::TimedOut => (
+                    ToolAuditKind::TimedOut,
+                    ToolFailureCategory::DeadlineExceeded,
+                ),
+                InvocationStopReason::Cancelled => (
+                    ToolAuditKind::Cancelled,
+                    ToolFailureCategory::Cancelled,
+                ),
+                InvocationStopReason::CallBudgetExhausted => (
+                    ToolAuditKind::Failed,
+                    ToolFailureCategory::ResourceExhausted,
+                ),
+            };
+            append_event(kind, None, Some(failure), Vec::new())?;
+            anyhow::bail!("fixture invocation stopped before dispatch: {reason:?}");
+        }
         append_event(ToolAuditKind::ExecutionStarted, None, None, Vec::new())?;
 
         match self.execute(registry, policy, call) {
@@ -422,6 +441,7 @@ mod tests {
                 &path,
                 "fixture-run-1",
                 1,
+                &InvocationControl::new(std::time::Duration::from_secs(5), 1),
             )
             .unwrap();
         let events = ToolAuditStore::read(&path).unwrap();
@@ -472,6 +492,7 @@ mod tests {
                     &path,
                     "fixture-denied-1",
                     1,
+                    &InvocationControl::new(std::time::Duration::from_secs(5), 1),
                 )
                 .is_err()
         );
@@ -480,6 +501,117 @@ mod tests {
         assert_eq!(
             events.iter().map(|event| event.kind).collect::<Vec<_>>(),
             vec![ToolAuditKind::Proposed, ToolAuditKind::AuthorizationDenied,]
+        );
+        std::fs::remove_file(path).unwrap();
+    }
+
+    #[test]
+    fn audited_fixture_deadline_and_cancellation_stop_before_mutation() {
+        use std::time::{Duration, SystemTime, UNIX_EPOCH};
+
+        use crate::tool_audit::{ToolAuditKind, ToolAuditStore};
+
+        let (registry, policy) = configured();
+        let call = FixtureToolCall {
+            tool_id: FIXTURE_WRITE_TOOL.to_owned(),
+            input: "goal=done".to_owned(),
+        };
+        let mut executor = FixtureExecutor::new();
+        let nonce = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let timeout_path =
+            std::env::temp_dir().join(format!("rocksoul-fixture-timeout-{nonce}.jsonl"));
+        assert!(
+            executor
+                .execute_audited(
+                    &registry,
+                    &policy,
+                    &call,
+                    &timeout_path,
+                    "fixture-timeout",
+                    1,
+                    &InvocationControl::new(Duration::ZERO, 1),
+                )
+                .is_err()
+        );
+        assert_eq!(executor.state_len(), 0);
+        let timeout_events = ToolAuditStore::read(&timeout_path).unwrap();
+        assert_eq!(
+            timeout_events.iter().map(|event| event.kind).collect::<Vec<_>>(),
+            vec![
+                ToolAuditKind::Proposed,
+                ToolAuditKind::AuthorizationAllowed,
+                ToolAuditKind::TimedOut,
+            ]
+        );
+        std::fs::remove_file(timeout_path).unwrap();
+
+        let cancel_path =
+            std::env::temp_dir().join(format!("rocksoul-fixture-cancel-{nonce}.jsonl"));
+        let control = InvocationControl::new(Duration::from_secs(5), 1);
+        control.cancel();
+        assert!(
+            executor
+                .execute_audited(
+                    &registry,
+                    &policy,
+                    &call,
+                    &cancel_path,
+                    "fixture-cancel",
+                    1,
+                    &control,
+                )
+                .is_err()
+        );
+        assert_eq!(executor.state_len(), 0);
+        let cancel_events = ToolAuditStore::read(&cancel_path).unwrap();
+        assert_eq!(
+            cancel_events.iter().map(|event| event.kind).collect::<Vec<_>>(),
+            vec![
+                ToolAuditKind::Proposed,
+                ToolAuditKind::AuthorizationAllowed,
+                ToolAuditKind::Cancelled,
+            ]
+        );
+        std::fs::remove_file(cancel_path).unwrap();
+    }
+
+    #[test]
+    fn audited_fixture_call_budget_is_enforced_before_dispatch() {
+        use std::time::{Duration, SystemTime, UNIX_EPOCH};
+
+        use crate::tool_audit::{ToolAuditKind, ToolAuditStore};
+
+        let (registry, policy) = configured();
+        let mut executor = FixtureExecutor::new();
+        let nonce = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let path = std::env::temp_dir().join(format!("rocksoul-fixture-budget-{nonce}.jsonl"));
+        assert!(
+            executor
+                .execute_audited(
+                    &registry,
+                    &policy,
+                    &FixtureToolCall {
+                        tool_id: FIXTURE_WRITE_TOOL.to_owned(),
+                        input: "goal=done".to_owned(),
+                    },
+                    &path,
+                    "fixture-budget",
+                    1,
+                    &InvocationControl::new(Duration::from_secs(5), 0),
+                )
+                .is_err()
+        );
+        assert_eq!(executor.state_len(), 0);
+        let events = ToolAuditStore::read(&path).unwrap();
+        assert_eq!(
+            events.last().unwrap().kind,
+            ToolAuditKind::Failed
         );
         std::fs::remove_file(path).unwrap();
     }
