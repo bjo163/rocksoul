@@ -388,24 +388,17 @@ PR #69 is merged to `main` as `c845a9485a9b1b2882691c8dc268d6e6385b6be2`. Its ex
 - Continue Issue #13 with worker isolation, parent watchdog/termination/reaping, independent effect verification, held-out task execution and trusted evaluation. Keep model-selected production tools disabled until those gates pass.
 
 
-## Current handoff — 2026-11-06 (Issue #71 / PR #72)
+## Current handoff — 2026-11-06 (Issue #71 / PR #72 merged)
 
-Refresh GitHub and `main` before starting. Issue #67 is complete: PR #69 and documentation PR #70 are merged, and exact-head Linux/Windows CI passed. Do not reopen fixture audit work unless a regression is found.
+PR #72 is merged to `main` as `b9450142becfe8446c8dc98455977fd4a3e1fe51`. Exact-head CI run [#42227907571](https://github.com/bjo163/rocksoul/actions/runs/42227907571) passed Linux format/Clippy/tests/offline evaluations and Windows release build/tests/installer/portable smoke tests.
 
-**Current branch:** `feat/worker-ipc-contract`  
-**PR:** https://github.com/bjo163/rocksoul/pull/72  
-**Issue:** https://github.com/bjo163/rocksoul/issues/71  
-**Current PR head after formatting correction:** check the live PR head SHA before any further action.  
-**Initial CI:** run #42214701546 — Windows passed; Linux failed only at rustfmt, so Clippy/tests/evaluations did not execute. The rustfmt differences were corrected on the branch; rerun exact-head CI before merge.
-
-PR #72 is a protocol-only foundation. It adds bounded length-prefixed JSON framing, strict envelope validation, parent-side run binding, monotonic sequence/replay checks, and lifecycle state transitions. It is not an authenticated channel or sandbox. No worker supervisor, OS restrictions, resource limits, hard kill/reap, WASM guest runtime, independent verifier, or production dispatch is present.
+Read `src/worker_protocol.rs` and [the Issue #71 worker IPC plan](plans/issue-71/worker-ipc-contract.md). The merged contract is protocol-only: it does not start or supervise a process, authenticate an IPC peer, enforce OS isolation, terminate/reap a process, or enable production dispatch. Rust 1.85 is preserved; no runtime dependency or lockfile change was made.
 
 Next safe sequence:
-1. Confirm PR #72 head and exact-head Linux/Windows CI; merge only when both are green.
-2. Implement parent supervisor with authenticated IPC, bounded handshake/heartbeat, deadlines, cancellation, process termination and OS-observed reaping.
-3. Implement Linux isolation and negative tests (namespaces, seccomp, cgroups v2, minimal read-only mounts, no network).
-4. Implement Windows isolation and negative tests (restricted token/AppContainer policy, Job Object limits, explicit handle inheritance, kill-on-close and reaping).
-5. Select a WASM runtime only after an explicit MSRV/license/security decision; no WASI and no default imports.
-6. Keep the independent effect verifier in a separate trust domain; then implement held-out model task evaluation and trusted RID publication gates.
+1. Implement parent supervisor with authenticated local IPC, bounded handshake/heartbeat, deadlines, cancellation, process termination and OS-observed reaping.
+2. Implement Linux isolation and negative tests (namespaces, seccomp, cgroups v2, minimal read-only mounts, no network).
+3. Implement Windows isolation and negative tests (restricted token/AppContainer policy, Job Object limits, explicit handle inheritance, kill-on-close and reaping).
+4. Select a WASM runtime only after an explicit MSRV/license/security decision; no WASI and no default imports.
+5. Keep the independent effect verifier in a separate trust domain; then implement held-out model task evaluation and trusted RID publication gates.
 
 Never enable production tool dispatch from the protocol contract alone. Issue #13 remains the controlling acceptance gate.
