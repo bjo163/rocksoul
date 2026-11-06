@@ -213,7 +213,7 @@ impl ToolAuditStore {
     pub fn append(path: &Path, event: &ToolAuditEvent) -> Result<()> {
         event.validate()?;
         let encoded = serde_json::to_vec(event).context("could not serialize tool audit event")?;
-            ensure!(
+        ensure!(
             encoded.len() <= MAX_RECORD_BYTES,
             "tool audit record exceeds size limit"
         );
