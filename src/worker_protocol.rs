@@ -327,7 +327,7 @@ mod tests {
 
     #[test]
     fn rejects_wrong_direction_messages() {
-        let session = WorkerSession::new("run-1").expect("session");
+        let mut session = WorkerSession::new("run-1").expect("session");
 
         let mut parent_only = frame(1, "req-parent");
         parent_only.kind = WorkerMessageKind::Execute;
