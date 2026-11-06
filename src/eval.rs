@@ -1256,7 +1256,7 @@ mod tests {
         time::{SystemTime, UNIX_EPOCH},
     };
 
-    use super::EvaluationReport;
+    use super::{EvaluationReport, CORE_SUITE_ID, CORE_SUITE_VERSION};
 
     #[test]
     fn markdown_cell_escapes_table_delimiters_and_collapses_line_breaks() {
