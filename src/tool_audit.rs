@@ -134,47 +134,68 @@ impl ToolAuditEvent {
         match self.kind {
             ToolAuditKind::AuthorizationAllowed => {
                 ensure!(
-                    self.authorization == Some(ToolAuthorization::Allowed),
-                    "authorization event must record allowed"
+                    self.authorization == Some(ToolAuthorization::Allowed)
+                        && self.approval.is_none()
+                        && self.failure.is_none(),
+                    "authorization event must contain only an allowed authorization decision"
                 );
             }
             ToolAuditKind::AuthorizationDenied => {
                 ensure!(
-                    self.authorization == Some(ToolAuthorization::Denied),
-                    "authorization event must record denied"
+                    self.authorization == Some(ToolAuthorization::Denied)
+                        && self.approval.is_none()
+                        && self.failure.is_none_or(|failure| failure == ToolFailureCategory::PolicyDenied),
+                    "authorization-denied event metadata is inconsistent"
                 );
             }
             ToolAuditKind::ApprovalGranted => {
                 ensure!(
-                    self.approval == Some(ToolApproval::Granted),
-                    "approval event must record granted"
+                    self.approval == Some(ToolApproval::Granted)
+                        && self.authorization.is_none()
+                        && self.failure.is_none(),
+                    "approval-granted event metadata is inconsistent"
                 );
             }
             ToolAuditKind::ApprovalDenied => {
                 ensure!(
-                    self.approval == Some(ToolApproval::Denied),
-                    "approval event must record denied"
+                    self.approval == Some(ToolApproval::Denied)
+                        && self.authorization.is_none()
+                        && self.failure.is_none_or(|failure| failure == ToolFailureCategory::ApprovalDenied),
+                    "approval-denied event metadata is inconsistent"
                 );
             }
             ToolAuditKind::TimedOut => {
                 ensure!(
-                    self.failure == Some(ToolFailureCategory::DeadlineExceeded),
-                    "timeout event must use deadline_exceeded"
+                    self.failure == Some(ToolFailureCategory::DeadlineExceeded)
+                        && self.authorization.is_none()
+                        && self.approval.is_none(),
+                    "timeout event metadata is inconsistent"
                 );
             }
             ToolAuditKind::Cancelled => {
                 ensure!(
-                    self.failure == Some(ToolFailureCategory::Cancelled),
-                    "cancel event must use cancelled"
+                    self.failure == Some(ToolFailureCategory::Cancelled)
+                        && self.authorization.is_none()
+                        && self.approval.is_none(),
+                    "cancel event metadata is inconsistent"
                 );
             }
             ToolAuditKind::Failed => {
                 ensure!(
-                    self.failure.is_some(),
-                    "failure event requires a failure category"
+                    self.failure.is_some()
+                        && self.authorization.is_none()
+                        && self.approval.is_none(),
+                    "failure event metadata is inconsistent"
                 );
             }
-            _ => {}
+            _ => {
+                ensure!(
+                    self.authorization.is_none()
+                        && self.approval.is_none()
+                        && self.failure.is_none(),
+                    "event kind cannot contain decision or failure metadata"
+                );
+            }
         }
         Ok(())
     }
@@ -220,6 +241,7 @@ impl ToolAuditStore {
 
         let mut file = OpenOptions::new()
             .create(true)
+            .truncate(false)
             .read(true)
             .write(true)
             .open(path)
@@ -460,6 +482,12 @@ mod tests {
         assert!(invalid.validate().is_err());
         invalid = event("run-a", 1);
         invalid.tool_id = "tool\napi_key".into();
+        assert!(invalid.validate().is_err());
+        invalid = event("run-a", 1);
+        invalid.event_id = "x".repeat(97);
+        assert!(invalid.validate().is_err());
+        invalid = event("run-a", 1);
+        invalid.evidence_refs = vec!["sha256:valid".to_owned(); 17];
         assert!(invalid.validate().is_err());
         let raw = r#"{"schema_version":1,"run_id":"r","sequence":1,"event_id":"e","kind":"proposed","tool_id":"t","tool_version":"1","capability":"read","effect":"read_only","policy_version":"1","timestamp_unix_ms":1,"authorization":null,"failure":null,"evidence_refs":[],"prompt":"must reject"}"#;
         assert!(serde_json::from_str::<ToolAuditEvent>(raw).is_err());
