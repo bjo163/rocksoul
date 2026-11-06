@@ -80,7 +80,7 @@ Unknown fields must be explicitly unavailable, never fabricated.
 
 `src/eval.rs` now defines a versioned typed trajectory record with run/build provenance, model/provider/quantization identity, seed, dataset/task digest, bounded ordered steps, redacted input digests, observation/trace references, token/cost/time fields, and independent-verifier evidence. Its validator rejects duplicate/non-contiguous steps, incomplete provenance, self-grading, missing verifier evidence for claimed success, invalid confidence bounds, and safety violations being reported as success. Unit tests cover these rejection paths.
 
-This is deliberately **not** an executable agent benchmark yet. The model adapter currently exposes chat completion only. A deny-by-default tool metadata registry now requires an explicit tool-ID allowlist, a separate capability grant, and both descriptor and policy input-byte budgets. This registry authorizes metadata only: it does not execute tools, spawn processes, touch files, or provide an OS sandbox. Isolated execution, effect-observing verifier adapters, and a held-out task runner remain unimplemented. The manifest therefore keeps `rocksoul.agent-trajectory` at `planned`; no trajectory capability result or RID score is emitted from this contract alone.
+This is deliberately **not** an executable agent benchmark yet. The model adapter currently exposes chat completion only. A deny-by-default tool metadata registry requires an explicit tool-ID allowlist, a separate capability grant, and descriptor/policy input-byte budgets. A deterministic in-process fixture executor now exercises only two bounded key-value operations over a private memory map; a fixture verifier reads the executor's observed state rather than trusting a model-provided result. This is a test harness, not an OS sandbox: it has no shell, network, filesystem, process, environment-variable, or arbitrary-code capability. Production isolation, independently operated verifier adapters, and model-connected held-out task execution remain unimplemented. The manifest therefore keeps `rocksoul.agent-trajectory` at `planned`; no trajectory capability result or RID score is emitted from this contract alone.
 
 ## Roadmap
 
@@ -89,8 +89,9 @@ This is deliberately **not** an executable agent benchmark yet. The model adapte
 - [x] CI archives both formats for both deterministic suites.
 - [x] Versioned benchmark manifest registers Core Integrity and Memory Retrieval as implemented offline suites; a Rust test checks suite IDs, versions, statuses and RID registry counts.
 - [x] Typed trajectory evidence contract and fail-closed validation rules (schema foundation only).
-- [x] Deny-by-default tool metadata registry with explicit allowlist, capability grants, duplicate-ID rejection, and bounded input budgets (authorization only; no execution).
-- [ ] Executable agent trajectory suite with isolated sandboxed tools and independent verifiers.
+- [x] Deny-by-default tool metadata registry with explicit allowlist, capability grants, duplicate-ID rejection, and bounded input budgets.
+- [x] In-process fixture executor and observed-state verifier for deterministic authorization/evidence-flow tests (not an OS sandbox or model benchmark).
+- [ ] Production isolated executor/sandbox, independently operated verifier adapters, and model-connected held-out trajectory runner.
 - [ ] Memory retention/transfer suite with held-out tasks.
 - [ ] Trusted RID evaluator with rubric-specific evidence aggregation.
 - [ ] External adapter review (license, terms, cost, environment, version, reproducibility).
