@@ -1,6 +1,6 @@
 # Rocksoul Project Progress
 
-**Last updated:** 2026-11-06 (Asia/Jakarta, evaluation report hardening and benchmark manifest reconciliation)  
+**Last updated:** 2026-11-06 (Asia/Jakarta, Issue #71 worker IPC merge and RID taxonomy reconciliation)  
 **Repository:** [bjo163/rocksoul](https://github.com/bjo163/rocksoul)  
 **Canonical branch:** `main`  
 **Current principle:** One Core. Infinite Evolution.
@@ -17,7 +17,7 @@ This is the durable progress snapshot for maintainers and delegated/local AI age
 | Stage 1 follow-through | **Merged and verified** | PR #53 merged as `458df81f`; issue #35 closed; CI #42044132321 passed on Linux and Windows |
 | Stage 2 — Persistent memory | **Complete on main** | Schema v4, locking, retention/forgetting, evaluated retrieval and human-reviewed proposals; see PRs #43/#46/#47/#49/#50/#51 |
 | Stage 2 claim integrity | **Merged** | PR #51 merged as `260d29852bb30f2f63129271a07cd368fafccc3f`; issue #44 closed; CI #42008862735 passed on Linux and Windows |
-| Stage 3 — Skills/tools | **Not started** | No general tool registry or arbitrary tool execution |
+| Stage 3 — Skills/tools | **In progress** | Typed deny-by-default registry, bounded fixtures, content-free audit and cooperative invocation controls merged; bounded worker IPC protocol PR #72 merged after exact-head Linux/Windows CI passed; production supervisor, OS sandbox, kill/reap and dispatch remain disabled |
 | Stage 4 — Application builder | **Not started** | Future bounded project-generation workflow |
 | Stage 5 — Evaluation/evolution | **Partial foundation** | Offline Core Integrity exists; candidate benchmarking, isolated evolution and promotion/rollback remain |
 | Stage 6 — Multi-agent | **Not started** | Deliberately deferred until single-agent foundations justify delegation |
@@ -305,18 +305,15 @@ Still explicitly not implemented:
 - Issue #13 remains open and is the controlling sandbox, independent-verifier and evaluation gate.
 
 
-## Issue #71 — bounded worker IPC protocol foundation (2026-11-06)
+## Issue #71 — bounded worker IPC protocol foundation (merged 2026-11-06)
 
-**Branch:** `feat/worker-ipc-contract`  
-**Status:** Protocol foundation proposed; awaiting exact-head Linux/Windows CI. This is not production sandbox completion.
+**Status:** Protocol contract merged; Issue #71 remains open for the production supervisor and OS isolation work.  
+**PR:** [#72](https://github.com/bjo163/rocksoul/pull/72)  
+**Merge commit:** `b9450142becfe8446c8dc98455977fd4a3e1fe51`  
+**Exact-head CI:** [run #42227907571](https://github.com/bjo163/rocksoul/actions/runs/42227907571) — Linux format, Clippy, tests, Core Integrity and Memory Retrieval evaluations passed; Windows release build, tests, installer/portable packaging and both smoke tests passed.
 
-Implemented in `src/worker_protocol.rs`:
-- Versioned JSON envelope over four-byte big-endian length-prefixed frames.
-- 64 KiB encoded-frame and 48 KiB payload ceilings; strict unknown-field rejection.
-- Bounded run/request IDs, positive sequence and deadline validation.
-- Parent-owned run binding, contiguous sequence and request-ID replay guard.
-- Explicit worker lifecycle transitions; a protocol message cannot claim OS process reaping.
-- Unit tests for framing round-trip, clean EOF/truncation, oversized frame/payload, invalid identifiers, unknown fields/version, replay/order/run mismatch and lifecycle transitions.
-- No new dependency; Rust 1.85 MSRV and Cargo.lock remain unchanged.
+The merged `src/worker_protocol.rs` provides a bounded, versioned, length-prefixed JSON protocol contract (64 KiB frame / 48 KiB payload), strict envelope validation, parent-owned run binding, contiguous sequence/request replay checks, and lifecycle transition rules. No dependency was added; Rust 1.85 and Cargo.lock remain unchanged.
 
-Limitations: no worker process, authenticated IPC transport, process supervisor, OS resource controls, filesystem/network isolation, hard timeout kill/reap, WASM runtime or independent verifier. Production tool dispatch remains disabled. See [Issue #71 worker IPC contract](plans/issue-71/worker-ipc-contract.md).
+It does **not** provide authenticated IPC, process spawning/supervision, OS isolation, resource enforcement, hard timeout, kill/reap, WASM execution, or an independent verifier. Production dispatch remains disabled.
+
+**Next:** define and implement the parent supervisor with authenticated local IPC, bounded handshake/heartbeat, deadline/cancel enforcement, process termination and OS-observed reaping. Then implement Linux and Windows isolation backends and adversarial kill/reap tests. Keep Issue #13 open until its independent verifier and held-out evaluation gates pass.
