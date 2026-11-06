@@ -1127,7 +1127,9 @@ fn latest_report_path() -> Result<PathBuf> {
 }
 
 fn persist_markdown_report(path: &std::path::Path, content: &str) -> Result<()> {
-    let parent = path.parent().context("Markdown report path has no parent")?;
+    let parent = path
+        .parent()
+        .context("Markdown report path has no parent")?;
     fs::create_dir_all(parent)?;
     let temporary = path.with_extension("md.tmp");
     let backup = path.with_extension("md.bak");
