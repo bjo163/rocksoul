@@ -1288,6 +1288,45 @@ mod tests {
     }
 
     #[test]
+    fn benchmark_manifest_matches_implemented_suites_and_rid_contract() {
+        let manifest: serde_json::Value =
+            serde_json::from_str(include_str!("../data/evaluation/benchmark-manifest.v1.json"))
+                .unwrap();
+        assert_eq!(manifest["schema_version"], 1);
+        assert_eq!(manifest["manifest_version"], "1.1.4");
+        assert_eq!(manifest["rid_taxonomy"]["domain_count"], 99);
+        assert_eq!(manifest["rid_taxonomy"]["stat_count"], 99);
+        assert_eq!(manifest["rid_taxonomy"]["overlap_pair_count"], 161);
+        assert_eq!(manifest["rid_taxonomy"]["overlap_directed_edge_count"], 322);
+
+        let suites = manifest["suites"].as_array().unwrap();
+        let mut ids = std::collections::HashSet::new();
+        for suite in suites {
+            let id = suite["id"].as_str().unwrap();
+            assert!(ids.insert(id), "duplicate benchmark suite ID: {id}");
+        }
+
+        for (id, version) in [
+            (CORE_SUITE_ID, CORE_SUITE_VERSION),
+            ("rocksoul.memory-retrieval", "1.0.0"),
+        ] {
+            let suite = suites
+                .iter()
+                .find(|suite| suite["id"] == id)
+                .unwrap_or_else(|| panic!("missing implemented suite: {id}"));
+            assert_eq!(suite["version"], version);
+            assert_eq!(suite["status"], "implemented");
+            assert_eq!(suite["execution"], "offline_deterministic_ci");
+        }
+
+        let trajectory = suites
+            .iter()
+            .find(|suite| suite["id"] == "rocksoul.agent-trajectory")
+            .unwrap();
+        assert_eq!(trajectory["status"], "planned");
+    }
+
+    #[test]
     fn report_parser_rejects_invalid_json_without_echoing_payload_or_path() {
         let payload = b"api_key=do-not-echo";
         let error = super::parse_report::<EvaluationReport>(payload).unwrap_err();
