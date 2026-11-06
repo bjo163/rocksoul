@@ -38,9 +38,9 @@ pub enum ToolAuditKind {
     ExecutionFinished,
     TimedOut,
     Cancelled,
-    VerifierPassed,
-    VerifierFailed,
-    VerifierIndeterminate,
+    VerifierReportedPassed,
+    VerifierReportedFailed,
+    VerifierReportedIndeterminate,
     Failed,
 }
 
@@ -174,7 +174,12 @@ impl ToolAuditStore {
             file.read_to_string(&mut existing)
                 .context("tool audit store is not valid UTF-8")?;
             let last_sequence = validate_existing_records(&existing)?;
-            let expected = last_sequence.get(&event.run_id).copied().unwrap_or(0) + 1;
+            let expected = last_sequence
+                .get(&event.run_id)
+                .copied()
+                .unwrap_or(0)
+                .checked_add(1)
+                .context("tool audit sequence exhausted")?;
             ensure!(event.sequence == expected, "tool audit sequence must be contiguous for each run");
             file.seek(SeekFrom::End(0))?;
             file.write_all(&encoded).context("could not append tool audit event")?;
@@ -238,7 +243,12 @@ fn validate_existing_records(content: &str) -> Result<BTreeMap<String, u64>> {
             .context("tool audit store contains a malformed record")?;
         event.validate()?;
         ensure!(event_ids.insert(event.event_id.clone()), "tool audit store contains a duplicate event id");
-        let expected = sequences.get(&event.run_id).copied().unwrap_or(0_u64) + 1;
+        let expected = sequences
+            .get(&event.run_id)
+            .copied()
+            .unwrap_or(0_u64)
+            .checked_add(1)
+            .context("tool audit sequence exhausted")?;
         ensure!(event.sequence == expected, "tool audit store contains duplicate or out-of-order sequence");
         sequences.insert(event.run_id, event.sequence);
     }
@@ -313,7 +323,7 @@ mod tests {
             schema_version: 1,
             run_id: run.into(),
             sequence,
-            event_id: format!("event-{sequence}"),
+            event_id: format!("event-{run}-{sequence}"),
             kind: ToolAuditKind::Proposed,
             tool_id: "workspace.read".into(),
             tool_version: "1.0.0".into(),
