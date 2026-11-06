@@ -53,6 +53,13 @@ pub enum ToolAuthorization {
 
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "snake_case")]
+pub enum ToolApproval {
+    Granted,
+    Denied,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "snake_case")]
 pub enum ToolEffectClass {
     ReadOnly,
     Mutating,
@@ -88,6 +95,7 @@ pub struct ToolAuditEvent {
     pub policy_version: String,
     pub timestamp_unix_ms: u64,
     pub authorization: Option<ToolAuthorization>,
+    pub approval: Option<ToolApproval>,
     pub failure: Option<ToolFailureCategory>,
     pub evidence_refs: Vec<String>,
 }
@@ -116,10 +124,10 @@ impl ToolAuditEvent {
                 ensure!(self.authorization == Some(ToolAuthorization::Denied), "authorization event must record denied");
             }
             ToolAuditKind::ApprovalGranted => {
-                ensure!(self.authorization != Some(ToolAuthorization::Denied), "approval-granted event cannot record denied authorization");
+                ensure!(self.approval == Some(ToolApproval::Granted), "approval event must record granted");
             }
             ToolAuditKind::ApprovalDenied => {
-                ensure!(self.authorization == Some(ToolAuthorization::Denied), "approval-denied event must record denied");
+                ensure!(self.approval == Some(ToolApproval::Denied), "approval event must record denied");
             }
             ToolAuditKind::TimedOut => {
                 ensure!(self.failure == Some(ToolFailureCategory::DeadlineExceeded), "timeout event must use deadline_exceeded");
@@ -324,7 +332,7 @@ mod tests {
 
     use super::{
         InvocationControl, InvocationStopReason, ToolAuditEvent, ToolAuditKind, ToolAuditStore,
-        ToolAuthorization, ToolEffectClass, ToolFailureCategory,
+        ToolApproval, ToolAuthorization, ToolEffectClass, ToolFailureCategory,
     };
 
     fn temp_path(label: &str) -> std::path::PathBuf {
@@ -346,6 +354,7 @@ mod tests {
             policy_version: "1.0.0".into(),
             timestamp_unix_ms: 1,
             authorization: None,
+            approval: None,
             failure: None,
             evidence_refs: vec!["sha256:0123456789abcdef".into()],
         }
@@ -382,8 +391,12 @@ mod tests {
         invalid.kind = ToolAuditKind::AuthorizationDenied;
         invalid.authorization = Some(ToolAuthorization::Allowed);
         assert!(invalid.validate().is_err());
+        invalid.kind = ToolAuditKind::ApprovalGranted;
+        invalid.approval = Some(ToolApproval::Denied);
+        assert!(invalid.validate().is_err());
         invalid.kind = ToolAuditKind::TimedOut;
         invalid.authorization = None;
+        invalid.approval = None;
         invalid.failure = Some(ToolFailureCategory::WorkerFailure);
         assert!(invalid.validate().is_err());
     }
