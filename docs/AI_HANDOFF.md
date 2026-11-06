@@ -386,3 +386,12 @@ PR #69 is merged to `main` as `c845a9485a9b1b2882691c8dc268d6e6385b6be2`. Its ex
 - Read `src/fixture_runtime.rs` for audited fixture dispatch and pre-dispatch deadline/cancellation/call-budget enforcement.
 - The audited path is fixture-only. It does not terminate/reap processes or establish OS isolation. Do not use it as production execution authority.
 - Continue Issue #13 with worker isolation, parent watchdog/termination/reaping, independent effect verification, held-out task execution and trusted evaluation. Keep model-selected production tools disabled until those gates pass.
+
+
+## Issue #71 — worker IPC protocol handoff (2026-11-06)
+
+The branch `feat/worker-ipc-contract` adds `src/worker_protocol.rs`, a bounded versioned framing/session/lifecycle contract. Read [the Issue #71 worker IPC plan](plans/issue-71/worker-ipc-contract.md).
+
+This is protocol-only. It does not start or supervise a process, authenticate an IPC peer, enforce OS isolation, terminate/reap a process, or enable production dispatch. Preserve Rust 1.85; no runtime dependency or lockfile change was made. Keep the production tool path disabled.
+
+Next required work remains: authenticated local IPC, parent watchdog and OS-observed process cleanup, Linux namespace/seccomp/cgroup backend, Windows restricted-token/AppContainer/Job Object backend, no-WASI guest runtime after MSRV/license/security review, adversarial OS integration tests, and independent verifier process. Unsupported isolation must fail closed; never add an unsandboxed fallback.
