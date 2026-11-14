@@ -134,7 +134,41 @@ impl WorkerSession {
         })
     }
 
-    pub fn accept(&mut self, frame: &WorkerFrame) -> Result<()> {
+    /// Accept only messages that are legal on the worker-to-parent channel.
+    /// The caller must also bind this session to the OS-authenticated child IPC endpoint.
+    pub fn accept_from_worker(&mut self, frame: &WorkerFrame) -> Result<()> {
+        ensure!(
+            matches!(
+                frame.kind,
+                WorkerMessageKind::Hello
+                    | WorkerMessageKind::Heartbeat
+                    | WorkerMessageKind::Result
+                    | WorkerMessageKind::Failed
+                    | WorkerMessageKind::Exited
+            ),
+            "message kind is not permitted from worker to parent"
+        );
+        self.accept_sequence(frame)
+    }
+
+    /// Validate a parent-to-worker message before it is written to the private channel.
+    pub fn validate_for_worker(&self, frame: &WorkerFrame) -> Result<()> {
+        frame.validate()?;
+        ensure!(frame.run_id == self.run_id, "worker run id mismatch");
+        ensure!(
+            matches!(
+                frame.kind,
+                WorkerMessageKind::Ready
+                    | WorkerMessageKind::Execute
+                    | WorkerMessageKind::Cancel
+                    | WorkerMessageKind::Shutdown
+            ),
+            "message kind is not permitted from parent to worker"
+        );
+        Ok(())
+    }
+
+    fn accept_sequence(&mut self, frame: &WorkerFrame) -> Result<()> {
         frame.validate()?;
         ensure!(frame.run_id == self.run_id, "worker run id mismatch");
         ensure!(
@@ -275,14 +309,46 @@ mod tests {
     #[test]
     fn session_rejects_replay_out_of_order_and_wrong_run() {
         let mut session = WorkerSession::new("run-1").expect("session");
-        let first = frame(1, "req-1");
-        session.accept(&first).expect("first frame");
-        assert!(session.accept(&first).is_err());
-        assert!(session.accept(&frame(3, "req-3")).is_err());
+        let mut first = frame(1, "req-1");
+        first.kind = WorkerMessageKind::Hello;
+        session
+            .accept_from_worker(&first)
+            .expect("first worker frame");
+        assert!(session.accept_from_worker(&first).is_err());
+        let mut out_of_order = frame(3, "req-3");
+        out_of_order.kind = WorkerMessageKind::Heartbeat;
+        assert!(session.accept_from_worker(&out_of_order).is_err());
 
         let mut wrong_run = frame(2, "req-2");
         wrong_run.run_id = "run-2".to_owned();
-        assert!(session.accept(&wrong_run).is_err());
+        wrong_run.kind = WorkerMessageKind::Heartbeat;
+        assert!(session.accept_from_worker(&wrong_run).is_err());
+    }
+
+    #[test]
+    fn rejects_wrong_direction_messages() {
+        let mut session = WorkerSession::new("run-1").expect("session");
+
+        let mut parent_only = frame(1, "req-parent");
+        parent_only.kind = WorkerMessageKind::Execute;
+        assert!(session.accept_from_worker(&parent_only).is_err());
+
+        let mut worker_only = frame(1, "req-worker");
+        worker_only.kind = WorkerMessageKind::Result;
+        assert!(session.validate_for_worker(&worker_only).is_err());
+
+        let mut valid_parent = frame(1, "req-ready");
+        valid_parent.kind = WorkerMessageKind::Ready;
+        session
+            .validate_for_worker(&valid_parent)
+            .expect("parent Ready is permitted");
+
+        let mut valid_worker = frame(1, "req-hello");
+        valid_worker.kind = WorkerMessageKind::Hello;
+        let mut worker_session = WorkerSession::new("run-1").expect("worker session");
+        worker_session
+            .accept_from_worker(&valid_worker)
+            .expect("worker Hello is permitted");
     }
 
     #[test]
