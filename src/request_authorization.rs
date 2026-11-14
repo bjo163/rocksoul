@@ -75,8 +75,7 @@ impl ToolWriteSchema {
             "invalid tool id"
         );
         ensure!(
-            !self.arguments.is_empty()
-                && self.arguments.len() <= MAX_ARGUMENTS_PER_OPERATION,
+            !self.arguments.is_empty() && self.arguments.len() <= MAX_ARGUMENTS_PER_OPERATION,
             "invalid argument schema size"
         );
         for (name, rule) in &self.arguments {
