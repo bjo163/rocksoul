@@ -208,7 +208,10 @@ impl CommittedWriteSet {
                 .get(&proposal.tool_id)
                 .ok_or_else(|| anyhow::anyhow!("unknown or unclassified write tool"))?;
             schema.validate()?;
-            ensure!(proposal.tool_id == schema.tool_id, "tool schema key mismatch");
+            ensure!(
+                proposal.tool_id == schema.tool_id,
+                "tool schema key mismatch"
+            );
             ensure!(
                 proposal.arguments.len() <= MAX_ARGUMENTS_PER_OPERATION,
                 "too many write arguments"
@@ -319,10 +322,7 @@ mod tests {
                 ("body".to_owned(), ArgumentRule::payload(true)),
                 (
                     "send_at".to_owned(),
-                    ArgumentRule::temporal_control(
-                        false,
-                        ["now".to_owned(), "draft".to_owned()],
-                    ),
+                    ArgumentRule::temporal_control(false, ["now".to_owned(), "draft".to_owned()]),
                 ),
             ]),
         }
@@ -359,12 +359,8 @@ mod tests {
             RequestGrounding::from_user_request("task-1", "Send the report to Alex").unwrap();
         let schemas = BTreeMap::from([("mail.send".to_owned(), schema())]);
         assert!(
-            CommittedWriteSet::commit(
-                &grounding,
-                &schemas,
-                vec![proposal("attacker@example.com")]
-            )
-            .is_err()
+            CommittedWriteSet::commit(&grounding, &schemas, vec![proposal("attacker@example.com")])
+                .is_err()
         );
     }
 
