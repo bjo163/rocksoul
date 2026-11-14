@@ -884,16 +884,13 @@ fn acquire_lock(directory: &Path) -> Result<File> {
 }
 
 fn lock_contention(error: &std::io::Error) -> bool {
-    if error.kind() == ErrorKind::WouldBlock {
-        return true;
-    }
     #[cfg(windows)]
     {
-        matches!(error.raw_os_error(), Some(32 | 33))
+        error.kind() == ErrorKind::WouldBlock || matches!(error.raw_os_error(), Some(32 | 33))
     }
     #[cfg(not(windows))]
     {
-        false
+        error.kind() == ErrorKind::WouldBlock
     }
 }
 
