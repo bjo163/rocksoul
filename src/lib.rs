@@ -8,6 +8,7 @@ mod memory_proposal;
 mod model;
 mod paths;
 mod repl;
+pub mod request_authorization;
 pub mod rid;
 pub mod rid_catalogue;
 mod rid_store;
