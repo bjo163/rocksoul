@@ -395,7 +395,7 @@ PR #72 is merged to `main` as `b9450142becfe8446c8dc98455977fd4a3e1fe51`. Exact-
 Read `src/worker_protocol.rs` and [the Issue #71 worker IPC plan](plans/issue-71/worker-ipc-contract.md). The merged contract is protocol-only: it does not start or supervise a process, authenticate an IPC peer, enforce OS isolation, terminate/reap a process, or enable production dispatch. Rust 1.85 is preserved; no runtime dependency or lockfile change was made.
 
 Next safe sequence:
-1. Implement parent supervisor with authenticated local IPC, bounded handshake/heartbeat, deadlines, cancellation, process termination and OS-observed reaping.
+1. Follow [Issue #75](https://github.com/bjo163/rocksoul/issues/75) and [the merged worker supervisor contract](plans/issue-71/worker-supervisor-contract.md) to implement parent supervision and authenticated local IPC, bounded handshake/heartbeat, deadlines, cancellation, process termination and OS-observed reaping.
 2. Implement Linux isolation and negative tests (namespaces, seccomp, cgroups v2, minimal read-only mounts, no network).
 3. Implement Windows isolation and negative tests (restricted token/AppContainer policy, Job Object limits, explicit handle inheritance, kill-on-close and reaping).
 4. Select a WASM runtime only after an explicit MSRV/license/security decision; no WASI and no default imports.
