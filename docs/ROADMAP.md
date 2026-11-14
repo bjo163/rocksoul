@@ -85,7 +85,7 @@ The next engineering work is Issue #13's reproducible technical evaluation harne
 
 ## Stage 3 — Skills and tools
 
-**Status:** In progress. The typed deny-by-default registry, bounded in-process fixtures, content-free audit store, and cooperative invocation controls are implemented. PR #72 proposes the bounded worker IPC protocol foundation; it is not merged and its exact-head Linux CI must pass before merge. Production worker supervision, OS isolation, authenticated IPC, hard termination/reaping, and independent verification remain incomplete.
+**Status:** In progress. The typed deny-by-default registry, bounded in-process fixtures, content-free audit store, and cooperative invocation controls are implemented. The bounded worker IPC protocol (PR #72) is merged and passed exact-head Linux/Windows CI. Parent worker supervision, authenticated IPC transport, OS isolation, hard termination/reaping, and independent verification remain incomplete; see [Issue #75](https://github.com/bjo163/rocksoul/issues/75) and its [supervisor contract](plans/issue-71/worker-supervisor-contract.md).
 
 - [x] Define a typed tool metadata contract and deny-by-default capability registry.
 - [x] Add narrowly scoped in-memory fixture read/write tools; all production tool execution remains disabled.
