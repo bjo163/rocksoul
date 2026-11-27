@@ -94,6 +94,8 @@ The next engineering work is Issue #13's reproducible technical evaluation harne
 - [x] Record fixture proposal, authorization, execution start/finish, failure, timeout and cancellation events without persisting raw tool input; enforce cooperative deadline, cancellation and call-budget checks before fixture dispatch.
 - [x] Merge the bounded worker IPC protocol foundation after exact-head Linux and Windows CI passed (PR #72; merge commit `b9450142becfe8446c8dc98455977fd4a3e1fe51`).
 - [x] Define explicit write-argument roles, task-bound single-use confirmation grants, content-free authorization reason codes, and adversarial injection fixtures.
+- [x] Enforce commit-before-observation in the audited fixture path; a late or missing commitment is denied and audited with a content-free reason.
+- [x] Bind worker executable digest, frame deadline, output ceilings and OS-observed exit to the parent-owned policy; add an anonymous socket-pair transport that fails closed off Unix.
 - [x] Define a fail-closed parent supervisor/sandbox capability contract with offline deterministic evaluation suites; no backend is enabled, so production starts are refused.
 - [ ] Add production worker watchdogs that actually terminate and reap timed-out/cancelled workers; cooperative host checks alone do not stop a running process.
 - [ ] Add a genuine OS/WASM isolation boundary and human approval for production writes or remote egress.

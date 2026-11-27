@@ -7,6 +7,7 @@ use std::{
 
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 
 use crate::{
     commands::{complete_workspace_operation_with_hook, persist_workspace_receipt},
@@ -18,7 +19,7 @@ use crate::{
     paths::AppPaths,
     request_authorization::{
         ArgumentRule, AuthorizationReason, CommittedWriteSet, RequestGrounding, ToolWriteSchema,
-        WriteProposal,
+        WriteCommitmentGate, WriteProposal,
     },
     rid::{RuhIdentity, RuhProfile, XpRecordOutcome, level_for_xp},
     rid_catalogue::RidCatalogue,
@@ -38,9 +39,9 @@ use crate::{
 pub const CORE_SUITE_ID: &str = "rocksoul.core-integrity";
 pub const CORE_SUITE_VERSION: &str = "1.3.0";
 pub const AUTHORIZATION_SUITE_ID: &str = "rocksoul.authorization-contract";
-pub const AUTHORIZATION_SUITE_VERSION: &str = "0.1.0";
+pub const AUTHORIZATION_SUITE_VERSION: &str = "0.2.0";
 pub const WORKER_SUPERVISOR_SUITE_ID: &str = "rocksoul.worker-supervisor-contract";
-pub const WORKER_SUPERVISOR_SUITE_VERSION: &str = "0.1.0";
+pub const WORKER_SUPERVISOR_SUITE_VERSION: &str = "0.2.0";
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct EvaluationCheck {
@@ -651,6 +652,25 @@ pub fn run_authorization_contract() -> Result<EvaluationReport> {
             metrics.blocked, metrics.cases
         ),
     ));
+    let mut late_gate = WriteCommitmentGate::new();
+    let uncommitted =
+        late_gate.authorize_next(&grounded).reason == AuthorizationReason::WriteSetNotCommitted;
+    late_gate.note_observation()?;
+    let commit_denied = late_gate.commit(&grounding, &schemas, vec![grounded.clone()])
+        == Err(AuthorizationReason::CommitAfterObservation);
+    let mut gate = WriteCommitmentGate::new();
+    let gate_ok = gate
+        .commit(&grounding, &schemas, vec![grounded.clone()])
+        .is_ok()
+        && gate.authorize_next(&grounded).allowed
+        && gate.authorize_next(&grounded).reason == AuthorizationReason::WriteSetExhausted
+        && gate.is_complete();
+    checks.push(check(
+        "authorization.commit_before_observation_is_enforced",
+        uncommitted && commit_denied && gate_ok,
+        "The write window closes at the first observation; a committed write is consumed once",
+    ));
+
     checks.push(check(
         "authorization.safety_and_utility_reported_separately",
         metrics.benign_accepted && metrics.false_denials == 0,
@@ -758,6 +778,43 @@ pub fn run_worker_supervisor_contract() -> Result<EvaluationReport> {
         !FailClosedSandbox.status(&policy.sandbox).supported
             && FailClosedSandbox.prepare(&policy.sandbox).is_err(),
         "The default backend reports unsupported and refuses to prepare a worker",
+    ));
+
+    let worker_bytes = b"rocksoul-eval-worker-fixture";
+    let worker_path = std::env::temp_dir().join(format!(
+        "rocksoul-eval-worker-{}-{}",
+        now,
+        std::process::id()
+    ));
+    fs::write(&worker_path, worker_bytes)?;
+    let mut identity_policy = policy.clone();
+    identity_policy.worker_executable = worker_path.clone();
+    identity_policy.worker_sha256 = format!("{:x}", Sha256::digest(worker_bytes));
+    let identity_ok = identity_policy.verify_executable().is_ok();
+    let mut tampered_identity = identity_policy.clone();
+    tampered_identity.worker_sha256 = "0".repeat(64);
+    let identity_denied = tampered_identity.verify_executable().is_err();
+    let mut tampered_deadline = hello.clone();
+    tampered_deadline.deadline_unix_ms += 1;
+    let deadline_bound = identity_policy.verify_frame_deadline(&hello).is_ok()
+        && identity_policy
+            .verify_frame_deadline(&tampered_deadline)
+            .is_err();
+    fs::remove_file(&worker_path)?;
+    checks.push(check(
+        "worker.executable_identity_and_frame_deadline_are_bound",
+        identity_ok && identity_denied && deadline_bound,
+        "The exact executable digest and frame deadline are bound to the immutable run policy",
+    ));
+
+    #[cfg(unix)]
+    let transport_ok = crate::ipc_transport::create_private_pair().is_ok();
+    #[cfg(not(unix))]
+    let transport_ok = crate::ipc_transport::create_private_pair().is_err();
+    checks.push(check(
+        "worker.private_ipc_transport_or_fail_closed",
+        transport_ok,
+        "An anonymous private channel exists on Unix and is refused elsewhere; no public listener is created",
     ));
 
     let report = build_report(
@@ -1917,7 +1974,7 @@ mod tests {
         let report = super::run_authorization_contract().unwrap();
         assert!(report.passed);
         assert_eq!(report.suite_id, AUTHORIZATION_SUITE_ID);
-        assert_eq!(report.checks.len(), 10);
+        assert_eq!(report.checks.len(), 11);
     }
 
     #[test]
@@ -1925,7 +1982,7 @@ mod tests {
         let report = super::run_worker_supervisor_contract().unwrap();
         assert!(report.passed);
         assert_eq!(report.suite_id, WORKER_SUPERVISOR_SUITE_ID);
-        assert_eq!(report.checks.len(), 5);
+        assert_eq!(report.checks.len(), 7);
     }
 
     #[test]

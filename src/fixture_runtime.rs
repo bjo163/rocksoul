@@ -12,7 +12,10 @@ use anyhow::{Context, Result, ensure};
 use sha2::{Digest, Sha256};
 
 use crate::{
-    request_authorization::{ArgumentRule, ToolWriteSchema},
+    request_authorization::{
+        ArgumentRule, AuthorizationReason, RequestGrounding, ToolWriteSchema, WriteCommitmentGate,
+        WriteProposal,
+    },
     tool_audit::{
         InvocationControl, InvocationStopReason, ToolAuditEvent, ToolAuditKind, ToolAuditStore,
         ToolAuthorization, ToolEffectClass, ToolFailureCategory,
@@ -61,13 +64,15 @@ pub struct FixtureVerification {
     pub evidence_refs: Vec<String>,
 }
 
-/// A deliberately tiny executor with no ambient host capabilities.
-#[derive(Clone, Debug)]
+/// A deliberately tiny executor with no ambient host capabilities. It is not
+/// `Clone`: cloning would duplicate a single-use write commitment.
+#[derive(Debug)]
 pub struct FixtureExecutor {
     state: BTreeMap<String, String>,
     observed_effects: BTreeMap<String, String>,
     remaining_steps: u16,
     remaining_input_bytes: usize,
+    write_gate: WriteCommitmentGate,
 }
 
 impl Default for FixtureExecutor {
@@ -83,6 +88,7 @@ impl FixtureExecutor {
             observed_effects: BTreeMap::new(),
             remaining_steps: MAX_EXECUTION_STEPS,
             remaining_input_bytes: MAX_TOTAL_INPUT_BYTES,
+            write_gate: WriteCommitmentGate::new(),
         }
     }
 
@@ -139,6 +145,7 @@ impl FixtureExecutor {
                 let evidence_ref = format!("fixture://state/{key}");
                 self.observed_effects
                     .insert(evidence_ref.clone(), key.to_owned());
+                self.write_gate.note_observation()?;
                 Ok(observation(
                     FIXTURE_WRITE_TOOL,
                     "state updated",
@@ -160,9 +167,88 @@ impl FixtureExecutor {
                 let evidence_ref = format!("fixture://state/{}", call.input);
                 self.observed_effects
                     .insert(evidence_ref.clone(), call.input.clone());
+                self.write_gate.note_observation()?;
                 Ok(observation(FIXTURE_READ_TOOL, value, evidence_ref, value))
             }
             _ => anyhow::bail!("fixture executor does not implement tool: {}", call.tool_id),
+        }
+    }
+
+    pub fn observations_seen(&self) -> u64 {
+        self.write_gate.observations_seen()
+    }
+
+    pub fn is_write_committed(&self) -> bool {
+        self.write_gate.is_committed()
+    }
+
+    /// Freeze the complete write set before any untrusted observation enters.
+    pub fn commit_writes(
+        &mut self,
+        grounding: &RequestGrounding,
+        schemas: &BTreeMap<String, ToolWriteSchema>,
+        proposals: Vec<WriteProposal>,
+    ) -> std::result::Result<(), AuthorizationReason> {
+        self.write_gate.commit(grounding, schemas, proposals)
+    }
+
+    pub fn commit_writes_with_confirmations(
+        &mut self,
+        grounding: &RequestGrounding,
+        schemas: &BTreeMap<String, ToolWriteSchema>,
+        proposals: Vec<WriteProposal>,
+        confirmations: &mut [crate::request_authorization::ConfirmationGrant],
+    ) -> Result<()> {
+        self.write_gate
+            .commit_with_confirmations(grounding, schemas, proposals, confirmations)
+    }
+
+    /// Resolve a fixture call to its committed write proposal and consume exactly
+    /// one slot of the frozen set. This is the only path audited dispatch uses for
+    /// mutating tools.
+    fn authorize_committed_write(
+        &mut self,
+        registry: &ToolRegistry,
+        call: &FixtureToolCall,
+    ) -> std::result::Result<(), AuthorizationReason> {
+        let descriptor = registry
+            .get(&call.tool_id)
+            .ok_or(AuthorizationReason::UnknownTool)?;
+        if descriptor.effect != ToolEffect::Mutating {
+            return Ok(());
+        }
+        let schema = descriptor
+            .write_schema
+            .as_ref()
+            .ok_or(AuthorizationReason::UnclassifiedArgument)?;
+        let (key, value) = call
+            .input
+            .split_once('=')
+            .ok_or(AuthorizationReason::InvalidProposal)?;
+        let mut arguments = BTreeMap::new();
+        for name in schema.arguments.keys() {
+            match name.as_str() {
+                "key" => {
+                    arguments.insert(name.clone(), key.to_owned());
+                }
+                "value" => {
+                    arguments.insert(name.clone(), value.to_owned());
+                }
+                _ => return Err(AuthorizationReason::UnclassifiedArgument),
+            }
+        }
+        if !arguments.contains_key("key") || !arguments.contains_key("value") {
+            return Err(AuthorizationReason::InvalidProposal);
+        }
+        let proposal = WriteProposal {
+            tool_id: schema.tool_id.clone(),
+            arguments,
+        };
+        let decision = self.write_gate.authorize_next(&proposal);
+        if decision.allowed {
+            Ok(())
+        } else {
+            Err(decision.reason)
         }
     }
 
@@ -211,6 +297,16 @@ impl FixtureExecutor {
                 Vec::new(),
             )?;
             return Err(error);
+        }
+
+        if let Err(reason) = self.authorize_committed_write(registry, call) {
+            append_event(
+                ToolAuditKind::AuthorizationDenied,
+                Some(ToolAuthorization::Denied),
+                reason.audit_failure(),
+                Vec::new(),
+            )?;
+            anyhow::bail!("write authorization denied: {}", reason.as_str());
         }
 
         append_event(
@@ -389,14 +485,39 @@ fn observation(
 
 #[cfg(test)]
 mod tests {
+    use std::collections::BTreeMap;
+
     use super::{
         FIXTURE_READ_TOOL, FIXTURE_WRITE_TOOL, FixtureAuditContext, FixtureExecutor,
         FixtureToolCall, register_fixture_tools,
     };
     use crate::{
+        request_authorization::{RequestGrounding, WriteProposal},
         tool_audit::InvocationControl,
         tool_registry::{ToolCapability, ToolPolicy, ToolRegistry},
     };
+
+    /// Commit the exact `key=value` write before any audited dispatch.
+    fn commit_fixture_write(
+        executor: &mut FixtureExecutor,
+        registry: &ToolRegistry,
+        call: &FixtureToolCall,
+    ) {
+        let (key, value) = call.input.split_once('=').unwrap();
+        let grounding =
+            RequestGrounding::from_user_request("fixture-commit", format!("Set {key} to {value}"))
+                .unwrap();
+        let proposal = WriteProposal {
+            tool_id: FIXTURE_WRITE_TOOL.to_owned(),
+            arguments: BTreeMap::from([
+                ("key".to_owned(), key.to_owned()),
+                ("value".to_owned(), value.to_owned()),
+            ]),
+        };
+        executor
+            .commit_writes(&grounding, &registry.write_schemas(), vec![proposal])
+            .unwrap();
+    }
 
     fn configured() -> (ToolRegistry, ToolPolicy) {
         let mut registry = ToolRegistry::default();
@@ -440,6 +561,11 @@ mod tests {
 
         let (registry, policy) = configured();
         let mut executor = FixtureExecutor::new();
+        let call = FixtureToolCall {
+            tool_id: FIXTURE_WRITE_TOOL.to_owned(),
+            input: "goal=done".to_owned(),
+        };
+        commit_fixture_write(&mut executor, &registry, &call);
         let nonce = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap()
@@ -449,10 +575,7 @@ mod tests {
             .execute_audited(
                 &registry,
                 &policy,
-                &FixtureToolCall {
-                    tool_id: FIXTURE_WRITE_TOOL.to_owned(),
-                    input: "goal=done".to_owned(),
-                },
+                &call,
                 &FixtureAuditContext {
                     audit_path: path.clone(),
                     run_id: "fixture-run-1".to_owned(),
@@ -536,6 +659,7 @@ mod tests {
             input: "goal=done".to_owned(),
         };
         let mut executor = FixtureExecutor::new();
+        commit_fixture_write(&mut executor, &registry, &call);
         let nonce = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap()
@@ -576,8 +700,10 @@ mod tests {
             std::env::temp_dir().join(format!("rocksoul-fixture-cancel-{nonce}.jsonl"));
         let control = InvocationControl::new(Duration::from_secs(5), 1);
         control.cancel();
+        let mut cancel_executor = FixtureExecutor::new();
+        commit_fixture_write(&mut cancel_executor, &registry, &call);
         assert!(
-            executor
+            cancel_executor
                 .execute_audited(
                     &registry,
                     &policy,
@@ -591,7 +717,7 @@ mod tests {
                 )
                 .is_err()
         );
-        assert_eq!(executor.state_len(), 0);
+        assert_eq!(cancel_executor.state_len(), 0);
         let cancel_events = ToolAuditStore::read(&cancel_path).unwrap();
         assert_eq!(
             cancel_events
@@ -615,6 +741,11 @@ mod tests {
 
         let (registry, policy) = configured();
         let mut executor = FixtureExecutor::new();
+        let call = FixtureToolCall {
+            tool_id: FIXTURE_WRITE_TOOL.to_owned(),
+            input: "goal=done".to_owned(),
+        };
+        commit_fixture_write(&mut executor, &registry, &call);
         let nonce = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap()
@@ -625,10 +756,7 @@ mod tests {
                 .execute_audited(
                     &registry,
                     &policy,
-                    &FixtureToolCall {
-                        tool_id: FIXTURE_WRITE_TOOL.to_owned(),
-                        input: "goal=done".to_owned(),
-                    },
+                    &call,
                     &FixtureAuditContext {
                         audit_path: path.clone(),
                         run_id: "fixture-budget".to_owned(),
@@ -818,5 +946,78 @@ mod tests {
                 .is_err()
         );
         assert_eq!(executor.state_len(), 0);
+    }
+
+    #[test]
+    fn audited_write_without_commitment_is_denied_with_content_free_reason() {
+        use std::time::{SystemTime, UNIX_EPOCH};
+
+        use crate::tool_audit::{ToolAuditKind, ToolAuditStore};
+
+        let (registry, policy) = configured();
+        let mut executor = FixtureExecutor::new();
+        let nonce = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let path = std::env::temp_dir().join(format!("rocksoul-fixture-gate-{nonce}.jsonl"));
+        let error = executor
+            .execute_audited(
+                &registry,
+                &policy,
+                &FixtureToolCall {
+                    tool_id: FIXTURE_WRITE_TOOL.to_owned(),
+                    input: "goal=done".to_owned(),
+                },
+                &FixtureAuditContext {
+                    audit_path: path.clone(),
+                    run_id: "fixture-no-commit".to_owned(),
+                    first_sequence: 1,
+                    control: InvocationControl::new(std::time::Duration::from_secs(5), 1),
+                },
+            )
+            .unwrap_err();
+        assert!(format!("{error:#}").contains("write_set_not_committed"));
+        let events = ToolAuditStore::read(&path).unwrap();
+        assert_eq!(events[1].kind, ToolAuditKind::AuthorizationDenied);
+        assert_eq!(
+            events[1].failure,
+            Some(crate::tool_audit::ToolFailureCategory::PolicyDenied)
+        );
+        assert_eq!(executor.state_len(), 0);
+        std::fs::remove_file(path).unwrap();
+    }
+
+    #[test]
+    fn untrusted_observation_closes_the_write_commitment_window() {
+        let (registry, policy) = configured();
+        let mut executor = FixtureExecutor::new();
+        // The raw fixture primitive produces an untrusted observation.
+        executor
+            .execute(
+                &registry,
+                &policy,
+                &FixtureToolCall {
+                    tool_id: FIXTURE_WRITE_TOOL.to_owned(),
+                    input: "goal=done".to_owned(),
+                },
+            )
+            .unwrap();
+        assert_eq!(executor.observations_seen(), 1);
+        let grounding =
+            RequestGrounding::from_user_request("fixture-later", "Set other to value").unwrap();
+        let proposal = WriteProposal {
+            tool_id: FIXTURE_WRITE_TOOL.to_owned(),
+            arguments: BTreeMap::from([
+                ("key".to_owned(), "other".to_owned()),
+                ("value".to_owned(), "value".to_owned()),
+            ]),
+        };
+        assert!(
+            executor
+                .commit_writes(&grounding, &registry.write_schemas(), vec![proposal])
+                .is_err()
+        );
+        assert!(!executor.is_write_committed());
     }
 }

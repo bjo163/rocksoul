@@ -4,6 +4,7 @@ mod commands;
 pub mod core;
 pub mod eval;
 pub mod fixture_runtime;
+pub mod ipc_transport;
 mod memory;
 mod memory_proposal;
 mod model;

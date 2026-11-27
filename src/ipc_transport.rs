@@ -1,0 +1,188 @@
+//! Private, anonymous local IPC transport for a future isolated worker.
+//!
+//! This module creates a dedicated socket pair with no public listener, no
+//! network endpoint, and no identity asserted by the peer. The child side is
+//! exposed only as inherited standard handles so a platform launcher can bind
+//! it to the OS-created process. It is a transport primitive, **not** an OS
+//! sandbox: it does not isolate CPU, memory, filesystem, or process capabilities.
+#[cfg(unix)]
+mod platform {
+    use std::{
+        os::{fd::OwnedFd, unix::net::UnixStream},
+        process::Stdio,
+        time::Duration,
+    };
+
+    use anyhow::{Context, Result};
+
+    use crate::worker_protocol::{WorkerFrame, read_frame, write_frame};
+
+    pub struct ParentEndpoint {
+        stream: UnixStream,
+    }
+
+    pub struct ChildEndpoints {
+        stdin: Stdio,
+        stdout: Stdio,
+    }
+
+    impl ChildEndpoints {
+        pub fn into_stdio(self) -> (Stdio, Stdio) {
+            (self.stdin, self.stdout)
+        }
+    }
+
+    /// Create a fresh anonymous pair. Neither endpoint is addressable by path or
+    /// port; only the owner of the child handle can reach the parent endpoint.
+    pub fn create_private_pair() -> Result<(ParentEndpoint, ChildEndpoints)> {
+        let (parent, child_read) =
+            UnixStream::pair().context("could not create IPC socket pair")?;
+        let child_write = child_read
+            .try_clone()
+            .context("could not clone the child IPC handle")?;
+        let pair = ChildEndpoints {
+            stdin: Stdio::from(OwnedFd::from(child_read)),
+            stdout: Stdio::from(OwnedFd::from(child_write)),
+        };
+        parent
+            .set_read_timeout(Some(Duration::from_secs(1)))
+            .context("could not set IPC read timeout")?;
+        Ok((ParentEndpoint { stream: parent }, pair))
+    }
+
+    /// Test-only pair whose two ends are both parent-style endpoints. Used to
+    /// exercise framing without spawning a process.
+    #[cfg(test)]
+    pub fn test_pair() -> Result<(ParentEndpoint, ParentEndpoint)> {
+        let (left, right) = UnixStream::pair().context("could not create test socket pair")?;
+        left.set_read_timeout(Some(Duration::from_millis(50)))?;
+        right.set_read_timeout(Some(Duration::from_millis(50)))?;
+        Ok((
+            ParentEndpoint { stream: left },
+            ParentEndpoint { stream: right },
+        ))
+    }
+
+    impl ParentEndpoint {
+        pub fn send(&mut self, frame: &WorkerFrame) -> Result<()> {
+            write_frame(&mut self.stream, frame)
+        }
+
+        pub fn receive(&mut self) -> Result<Option<WorkerFrame>> {
+            read_frame(&mut self.stream)
+        }
+
+        pub fn set_read_timeout(&self, timeout: Duration) -> Result<()> {
+            self.stream
+                .set_read_timeout(Some(timeout))
+                .context("could not set IPC read timeout")?;
+            Ok(())
+        }
+    }
+}
+
+#[cfg(not(unix))]
+mod platform {
+    use std::time::Duration;
+
+    use anyhow::{Result, bail};
+
+    use crate::worker_protocol::WorkerFrame;
+
+    pub struct ParentEndpoint {
+        _private: (),
+    }
+
+    pub struct ChildEndpoints {
+        _private: (),
+    }
+
+    pub fn create_private_pair() -> Result<(ParentEndpoint, ChildEndpoints)> {
+        bail!("private IPC transport is unavailable on this platform; refusing to start a worker")
+    }
+
+    impl ParentEndpoint {
+        pub fn send(&mut self, _frame: &WorkerFrame) -> Result<()> {
+            bail!("private IPC transport is unavailable on this platform")
+        }
+
+        pub fn receive(&mut self) -> Result<Option<WorkerFrame>> {
+            bail!("private IPC transport is unavailable on this platform")
+        }
+
+        pub fn set_read_timeout(&self, _timeout: Duration) -> Result<()> {
+            bail!("private IPC transport is unavailable on this platform")
+        }
+    }
+}
+
+#[cfg(all(test, unix))]
+pub use platform::test_pair;
+pub use platform::{ChildEndpoints, ParentEndpoint, create_private_pair};
+
+#[cfg(test)]
+mod tests {
+    use std::time::Duration;
+
+    #[cfg(unix)]
+    use super::test_pair;
+    use super::*;
+    #[cfg(unix)]
+    use crate::worker_protocol::{WORKER_PROTOCOL_VERSION, WorkerFrame, WorkerMessageKind};
+
+    #[cfg(unix)]
+    #[test]
+    fn anonymous_pair_round_trips_a_validated_frame() {
+        let (mut sender, mut receiver) = test_pair().unwrap();
+        let frame = WorkerFrame {
+            protocol_version: WORKER_PROTOCOL_VERSION,
+            run_id: "run-ipc".to_owned(),
+            request_id: "req-1".to_owned(),
+            sequence: 1,
+            kind: WorkerMessageKind::Execute,
+            deadline_unix_ms: 1_800_000_000_000,
+            payload: serde_json::json!({"tool":"fixture.state.read"}),
+        };
+        sender.send(&frame).unwrap();
+        assert_eq!(receiver.receive().unwrap(), Some(frame));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn separate_pairs_do_not_cross_talk() {
+        let (mut first_parent, mut first_peer) = test_pair().unwrap();
+        let (mut second_parent, _second_peer) = test_pair().unwrap();
+        let frame = WorkerFrame {
+            protocol_version: WORKER_PROTOCOL_VERSION,
+            run_id: "run-a".to_owned(),
+            request_id: "req-a".to_owned(),
+            sequence: 1,
+            kind: WorkerMessageKind::Execute,
+            deadline_unix_ms: 1_800_000_000_000,
+            payload: serde_json::json!({}),
+        };
+        first_parent.send(&frame).unwrap();
+        second_parent
+            .set_read_timeout(Duration::from_millis(10))
+            .unwrap();
+        assert!(second_parent.receive().is_err());
+        first_parent
+            .set_read_timeout(Duration::from_millis(10))
+            .unwrap();
+        assert_eq!(first_peer.receive().unwrap(), Some(frame));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn child_endpoint_is_convertible_to_inherited_stdio() {
+        let (_parent, child) = create_private_pair().unwrap();
+        let (stdin, stdout) = child.into_stdio();
+        let _ = (stdin, stdout);
+    }
+
+    #[cfg(not(unix))]
+    #[test]
+    fn transport_fails_closed_on_unsupported_platforms() {
+        assert!(create_private_pair().is_err());
+    }
+}

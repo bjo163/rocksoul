@@ -404,11 +404,11 @@ Next safe sequence:
 Never enable production tool dispatch from the protocol contract alone. Issue #13 remains the controlling acceptance gate.
 
 
-## Local contract foundation — 2026-11-27 (Issues #92, #75, #71, #13)
+## Contract enforcement increment — 2026-11-27 (Issues #92, #75, #71, #13)
 
-Work exists only in a local unpushed task branch because the authenticated GitHub account has no write access. Before continuing, fetch `origin/main` and port only still-needed changes onto a fresh branch; do not start from a stale local branch.
+Before continuing, fetch `origin/main` and port only still-needed changes onto a fresh branch from that base; do not start from a stale local branch.
 
-Read `src/request_authorization.rs`, `src/authorization_fixtures.rs`, `src/tool_registry.rs`, `src/sandbox.rs`, `src/worker_supervisor.rs` and the two new suites in `src/eval.rs`. The authorization side now has explicit role schemas, single-use confirmation grants and content-free reason codes; adversarial injection fixtures prove that observations cannot create authority. The worker side is a fail-closed contract only: no platform backend is enabled, so `WorkerSupervisor::start` always refuses.
+Read `src/request_authorization.rs`, `src/authorization_fixtures.rs`, `src/tool_registry.rs`, `src/fixture_runtime.rs`, `src/sandbox.rs`, `src/worker_supervisor.rs`, `src/ipc_transport.rs` and the two contract suites in `src/eval.rs`. The authorization side now has explicit role schemas, single-use confirmation grants, content-free reason codes and a kernel-owned gate that closes the write window at the first untrusted observation. The worker side binds executable digest and frame deadline to the policy, enforces output ceilings, rejects unobserved exits, and offers an anonymous socket-pair transport; no platform isolation backend is enabled, so `WorkerSupervisor::start` still always refuses.
 
 Next gates, in order:
 1. Run exact-head Linux and Windows CI on a reviewed branch before treating any of this as validated.

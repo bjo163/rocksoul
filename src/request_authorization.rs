@@ -6,7 +6,7 @@
 //! ungrounded values rather than guessing or silently accepting model-written authorization.
 use std::collections::{BTreeMap, BTreeSet};
 
-use anyhow::{Result, ensure};
+use anyhow::{Context, Result, ensure};
 use sha2::{Digest, Sha256};
 
 use crate::tool_audit::ToolFailureCategory;
@@ -280,6 +280,9 @@ pub enum AuthorizationReason {
     ConfirmationMismatch,
     ConfirmationReused,
     InvalidProposal,
+    CommitAfterObservation,
+    WriteSetNotCommitted,
+    AlreadyCommitted,
 }
 
 impl AuthorizationReason {
@@ -297,6 +300,9 @@ impl AuthorizationReason {
             Self::ConfirmationMismatch => "confirmation_mismatch",
             Self::ConfirmationReused => "confirmation_reused",
             Self::InvalidProposal => "invalid_proposal",
+            Self::CommitAfterObservation => "commit_after_observation",
+            Self::WriteSetNotCommitted => "write_set_not_committed",
+            Self::AlreadyCommitted => "already_committed",
         }
     }
 
@@ -311,6 +317,9 @@ impl AuthorizationReason {
                 Some(ToolFailureCategory::PolicyDenied)
             }
             Self::UnclassifiedArgument => Some(ToolFailureCategory::UnclassifiedArgument),
+            Self::CommitAfterObservation | Self::WriteSetNotCommitted | Self::AlreadyCommitted => {
+                Some(ToolFailureCategory::PolicyDenied)
+            }
             Self::UngroundedAuthority => Some(ToolFailureCategory::UngroundedAuthority),
             Self::MissingRequiredArgument | Self::InvalidProposal => {
                 Some(ToolFailureCategory::InvalidInput)
@@ -557,6 +566,101 @@ impl WriteExecutionCursor {
             .operations
             .len()
             .saturating_sub(self.next_index)
+    }
+}
+
+/// Kernel-owned gate that makes "commit before the first untrusted observation"
+/// an enforced invariant instead of a convention. Once any tool observation is
+/// recorded, no new write set can be committed; only the frozen set may execute.
+#[derive(Debug, Default)]
+pub struct WriteCommitmentGate {
+    cursor: Option<WriteExecutionCursor>,
+    observations_seen: u64,
+}
+
+impl WriteCommitmentGate {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn observations_seen(&self) -> u64 {
+        self.observations_seen
+    }
+
+    pub fn is_committed(&self) -> bool {
+        self.cursor.is_some()
+    }
+
+    pub fn is_complete(&self) -> bool {
+        self.cursor
+            .as_ref()
+            .is_some_and(WriteExecutionCursor::is_complete)
+    }
+
+    /// The observation source calls this whenever an untrusted result enters the run.
+    pub fn note_observation(&mut self) -> Result<()> {
+        self.observations_seen = self
+            .observations_seen
+            .checked_add(1)
+            .context("observation counter exhausted")?;
+        Ok(())
+    }
+
+    pub fn commit(
+        &mut self,
+        grounding: &RequestGrounding,
+        schemas: &BTreeMap<String, ToolWriteSchema>,
+        proposals: Vec<WriteProposal>,
+    ) -> std::result::Result<(), AuthorizationReason> {
+        if self.observations_seen > 0 {
+            return Err(AuthorizationReason::CommitAfterObservation);
+        }
+        if self.cursor.is_some() {
+            return Err(AuthorizationReason::AlreadyCommitted);
+        }
+        let committed = CommittedWriteSet::commit_with_reason(grounding, schemas, proposals)?;
+        self.cursor = Some(committed.execution_cursor());
+        Ok(())
+    }
+
+    /// Commit including explicit, task-bound confirmation grants.
+    pub fn commit_with_confirmations(
+        &mut self,
+        grounding: &RequestGrounding,
+        schemas: &BTreeMap<String, ToolWriteSchema>,
+        proposals: Vec<WriteProposal>,
+        confirmations: &mut [ConfirmationGrant],
+    ) -> Result<()> {
+        ensure!(
+            self.observations_seen == 0,
+            "write set cannot be committed after an untrusted observation ({})",
+            AuthorizationReason::CommitAfterObservation.as_str()
+        );
+        ensure!(
+            self.cursor.is_none(),
+            "a write set is already committed for this run"
+        );
+        let committed = CommittedWriteSet::commit_with_confirmations(
+            grounding,
+            schemas,
+            proposals,
+            confirmations,
+        )?;
+        self.cursor = Some(committed.execution_cursor());
+        Ok(())
+    }
+
+    /// Authorize the next write in the frozen set. A missing commitment is a
+    /// denial, never an implicit acceptance.
+    pub fn authorize_next(&mut self, candidate: &WriteProposal) -> AuthorizationDecision {
+        let Some(cursor) = self.cursor.as_mut() else {
+            return AuthorizationDecision {
+                allowed: false,
+                reason: AuthorizationReason::WriteSetNotCommitted,
+                operation_index: None,
+            };
+        };
+        cursor.authorize_next_decision(candidate)
     }
 }
 
@@ -849,6 +953,44 @@ mod tests {
                 .authorize_next_decision(&proposal("alex@example.com"))
                 .reason,
             AuthorizationReason::WriteSetExhausted
+        );
+    }
+
+    #[test]
+    fn gate_commits_only_before_the_first_observation() {
+        let grounding =
+            RequestGrounding::from_user_request("task-1", "Send to alex@example.com").unwrap();
+        let schemas = BTreeMap::from([("mail.send".to_owned(), schema())]);
+        let mut gate = WriteCommitmentGate::new();
+        assert_eq!(
+            gate.authorize_next(&proposal("alex@example.com")).reason,
+            AuthorizationReason::WriteSetNotCommitted
+        );
+        assert_eq!(
+            gate.commit(&grounding, &schemas, vec![proposal("alex@example.com")]),
+            Ok(())
+        );
+        assert_eq!(
+            gate.commit(&grounding, &schemas, vec![proposal("alex@example.com")]),
+            Err(AuthorizationReason::AlreadyCommitted)
+        );
+        assert_eq!(
+            gate.authorize_next(&proposal("attacker@example.com"))
+                .reason,
+            AuthorizationReason::WriteMutation
+        );
+        assert!(gate.authorize_next(&proposal("alex@example.com")).allowed);
+        assert!(gate.is_complete());
+        gate.note_observation().unwrap();
+        let mut second = WriteCommitmentGate::new();
+        second.note_observation().unwrap();
+        assert_eq!(
+            second.commit(&grounding, &schemas, vec![proposal("alex@example.com")]),
+            Err(AuthorizationReason::CommitAfterObservation)
+        );
+        assert_eq!(
+            AuthorizationReason::CommitAfterObservation.audit_failure(),
+            Some(ToolFailureCategory::PolicyDenied)
         );
     }
 }

@@ -319,18 +319,19 @@ It does **not** provide authenticated IPC, process spawning/supervision, OS isol
 **Next:** define and implement the parent supervisor with authenticated local IPC, bounded handshake/heartbeat, deadline/cancel enforcement, process termination and OS-observed reaping. Then implement Linux and Windows isolation backends and adversarial kill/reap tests. Keep Issue #13 open until its independent verifier and held-out evaluation gates pass.
 
 
-## Local contract foundation for Issues #92, #75, #71 and #13 (2026-11-27, unpushed)
+## Contract enforcement increment for Issues #92, #75, #71 and #13 (2026-11-27)
 
-**Status:** implemented locally on a task branch from `main`; exact-head Linux/Windows CI has not run and no remote branch/PR was created because the available GitHub account is read-only.
+**Status:** implemented on a task branch from `main`; exact-head Linux/Windows CI has not yet run for these commits.
 
 Delivered:
-- `src/request_authorization.rs`: content-free `AuthorizationReason` codes mapped to the #67 audit failure categories; task-bound, request-bound, operation-bound single-use `ConfirmationGrant`; `commit_with_reason` and `commit_with_confirmations`; decision-returning execution cursor.
-- `src/tool_registry.rs` / `src/fixture_runtime.rs`: explicit write-argument role schemas are mandatory for mutating descriptors and forbidden for read-only descriptors; registry exposes only declared schemas.
+- `src/request_authorization.rs`: content-free `AuthorizationReason` codes mapped to the #67 audit failure categories; task-bound, request-bound, operation-bound single-use `ConfirmationGrant`; `commit_with_reason` and `commit_with_confirmations`; decision-returning execution cursor; kernel-owned `WriteCommitmentGate` that refuses new commitments after the first observation.
+- `src/tool_registry.rs` / `src/fixture_runtime.rs`: explicit write-argument role schemas are mandatory for mutating descriptors and forbidden for read-only descriptors; audited mutating calls must resolve to a committed write and late/missing commitments are denied with content-free audit reasons.
 - `src/authorization_fixtures.rs`: ten adversarial fixtures covering email, HTML, file, API-response and tool-description injections of recipients, amounts, accounts, URLs, channels and object IDs, plus a benign control. Utility reporting keeps benign completion, false denials, confirmation rate and unmeasured token overhead separate.
 - `src/sandbox.rs`: explicit capability requirements for Linux namespaces/seccomp/cgroups and Windows AppContainer/Job Object, policy validation/digest, and a fail-closed backend that refuses every prepare.
-- `src/worker_supervisor.rs`: parent-owned lifecycle, run policy validation, byte/request budgets, cancel/terminate/reap operations, Drop kill/reap, and a launcher that refuses unsandboxed execution. No process is spawned by this build.
-- `src/eval.rs` / CLI: offline `rocksoul.authorization-contract` v0.1.0 and `rocksoul.worker-supervisor-contract` v0.1.0 suites, each with its own persisted report; benchmark manifest registers both.
+- `src/worker_supervisor.rs`: parent-owned lifecycle, run policy validation, executable-digest and frame-deadline binding, byte/request/output budgets, parent replay guard, OS-observed exit requirement, cancel/terminate/reap operations, Drop kill/reap, and a launcher that refuses unsandboxed execution. No process is spawned by this build.
+- `src/ipc_transport.rs`: anonymous socket-pair transport with inherited stdio handles on Unix and fail-closed refusal elsewhere; framing is the bounded `worker_protocol`. This is a transport primitive, not isolation.
+- `src/eval.rs` / CLI: offline `rocksoul.authorization-contract` v0.2.0 and `rocksoul.worker-supervisor-contract` v0.2.0 suites, each with its own persisted report; benchmark manifest registers both.
 
-Local validation: `cargo fmt --all`, `cargo clippy --locked --all-targets -- -D warnings`, `cargo test --locked` (208 unit/integration tests), both new `eval run` suites. Rust 1.85 MSRV and `Cargo.lock` unchanged; no dependency added.
+Local validation: `cargo fmt --all`, `cargo clippy --locked --all-targets -- -D warnings`, `cargo test --locked` (219 unit/integration tests), all four `eval run` suites, release build. Rust 1.85 MSRV and `Cargo.lock` unchanged; no dependency added.
 
-Still not implemented: real OS isolation backends, authenticated OS-handle IPC transport, process-tree kill/reaping proven by OS observation, WASM runner, independent verifier, model trajectory runner, trusted evaluator, and held-out suites. Production tool dispatch stays disabled. These contract suites are not acceptance evidence for #71/#75 platform gates.
+Still not implemented: real OS isolation backends, binding the transport to a real spawned child's OS handles, process-tree kill/reaping proven by OS observation, WASM runner, independent verifier, model trajectory runner, trusted evaluator, and held-out suites. Production tool dispatch stays disabled. These contract suites are not acceptance evidence for #71/#75 platform gates.

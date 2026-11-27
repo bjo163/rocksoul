@@ -6,12 +6,15 @@
 //! process. The process traits exist so a future Linux/Windows backend can be
 //! added without weakening the parent-owned contract.
 use std::{
+    fs,
+    io::Read,
     path::PathBuf,
     time::{Duration, Instant},
 };
 
 use anyhow::{Context, Result, bail, ensure};
 use serde_json::json;
+use sha2::{Digest, Sha256};
 
 use crate::{
     sandbox::{FailClosedSandbox, PreparedSandbox, SandboxBackend, SandboxPolicy},
@@ -23,6 +26,7 @@ use crate::{
 pub const MAX_WORKER_IPC_BYTES: usize = 1024 * 1024;
 pub const MAX_WORKER_OUTPUT_BYTES: usize = 1024 * 1024;
 pub const MAX_WORKER_REQUESTS: u64 = 1_024;
+pub const MAX_WORKER_EXECUTABLE_BYTES: u64 = 64 * 1024 * 1024;
 const MAX_RUN_ID_BYTES: usize = 96;
 
 #[derive(Clone, Debug)]
@@ -94,6 +98,47 @@ impl WorkerRunPolicy {
         ensure!(!remaining.is_zero(), "worker deadline has expired");
         Ok(remaining)
     }
+
+    /// Every frame must carry the exact policy deadline; a worker cannot extend
+    /// its own budget by asserting a later timestamp.
+    pub fn verify_frame_deadline(&self, frame: &WorkerFrame) -> Result<()> {
+        ensure!(
+            frame.deadline_unix_ms == self.deadline_unix_ms,
+            "frame deadline does not match the immutable run policy"
+        );
+        Ok(())
+    }
+
+    /// Verify the exact executable bytes before launch. A path or version string
+    /// is not identity; a mismatch refuses the run. The file is read with a hard
+    /// size ceiling so a hostile path cannot exhaust parent memory.
+    pub fn verify_executable(&self) -> Result<()> {
+        let metadata = fs::metadata(&self.worker_executable)
+            .context("could not inspect the worker executable")?;
+        ensure!(
+            metadata.is_file() && metadata.len() <= MAX_WORKER_EXECUTABLE_BYTES,
+            "worker executable is not a bounded regular file"
+        );
+        let mut file = fs::File::open(&self.worker_executable)
+            .context("could not open the worker executable")?;
+        let mut digest = Sha256::new();
+        let mut buffer = [0_u8; 64 * 1024];
+        loop {
+            let read = file
+                .read(&mut buffer)
+                .context("could not read worker bytes")?;
+            if read == 0 {
+                break;
+            }
+            digest.update(&buffer[..read]);
+        }
+        let observed = format!("{:x}", digest.finalize());
+        ensure!(
+            observed == self.worker_sha256.to_ascii_lowercase(),
+            "worker executable digest does not match the run policy"
+        );
+        Ok(())
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -105,6 +150,9 @@ pub enum WorkerTerminationReason {
     ParentShutdown,
     WorkerFailed,
     IsolationUnavailable,
+    OutputBudgetExceeded,
+    UnobservedExit,
+    DeadlineMismatch,
 }
 
 impl WorkerTerminationReason {
@@ -117,6 +165,9 @@ impl WorkerTerminationReason {
             Self::ParentShutdown => "parent_shutdown",
             Self::WorkerFailed => "worker_failed",
             Self::IsolationUnavailable => "isolation_unavailable",
+            Self::OutputBudgetExceeded => "output_budget_exceeded",
+            Self::UnobservedExit => "unobserved_exit",
+            Self::DeadlineMismatch => "deadline_mismatch",
         }
     }
 }
@@ -191,6 +242,7 @@ pub struct WorkerSupervisor {
     lifecycle: WorkerLifecycle,
     ipc_bytes: usize,
     requests: u64,
+    parent_sequence: u64,
     termination_reason: Option<WorkerTerminationReason>,
     exit: Option<WorkerExit>,
 }
@@ -217,6 +269,7 @@ impl WorkerSupervisor {
             "prepared sandbox does not satisfy the run policy"
         );
         policy.validate(Instant::now())?;
+        policy.verify_executable()?;
         let process = launcher.launch(&policy, prepared)?;
         let session = WorkerSession::new(policy.run_id.clone())?;
         Ok(Self {
@@ -226,6 +279,7 @@ impl WorkerSupervisor {
             lifecycle: WorkerLifecycle::Starting,
             ipc_bytes: 0,
             requests: 0,
+            parent_sequence: 0,
             termination_reason: None,
             exit: None,
         })
@@ -246,6 +300,7 @@ impl WorkerSupervisor {
     pub fn send(&mut self, frame: &WorkerFrame) -> Result<()> {
         self.ensure_live()?;
         self.policy.remaining(Instant::now())?;
+        self.check_frame_deadline(frame)?;
         self.session.validate_for_worker(frame)?;
         let encoded = serde_json::to_vec(frame).context("could not encode worker frame")?;
         let frame_bytes = encoded
@@ -260,9 +315,17 @@ impl WorkerSupervisor {
             self.requests < self.policy.max_requests,
             "worker request budget exhausted"
         );
-        self.process.send_frame(frame)?;
+        if let Err(error) = self.process.send_frame(frame) {
+            self.mark_failed(WorkerTerminationReason::WorkerFailed);
+            return Err(error).context("could not deliver frame to worker");
+        }
         self.ipc_bytes += frame_bytes;
         self.requests += 1;
+        self.parent_sequence = self
+            .parent_sequence
+            .checked_add(1)
+            .context("parent sequence exhausted")?;
+        self.enforce_output_budgets()?;
         match (self.lifecycle, frame.kind) {
             (WorkerLifecycle::Ready, WorkerMessageKind::Execute) => {
                 self.transition(WorkerLifecycle::Running)?;
@@ -279,9 +342,14 @@ impl WorkerSupervisor {
         self.ensure_live()?;
         let remaining = self.policy.remaining(Instant::now())?;
         let frame = self.process.receive_frame(Instant::now() + remaining)?;
+        self.enforce_output_budgets()?;
         let Some(frame) = frame else {
             return Ok(None);
         };
+        if let Err(error) = self.check_frame_deadline(&frame) {
+            self.shutdown(WorkerTerminationReason::DeadlineMismatch)?;
+            return Err(error);
+        }
         if let Err(error) = self.session.accept_from_worker(&frame) {
             self.mark_failed(WorkerTerminationReason::ProtocolViolation);
             return Err(error);
@@ -375,7 +443,10 @@ impl WorkerSupervisor {
             protocol_version: WORKER_PROTOCOL_VERSION,
             run_id: self.policy.run_id.clone(),
             request_id: request_id.to_owned(),
-            sequence: 1,
+            sequence: self
+                .parent_sequence
+                .checked_add(1)
+                .context("parent sequence exhausted")?,
             kind,
             deadline_unix_ms: self.policy.deadline_unix_ms,
             payload: json!({}),
@@ -435,11 +506,32 @@ impl WorkerSupervisor {
         }
     }
 
+    fn check_frame_deadline(&self, frame: &WorkerFrame) -> Result<()> {
+        self.policy.verify_frame_deadline(frame)
+    }
+
+    /// A pipe that is not drained can deadlock a child and let its output grow
+    /// without bound. The platform backend reports observed byte counts; the
+    /// parent terminates and reaps the worker when either ceiling is crossed.
+    fn enforce_output_budgets(&mut self) -> Result<()> {
+        let stdout = self.process.stdout_bytes();
+        let stderr = self.process.stderr_bytes();
+        if stdout > self.policy.max_stdout_bytes || stderr > self.policy.max_stderr_bytes {
+            let _ = self.shutdown(WorkerTerminationReason::OutputBudgetExceeded);
+            bail!("worker output budget exceeded");
+        }
+        Ok(())
+    }
+
     fn finish(
         &mut self,
         mut exit: WorkerExit,
         reason: WorkerTerminationReason,
     ) -> Result<WorkerExit> {
+        if exit.code.is_none() && exit.signal.is_none() {
+            self.mark_failed(WorkerTerminationReason::UnobservedExit);
+            bail!("worker exit has no OS-observed code or signal; run is indeterminate");
+        }
         exit.timed_out = matches!(reason, WorkerTerminationReason::DeadlineExceeded);
         self.termination_reason = Some(reason);
         self.lifecycle = WorkerLifecycle::Reaped;
@@ -454,10 +546,18 @@ impl Drop for WorkerSupervisor {
             return;
         }
         let _ = self.process.terminate_tree();
-        let _ = self
+        let observed = self
             .process
-            .wait_reap(Instant::now() + Duration::from_secs(2));
-        self.lifecycle = WorkerLifecycle::Reaped;
+            .wait_reap(Instant::now() + Duration::from_secs(2))
+            .is_ok_and(|exit| exit.code.is_some() || exit.signal.is_some());
+        if observed {
+            self.lifecycle = WorkerLifecycle::Reaped;
+            self.termination_reason
+                .get_or_insert(WorkerTerminationReason::ParentShutdown);
+        } else {
+            self.lifecycle = WorkerLifecycle::Failed;
+            self.termination_reason = Some(WorkerTerminationReason::UnobservedExit);
+        }
     }
 }
 
@@ -465,7 +565,11 @@ impl Drop for WorkerSupervisor {
 mod tests {
     use std::{
         collections::VecDeque,
-        sync::{Arc, Mutex},
+        sync::{
+            Arc, Mutex,
+            atomic::{AtomicU64, Ordering},
+        },
+        time::{SystemTime, UNIX_EPOCH},
     };
 
     use super::*;
@@ -479,6 +583,9 @@ mod tests {
         terminate_calls: usize,
         reap_calls: usize,
         ignore_terminate: bool,
+        stdout_bytes: usize,
+        stderr_bytes: usize,
+        unobserved_exit: bool,
     }
 
     struct FakeProcess {
@@ -502,7 +609,7 @@ mod tests {
         fn terminate_tree(&mut self) -> Result<()> {
             let mut state = self.state.lock().unwrap();
             state.terminate_calls += 1;
-            if !state.ignore_terminate {
+            if !state.ignore_terminate && !state.unobserved_exit {
                 state.exit = Some(WorkerExit::observed(None, Some(9), false));
             }
             Ok(())
@@ -511,6 +618,9 @@ mod tests {
         fn wait_reap(&mut self, _deadline: Instant) -> Result<WorkerExit> {
             let mut state = self.state.lock().unwrap();
             state.reap_calls += 1;
+            if state.unobserved_exit {
+                return Ok(WorkerExit::observed(None, None, false));
+            }
             Ok(state
                 .exit
                 .clone()
@@ -518,11 +628,11 @@ mod tests {
         }
 
         fn stdout_bytes(&self) -> usize {
-            0
+            self.state.lock().unwrap().stdout_bytes
         }
 
         fn stderr_bytes(&self) -> usize {
-            0
+            self.state.lock().unwrap().stderr_bytes
         }
     }
 
@@ -542,16 +652,26 @@ mod tests {
         }
     }
 
+    static NONCE: AtomicU64 = AtomicU64::new(0);
+
     fn policy(deadline: Instant) -> WorkerRunPolicy {
         let scratch = std::env::temp_dir().join("rocksoul-worker-test");
         let sandbox = match SandboxPlatform::current() {
             SandboxPlatform::Windows => SandboxPolicy::windows_default(scratch),
             _ => SandboxPolicy::linux_default(scratch),
         };
+        let nonce = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+            ^ u128::from(NONCE.fetch_add(1, Ordering::Relaxed));
+        let executable = std::env::temp_dir().join(format!("rocksoul-worker-fixture-{nonce:x}"));
+        let bytes = b"rocksoul-worker-fixture";
+        fs::write(&executable, bytes).unwrap();
         WorkerRunPolicy {
             run_id: "run-1".to_owned(),
-            worker_executable: PathBuf::from("/tmp/rocksoul-worker"),
-            worker_sha256: "a".repeat(64),
+            worker_executable: executable,
+            worker_sha256: format!("{:x}", Sha256::digest(bytes)),
             deadline,
             deadline_unix_ms: 1_800_000_000_000,
             max_ipc_bytes: 64 * 1024,
@@ -730,5 +850,104 @@ mod tests {
                 .is_err()
         );
         assert!(state.lock().unwrap().sent.is_empty());
+    }
+
+    #[test]
+    fn executable_hash_is_verified_before_launch() {
+        let state = Arc::new(Mutex::new(FakeState::default()));
+        let mut mismatched = policy(Instant::now() + Duration::from_secs(30));
+        mismatched.worker_sha256 = "0".repeat(64);
+        let prepared = prepared(&mismatched);
+        let launcher = FakeLauncher { state };
+        assert!(WorkerSupervisor::start_with_launcher(mismatched, &prepared, &launcher).is_err());
+    }
+
+    #[test]
+    fn frame_deadline_must_match_the_immutable_run_policy() {
+        let state = Arc::new(Mutex::new(FakeState::default()));
+        let mut tampered = frame(WorkerMessageKind::Execute, 1, "tampered");
+        tampered.deadline_unix_ms += 1;
+        let mut sending_supervisor = supervisor(
+            Arc::clone(&state),
+            policy(Instant::now() + Duration::from_secs(30)),
+        );
+        assert!(sending_supervisor.send(&tampered).is_err());
+        assert!(state.lock().unwrap().sent.is_empty());
+
+        let state = Arc::new(Mutex::new(FakeState::default()));
+        state.lock().unwrap().incoming.push_back(tampered.clone());
+        let mut receiving_supervisor = supervisor(
+            Arc::clone(&state),
+            policy(Instant::now() + Duration::from_secs(30)),
+        );
+        assert!(receiving_supervisor.receive().is_err());
+        assert_eq!(
+            receiving_supervisor.termination_reason(),
+            Some(WorkerTerminationReason::DeadlineMismatch)
+        );
+    }
+
+    #[test]
+    fn output_budget_exceeded_terminates_and_reaps() {
+        let state = Arc::new(Mutex::new(FakeState::default()));
+        state.lock().unwrap().stdout_bytes = 65 * 1024;
+        let mut supervisor = supervisor(
+            Arc::clone(&state),
+            policy(Instant::now() + Duration::from_secs(30)),
+        );
+        assert!(
+            supervisor
+                .send(&frame(WorkerMessageKind::Execute, 1, "execute"))
+                .is_err()
+        );
+        assert_eq!(supervisor.lifecycle(), WorkerLifecycle::Reaped);
+        assert_eq!(
+            supervisor.termination_reason(),
+            Some(WorkerTerminationReason::OutputBudgetExceeded)
+        );
+        let state = state.lock().unwrap();
+        assert_eq!(state.terminate_calls, 1);
+        assert_eq!(state.reap_calls, 1);
+    }
+
+    #[test]
+    fn unobserved_exit_is_indeterminate_not_success() {
+        let state = Arc::new(Mutex::new(FakeState::default()));
+        state.lock().unwrap().unobserved_exit = true;
+        let mut supervisor = supervisor(
+            Arc::clone(&state),
+            policy(Instant::now() + Duration::from_secs(30)),
+        );
+        assert!(
+            supervisor
+                .shutdown(WorkerTerminationReason::ParentShutdown)
+                .is_err()
+        );
+        assert_eq!(supervisor.lifecycle(), WorkerLifecycle::Failed);
+        assert_eq!(
+            supervisor.termination_reason(),
+            Some(WorkerTerminationReason::UnobservedExit)
+        );
+        assert!(supervisor.exit().is_none());
+    }
+
+    #[test]
+    fn parent_sequence_advances_for_control_frames() {
+        let state = Arc::new(Mutex::new(FakeState::default()));
+        let mut supervisor = supervisor(
+            Arc::clone(&state),
+            policy(Instant::now() + Duration::from_secs(30)),
+        );
+        supervisor
+            .send(&frame(WorkerMessageKind::Execute, 1, "execute"))
+            .unwrap();
+        let cancel = supervisor
+            .control_frame(WorkerMessageKind::Cancel, "cancel")
+            .unwrap();
+        assert_eq!(cancel.sequence, 2);
+        supervisor.send(&cancel).unwrap();
+        let state = state.lock().unwrap();
+        assert_eq!(state.sent.len(), 2);
+        assert_ne!(state.sent[0].sequence, state.sent[1].sequence);
     }
 }
