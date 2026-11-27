@@ -111,7 +111,7 @@ The next engineering work is Issue #13's reproducible technical evaluation harne
 
 ## Stage 5 — Evaluation and isolated evolution
 
-- [x] Offline deterministic Core Integrity v1.3.0 suite and JSON report.
+- [x] Offline deterministic Core Integrity v1.4.0 suite and JSON report, including enforced-threshold and observed-state-over-claimed-history checks.
 - [x] Versioned benchmark manifest registers five implemented offline suites (Core Integrity, Memory Retrieval, Agent Runtime Fixtures, Authorization Contract v0.3.0, Worker Supervisor Contract v0.4.0) and keeps external suites explicitly as candidates; a Rust consistency test checks the RID registry counts and suite statuses.
 - [x] 38 adversarial authorization fixtures, structured safety/utility metrics, `eval list --json`, `eval latest <suite>`, and both contract suites wired into Linux CI and Windows portable smoke tests.
 - [x] Define a typed, bounded agent-trajectory evidence contract with independent-verifier and safety-veto validation (schema foundation; not an executable suite).

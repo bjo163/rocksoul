@@ -13,3 +13,11 @@ root = "."
 [evolution]
 enabled = false
 automatic_promotion = false
+
+# Reserved for a future reviewed OS isolation backend. No backend is enabled;
+# a missing, malformed, or unsupported policy always fails closed.
+# [sandbox]
+# backend = "linux-namespaces"
+# scratch_root = "./workspace/sandbox"
+# allow_network = false
+# read_only_root = true

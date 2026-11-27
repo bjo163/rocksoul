@@ -13,7 +13,7 @@
   "suites": [
     {
       "id": "rocksoul.core-integrity",
-      "version": "1.3.0",
+      "version": "1.4.0",
       "status": "implemented",
       "execution": "offline_deterministic_ci",
       "dataset": "none",

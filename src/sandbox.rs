@@ -9,7 +9,7 @@
 //! an acceptable fallback for untrusted tool execution.
 use std::path::PathBuf;
 
-use anyhow::{Result, bail, ensure};
+use anyhow::{Context, Result, bail, ensure};
 use sha2::{Digest, Sha256};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -297,6 +297,76 @@ impl SandboxBackend for FailClosedSandbox {
     }
 }
 
+/// Parse an optional, review-gated `[sandbox]` policy section. This is a
+/// configuration contract only: no backend is enabled by parsing it, and a
+/// missing or malformed policy always fails closed.
+pub fn parse_sandbox_policy(text: &str) -> Result<SandboxPolicy> {
+    let mut in_section = false;
+    let mut backend = None;
+    let mut scratch_root = None;
+    let mut allow_network = None;
+    let mut read_only_root = None;
+
+    for (index, raw) in text.lines().enumerate() {
+        let line = raw.trim();
+        if line.is_empty() || line.starts_with('#') {
+            continue;
+        }
+        if line.starts_with('[') {
+            in_section = line == "[sandbox]";
+            continue;
+        }
+        if !in_section {
+            continue;
+        }
+        let (key, value) = line
+            .split_once('=')
+            .with_context(|| format!("invalid sandbox policy line {}", index + 1))?;
+        let key = key.trim();
+        let value = value.trim();
+        let slot = match key {
+            "backend" => &mut backend,
+            "scratch_root" => &mut scratch_root,
+            "allow_network" => &mut allow_network,
+            "read_only_root" => &mut read_only_root,
+            _ => bail!("unknown sandbox policy key: {key}"),
+        };
+        ensure!(slot.is_none(), "duplicate sandbox policy key: {key}");
+        *slot = Some(value.to_owned());
+    }
+
+    let backend = match backend.as_deref() {
+        Some("linux-namespaces") => IsolationBackend::LinuxNamespaces,
+        Some("windows-appcontainer") => IsolationBackend::WindowsAppContainer,
+        Some(other) => bail!("unsupported sandbox backend: {other}"),
+        None => bail!("sandbox policy requires an explicit backend"),
+    };
+    let scratch_root =
+        PathBuf::from(scratch_root.context("sandbox policy requires an explicit scratch_root")?);
+    let allow_network = parse_bool(allow_network.as_deref(), "allow_network")?;
+    let read_only_root = parse_bool(read_only_root.as_deref(), "read_only_root")?;
+    let policy = match backend {
+        IsolationBackend::LinuxNamespaces => SandboxPolicy::linux_default(scratch_root),
+        IsolationBackend::WindowsAppContainer => SandboxPolicy::windows_default(scratch_root),
+    };
+    let policy = SandboxPolicy {
+        allow_network,
+        read_only_root,
+        ..policy
+    };
+    policy.validate()?;
+    Ok(policy)
+}
+
+fn parse_bool(value: Option<&str>, label: &str) -> Result<bool> {
+    match value {
+        Some("true") => Ok(true),
+        Some("false") => Ok(false),
+        Some(other) => bail!("{label} must be true or false, got {other}"),
+        None => bail!("sandbox policy requires an explicit {label}"),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -356,6 +426,33 @@ mod tests {
         assert!(missing.contains(&"seccomp"));
         assert!(missing.contains(&"cgroup_v2"));
         assert!(missing.contains(&"no_new_privs"));
+    }
+
+    #[test]
+    fn sandbox_policy_config_is_strict_and_fails_closed() {
+        let scratch = std::env::temp_dir()
+            .join("rocksoul-sandbox-config")
+            .display()
+            .to_string();
+        let backend = if SandboxPlatform::current() == SandboxPlatform::Windows {
+            "windows-appcontainer"
+        } else {
+            "linux-namespaces"
+        };
+        let valid = format!(
+            "[sandbox]\nbackend = {backend}\nscratch_root = \"{scratch}\"\nallow_network = false\nread_only_root = true\n"
+        );
+        // Quoted values are not part of the minimal grammar; use raw paths.
+        let valid = valid.replace('"', "");
+        assert!(parse_sandbox_policy(&valid).is_ok());
+        let network = valid.replace("allow_network = false", "allow_network = true");
+        assert!(parse_sandbox_policy(&network).is_err());
+        let unknown = valid.replace("read_only_root", "unexpected_key");
+        assert!(parse_sandbox_policy(&unknown).is_err());
+        let duplicate = format!("{valid}allow_network = false\n");
+        assert!(parse_sandbox_policy(&duplicate).is_err());
+        let missing_backend = valid.replace(&format!("backend = {backend}\n"), "");
+        assert!(parse_sandbox_policy(&missing_backend).is_err());
     }
 
     #[test]
