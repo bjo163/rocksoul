@@ -46,6 +46,7 @@ The current seed runtime includes:
 - **Core Integrity evaluation** — deterministic offline checks for runtime invariants.
 - **Request-grounded write authorization** — explicit schema roles, a kernel-owned gate that freezes the write set before the first untrusted observation, task-bound single-use confirmation, and content-free denial reason codes. Adversarial fixtures cover email, HTML, file, API-response and tool-description injections.
 - **Fail-closed worker boundary contract** — parent-owned supervisor/sandbox policy, executable-digest and frame-deadline binding, output budgets, OS-observed exit requirements, authenticated anonymous socket-pair transport, direction/replay checks and termination semantics. No OS isolation backend is enabled, so every production worker start is refused.
+- **Contract-only verifier and candidate policy** — typed tool-result candidates may fill only explicitly allowed payload/control fields, never authority; a test-only verifier contract rejects self-graded success, replay, and stale challenges. Neither is a production verifier or sandbox.
 
 The current release does **not** provide unrestricted shell execution, autonomous filesystem mutation, automatic code execution, multi-agent orchestration, or automatic self-modification. Production tool dispatch and OS-isolated workers remain disabled: the sandbox/supervisor code is a contract and test boundary, not an isolated runtime. These are deliberate boundaries, not hidden capabilities.
 
