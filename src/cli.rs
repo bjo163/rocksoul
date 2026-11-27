@@ -49,14 +49,21 @@ pub enum Command {
 #[derive(Debug, Subcommand)]
 pub enum EvalCommand {
     /// List available evaluation suites.
-    List,
+    List {
+        /// Emit machine-readable JSON instead of human-readable text.
+        #[arg(long)]
+        json: bool,
+    },
     /// Run a deterministic offline evaluation suite.
     Run {
         #[command(subcommand)]
         suite: EvalSuite,
     },
-    /// Show the latest saved core integrity report.
-    Latest,
+    /// Show the latest saved report for a suite (default: core).
+    Latest {
+        #[command(subcommand)]
+        suite: Option<EvalSuite>,
+    },
     /// Show the latest saved memory retrieval evaluation report.
     MemoryLatest,
 }

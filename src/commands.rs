@@ -1181,8 +1181,12 @@ fn print_memory_records(records: &[&MemoryRecord], heading: &str) {
 
 fn run_eval(command: EvalCommand) -> Result<()> {
     match command {
-        EvalCommand::List => {
-            crate::eval::list();
+        EvalCommand::List { json } => {
+            if json {
+                println!("{}", crate::eval::list_json()?);
+            } else {
+                crate::eval::list();
+            }
             Ok(())
         }
         EvalCommand::Run {
@@ -1229,10 +1233,34 @@ fn run_eval(command: EvalCommand) -> Result<()> {
                 anyhow::bail!("worker supervisor contract checks failed")
             }
         }
-        EvalCommand::Latest => {
-            match crate::eval::latest()? {
-                Some(report) => crate::eval::print_report(&report),
-                None => println!("No evaluation report yet. Run: rocksoul eval run core"),
+        EvalCommand::Latest { suite } => {
+            match suite {
+                Some(EvalSuite::MemoryRetrieval) => match crate::eval::latest_memory_retrieval()? {
+                    Some(report) => crate::eval::print_memory_retrieval_report(&report),
+                    None => println!(
+                        "No memory retrieval report yet. Run: rocksoul eval run memory-retrieval"
+                    ),
+                },
+                Some(EvalSuite::Authorization) => {
+                    match crate::eval::latest_for(crate::eval::AUTHORIZATION_SUITE_ID)? {
+                        Some(report) => crate::eval::print_report(&report),
+                        None => println!(
+                            "No authorization report yet. Run: rocksoul eval run authorization"
+                        ),
+                    }
+                }
+                Some(EvalSuite::WorkerSupervisor) => {
+                    match crate::eval::latest_for(crate::eval::WORKER_SUPERVISOR_SUITE_ID)? {
+                        Some(report) => crate::eval::print_report(&report),
+                        None => println!(
+                            "No worker supervisor report yet. Run: rocksoul eval run worker-supervisor"
+                        ),
+                    }
+                }
+                None | Some(EvalSuite::Core) => match crate::eval::latest()? {
+                    Some(report) => crate::eval::print_report(&report),
+                    None => println!("No evaluation report yet. Run: rocksoul eval run core"),
+                },
             }
             Ok(())
         }

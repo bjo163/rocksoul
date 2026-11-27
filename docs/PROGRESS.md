@@ -330,8 +330,9 @@ Delivered:
 - `src/sandbox.rs`: explicit capability requirements for Linux namespaces/seccomp/cgroups and Windows AppContainer/Job Object, policy validation/digest, and a fail-closed backend that refuses every prepare.
 - `src/worker_supervisor.rs`: parent-owned lifecycle, run policy validation, executable-digest and frame-deadline binding, byte/request/output budgets, parent replay guard, OS-observed exit requirement, cancel/terminate/reap operations, Drop kill/reap, and a launcher that refuses unsandboxed execution. No process is spawned by this build.
 - `src/ipc_transport.rs`: anonymous socket-pair transport with inherited stdio handles on Unix and fail-closed refusal elsewhere; framing is the bounded `worker_protocol`. This is a transport primitive, not isolation.
-- `src/eval.rs` / CLI: offline `rocksoul.authorization-contract` v0.2.0 and `rocksoul.worker-supervisor-contract` v0.2.0 suites, each with its own persisted report; benchmark manifest registers both.
+- `src/eval.rs` / CLI: offline `rocksoul.authorization-contract` v0.3.0 and `rocksoul.worker-supervisor-contract` v0.3.0 suites, each with its own persisted report, structured metrics, `eval list --json`, and `eval latest <suite>`; benchmark manifest registers both.
+- CI now runs and archives both contract suites on Linux and includes them in the Windows portable smoke test.
 
-Local validation: `cargo fmt --all`, `cargo clippy --locked --all-targets -- -D warnings`, `cargo test --locked` (219 unit/integration tests), all four `eval run` suites, release build. Rust 1.85 MSRV and `Cargo.lock` unchanged; no dependency added.
+Local validation: `cargo fmt --all`, `cargo clippy --locked --all-targets -- -D warnings`, `cargo test --locked` (227 unit/integration tests), all four `eval run` suites, release build. Rust 1.85 MSRV and `Cargo.lock` unchanged; no dependency added.
 
 Still not implemented: real OS isolation backends, binding the transport to a real spawned child's OS handles, process-tree kill/reaping proven by OS observation, WASM runner, independent verifier, model trajectory runner, trusted evaluator, and held-out suites. Production tool dispatch stays disabled. These contract suites are not acceptance evidence for #71/#75 platform gates.

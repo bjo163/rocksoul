@@ -129,11 +129,14 @@ rocksoul rid stats
 rocksoul rid history
 
 rocksoul eval list
+rocksoul eval list --json
 rocksoul eval run core
 rocksoul eval run memory-retrieval
 rocksoul eval run authorization
 rocksoul eval run worker-supervisor
 rocksoul eval latest
+rocksoul eval latest authorization
+rocksoul eval latest worker-supervisor
 rocksoul eval memory-latest
 
 rocksoul memory list

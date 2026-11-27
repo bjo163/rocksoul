@@ -314,6 +314,22 @@ mod tests {
     }
 
     #[test]
+    fn exposed_write_schemas_cannot_mutate_the_registry() {
+        let mut registry = ToolRegistry::default();
+        registry.register(write_descriptor()).unwrap();
+        let mut schemas = registry.write_schemas();
+        let schema = schemas.get_mut("workspace.write").unwrap();
+        schema.tool_id = "attacker.tool".to_owned();
+        schema.arguments.clear();
+        let stored = registry.get("workspace.write").unwrap();
+        assert_eq!(
+            stored.write_schema.as_ref().unwrap().tool_id,
+            "workspace.write"
+        );
+        assert_eq!(stored.write_schema.as_ref().unwrap().arguments.len(), 1);
+    }
+
+    #[test]
     fn write_schemas_are_exposed_only_for_mutating_tools() {
         let mut registry = ToolRegistry::default();
         registry.register(descriptor()).unwrap();
