@@ -20,6 +20,7 @@ pub mod tool_audit;
 pub mod tool_registry;
 mod tui;
 mod tui_preferences;
+pub mod verifier_contract;
 pub mod worker_protocol;
 pub mod worker_supervisor;
 pub mod workspace_artifact;

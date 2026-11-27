@@ -283,6 +283,8 @@ pub enum AuthorizationReason {
     CommitAfterObservation,
     WriteSetNotCommitted,
     AlreadyCommitted,
+    CandidateFieldNotAllowed,
+    CandidateCannotCreateAuthority,
 }
 
 impl AuthorizationReason {
@@ -303,6 +305,8 @@ impl AuthorizationReason {
             Self::CommitAfterObservation => "commit_after_observation",
             Self::WriteSetNotCommitted => "write_set_not_committed",
             Self::AlreadyCommitted => "already_committed",
+            Self::CandidateFieldNotAllowed => "candidate_field_not_allowed",
+            Self::CandidateCannotCreateAuthority => "candidate_cannot_create_authority",
         }
     }
 
@@ -317,9 +321,11 @@ impl AuthorizationReason {
                 Some(ToolFailureCategory::PolicyDenied)
             }
             Self::UnclassifiedArgument => Some(ToolFailureCategory::UnclassifiedArgument),
-            Self::CommitAfterObservation | Self::WriteSetNotCommitted | Self::AlreadyCommitted => {
-                Some(ToolFailureCategory::PolicyDenied)
-            }
+            Self::CommitAfterObservation
+            | Self::WriteSetNotCommitted
+            | Self::AlreadyCommitted
+            | Self::CandidateFieldNotAllowed
+            | Self::CandidateCannotCreateAuthority => Some(ToolFailureCategory::PolicyDenied),
             Self::UngroundedAuthority => Some(ToolFailureCategory::UngroundedAuthority),
             Self::MissingRequiredArgument | Self::InvalidProposal => {
                 Some(ToolFailureCategory::InvalidInput)
@@ -566,6 +572,58 @@ impl WriteExecutionCursor {
             .operations
             .len()
             .saturating_sub(self.next_index)
+    }
+}
+
+/// Policy for the narrow case where a tool result may supply a typed candidate.
+/// Only payload or policy-declared control values can be filled this way; an
+/// authority value can never be created by an observation.
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
+pub struct ToolResultCandidatePolicy {
+    pub allowed_fields: BTreeSet<String>,
+}
+
+impl ToolResultCandidatePolicy {
+    pub fn allow(&mut self, field: impl Into<String>) {
+        self.allowed_fields.insert(field.into());
+    }
+
+    pub fn apply(
+        &self,
+        schema: &ToolWriteSchema,
+        proposal: &mut WriteProposal,
+        field: &str,
+        candidate: &str,
+    ) -> std::result::Result<(), AuthorizationReason> {
+        if !self.allowed_fields.contains(field) {
+            return Err(AuthorizationReason::CandidateFieldNotAllowed);
+        }
+        if candidate.is_empty() || candidate.len() > MAX_ARGUMENT_VALUE_BYTES {
+            return Err(AuthorizationReason::InvalidProposal);
+        }
+        let rule = schema
+            .arguments
+            .get(field)
+            .ok_or(AuthorizationReason::UnclassifiedArgument)?;
+        match rule.role {
+            ArgumentRole::Authority => Err(AuthorizationReason::CandidateCannotCreateAuthority),
+            ArgumentRole::Payload => {
+                proposal
+                    .arguments
+                    .insert(field.to_owned(), candidate.to_owned());
+                Ok(())
+            }
+            ArgumentRole::TemporalControl => {
+                if rule.allowed_values.contains(candidate) {
+                    proposal
+                        .arguments
+                        .insert(field.to_owned(), candidate.to_owned());
+                    Ok(())
+                } else {
+                    Err(AuthorizationReason::TemporalControlDenied)
+                }
+            }
+        }
     }
 }
 
@@ -953,6 +1011,38 @@ mod tests {
                 .authorize_next_decision(&proposal("alex@example.com"))
                 .reason,
             AuthorizationReason::WriteSetExhausted
+        );
+    }
+
+    #[test]
+    fn typed_candidates_can_fill_payload_and_control_but_never_authority() {
+        let schema = schema();
+        let mut proposal = proposal("alex@example.com");
+        let mut policy = ToolResultCandidatePolicy::default();
+        assert_eq!(
+            policy.apply(&schema, &mut proposal, "body", "x"),
+            Err(AuthorizationReason::CandidateFieldNotAllowed)
+        );
+        policy.allow("body");
+        policy.allow("recipient");
+        policy.allow("send_at");
+        assert_eq!(
+            policy.apply(&schema, &mut proposal, "body", "new body"),
+            Ok(())
+        );
+        assert_eq!(proposal.arguments["body"], "new body");
+        assert_eq!(
+            policy.apply(&schema, &mut proposal, "recipient", "attacker@example.com"),
+            Err(AuthorizationReason::CandidateCannotCreateAuthority)
+        );
+        assert_eq!(proposal.arguments["recipient"], "alex@example.com");
+        assert_eq!(
+            policy.apply(&schema, &mut proposal, "send_at", "later"),
+            Err(AuthorizationReason::TemporalControlDenied)
+        );
+        assert_eq!(
+            policy.apply(&schema, &mut proposal, "send_at", "draft"),
+            Ok(())
         );
     }
 

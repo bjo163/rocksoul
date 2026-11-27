@@ -333,6 +333,8 @@ Delivered:
 - `src/eval.rs` / CLI: offline `rocksoul.authorization-contract` v0.3.0 and `rocksoul.worker-supervisor-contract` v0.3.0 suites, each with its own persisted report, structured metrics, `eval list --json`, and `eval latest <suite>`; benchmark manifest registers both.
 - CI now runs and archives both contract suites on Linux and includes them in the Windows portable smoke test.
 
-Local validation: `cargo fmt --all`, `cargo clippy --locked --all-targets -- -D warnings`, `cargo test --locked` (227 unit/integration tests), all four `eval run` suites, release build. Rust 1.85 MSRV and `Cargo.lock` unchanged; no dependency added.
+Additional contract modules: `ToolResultCandidatePolicy` limits tool-result candidates to explicitly allowed payload/control fields (authority can never be created by a candidate), and `src/verifier_contract.rs` is a test-only challenge/evidence contract that rejects self-graded success, replay, and stale attestations. Both are contract tests, not production verifier or isolation.
+
+Local validation: `cargo fmt --all`, `cargo clippy --locked --all-targets -- -D warnings`, `cargo test --locked` (246 unit/integration tests), all four `eval run` suites, release build. Rust 1.85 MSRV and `Cargo.lock` unchanged; no dependency added.
 
 Still not implemented: real OS isolation backends, binding the transport to a real spawned child's OS handles, process-tree kill/reaping proven by OS observation, WASM runner, independent verifier, model trajectory runner, trusted evaluator, and held-out suites. Production tool dispatch stays disabled. These contract suites are not acceptance evidence for #71/#75 platform gates.
