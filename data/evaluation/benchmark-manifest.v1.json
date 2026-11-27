@@ -36,6 +36,22 @@
       "purpose": "Deny-by-default tool authorization, bounded in-memory fixture execution, and observed-state verification tests; not an OS sandbox or model-dependent agent benchmark."
     },
     {
+      "id": "rocksoul.authorization-contract",
+      "version": "0.2.0",
+      "status": "implemented",
+      "execution": "offline_deterministic_ci",
+      "dataset": "embedded_deterministic_fixtures",
+      "purpose": "Request-grounded authority, explicit task-bound confirmation, immutable committed write sets, and content-free denial reason codes; no model or network."
+    },
+    {
+      "id": "rocksoul.worker-supervisor-contract",
+      "version": "0.2.0",
+      "status": "implemented",
+      "execution": "offline_deterministic_ci",
+      "dataset": "embedded_deterministic_fixtures",
+      "purpose": "Fail-closed sandbox policy, worker lifecycle, deadlines, IPC direction/replay, and termination/reaping contract. Real OS isolation remains a platform integration gate."
+    },
+    {
       "id": "rocksoul.agent-trajectory",
       "version": "0.1.0",
       "status": "planned",

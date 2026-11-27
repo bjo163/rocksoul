@@ -1,11 +1,13 @@
 use std::{
+    collections::BTreeMap,
     fs,
     path::PathBuf,
-    time::{SystemTime, UNIX_EPOCH},
+    time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
 
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 
 use crate::{
     commands::{complete_workspace_operation_with_hook, persist_workspace_receipt},
@@ -15,10 +17,20 @@ use crate::{
     },
     memory::{MEMORY_SCHEMA_VERSION, MemoryKind, MemoryRecord, MemorySearchFilters, MemoryStore},
     paths::AppPaths,
+    request_authorization::{
+        ArgumentRule, AuthorizationReason, CommittedWriteSet, RequestGrounding, ToolWriteSchema,
+        WriteCommitmentGate, WriteProposal,
+    },
     rid::{RuhIdentity, RuhProfile, XpRecordOutcome, level_for_xp},
     rid_catalogue::RidCatalogue,
     rid_store,
+    sandbox::{FailClosedSandbox, SandboxBackend, SandboxPlatform, SandboxPolicy},
     task_trace::{self, TaskTraceEvent},
+    tool_audit::ToolFailureCategory,
+    worker_protocol::{
+        WORKER_PROTOCOL_VERSION, WorkerFrame, WorkerLifecycle, WorkerMessageKind, WorkerSession,
+    },
+    worker_supervisor::{WorkerRunPolicy, WorkerSupervisor},
     workspace_artifact::{
         ArtifactOutcome, UserApproval, WorkspaceArtifactProposal, WorkspaceArtifactService,
     },
@@ -26,6 +38,10 @@ use crate::{
 
 pub const CORE_SUITE_ID: &str = "rocksoul.core-integrity";
 pub const CORE_SUITE_VERSION: &str = "1.3.0";
+pub const AUTHORIZATION_SUITE_ID: &str = "rocksoul.authorization-contract";
+pub const AUTHORIZATION_SUITE_VERSION: &str = "0.2.0";
+pub const WORKER_SUPERVISOR_SUITE_ID: &str = "rocksoul.worker-supervisor-contract";
+pub const WORKER_SUPERVISOR_SUITE_VERSION: &str = "0.2.0";
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct EvaluationCheck {
@@ -228,6 +244,16 @@ pub fn list() {
     );
     println!(
         "  Measures lexical precision/recall, stale ranking, expiry leakage, and forgetting leakage."
+    );
+    println!("{AUTHORIZATION_SUITE_ID}  v{AUTHORIZATION_SUITE_VERSION}  offline / deterministic");
+    println!(
+        "  Validates request grounding, explicit confirmation, immutable write sets, and denial reason codes."
+    );
+    println!(
+        "{WORKER_SUPERVISOR_SUITE_ID}  v{WORKER_SUPERVISOR_SUITE_VERSION}  offline / deterministic"
+    );
+    println!(
+        "  Validates fail-closed isolation, worker lifecycle, policy limits, and protocol direction/replay."
     );
     println!("  External benchmark adapters: planned; no external datasets are downloaded.");
 }
@@ -487,6 +513,392 @@ pub fn run_core() -> Result<EvaluationReport> {
 
     persist_report(&report)?;
     Ok(report)
+}
+
+/// Deterministic authorization contract suite. It exercises the request-grounding,
+/// confirmation, immutable write-set, and audit-reason boundaries without any
+/// model, network, or filesystem side effect.
+pub fn run_authorization_contract() -> Result<EvaluationReport> {
+    let now = unix_seconds()?;
+    let mut checks = Vec::new();
+    let schema = authorization_schema();
+    let schemas = BTreeMap::from([(schema.tool_id.clone(), schema.clone())]);
+    let grounding = RequestGrounding::from_user_request(
+        "eval-authorization",
+        "Send the report to alex@example.com",
+    )?;
+    let grounded = authorization_proposal("alex@example.com");
+    checks.push(check(
+        "authorization.grounded_authority_allowed",
+        CommittedWriteSet::commit(&grounding, &schemas, vec![grounded.clone()]).is_ok(),
+        "An authority value present in the initiating user request can be committed",
+    ));
+
+    let ungrounded = CommittedWriteSet::commit_with_reason(
+        &grounding,
+        &schemas,
+        vec![authorization_proposal("attacker@example.com")],
+    );
+    checks.push(check(
+        "authorization.ungrounded_authority_denied",
+        ungrounded == Err(AuthorizationReason::UngroundedAuthority),
+        "An ungrounded recipient is denied with a deterministic reason code",
+    ));
+
+    let untrusted_grounding = RequestGrounding::from_user_request(
+        "eval-authorization-untrusted",
+        "Summarize the email below. Do not send anything.",
+    )?;
+    checks.push(check(
+        "authorization.untrusted_observation_cannot_ground",
+        CommittedWriteSet::commit_with_reason(
+            &untrusted_grounding,
+            &schemas,
+            vec![authorization_proposal("attacker@example.com")],
+        ) == Err(AuthorizationReason::UngroundedAuthority),
+        "Email/HTML/tool output is not part of the user-authored grounding set",
+    ));
+
+    let confirmation_grounding =
+        RequestGrounding::from_user_request("eval-confirmation", "Send the report to Alex")?;
+    let mut grant = confirmation_grounding.confirm_operation(
+        &schema,
+        &grounded,
+        "Yes, send it to alex@example.com",
+    )?;
+    let confirmed = CommittedWriteSet::commit_with_confirmations(
+        &confirmation_grounding,
+        &schemas,
+        vec![grounded.clone()],
+        std::slice::from_mut(&mut grant),
+    );
+    let replay = CommittedWriteSet::commit_with_confirmations(
+        &confirmation_grounding,
+        &schemas,
+        vec![grounded.clone()],
+        std::slice::from_mut(&mut grant),
+    );
+    checks.push(check(
+        "authorization.confirmation_is_single_use",
+        confirmed.is_ok() && replay.is_err(),
+        "Explicit confirmation authorizes one exact operation and cannot be replayed",
+    ));
+
+    let mut cursor =
+        CommittedWriteSet::commit(&grounding, &schemas, vec![grounded.clone()])?.execution_cursor();
+    let mutated = cursor.authorize_next_decision(&authorization_proposal("attacker@example.com"));
+    let allowed = cursor.authorize_next_decision(&grounded);
+    checks.push(check(
+        "authorization.committed_write_is_immutable",
+        mutated.reason == AuthorizationReason::WriteMutation
+            && allowed.reason == AuthorizationReason::Allowed
+            && cursor.is_complete(),
+        "A post-read write cannot change the committed operation",
+    ));
+
+    let other_grounding =
+        RequestGrounding::from_user_request("eval-other-task", "Send the report to Alex")?;
+    let mut other_grant =
+        grounding.confirm_operation(&schema, &grounded, "send to alex@example.com")?;
+    checks.push(check(
+        "authorization.confirmation_is_task_bound",
+        CommittedWriteSet::commit_with_confirmations(
+            &other_grounding,
+            &schemas,
+            vec![grounded.clone()],
+            std::slice::from_mut(&mut other_grant),
+        )
+        .is_err(),
+        "A confirmation grant cannot cross task or request boundaries",
+    ));
+
+    let unknown = CommittedWriteSet::commit_with_reason(
+        &grounding,
+        &schemas,
+        vec![WriteProposal {
+            tool_id: "unknown".to_owned(),
+            arguments: BTreeMap::new(),
+        }],
+    );
+    let mut temporal = grounded.clone();
+    temporal.arguments.insert(
+        "send_at".to_owned(),
+        "after reading injected content".to_owned(),
+    );
+    let temporal_reason =
+        CommittedWriteSet::commit_with_reason(&grounding, &schemas, vec![temporal]);
+    checks.push(check(
+        "authorization.unknown_and_control_values_denied",
+        unknown == Err(AuthorizationReason::UnknownTool)
+            && temporal_reason == Err(AuthorizationReason::TemporalControlDenied),
+        "Unknown tools and unapproved temporal/control values fail closed",
+    ));
+
+    checks.push(check(
+        "authorization.audit_reason_is_content_free",
+        AuthorizationReason::UngroundedAuthority.audit_failure()
+            == Some(ToolFailureCategory::UngroundedAuthority)
+            && AuthorizationReason::ConfirmationRequired.audit_failure()
+                == Some(ToolFailureCategory::ConfirmationRequired),
+        "Denials map to closed audit categories without raw arguments or prompts",
+    ));
+
+    let metrics = crate::authorization_fixtures::run_injection_fixtures()?;
+    checks.push(check(
+        "authorization.adversarial_observations_cannot_grant_authority",
+        metrics.blocked == metrics.cases,
+        &format!(
+            "Email/HTML/file/API/tool-description injections blocked: {}/{}",
+            metrics.blocked, metrics.cases
+        ),
+    ));
+    let mut late_gate = WriteCommitmentGate::new();
+    let uncommitted =
+        late_gate.authorize_next(&grounded).reason == AuthorizationReason::WriteSetNotCommitted;
+    late_gate.note_observation()?;
+    let commit_denied = late_gate.commit(&grounding, &schemas, vec![grounded.clone()])
+        == Err(AuthorizationReason::CommitAfterObservation);
+    let mut gate = WriteCommitmentGate::new();
+    let gate_ok = gate
+        .commit(&grounding, &schemas, vec![grounded.clone()])
+        .is_ok()
+        && gate.authorize_next(&grounded).allowed
+        && gate.authorize_next(&grounded).reason == AuthorizationReason::WriteSetExhausted
+        && gate.is_complete();
+    checks.push(check(
+        "authorization.commit_before_observation_is_enforced",
+        uncommitted && commit_denied && gate_ok,
+        "The write window closes at the first observation; a committed write is consumed once",
+    ));
+
+    checks.push(check(
+        "authorization.safety_and_utility_reported_separately",
+        metrics.benign_accepted && metrics.false_denials == 0,
+        &format!(
+            "benign completed={}; false denials={}; explicit confirmations={}; token overhead={}",
+            metrics.benign_accepted,
+            metrics.false_denials,
+            metrics.explicit_confirmations,
+            if metrics.token_overhead_measured {
+                "measured"
+            } else {
+                "not measured (no model runs in this suite)"
+            }
+        ),
+    ));
+
+    let report = build_report(
+        AUTHORIZATION_SUITE_ID,
+        AUTHORIZATION_SUITE_VERSION,
+        now,
+        checks,
+    );
+    persist_report(&report)?;
+    Ok(report)
+}
+
+/// Deterministic worker/sandbox contract suite. It proves the fail-closed gate,
+/// policy validation, lifecycle transitions, and protocol direction/replay rules.
+/// Real OS isolation and process reaping still require platform integration tests.
+pub fn run_worker_supervisor_contract() -> Result<EvaluationReport> {
+    let now = unix_seconds()?;
+    let mut checks = Vec::new();
+    let policy = worker_contract_policy();
+    checks.push(check(
+        "worker.production_start_fails_closed",
+        WorkerSupervisor::start(policy.clone()).is_err(),
+        "No worker starts without a prepared OS isolation backend",
+    ));
+
+    let mut network_policy = policy.clone();
+    network_policy.sandbox.allow_network = true;
+    let mut expired_policy = policy.clone();
+    expired_policy.deadline = Instant::now() - Duration::from_secs(1);
+    checks.push(check(
+        "worker.policy_rejects_network_and_expired_deadline",
+        network_policy.validate(Instant::now()).is_err()
+            && expired_policy.validate(Instant::now()).is_err(),
+        "Network access and expired deadlines are refused before spawn",
+    ));
+
+    let lifecycle_ok = WorkerLifecycle::Starting
+        .transition(WorkerLifecycle::Ready)
+        .is_ok()
+        && WorkerLifecycle::Ready
+            .transition(WorkerLifecycle::Running)
+            .is_ok()
+        && WorkerLifecycle::Running
+            .transition(WorkerLifecycle::Cancelling)
+            .is_ok()
+        && WorkerLifecycle::Cancelling
+            .transition(WorkerLifecycle::Terminating)
+            .is_ok()
+        && WorkerLifecycle::Terminating
+            .transition(WorkerLifecycle::Reaped)
+            .is_ok()
+        && WorkerLifecycle::Reaped
+            .transition(WorkerLifecycle::Running)
+            .is_err();
+    checks.push(check(
+        "worker.lifecycle_is_terminal",
+        lifecycle_ok,
+        "Reaped is terminal and cancellation/termination transitions are explicit",
+    ));
+
+    let mut session = WorkerSession::new("eval-worker-run")?;
+    let wrong_direction = WorkerFrame {
+        protocol_version: WORKER_PROTOCOL_VERSION,
+        run_id: "eval-worker-run".to_owned(),
+        request_id: "wrong-direction".to_owned(),
+        sequence: 1,
+        kind: WorkerMessageKind::Execute,
+        deadline_unix_ms: 1_800_000_000_000,
+        payload: serde_json::json!({}),
+    };
+    let hello = WorkerFrame {
+        protocol_version: WORKER_PROTOCOL_VERSION,
+        run_id: "eval-worker-run".to_owned(),
+        request_id: "hello".to_owned(),
+        sequence: 1,
+        kind: WorkerMessageKind::Hello,
+        deadline_unix_ms: 1_800_000_000_000,
+        payload: serde_json::json!({}),
+    };
+    let direction_denied = session.accept_from_worker(&wrong_direction).is_err();
+    let first_hello = session.accept_from_worker(&hello).is_ok();
+    let replay_denied = session.accept_from_worker(&hello).is_err();
+    checks.push(check(
+        "worker.protocol_direction_and_replay",
+        direction_denied && first_hello && replay_denied,
+        "Worker-to-parent direction, ordering, and replay checks are enforced",
+    ));
+
+    checks.push(check(
+        "sandbox.fail_closed_backend",
+        !FailClosedSandbox.status(&policy.sandbox).supported
+            && FailClosedSandbox.prepare(&policy.sandbox).is_err(),
+        "The default backend reports unsupported and refuses to prepare a worker",
+    ));
+
+    let worker_bytes = b"rocksoul-eval-worker-fixture";
+    let worker_path = std::env::temp_dir().join(format!(
+        "rocksoul-eval-worker-{}-{}",
+        now,
+        std::process::id()
+    ));
+    fs::write(&worker_path, worker_bytes)?;
+    let mut identity_policy = policy.clone();
+    identity_policy.worker_executable = worker_path.clone();
+    identity_policy.worker_sha256 = format!("{:x}", Sha256::digest(worker_bytes));
+    let identity_ok = identity_policy.verify_executable().is_ok();
+    let mut tampered_identity = identity_policy.clone();
+    tampered_identity.worker_sha256 = "0".repeat(64);
+    let identity_denied = tampered_identity.verify_executable().is_err();
+    let mut tampered_deadline = hello.clone();
+    tampered_deadline.deadline_unix_ms += 1;
+    let deadline_bound = identity_policy.verify_frame_deadline(&hello).is_ok()
+        && identity_policy
+            .verify_frame_deadline(&tampered_deadline)
+            .is_err();
+    fs::remove_file(&worker_path)?;
+    checks.push(check(
+        "worker.executable_identity_and_frame_deadline_are_bound",
+        identity_ok && identity_denied && deadline_bound,
+        "The exact executable digest and frame deadline are bound to the immutable run policy",
+    ));
+
+    #[cfg(unix)]
+    let transport_ok = crate::ipc_transport::create_private_pair().is_ok();
+    #[cfg(not(unix))]
+    let transport_ok = crate::ipc_transport::create_private_pair().is_err();
+    checks.push(check(
+        "worker.private_ipc_transport_or_fail_closed",
+        transport_ok,
+        "An anonymous private channel exists on Unix and is refused elsewhere; no public listener is created",
+    ));
+
+    let report = build_report(
+        WORKER_SUPERVISOR_SUITE_ID,
+        WORKER_SUPERVISOR_SUITE_VERSION,
+        now,
+        checks,
+    );
+    persist_report(&report)?;
+    Ok(report)
+}
+
+fn authorization_schema() -> ToolWriteSchema {
+    ToolWriteSchema {
+        tool_id: "mail.send".to_owned(),
+        arguments: BTreeMap::from([
+            ("recipient".to_owned(), ArgumentRule::authority(true)),
+            ("subject".to_owned(), ArgumentRule::payload(true)),
+            ("body".to_owned(), ArgumentRule::payload(true)),
+            (
+                "send_at".to_owned(),
+                ArgumentRule::temporal_control(false, ["now".to_owned(), "draft".to_owned()]),
+            ),
+        ]),
+    }
+}
+
+fn authorization_proposal(recipient: &str) -> WriteProposal {
+    WriteProposal {
+        tool_id: "mail.send".to_owned(),
+        arguments: BTreeMap::from([
+            ("recipient".to_owned(), recipient.to_owned()),
+            ("subject".to_owned(), "Project update".to_owned()),
+            ("body".to_owned(), "The report is ready.".to_owned()),
+            ("send_at".to_owned(), "draft".to_owned()),
+        ]),
+    }
+}
+
+fn worker_contract_policy() -> WorkerRunPolicy {
+    let scratch = std::env::temp_dir().join("rocksoul-worker-eval");
+    let sandbox = match SandboxPlatform::current() {
+        SandboxPlatform::Windows => SandboxPolicy::windows_default(scratch),
+        _ => SandboxPolicy::linux_default(scratch),
+    };
+    WorkerRunPolicy {
+        run_id: "eval-worker-run".to_owned(),
+        worker_executable: PathBuf::from("/tmp/rocksoul-eval-worker"),
+        worker_sha256: "a".repeat(64),
+        deadline: Instant::now() + Duration::from_secs(30),
+        deadline_unix_ms: 1_800_000_000_000,
+        max_ipc_bytes: 64 * 1024,
+        max_stdout_bytes: 64 * 1024,
+        max_stderr_bytes: 64 * 1024,
+        max_requests: 16,
+        sandbox,
+    }
+}
+
+fn unix_seconds() -> Result<u64> {
+    Ok(SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .context("system clock is before the Unix epoch")?
+        .as_secs())
+}
+
+fn build_report(
+    suite_id: &str,
+    suite_version: &str,
+    evaluated_at_unix: u64,
+    checks: Vec<EvaluationCheck>,
+) -> EvaluationReport {
+    EvaluationReport {
+        schema_version: 1,
+        suite_id: suite_id.to_owned(),
+        suite_version: suite_version.to_owned(),
+        rocksoul_version: env!("CARGO_PKG_VERSION").to_owned(),
+        rocksoul_commit: env!("ROCKSOUL_GIT_SHA").to_owned(),
+        platform: std::env::consts::OS.to_owned(),
+        architecture: std::env::consts::ARCH.to_owned(),
+        evaluated_at_unix,
+        passed: checks.iter().all(|item| item.passed),
+        checks,
+    }
 }
 
 fn stage1_workspace_checks(now: u64, checks: &mut Vec<EvaluationCheck>) -> Result<()> {
@@ -1240,7 +1652,7 @@ pub fn latest() -> Result<Option<EvaluationReport>> {
 }
 
 fn persist_report(report: &EvaluationReport) -> Result<()> {
-    let path = latest_report_path()?;
+    let path = latest_report_path_for(&report.suite_id)?;
     let parent = path
         .parent()
         .context("evaluation report path has no parent")?;
@@ -1280,10 +1692,21 @@ fn persist_report(report: &EvaluationReport) -> Result<()> {
 }
 
 fn latest_report_path() -> Result<PathBuf> {
+    latest_report_path_for(CORE_SUITE_ID)
+}
+
+/// Each suite owns its own report file so concurrent runs cannot replace or
+/// corrupt another suite's evidence.
+fn latest_report_path_for(suite_id: &str) -> Result<PathBuf> {
+    let leaf = if suite_id == CORE_SUITE_ID {
+        "core".to_owned()
+    } else {
+        suite_id.to_owned()
+    };
     Ok(AppPaths::discover()?
         .data_dir
         .join("evaluations")
-        .join("core")
+        .join(leaf)
         .join("latest.json"))
 }
 
@@ -1417,7 +1840,10 @@ mod tests {
         time::{SystemTime, UNIX_EPOCH},
     };
 
-    use super::{CORE_SUITE_ID, CORE_SUITE_VERSION, EvaluationReport};
+    use super::{
+        AUTHORIZATION_SUITE_ID, AUTHORIZATION_SUITE_VERSION, CORE_SUITE_ID, CORE_SUITE_VERSION,
+        EvaluationReport, WORKER_SUPERVISOR_SUITE_ID, WORKER_SUPERVISOR_SUITE_VERSION,
+    };
 
     fn sample_agent_trajectory() -> super::AgentTrajectoryReport {
         super::AgentTrajectoryReport {
@@ -1534,6 +1960,32 @@ mod tests {
     }
 
     #[test]
+    fn suites_persist_to_independent_report_paths() {
+        let core = super::latest_report_path_for(CORE_SUITE_ID).unwrap();
+        let authorization = super::latest_report_path_for(AUTHORIZATION_SUITE_ID).unwrap();
+        let worker = super::latest_report_path_for(WORKER_SUPERVISOR_SUITE_ID).unwrap();
+        assert_ne!(core, authorization);
+        assert_ne!(core, worker);
+        assert_ne!(authorization, worker);
+    }
+
+    #[test]
+    fn authorization_contract_suite_passes() {
+        let report = super::run_authorization_contract().unwrap();
+        assert!(report.passed);
+        assert_eq!(report.suite_id, AUTHORIZATION_SUITE_ID);
+        assert_eq!(report.checks.len(), 11);
+    }
+
+    #[test]
+    fn worker_supervisor_contract_suite_passes() {
+        let report = super::run_worker_supervisor_contract().unwrap();
+        assert!(report.passed);
+        assert_eq!(report.suite_id, WORKER_SUPERVISOR_SUITE_ID);
+        assert_eq!(report.checks.len(), 7);
+    }
+
+    #[test]
     fn benchmark_manifest_matches_implemented_suites_and_rid_contract() {
         let manifest: serde_json::Value = serde_json::from_str(include_str!(
             "../data/evaluation/benchmark-manifest.v1.json"
@@ -1557,6 +2009,8 @@ mod tests {
             (CORE_SUITE_ID, CORE_SUITE_VERSION),
             ("rocksoul.memory-retrieval", "1.0.0"),
             ("rocksoul.agent-runtime-fixtures", "0.1.0"),
+            (AUTHORIZATION_SUITE_ID, AUTHORIZATION_SUITE_VERSION),
+            (WORKER_SUPERVISOR_SUITE_ID, WORKER_SUPERVISOR_SUITE_VERSION),
         ] {
             let suite = suites
                 .iter()

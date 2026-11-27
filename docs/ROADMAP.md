@@ -85,7 +85,7 @@ The next engineering work is Issue #13's reproducible technical evaluation harne
 
 ## Stage 3 — Skills and tools
 
-**Status:** In progress. The typed deny-by-default registry, bounded in-process fixtures, content-free audit store, and cooperative invocation controls are implemented. The bounded worker IPC protocol (PR #72) is merged and passed exact-head Linux/Windows CI. Parent worker supervision, authenticated IPC transport, OS isolation, hard termination/reaping, and independent verification remain incomplete; see [Issue #75](https://github.com/bjo163/rocksoul/issues/75) and its [supervisor contract](plans/issue-71/worker-supervisor-contract.md).
+**Status:** In progress. The typed deny-by-default registry (now with explicit write-argument role schemas), bounded in-process fixtures, content-free audit store, and cooperative invocation controls are implemented. The bounded worker IPC protocol (PR #72) is merged and passed exact-head Linux/Windows CI. A deterministic request-grounded authorization suite, adversarial injection fixtures, and a fail-closed parent supervisor/sandbox contract with offline evaluation suites are implemented locally. Authenticated IPC transport, OS isolation, hard OS-observed termination/reaping, and independent verification remain incomplete; see [Issue #75](https://github.com/bjo163/rocksoul/issues/75) and its [supervisor contract](plans/issue-71/worker-supervisor-contract.md). No production tool dispatch is enabled.
 
 - [x] Define a typed tool metadata contract and deny-by-default capability registry.
 - [x] Add narrowly scoped in-memory fixture read/write tools; all production tool execution remains disabled.
@@ -93,6 +93,10 @@ The next engineering work is Issue #13's reproducible technical evaluation harne
 - [x] Add a versioned content-free tool audit schema and append-only, file-locked JSONL store with bounded records, per-run sequence checks, duplicate-event rejection, corruption fail-closed behavior, and cross-process tests.
 - [x] Record fixture proposal, authorization, execution start/finish, failure, timeout and cancellation events without persisting raw tool input; enforce cooperative deadline, cancellation and call-budget checks before fixture dispatch.
 - [x] Merge the bounded worker IPC protocol foundation after exact-head Linux and Windows CI passed (PR #72; merge commit `b9450142becfe8446c8dc98455977fd4a3e1fe51`).
+- [x] Define explicit write-argument roles, task-bound single-use confirmation grants, content-free authorization reason codes, and adversarial injection fixtures.
+- [x] Enforce commit-before-observation in the audited fixture path; a late or missing commitment is denied and audited with a content-free reason.
+- [x] Bind worker executable digest, frame deadline, output ceilings and OS-observed exit to the parent-owned policy; add an anonymous socket-pair transport that fails closed off Unix.
+- [x] Define a fail-closed parent supervisor/sandbox capability contract with offline deterministic evaluation suites; no backend is enabled, so production starts are refused.
 - [ ] Add production worker watchdogs that actually terminate and reap timed-out/cancelled workers; cooperative host checks alone do not stop a running process.
 - [ ] Add a genuine OS/WASM isolation boundary and human approval for production writes or remote egress.
 - [ ] Keep external runtimes optional rather than core dependencies.
@@ -108,7 +112,7 @@ The next engineering work is Issue #13's reproducible technical evaluation harne
 ## Stage 5 — Evaluation and isolated evolution
 
 - [x] Offline deterministic Core Integrity v1.3.0 suite and JSON report.
-- [x] Versioned benchmark manifest registers three implemented offline suites (Core Integrity, Memory Retrieval, Agent Runtime Fixtures) and keeps external suites explicitly as candidates; a Rust consistency test checks the RID registry counts and suite statuses.
+- [x] Versioned benchmark manifest registers five implemented offline suites (Core Integrity, Memory Retrieval, Agent Runtime Fixtures, Authorization Contract, Worker Supervisor Contract) and keeps external suites explicitly as candidates; a Rust consistency test checks the RID registry counts and suite statuses.
 - [x] Define a typed, bounded agent-trajectory evidence contract with independent-verifier and safety-veto validation (schema foundation; not an executable suite).
 - [x] Add deny-by-default tool metadata registry and bounded in-process fixture executor/verifier tests (not a sandbox or model benchmark).
 - [ ] Add genuine isolated agent execution and independent effect-verifier adapters.

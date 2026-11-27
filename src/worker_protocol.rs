@@ -121,6 +121,7 @@ pub struct WorkerSession {
     run_id: String,
     next_sequence: u64,
     seen_request_ids: BTreeSet<String>,
+    parent_request_ids: BTreeSet<String>,
 }
 
 impl WorkerSession {
@@ -131,6 +132,7 @@ impl WorkerSession {
             run_id,
             next_sequence: 1,
             seen_request_ids: BTreeSet::new(),
+            parent_request_ids: BTreeSet::new(),
         })
     }
 
@@ -152,7 +154,9 @@ impl WorkerSession {
     }
 
     /// Validate a parent-to-worker message before it is written to the private channel.
-    pub fn validate_for_worker(&self, frame: &WorkerFrame) -> Result<()> {
+    /// Parent request IDs are single-use too: a replayed command must not reach
+    /// the worker even if the peer itself is honest.
+    pub fn validate_for_worker(&mut self, frame: &WorkerFrame) -> Result<()> {
         frame.validate()?;
         ensure!(frame.run_id == self.run_id, "worker run id mismatch");
         ensure!(
@@ -164,6 +168,14 @@ impl WorkerSession {
                     | WorkerMessageKind::Shutdown
             ),
             "message kind is not permitted from parent to worker"
+        );
+        ensure!(
+            self.parent_request_ids.len() < MAX_WORKER_REQUESTS_PER_RUN,
+            "parent request count limit reached"
+        );
+        ensure!(
+            self.parent_request_ids.insert(frame.request_id.clone()),
+            "parent request id was replayed"
         );
         Ok(())
     }
@@ -342,6 +354,7 @@ mod tests {
         session
             .validate_for_worker(&valid_parent)
             .expect("parent Ready is permitted");
+        assert!(session.validate_for_worker(&valid_parent).is_err());
 
         let mut valid_worker = frame(1, "req-hello");
         valid_worker.kind = WorkerMessageKind::Hello;

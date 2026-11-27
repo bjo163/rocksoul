@@ -402,3 +402,16 @@ Next safe sequence:
 5. Keep the independent effect verifier in a separate trust domain; then implement held-out model task evaluation and trusted RID publication gates.
 
 Never enable production tool dispatch from the protocol contract alone. Issue #13 remains the controlling acceptance gate.
+
+
+## Contract enforcement increment — 2026-11-27 (Issues #92, #75, #71, #13)
+
+Before continuing, fetch `origin/main` and port only still-needed changes onto a fresh branch from that base; do not start from a stale local branch.
+
+Read `src/request_authorization.rs`, `src/authorization_fixtures.rs`, `src/tool_registry.rs`, `src/fixture_runtime.rs`, `src/sandbox.rs`, `src/worker_supervisor.rs`, `src/ipc_transport.rs` and the two contract suites in `src/eval.rs`. The authorization side now has explicit role schemas, single-use confirmation grants, content-free reason codes and a kernel-owned gate that closes the write window at the first untrusted observation. The worker side binds executable digest and frame deadline to the policy, enforces output ceilings, rejects unobserved exits, and offers an anonymous socket-pair transport; no platform isolation backend is enabled, so `WorkerSupervisor::start` still always refuses.
+
+Next gates, in order:
+1. Run exact-head Linux and Windows CI on a reviewed branch before treating any of this as validated.
+2. Implement the Linux and Windows OS backends, authenticated IPC bound to OS-created handles, and adversarial kill/reap tests for Issue #75; keep the fail-closed refusal when any control is missing.
+3. Implement the independent verifier trust domain and held-out trajectory execution for Issue #13; keep `rocksoul.agent-trajectory` planned until then.
+4. Keep production tool dispatch disabled until all gates above pass. Do not present the in-process fixture executor or these offline contract suites as OS isolation or model-capability evidence.
