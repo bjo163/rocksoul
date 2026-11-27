@@ -371,7 +371,7 @@ Latest implementation on `main` adds:
 
 ## Production sandbox threat model
 
-See [docs/plans/issue-13/sandbox-threat-model.md](plans/issue-13/sandbox-threat-model.md) before implementing any production executor. It defines trust boundaries, no-WASI/no-network defaults, OS worker isolation, resource ceilings, verifier separation, adversarial tests, and the MSRV gate for Wasmi. Do not bypass these gates by reusing the in-process fixture executor.
+See [docs/plans/issue-13/sandbox-threat-model.md](plans/issue-13/sandbox-threat-model.md), [the Linux dependency review](plans/issue-13/linux-sandbox-dependency-review.md), and [the WASM decision](plans/issue-13/wasm-runtime-decision.md) before implementing any production executor. No dependency is approved by these documents alone; each requires its own reviewed PR. It defines trust boundaries, no-WASI/no-network defaults, OS worker isolation, resource ceilings, verifier separation, adversarial tests, and the MSRV gate for Wasmi. Do not bypass these gates by reusing the in-process fixture executor.
 
 ### Issue #13 — independent verifier protocol handoff
 
