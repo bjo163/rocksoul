@@ -1,6 +1,6 @@
 # Issue #13 — Production Sandbox Threat Model and Execution Plan
 
-**Status:** Design baseline only. This document does not claim that a production sandbox exists.
+**Status:** Design baseline only. This document does not claim that a production sandbox exists. Implementation decisions: [Linux dependency review](linux-sandbox-dependency-review.md) and [WASM runtime decision](wasm-runtime-decision.md); both are review documents and neither adds a dependency or enables dispatch.
 **Scope:** A future model-dependent agent tool executor for Rocksoul.
 **Current baseline:** deny-by-default metadata registry + bounded in-process fixture executor. The fixture executor is not an OS sandbox.
 

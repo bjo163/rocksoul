@@ -236,6 +236,53 @@ mod tests {
         assert!(!error.contains("api_key"));
     }
 
+    /// Proves only the transport and reaping primitive: a real OS child owns
+    /// the private inherited handles, frames round-trip, and `wait` observes
+    /// termination. This child is NOT isolated and this test is never used by
+    /// production dispatch.
+    #[cfg(unix)]
+    #[test]
+    fn private_ipc_is_bound_to_an_os_child_and_can_be_reaped() {
+        use std::process::{Command, Stdio};
+
+        let echo = std::path::Path::new("/bin/cat");
+        if !echo.exists() {
+            eprintln!("skipping child-handle test: /bin/cat unavailable");
+            return;
+        }
+        let (mut parent, child) = create_private_pair().unwrap();
+        let (stdin, stdout) = child.into_stdio();
+        let mut child_process = Command::new(echo)
+            .stdin(stdin)
+            .stdout(stdout)
+            .stderr(Stdio::null())
+            .spawn()
+            .expect("could not spawn bounded echo child");
+        parent.set_read_timeout(Duration::from_secs(2)).unwrap();
+
+        let frame = WorkerFrame {
+            protocol_version: crate::worker_protocol::WORKER_PROTOCOL_VERSION,
+            run_id: "run-os-child".to_owned(),
+            request_id: "req-echo".to_owned(),
+            sequence: 1,
+            kind: WorkerMessageKind::Heartbeat,
+            deadline_unix_ms: 1_800_000_000_000,
+            payload: serde_json::json!({"probe":"child-handle"}),
+        };
+        parent.send(&frame).unwrap();
+        assert_eq!(parent.receive().unwrap(), Some(frame));
+
+        child_process
+            .kill()
+            .expect("could not terminate echo child");
+        let status = child_process.wait().expect("could not reap echo child");
+        assert!(!status.success());
+        assert!(
+            status.code().is_none(),
+            "killed child must have no exit code"
+        );
+    }
+
     #[cfg(unix)]
     #[test]
     fn child_endpoint_is_convertible_to_inherited_stdio() {
