@@ -1,3 +1,4 @@
+pub mod authorization_fixtures;
 mod cli;
 mod commands;
 pub mod core;
@@ -12,12 +13,14 @@ pub mod request_authorization;
 pub mod rid;
 pub mod rid_catalogue;
 mod rid_store;
+pub mod sandbox;
 pub(crate) mod task_trace;
 pub mod tool_audit;
 pub mod tool_registry;
 mod tui;
 mod tui_preferences;
 pub mod worker_protocol;
+pub mod worker_supervisor;
 pub mod workspace_artifact;
 
 use anyhow::Result;

@@ -1207,6 +1207,28 @@ fn run_eval(command: EvalCommand) -> Result<()> {
                 anyhow::bail!("memory retrieval evaluation failed its regression gates")
             }
         }
+        EvalCommand::Run {
+            suite: EvalSuite::Authorization,
+        } => {
+            let report = crate::eval::run_authorization_contract()?;
+            crate::eval::print_report(&report);
+            if report.passed {
+                Ok(())
+            } else {
+                anyhow::bail!("authorization contract checks failed")
+            }
+        }
+        EvalCommand::Run {
+            suite: EvalSuite::WorkerSupervisor,
+        } => {
+            let report = crate::eval::run_worker_supervisor_contract()?;
+            crate::eval::print_report(&report);
+            if report.passed {
+                Ok(())
+            } else {
+                anyhow::bail!("worker supervisor contract checks failed")
+            }
+        }
         EvalCommand::Latest => {
             match crate::eval::latest()? {
                 Some(report) => crate::eval::print_report(&report),

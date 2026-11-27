@@ -76,6 +76,14 @@ pub enum ToolFailureCategory {
     ResourceExhausted,
     WorkerFailure,
     VerificationFailure,
+    UngroundedAuthority,
+    UnclassifiedArgument,
+    ConfirmationRequired,
+    ConfirmationRejected,
+    WriteSetViolation,
+    IsolationUnavailable,
+    ProtocolViolation,
+    TerminationFailed,
     Unknown,
 }
 
@@ -144,9 +152,7 @@ impl ToolAuditEvent {
                 ensure!(
                     self.authorization == Some(ToolAuthorization::Denied)
                         && self.approval.is_none()
-                        && self
-                            .failure
-                            .is_none_or(|failure| failure == ToolFailureCategory::PolicyDenied),
+                        && self.failure.is_none_or(is_authorization_denial_category),
                     "authorization-denied event metadata is inconsistent"
                 );
             }
@@ -203,6 +209,19 @@ impl ToolAuditEvent {
         }
         Ok(())
     }
+}
+
+fn is_authorization_denial_category(failure: ToolFailureCategory) -> bool {
+    matches!(
+        failure,
+        ToolFailureCategory::InvalidInput
+            | ToolFailureCategory::PolicyDenied
+            | ToolFailureCategory::UngroundedAuthority
+            | ToolFailureCategory::UnclassifiedArgument
+            | ToolFailureCategory::ConfirmationRequired
+            | ToolFailureCategory::ConfirmationRejected
+            | ToolFailureCategory::WriteSetViolation
+    )
 }
 
 fn is_safe_metadata_byte(byte: u8) -> bool {
@@ -503,6 +522,28 @@ mod tests {
         assert!(invalid.validate().is_err());
         let raw = r#"{"schema_version":1,"run_id":"r","sequence":1,"event_id":"e","kind":"proposed","tool_id":"t","tool_version":"1","capability":"read","effect":"read_only","policy_version":"1","timestamp_unix_ms":1,"authorization":null,"failure":null,"evidence_refs":[],"prompt":"must reject"}"#;
         assert!(serde_json::from_str::<ToolAuditEvent>(raw).is_err());
+    }
+
+    #[test]
+    fn authorization_denial_reason_categories_are_closed_and_valid() {
+        for failure in [
+            ToolFailureCategory::UngroundedAuthority,
+            ToolFailureCategory::UnclassifiedArgument,
+            ToolFailureCategory::ConfirmationRequired,
+            ToolFailureCategory::ConfirmationRejected,
+            ToolFailureCategory::WriteSetViolation,
+        ] {
+            let mut denied = event("run-denied", 1);
+            denied.kind = ToolAuditKind::AuthorizationDenied;
+            denied.authorization = Some(ToolAuthorization::Denied);
+            denied.failure = Some(failure);
+            assert!(denied.validate().is_ok());
+        }
+        let mut invalid = event("run-denied", 1);
+        invalid.kind = ToolAuditKind::AuthorizationDenied;
+        invalid.authorization = Some(ToolAuthorization::Denied);
+        invalid.failure = Some(ToolFailureCategory::IsolationUnavailable);
+        assert!(invalid.validate().is_err());
     }
 
     #[test]

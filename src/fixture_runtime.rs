@@ -12,6 +12,7 @@ use anyhow::{Context, Result, ensure};
 use sha2::{Digest, Sha256};
 
 use crate::{
+    request_authorization::{ArgumentRule, ToolWriteSchema},
     tool_audit::{
         InvocationControl, InvocationStopReason, ToolAuditEvent, ToolAuditKind, ToolAuditStore,
         ToolAuthorization, ToolEffectClass, ToolFailureCategory,
@@ -340,6 +341,13 @@ pub fn register_fixture_tools(registry: &mut ToolRegistry) -> Result<()> {
         capability: ToolCapability::WorkspaceWrite,
         effect: ToolEffect::Mutating,
         max_input_bytes: MAX_KEY_BYTES + 1 + MAX_VALUE_BYTES,
+        write_schema: Some(ToolWriteSchema {
+            tool_id: FIXTURE_WRITE_TOOL.to_owned(),
+            arguments: BTreeMap::from([
+                ("key".to_owned(), ArgumentRule::authority(true)),
+                ("value".to_owned(), ArgumentRule::payload(true)),
+            ]),
+        }),
     })?;
     registry.register(ToolDescriptor {
         id: FIXTURE_READ_TOOL.to_owned(),
@@ -347,6 +355,7 @@ pub fn register_fixture_tools(registry: &mut ToolRegistry) -> Result<()> {
         capability: ToolCapability::WorkspaceRead,
         effect: ToolEffect::ReadOnly,
         max_input_bytes: MAX_KEY_BYTES,
+        write_schema: None,
     })?;
     Ok(())
 }

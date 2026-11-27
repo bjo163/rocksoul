@@ -1,6 +1,6 @@
 # AGI-Oriented Capability Evaluation
 
-**Status:** Offline deterministic Core Integrity v1.3.0, Memory Retrieval v1.0.0, and Agent Runtime Fixtures v0.1.0 are implemented. Both emit JSON and Markdown reports with source-commit provenance. External agent and generalization suites are planned or candidate integrations, not integrated benchmarks.
+**Status:** Offline deterministic Core Integrity v1.3.0, Memory Retrieval v1.0.0, Agent Runtime Fixtures v0.1.0, Authorization Contract v0.1.0, and Worker Supervisor Contract v0.1.0 are implemented. They emit JSON and Markdown reports with source-commit provenance. The last two are contract suites only: they do not establish OS isolation or run a model trajectory. External agent and generalization suites are planned or candidate integrations, not integrated benchmarks.
 
 ## Purpose and limits
 
@@ -14,7 +14,9 @@ Do not publish one scalar "AGI score". Publish a versioned capability vector wit
 2. **Agent trajectories (planned):** planning quality, permissioned tool selection, observed task success, verifier precision/recall, retries, recovery, action efficiency, and truthful completion reporting.
 3. **Agent runtime fixtures v0.1.0 (offline deterministic):** deny-by-default tool registry, explicit capability grants, bounded in-memory fixture read/write operations with per-run 16-step and 16 KiB aggregate input-byte ceilings, and verifier checks against observed fixture state. This is a runtime safety/evidence-flow test suite only; its verifier is not an independent production evaluator and it is not an OS sandbox or model benchmark.
 4. **Learning and generalization (planned):** memory recall, provenance, retention, forgetting, continual-learning stability/plasticity, held-out cross-domain transfer, world-model prediction, and calibration.
-5. **External benchmarks (candidate adapters):** see `data/evaluation/benchmark-manifest.v1.json`. Candidate status does not mean downloaded, licensed, integrated, validated, or scored.
+5. **Authorization Contract v0.1.0 (offline, deterministic):** exact-token request grounding, explicit task-bound single-use confirmation, immutable committed write sets, content-free denial reason codes, and adversarial injection fixtures. No model, network, or tool side effect is involved.
+6. **Worker Supervisor Contract v0.1.0 (offline, deterministic):** fail-closed sandbox policy, worker lifecycle transitions, byte/request budgets, and protocol direction/replay rules. It does not prove OS-enforced isolation, CPU/memory/PID limits, or observed process reaping.
+7. **External benchmarks (candidate adapters):** see `data/evaluation/benchmark-manifest.v1.json`. Candidate status does not mean downloaded, licensed, integrated, validated, or scored.
 
 ## Hard gates
 
@@ -83,6 +85,14 @@ Unknown fields must be explicitly unavailable, never fabricated.
 
 This is deliberately **not** an executable agent benchmark yet. The model adapter currently exposes chat completion only. A deny-by-default tool metadata registry requires an explicit tool-ID allowlist, a separate capability grant, and descriptor/policy input-byte budgets. A deterministic in-process fixture executor now exercises only two bounded key-value operations over a private memory map; a fixture verifier reads the executor's observed state rather than trusting a model-provided result. This is a test harness, not an OS sandbox: it has no shell, network, filesystem, process, environment-variable, or arbitrary-code capability. Production isolation, independently operated verifier adapters, and model-connected held-out task execution remain unimplemented. The manifest registers `rocksoul.agent-runtime-fixtures` separately as implemented offline CI tests. The model-dependent `rocksoul.agent-trajectory` remains `planned`; no trajectory capability result or RID score is emitted from fixture tests or the schema contract.
 
+## Authorization and worker contract suites
+
+Run with `rocksoul eval run authorization` and `rocksoul eval run worker-supervisor`. Each suite persists an independent report under the local application data directory; safety failures are individual failing checks and are never averaged into a score.
+
+The authorization suite verifies that untrusted observations cannot create authority. Its fixtures embed injected recipients, amounts, accounts, URLs, channels and object IDs in emails, HTML, files, API responses and tool descriptions. Every injection must be denied with `ungrounded_authority`; a benign grounded write must still complete. Because no model executes here, token/resource overhead is reported as **not measured** rather than estimated, and utility evidence remains limited to false-denial counts and confirmation rate zero.
+
+The worker suite verifies the parent-owned contract only: the production start path refuses to launch when no isolation backend is prepared; network-enabled, writable-root and expired-deadline policies are rejected; lifecycle terminality, frame direction and sequence/replay enforcement are checked. Real namespace/seccomp/cgroup or AppContainer/Job Object enforcement, authenticated OS handle binding, and process-tree kill/reap require platform integration tests on Linux and Windows and are **not** claimed by this suite.
+
 ## Roadmap
 
 - [x] Deterministic Core Integrity v1.3.0 and JSON report.
@@ -92,6 +102,7 @@ This is deliberately **not** an executable agent benchmark yet. The model adapte
 - [x] Typed trajectory evidence contract and fail-closed validation rules (schema foundation only).
 - [x] Deny-by-default tool metadata registry with explicit allowlist, capability grants, duplicate-ID rejection, and bounded input budgets.
 - [x] In-process fixture executor and observed-state verifier for deterministic authorization/evidence-flow tests (not an OS sandbox or model benchmark).
+- [x] Offline Authorization Contract and Worker Supervisor Contract suites, including adversarial injection fixtures and fail-closed policy checks.
 - [ ] Production isolated executor/sandbox, independently operated verifier adapters, and model-connected held-out trajectory runner.
 - [ ] Memory retention/transfer suite with held-out tasks.
 - [ ] Trusted RID evaluator with rubric-specific evidence aggregation.

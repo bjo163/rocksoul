@@ -44,8 +44,10 @@ The current seed runtime includes:
 - **Explicit local memory** — versioned local JSON store with retention metadata, dry-run expiry pruning, managed forgetting tombstones, provenance-aware ranked retrieval, explicit claim status, kernel-receipt-gated task outcomes, and offline retrieval evaluation.
 - **Human-reviewed model memory proposals** — candidates are redacted/validated, stored as pending proposals, and persisted only after an exact SHA-256-bound interactive approval. Candidate content is scrubbed from proposal audit records after approval, denial, or cancellation; silent writes remain disabled.
 - **Core Integrity evaluation** — deterministic offline checks for runtime invariants.
+- **Request-grounded write authorization** — explicit schema roles, immutable committed write sets, task-bound single-use confirmation, and content-free denial reason codes. Adversarial fixtures cover email, HTML, file, API-response and tool-description injections.
+- **Fail-closed worker boundary contract** — parent-owned supervisor/sandbox policy, bounded protocol framing, direction/replay checks and documented termination semantics. No OS isolation backend is enabled, so every production worker start is refused.
 
-The current release does **not** provide unrestricted shell execution, autonomous filesystem mutation, automatic code execution, multi-agent orchestration, or automatic self-modification. These are deliberate boundaries, not hidden capabilities.
+The current release does **not** provide unrestricted shell execution, autonomous filesystem mutation, automatic code execution, multi-agent orchestration, or automatic self-modification. Production tool dispatch and OS-isolated workers remain disabled: the sandbox/supervisor code is a contract and test boundary, not an isolated runtime. These are deliberate boundaries, not hidden capabilities.
 
 ### Cognitive Cockpit — implemented and merged
 
@@ -129,6 +131,8 @@ rocksoul rid history
 rocksoul eval list
 rocksoul eval run core
 rocksoul eval run memory-retrieval
+rocksoul eval run authorization
+rocksoul eval run worker-supervisor
 rocksoul eval latest
 rocksoul eval memory-latest
 

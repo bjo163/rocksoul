@@ -50,7 +50,7 @@ pub enum Command {
 pub enum EvalCommand {
     /// List available evaluation suites.
     List,
-    /// Run the deterministic offline core integrity suite.
+    /// Run a deterministic offline evaluation suite.
     Run {
         #[command(subcommand)]
         suite: EvalSuite,
@@ -65,6 +65,8 @@ pub enum EvalCommand {
 pub enum EvalSuite {
     Core,
     MemoryRetrieval,
+    Authorization,
+    WorkerSupervisor,
 }
 
 #[derive(Debug, Subcommand)]

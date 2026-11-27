@@ -7,6 +7,8 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use anyhow::{Result, bail, ensure};
 
+use crate::request_authorization::ToolWriteSchema;
+
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub enum ToolCapability {
     WorkspaceRead,
@@ -28,6 +30,10 @@ pub struct ToolDescriptor {
     pub capability: ToolCapability,
     pub effect: ToolEffect,
     pub max_input_bytes: usize,
+    /// Explicit authority/payload/control roles for side-effectful tools.
+    /// A mutating tool without a schema cannot pass the request-authorization
+    /// boundary; it remains visible here only for deny-by-default metadata.
+    pub write_schema: Option<ToolWriteSchema>,
 }
 
 impl ToolDescriptor {
@@ -63,6 +69,22 @@ impl ToolDescriptor {
             ),
             "tool effect must match its read or write capability"
         );
+        match (&self.write_schema, self.effect) {
+            (Some(schema), ToolEffect::Mutating) => {
+                schema.validate()?;
+                ensure!(
+                    schema.tool_id == self.id,
+                    "write schema tool id must match the descriptor id"
+                );
+            }
+            (None, ToolEffect::ReadOnly) => {}
+            (Some(_), ToolEffect::ReadOnly) => {
+                bail!("a read-only tool must not declare a write schema");
+            }
+            (None, ToolEffect::Mutating) => {
+                bail!("a mutating tool must declare an explicit write schema");
+            }
+        }
         Ok(())
     }
 }
@@ -132,6 +154,21 @@ impl ToolRegistry {
         Ok(descriptor)
     }
 
+    /// Explicit schemas for every registered mutating tool. The authorization
+    /// boundary consumes only these declarations; it never infers argument roles
+    /// from tool output or model-written text.
+    pub fn write_schemas(&self) -> BTreeMap<String, ToolWriteSchema> {
+        self.tools
+            .values()
+            .filter_map(|descriptor| {
+                descriptor
+                    .write_schema
+                    .clone()
+                    .map(|schema| (descriptor.id.clone(), schema))
+            })
+            .collect()
+    }
+
     pub fn len(&self) -> usize {
         self.tools.len()
     }
@@ -143,7 +180,10 @@ impl ToolRegistry {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::BTreeMap;
+
     use super::{ToolCapability, ToolDescriptor, ToolEffect, ToolPolicy, ToolRegistry};
+    use crate::request_authorization::{ArgumentRule, ToolWriteSchema};
 
     fn descriptor() -> ToolDescriptor {
         ToolDescriptor {
@@ -152,6 +192,21 @@ mod tests {
             capability: ToolCapability::WorkspaceRead,
             effect: ToolEffect::ReadOnly,
             max_input_bytes: 128,
+            write_schema: None,
+        }
+    }
+
+    fn write_descriptor() -> ToolDescriptor {
+        ToolDescriptor {
+            id: "workspace.write".to_owned(),
+            version: "1.0.0".to_owned(),
+            capability: ToolCapability::WorkspaceWrite,
+            effect: ToolEffect::Mutating,
+            max_input_bytes: 128,
+            write_schema: Some(ToolWriteSchema {
+                tool_id: "workspace.write".to_owned(),
+                arguments: BTreeMap::from([("path".to_owned(), ArgumentRule::authority(true))]),
+            }),
         }
     }
 
@@ -215,10 +270,13 @@ mod tests {
         invalid.effect = ToolEffect::ReadOnly;
         assert!(registry.register(invalid).is_err());
 
-        let mut valid = descriptor();
+        let mut valid = write_descriptor();
         valid.capability = ToolCapability::MemoryWrite;
-        valid.effect = ToolEffect::Mutating;
         valid.id = "memory.write".to_owned();
+        valid.write_schema = Some(ToolWriteSchema {
+            tool_id: "memory.write".to_owned(),
+            arguments: BTreeMap::from([("id".to_owned(), ArgumentRule::authority(true))]),
+        });
         registry.register(valid).unwrap();
         assert_eq!(registry.len(), 1);
     }
@@ -226,11 +284,7 @@ mod tests {
     #[test]
     fn mutating_effect_is_explicit_metadata_not_implicit_permission() {
         let mut registry = ToolRegistry::default();
-        let mut descriptor = descriptor();
-        descriptor.id = "workspace.write".to_owned();
-        descriptor.capability = ToolCapability::WorkspaceWrite;
-        descriptor.effect = ToolEffect::Mutating;
-        registry.register(descriptor).unwrap();
+        registry.register(write_descriptor()).unwrap();
         let mut policy = ToolPolicy {
             max_input_bytes: 128,
             ..ToolPolicy::default()
@@ -240,5 +294,33 @@ mod tests {
         assert!(registry.authorize("workspace.write", 1, &policy).is_err());
         policy.grant(ToolCapability::WorkspaceWrite);
         assert!(registry.authorize("workspace.write", 1, &policy).is_ok());
+    }
+
+    #[test]
+    fn mutating_tools_require_a_matching_write_schema() {
+        let mut registry = ToolRegistry::default();
+        let mut invalid = write_descriptor();
+        invalid.write_schema = None;
+        assert!(registry.register(invalid).is_err());
+        let mut mismatched = write_descriptor();
+        mismatched.write_schema.as_mut().unwrap().tool_id = "another.tool".to_owned();
+        assert!(registry.register(mismatched).is_err());
+        let mut read_only = descriptor();
+        read_only.write_schema = Some(ToolWriteSchema {
+            tool_id: "workspace.read".to_owned(),
+            arguments: BTreeMap::from([("path".to_owned(), ArgumentRule::authority(true))]),
+        });
+        assert!(registry.register(read_only).is_err());
+    }
+
+    #[test]
+    fn write_schemas_are_exposed_only_for_mutating_tools() {
+        let mut registry = ToolRegistry::default();
+        registry.register(descriptor()).unwrap();
+        registry.register(write_descriptor()).unwrap();
+        let schemas = registry.write_schemas();
+        assert_eq!(schemas.len(), 1);
+        assert!(schemas.contains_key("workspace.write"));
+        assert!(!schemas.contains_key("workspace.read"));
     }
 }

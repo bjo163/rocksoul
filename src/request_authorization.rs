@@ -9,6 +9,8 @@ use std::collections::{BTreeMap, BTreeSet};
 use anyhow::{Result, ensure};
 use sha2::{Digest, Sha256};
 
+use crate::tool_audit::ToolFailureCategory;
+
 const MAX_TASK_ID_BYTES: usize = 96;
 const MAX_TOOL_ID_BYTES: usize = 96;
 const MAX_ARGUMENTS_PER_OPERATION: usize = 64;
@@ -157,30 +159,208 @@ impl RequestGrounding {
     }
 
     fn grounds_exact_token(&self, value: &str) -> bool {
-        if value.is_empty() || value.len() > MAX_ARGUMENT_VALUE_BYTES {
-            return false;
-        }
-        self.original_request
-            .match_indices(value)
-            .any(|(start, matched)| {
-                let end = start + matched.len();
-                let before_ok = start == 0
-                    || !self.original_request[..start]
-                        .chars()
-                        .next_back()
-                        .is_some_and(is_word_char);
-                let after_ok = end == self.original_request.len()
-                    || !self.original_request[end..]
-                        .chars()
-                        .next()
-                        .is_some_and(is_word_char);
-                before_ok && after_ok
-            })
+        contains_exact_token(&self.original_request, value)
     }
+
+    /// Bind a single operation to an explicit user confirmation. The confirmation
+    /// must contain every authority-bearing value as an exact token. The resulting
+    /// grant is task-bound, request-bound, operation-bound, and single-use.
+    pub fn confirm_operation(
+        &self,
+        schema: &ToolWriteSchema,
+        proposal: &WriteProposal,
+        confirmation: &str,
+    ) -> Result<ConfirmationGrant> {
+        schema.validate()?;
+        validate_proposal_shape(schema, proposal)
+            .map_err(|reason| anyhow::anyhow!("write proposal is invalid: {}", reason.as_str()))?;
+        ensure!(
+            !confirmation.trim().is_empty() && confirmation.len() <= MAX_ARGUMENT_VALUE_BYTES * 8,
+            "confirmation text is empty or too large"
+        );
+        let mut authority_values = BTreeMap::new();
+        for (name, value) in &proposal.arguments {
+            let rule = schema
+                .arguments
+                .get(name)
+                .ok_or_else(|| anyhow::anyhow!("unclassified write argument"))?;
+            if rule.role == ArgumentRole::Authority {
+                ensure!(
+                    contains_exact_token(confirmation, value),
+                    "confirmation does not contain the exact authority value for {name}"
+                );
+                authority_values.insert(name.clone(), value.clone());
+            }
+        }
+        ensure!(
+            !authority_values.is_empty(),
+            "operation has no authority-bearing values to confirm"
+        );
+        Ok(ConfirmationGrant {
+            task_id: self.task_id.clone(),
+            request_sha256: self.request_sha256.clone(),
+            operation_digest: operation_digest(proposal),
+            authority_values,
+            used: false,
+        })
+    }
+}
+
+/// A task-bound, single-use grant created only from explicit user confirmation.
+/// Model output and tool observations cannot construct or amend this type.
+#[derive(Debug, Eq, PartialEq)]
+pub struct ConfirmationGrant {
+    task_id: String,
+    request_sha256: String,
+    operation_digest: String,
+    authority_values: BTreeMap<String, String>,
+    used: bool,
+}
+
+impl ConfirmationGrant {
+    pub fn task_id(&self) -> &str {
+        &self.task_id
+    }
+
+    pub fn request_sha256(&self) -> &str {
+        &self.request_sha256
+    }
+
+    pub fn operation_digest(&self) -> &str {
+        &self.operation_digest
+    }
+
+    pub fn is_used(&self) -> bool {
+        self.used
+    }
+}
+
+fn contains_exact_token(text: &str, value: &str) -> bool {
+    if value.is_empty() || value.len() > MAX_ARGUMENT_VALUE_BYTES {
+        return false;
+    }
+    text.match_indices(value).any(|(start, matched)| {
+        let end = start + matched.len();
+        let before_ok = start == 0 || !text[..start].chars().next_back().is_some_and(is_word_char);
+        let after_ok = end == text.len() || !text[end..].chars().next().is_some_and(is_word_char);
+        before_ok && after_ok
+    })
 }
 
 fn is_word_char(ch: char) -> bool {
     ch.is_ascii_alphanumeric() || matches!(ch, '_' | '@' | '.' | '-' | '+')
+}
+
+fn operation_digest(proposal: &WriteProposal) -> String {
+    let mut canonical = proposal.tool_id.clone();
+    for (name, value) in &proposal.arguments {
+        canonical.push('\u{1f}');
+        canonical.push_str(name);
+        canonical.push('\u{1f}');
+        canonical.push_str(value);
+    }
+    Sha256::digest(canonical.as_bytes())
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect()
+}
+
+/// Deterministic, content-free authorization reason codes.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum AuthorizationReason {
+    Allowed,
+    UnknownTool,
+    UnclassifiedArgument,
+    UngroundedAuthority,
+    TemporalControlDenied,
+    MissingRequiredArgument,
+    WriteSetExhausted,
+    WriteMutation,
+    ConfirmationRequired,
+    ConfirmationMismatch,
+    ConfirmationReused,
+    InvalidProposal,
+}
+
+impl AuthorizationReason {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Allowed => "allowed",
+            Self::UnknownTool => "unknown_tool",
+            Self::UnclassifiedArgument => "unclassified_argument",
+            Self::UngroundedAuthority => "ungrounded_authority",
+            Self::TemporalControlDenied => "temporal_control_denied",
+            Self::MissingRequiredArgument => "missing_required_argument",
+            Self::WriteSetExhausted => "write_set_exhausted",
+            Self::WriteMutation => "write_mutation",
+            Self::ConfirmationRequired => "confirmation_required",
+            Self::ConfirmationMismatch => "confirmation_mismatch",
+            Self::ConfirmationReused => "confirmation_reused",
+            Self::InvalidProposal => "invalid_proposal",
+        }
+    }
+
+    pub fn is_allowed(self) -> bool {
+        matches!(self, Self::Allowed)
+    }
+
+    pub fn audit_failure(self) -> Option<ToolFailureCategory> {
+        match self {
+            Self::Allowed => None,
+            Self::UnknownTool | Self::TemporalControlDenied => {
+                Some(ToolFailureCategory::PolicyDenied)
+            }
+            Self::UnclassifiedArgument => Some(ToolFailureCategory::UnclassifiedArgument),
+            Self::UngroundedAuthority => Some(ToolFailureCategory::UngroundedAuthority),
+            Self::MissingRequiredArgument | Self::InvalidProposal => {
+                Some(ToolFailureCategory::InvalidInput)
+            }
+            Self::WriteSetExhausted | Self::WriteMutation => {
+                Some(ToolFailureCategory::WriteSetViolation)
+            }
+            Self::ConfirmationRequired => Some(ToolFailureCategory::ConfirmationRequired),
+            Self::ConfirmationMismatch | Self::ConfirmationReused => {
+                Some(ToolFailureCategory::ConfirmationRejected)
+            }
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct AuthorizationDecision {
+    pub allowed: bool,
+    pub reason: AuthorizationReason,
+    pub operation_index: Option<usize>,
+}
+
+fn validate_proposal_shape(
+    schema: &ToolWriteSchema,
+    proposal: &WriteProposal,
+) -> std::result::Result<(), AuthorizationReason> {
+    if proposal.tool_id != schema.tool_id {
+        return Err(AuthorizationReason::InvalidProposal);
+    }
+    if proposal.arguments.len() > MAX_ARGUMENTS_PER_OPERATION {
+        return Err(AuthorizationReason::InvalidProposal);
+    }
+    for (name, value) in &proposal.arguments {
+        if value.len() > MAX_ARGUMENT_VALUE_BYTES {
+            return Err(AuthorizationReason::InvalidProposal);
+        }
+        let rule = schema
+            .arguments
+            .get(name)
+            .ok_or(AuthorizationReason::UnclassifiedArgument)?;
+        if rule.role == ArgumentRole::TemporalControl && !rule.allowed_values.contains(value) {
+            return Err(AuthorizationReason::TemporalControlDenied);
+        }
+    }
+    for (name, rule) in &schema.arguments {
+        if rule.required && !proposal.arguments.contains_key(name) {
+            return Err(AuthorizationReason::MissingRequiredArgument);
+        }
+    }
+    Ok(())
 }
 
 /// Immutable committed operations. There is deliberately no mutation API.
@@ -198,6 +378,54 @@ impl CommittedWriteSet {
         schemas: &BTreeMap<String, ToolWriteSchema>,
         proposals: Vec<WriteProposal>,
     ) -> Result<Self> {
+        Self::commit_with_reason(grounding, schemas, proposals)
+            .map_err(|reason| anyhow::anyhow!("write authorization denied: {}", reason.as_str()))
+    }
+
+    /// Same as `commit`, but returns a deterministic content-free reason code.
+    pub fn commit_with_reason(
+        grounding: &RequestGrounding,
+        schemas: &BTreeMap<String, ToolWriteSchema>,
+        proposals: Vec<WriteProposal>,
+    ) -> std::result::Result<Self, AuthorizationReason> {
+        if proposals.is_empty() || proposals.len() > MAX_WRITE_OPERATIONS {
+            return Err(AuthorizationReason::InvalidProposal);
+        }
+        for proposal in &proposals {
+            let schema = schemas
+                .get(&proposal.tool_id)
+                .ok_or(AuthorizationReason::UnknownTool)?;
+            schema
+                .validate()
+                .map_err(|_| AuthorizationReason::InvalidProposal)?;
+            validate_proposal_shape(schema, proposal)?;
+            for (name, value) in &proposal.arguments {
+                let rule = schema
+                    .arguments
+                    .get(name)
+                    .ok_or(AuthorizationReason::UnclassifiedArgument)?;
+                if rule.role == ArgumentRole::Authority && !grounding.grounds_exact_token(value) {
+                    return Err(AuthorizationReason::UngroundedAuthority);
+                }
+            }
+        }
+        Ok(Self {
+            task_id: grounding.task_id.clone(),
+            request_sha256: grounding.request_sha256.clone(),
+            operations: proposals,
+        })
+    }
+
+    /// Commit a write set where an ungrounded authority value is allowed only
+    /// when the user explicitly confirmed that exact operation. Each grant is
+    /// consumed once and must match the task, request digest, operation digest,
+    /// and every authority value.
+    pub fn commit_with_confirmations(
+        grounding: &RequestGrounding,
+        schemas: &BTreeMap<String, ToolWriteSchema>,
+        proposals: Vec<WriteProposal>,
+        confirmations: &mut [ConfirmationGrant],
+    ) -> Result<Self> {
         ensure!(
             !proposals.is_empty() && proposals.len() <= MAX_WRITE_OPERATIONS,
             "write set size is outside the allowed range"
@@ -207,43 +435,49 @@ impl CommittedWriteSet {
                 .get(&proposal.tool_id)
                 .ok_or_else(|| anyhow::anyhow!("unknown or unclassified write tool"))?;
             schema.validate()?;
+            validate_proposal_shape(schema, proposal).map_err(|reason| {
+                anyhow::anyhow!("write proposal is invalid: {}", reason.as_str())
+            })?;
+            let ungrounded: Vec<(&String, &String)> = proposal
+                .arguments
+                .iter()
+                .filter(|(name, value)| {
+                    schema.arguments.get(*name).is_some_and(|rule| {
+                        rule.role == ArgumentRole::Authority
+                            && !grounding.grounds_exact_token(value)
+                    })
+                })
+                .collect();
+            if ungrounded.is_empty() {
+                continue;
+            }
+            let digest = operation_digest(proposal);
+            let grant = confirmations
+                .iter_mut()
+                .find(|grant| {
+                    grant.operation_digest == digest
+                        && grant.task_id == grounding.task_id
+                        && grant.request_sha256 == grounding.request_sha256
+                })
+                .ok_or_else(|| {
+                    anyhow::anyhow!(
+                        "authority value requires explicit confirmation ({})",
+                        AuthorizationReason::ConfirmationRequired.as_str()
+                    )
+                })?;
             ensure!(
-                proposal.tool_id == schema.tool_id,
-                "tool schema key mismatch"
+                !grant.used,
+                "confirmation was already consumed ({})",
+                AuthorizationReason::ConfirmationReused.as_str()
             );
-            ensure!(
-                proposal.arguments.len() <= MAX_ARGUMENTS_PER_OPERATION,
-                "too many write arguments"
-            );
-            for (name, value) in &proposal.arguments {
+            for (name, value) in ungrounded {
                 ensure!(
-                    value.len() <= MAX_ARGUMENT_VALUE_BYTES,
-                    "write argument exceeds size limit"
+                    grant.authority_values.get(name) == Some(value),
+                    "confirmation does not match authority value ({})",
+                    AuthorizationReason::ConfirmationMismatch.as_str()
                 );
-                let rule = schema
-                    .arguments
-                    .get(name)
-                    .ok_or_else(|| anyhow::anyhow!("unclassified write argument"))?;
-                match rule.role {
-                    ArgumentRole::Authority => ensure!(
-                        grounding.grounds_exact_token(value),
-                        "authority value is not grounded in the initiating user request"
-                    ),
-                    ArgumentRole::Payload => {}
-                    ArgumentRole::TemporalControl => ensure!(
-                        rule.allowed_values.contains(value),
-                        "temporal/control value is not explicitly allowed"
-                    ),
-                }
             }
-            for (name, rule) in &schema.arguments {
-                if rule.required {
-                    ensure!(
-                        proposal.arguments.contains_key(name),
-                        "required write argument is missing"
-                    );
-                }
-            }
+            grant.used = true;
         }
         Ok(Self {
             task_id: grounding.task_id.clone(),
@@ -282,18 +516,36 @@ pub struct WriteExecutionCursor {
 
 impl WriteExecutionCursor {
     pub fn authorize_next(&mut self, candidate: &WriteProposal) -> Result<usize> {
-        let expected = self
-            .committed
-            .operations
-            .get(self.next_index)
-            .ok_or_else(|| anyhow::anyhow!("committed write set is exhausted"))?;
-        ensure!(
-            candidate == expected,
-            "write differs from the immutable committed operation"
-        );
+        let decision = self.authorize_next_decision(candidate);
+        if decision.allowed {
+            Ok(decision.operation_index.unwrap_or_default())
+        } else {
+            anyhow::bail!("write authorization denied: {}", decision.reason.as_str())
+        }
+    }
+
+    pub fn authorize_next_decision(&mut self, candidate: &WriteProposal) -> AuthorizationDecision {
+        let Some(expected) = self.committed.operations.get(self.next_index) else {
+            return AuthorizationDecision {
+                allowed: false,
+                reason: AuthorizationReason::WriteSetExhausted,
+                operation_index: None,
+            };
+        };
+        if candidate != expected {
+            return AuthorizationDecision {
+                allowed: false,
+                reason: AuthorizationReason::WriteMutation,
+                operation_index: None,
+            };
+        }
         let index = self.next_index;
         self.next_index += 1;
-        Ok(index)
+        AuthorizationDecision {
+            allowed: true,
+            reason: AuthorizationReason::Allowed,
+            operation_index: Some(index),
+        }
     }
 
     pub fn is_complete(&self) -> bool {
@@ -443,5 +695,160 @@ mod tests {
         let mut operation = proposal("alex@example.com");
         operation.arguments.remove("recipient");
         assert!(CommittedWriteSet::commit(&grounding, &schemas, vec![operation]).is_err());
+    }
+
+    #[test]
+    fn explicit_confirmation_allows_exact_operation_and_is_single_use() {
+        let grounding =
+            RequestGrounding::from_user_request("task-1", "Send the report to Alex").unwrap();
+        let schemas = BTreeMap::from([("mail.send".to_owned(), schema())]);
+        let operation = proposal("alex@example.com");
+        let mut grant = grounding
+            .confirm_operation(
+                &schema(),
+                &operation,
+                "Yes, send it to alex@example.com now",
+            )
+            .unwrap();
+        assert!(!grant.is_used());
+        let committed = CommittedWriteSet::commit_with_confirmations(
+            &grounding,
+            &schemas,
+            vec![operation.clone()],
+            std::slice::from_mut(&mut grant),
+        )
+        .unwrap();
+        assert_eq!(committed.operations(), std::slice::from_ref(&operation));
+        assert!(grant.is_used());
+        assert!(
+            CommittedWriteSet::commit_with_confirmations(
+                &grounding,
+                &schemas,
+                vec![operation],
+                std::slice::from_mut(&mut grant),
+            )
+            .is_err()
+        );
+    }
+
+    #[test]
+    fn confirmation_is_task_and_request_bound() {
+        let grounding =
+            RequestGrounding::from_user_request("task-1", "Send the report to Alex").unwrap();
+        let other_request =
+            RequestGrounding::from_user_request("task-2", "Send the report to Alex").unwrap();
+        let schemas = BTreeMap::from([("mail.send".to_owned(), schema())]);
+        let operation = proposal("alex@example.com");
+        let mut grant = grounding
+            .confirm_operation(&schema(), &operation, "send to alex@example.com")
+            .unwrap();
+        assert!(
+            CommittedWriteSet::commit_with_confirmations(
+                &other_request,
+                &schemas,
+                vec![operation],
+                std::slice::from_mut(&mut grant),
+            )
+            .is_err()
+        );
+    }
+
+    #[test]
+    fn confirmation_cannot_be_replayed_for_a_different_operation() {
+        let grounding =
+            RequestGrounding::from_user_request("task-1", "Send the report to Alex").unwrap();
+        let schemas = BTreeMap::from([("mail.send".to_owned(), schema())]);
+        let confirmed = proposal("alex@example.com");
+        let mut grant = grounding
+            .confirm_operation(&schema(), &confirmed, "send to alex@example.com")
+            .unwrap();
+        let mut changed = confirmed.clone();
+        changed
+            .arguments
+            .insert("body".to_owned(), "Injected replacement body".to_owned());
+        assert!(
+            CommittedWriteSet::commit_with_confirmations(
+                &grounding,
+                &schemas,
+                vec![changed],
+                std::slice::from_mut(&mut grant),
+            )
+            .is_err()
+        );
+        assert!(!grant.is_used());
+    }
+
+    #[test]
+    fn untrusted_observation_cannot_ground_authority() {
+        // The caller must pass only user-authored request text as grounding.
+        // Content from an email, HTML page, file, or API response is a separate
+        // untrusted observation and is never part of this string.
+        let grounding = RequestGrounding::from_user_request(
+            "task-1",
+            "Summarize the email below. Do not send anything.",
+        )
+        .unwrap();
+        let schemas = BTreeMap::from([("mail.send".to_owned(), schema())]);
+        let reason = CommittedWriteSet::commit_with_reason(
+            &grounding,
+            &schemas,
+            vec![proposal("attacker@example.com")],
+        )
+        .unwrap_err();
+        assert_eq!(reason, AuthorizationReason::UngroundedAuthority);
+        assert_eq!(
+            reason.audit_failure(),
+            Some(ToolFailureCategory::UngroundedAuthority)
+        );
+    }
+
+    #[test]
+    fn reason_codes_are_deterministic() {
+        let grounding =
+            RequestGrounding::from_user_request("task-1", "Send to alex@example.com").unwrap();
+        let schemas = BTreeMap::from([("mail.send".to_owned(), schema())]);
+        assert_eq!(
+            CommittedWriteSet::commit_with_reason(
+                &grounding,
+                &schemas,
+                vec![WriteProposal {
+                    tool_id: "unknown".to_owned(),
+                    arguments: BTreeMap::new(),
+                }],
+            )
+            .unwrap_err(),
+            AuthorizationReason::UnknownTool
+        );
+        let mut operation = proposal("alex@example.com");
+        operation
+            .arguments
+            .insert("send_at".to_owned(), "later".to_owned());
+        assert_eq!(
+            CommittedWriteSet::commit_with_reason(&grounding, &schemas, vec![operation])
+                .unwrap_err(),
+            AuthorizationReason::TemporalControlDenied
+        );
+        let committed =
+            CommittedWriteSet::commit(&grounding, &schemas, vec![proposal("alex@example.com")])
+                .unwrap();
+        let mut cursor = committed.execution_cursor();
+        assert_eq!(
+            cursor
+                .authorize_next_decision(&proposal("attacker@example.com"))
+                .reason,
+            AuthorizationReason::WriteMutation
+        );
+        assert_eq!(
+            cursor
+                .authorize_next_decision(&proposal("alex@example.com"))
+                .reason,
+            AuthorizationReason::Allowed
+        );
+        assert_eq!(
+            cursor
+                .authorize_next_decision(&proposal("alex@example.com"))
+                .reason,
+            AuthorizationReason::WriteSetExhausted
+        );
     }
 }
