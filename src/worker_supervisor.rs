@@ -341,7 +341,13 @@ impl WorkerSupervisor {
     pub fn receive(&mut self) -> Result<Option<WorkerFrame>> {
         self.ensure_live()?;
         let remaining = self.policy.remaining(Instant::now())?;
-        let frame = self.process.receive_frame(Instant::now() + remaining)?;
+        let frame = match self.process.receive_frame(Instant::now() + remaining) {
+            Ok(frame) => frame,
+            Err(error) => {
+                self.mark_failed(WorkerTerminationReason::WorkerFailed);
+                return Err(error).context("could not receive frame from worker");
+            }
+        };
         self.enforce_output_budgets()?;
         let Some(frame) = frame else {
             return Ok(None);
@@ -422,7 +428,13 @@ impl WorkerSupervisor {
             ),
             "worker must be terminating before reaping"
         );
-        let exit = self.process.wait_reap(Instant::now() + timeout)?;
+        let exit = match self.process.wait_reap(Instant::now() + timeout) {
+            Ok(exit) => exit,
+            Err(error) => {
+                self.mark_failed(WorkerTerminationReason::UnobservedExit);
+                return Err(error).context("could not reap worker after termination");
+            }
+        };
         self.finish(
             exit,
             self.termination_reason
@@ -586,6 +598,9 @@ mod tests {
         stdout_bytes: usize,
         stderr_bytes: usize,
         unobserved_exit: bool,
+        terminate_error: bool,
+        reap_error: bool,
+        receive_error: bool,
     }
 
     struct FakeProcess {
@@ -599,7 +614,11 @@ mod tests {
         }
 
         fn receive_frame(&mut self, _deadline: Instant) -> Result<Option<WorkerFrame>> {
-            Ok(self.state.lock().unwrap().incoming.pop_front())
+            let mut state = self.state.lock().unwrap();
+            if state.receive_error {
+                anyhow::bail!("simulated IPC receive failure");
+            }
+            Ok(state.incoming.pop_front())
         }
 
         fn try_exit(&mut self) -> Result<Option<WorkerExit>> {
@@ -609,6 +628,9 @@ mod tests {
         fn terminate_tree(&mut self) -> Result<()> {
             let mut state = self.state.lock().unwrap();
             state.terminate_calls += 1;
+            if state.terminate_error {
+                anyhow::bail!("simulated termination failure");
+            }
             if !state.ignore_terminate && !state.unobserved_exit {
                 state.exit = Some(WorkerExit::observed(None, Some(9), false));
             }
@@ -618,6 +640,9 @@ mod tests {
         fn wait_reap(&mut self, _deadline: Instant) -> Result<WorkerExit> {
             let mut state = self.state.lock().unwrap();
             state.reap_calls += 1;
+            if state.reap_error {
+                anyhow::bail!("simulated reap failure");
+            }
             if state.unobserved_exit {
                 return Ok(WorkerExit::observed(None, None, false));
             }
@@ -949,5 +974,149 @@ mod tests {
         let state = state.lock().unwrap();
         assert_eq!(state.sent.len(), 2);
         assert_ne!(state.sent[0].sequence, state.sent[1].sequence);
+    }
+
+    #[test]
+    fn expired_deadline_is_checked_before_ipc_read() {
+        let state = Arc::new(Mutex::new(FakeState::default()));
+        state
+            .lock()
+            .unwrap()
+            .incoming
+            .push_back(frame(WorkerMessageKind::Hello, 1, "hello"));
+        let short_policy = policy(Instant::now() + Duration::from_millis(50));
+        let mut worker = supervisor(Arc::clone(&state), short_policy);
+        std::thread::sleep(Duration::from_millis(100));
+        assert!(worker.receive().is_err());
+        assert_eq!(state.lock().unwrap().incoming.len(), 1);
+    }
+
+    #[test]
+    fn termination_failure_marks_run_failed() {
+        let state = Arc::new(Mutex::new(FakeState::default()));
+        state.lock().unwrap().terminate_error = true;
+        let mut worker = supervisor(
+            Arc::clone(&state),
+            policy(Instant::now() + Duration::from_secs(30)),
+        );
+        assert!(
+            worker
+                .terminate(WorkerTerminationReason::ParentShutdown)
+                .is_err()
+        );
+        assert_eq!(worker.lifecycle(), WorkerLifecycle::Failed);
+    }
+
+    #[test]
+    fn reap_failure_is_indeterminate_without_an_exit() {
+        let state = Arc::new(Mutex::new(FakeState::default()));
+        state.lock().unwrap().reap_error = true;
+        let mut worker = supervisor(
+            Arc::clone(&state),
+            policy(Instant::now() + Duration::from_secs(30)),
+        );
+        assert!(
+            worker
+                .shutdown(WorkerTerminationReason::ParentShutdown)
+                .is_err()
+        );
+        assert_eq!(worker.lifecycle(), WorkerLifecycle::Failed);
+        assert_eq!(
+            worker.termination_reason(),
+            Some(WorkerTerminationReason::UnobservedExit)
+        );
+        assert!(worker.exit().is_none());
+    }
+
+    #[test]
+    fn receive_failure_marks_worker_failed_without_echoing_data() {
+        let state = Arc::new(Mutex::new(FakeState::default()));
+        state.lock().unwrap().receive_error = true;
+        let mut worker = supervisor(
+            Arc::clone(&state),
+            policy(Instant::now() + Duration::from_secs(30)),
+        );
+        let error = format!("{:#}", worker.receive().unwrap_err());
+        assert!(error.contains("could not receive frame"));
+        assert_eq!(worker.lifecycle(), WorkerLifecycle::Failed);
+    }
+
+    #[test]
+    fn repeated_cancel_and_shutdown_are_idempotent() {
+        let state = Arc::new(Mutex::new(FakeState::default()));
+        let mut worker = supervisor(
+            Arc::clone(&state),
+            policy(Instant::now() + Duration::from_secs(30)),
+        );
+        let first = worker
+            .shutdown(WorkerTerminationReason::ParentShutdown)
+            .unwrap();
+        let second = worker.cancel(Duration::from_millis(1)).unwrap();
+        let third = worker
+            .shutdown(WorkerTerminationReason::ParentShutdown)
+            .unwrap();
+        assert_eq!(first, second);
+        assert_eq!(second, third);
+        let observed = state.lock().unwrap();
+        assert_eq!(observed.terminate_calls, 1);
+        assert_eq!(observed.reap_calls, 1);
+    }
+
+    #[test]
+    fn stderr_budget_and_incremental_ipc_budget_are_enforced() {
+        let state = Arc::new(Mutex::new(FakeState::default()));
+        state.lock().unwrap().stderr_bytes = 65 * 1024;
+        let mut worker = supervisor(
+            Arc::clone(&state),
+            policy(Instant::now() + Duration::from_secs(30)),
+        );
+        assert!(
+            worker
+                .send(&frame(WorkerMessageKind::Execute, 1, "execute"))
+                .is_err()
+        );
+        assert_eq!(
+            worker.termination_reason(),
+            Some(WorkerTerminationReason::OutputBudgetExceeded)
+        );
+
+        let state = Arc::new(Mutex::new(FakeState::default()));
+        let mut tight_policy = policy(Instant::now() + Duration::from_secs(30));
+        tight_policy.max_ipc_bytes = 200;
+        let mut worker = supervisor(Arc::clone(&state), tight_policy);
+        assert!(
+            worker
+                .send(&frame(WorkerMessageKind::Execute, 1, "first"))
+                .is_ok()
+        );
+        assert!(
+            worker
+                .send(&frame(WorkerMessageKind::Heartbeat, 2, "second"))
+                .is_err()
+        );
+        assert_eq!(state.lock().unwrap().sent.len(), 1);
+    }
+
+    #[test]
+    fn executable_identity_rejects_directories_case_changes_and_oversized_files() {
+        let mut directory_policy = policy(Instant::now() + Duration::from_secs(30));
+        directory_policy.worker_executable = std::env::temp_dir();
+        assert!(directory_policy.verify_executable().is_err());
+
+        let mut upper = policy(Instant::now() + Duration::from_secs(30));
+        upper.worker_sha256 = upper.worker_sha256.to_ascii_uppercase();
+        assert!(upper.verify_executable().is_ok());
+
+        let mut oversized = policy(Instant::now() + Duration::from_secs(30));
+        let path = std::env::temp_dir().join(format!(
+            "rocksoul-oversized-worker-{}",
+            NONCE.fetch_add(1, Ordering::Relaxed)
+        ));
+        let file = fs::File::create(&path).unwrap();
+        file.set_len(MAX_WORKER_EXECUTABLE_BYTES + 1).unwrap();
+        drop(file);
+        oversized.worker_executable = path.clone();
+        assert!(oversized.verify_executable().is_err());
+        fs::remove_file(path).unwrap();
     }
 }

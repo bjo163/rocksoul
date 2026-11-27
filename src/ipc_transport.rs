@@ -78,6 +78,15 @@ mod platform {
                 .context("could not set IPC read timeout")?;
             Ok(())
         }
+
+        #[cfg(test)]
+        pub fn write_raw(&mut self, bytes: &[u8]) -> Result<()> {
+            use std::io::Write;
+            self.stream
+                .write_all(bytes)
+                .context("could not write raw test bytes")?;
+            Ok(())
+        }
     }
 }
 
@@ -170,6 +179,61 @@ mod tests {
             .set_read_timeout(Duration::from_millis(10))
             .unwrap();
         assert_eq!(first_peer.receive().unwrap(), Some(frame));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn multiple_frames_in_one_write_are_read_in_order() {
+        let (mut sender, mut receiver) = test_pair().unwrap();
+        let first = WorkerFrame {
+            protocol_version: crate::worker_protocol::WORKER_PROTOCOL_VERSION,
+            run_id: "run-ipc".to_owned(),
+            request_id: "req-1".to_owned(),
+            sequence: 1,
+            kind: WorkerMessageKind::Heartbeat,
+            deadline_unix_ms: 1_800_000_000_000,
+            payload: serde_json::json!({}),
+        };
+        let second = WorkerFrame {
+            request_id: "req-2".to_owned(),
+            sequence: 2,
+            ..first.clone()
+        };
+        let mut bytes = Vec::new();
+        crate::worker_protocol::write_frame(&mut bytes, &first).unwrap();
+        crate::worker_protocol::write_frame(&mut bytes, &second).unwrap();
+        sender.write_raw(&bytes).unwrap();
+        assert_eq!(receiver.receive().unwrap(), Some(first));
+        assert_eq!(receiver.receive().unwrap(), Some(second));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn partial_header_and_peer_close_are_distinct() {
+        let (mut sender, mut receiver) = test_pair().unwrap();
+        receiver
+            .set_read_timeout(Duration::from_millis(10))
+            .unwrap();
+        sender.write_raw(&[0, 0]).unwrap();
+        assert!(receiver.receive().is_err());
+        drop(sender);
+        assert_eq!(receiver.receive().unwrap(), None);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn malformed_frame_errors_do_not_echo_payload() {
+        let (mut sender, mut receiver) = test_pair().unwrap();
+        let secret = "api_key=do-not-echo";
+        let body = format!("{{\"secret\":\"{secret}\"}}");
+        let length = u32::try_from(body.len()).unwrap();
+        let mut bytes = length.to_be_bytes().to_vec();
+        bytes.extend_from_slice(body.as_bytes());
+        sender.write_raw(&bytes).unwrap();
+        let error = format!("{:#}", receiver.receive().unwrap_err());
+        assert!(error.contains("invalid worker frame"));
+        assert!(!error.contains("do-not-echo"));
+        assert!(!error.contains("api_key"));
     }
 
     #[cfg(unix)]

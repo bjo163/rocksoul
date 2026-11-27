@@ -42,7 +42,7 @@ pub const CORE_SUITE_VERSION: &str = "1.3.0";
 pub const AUTHORIZATION_SUITE_ID: &str = "rocksoul.authorization-contract";
 pub const AUTHORIZATION_SUITE_VERSION: &str = "0.3.0";
 pub const WORKER_SUPERVISOR_SUITE_ID: &str = "rocksoul.worker-supervisor-contract";
-pub const WORKER_SUPERVISOR_SUITE_VERSION: &str = "0.3.0";
+pub const WORKER_SUPERVISOR_SUITE_VERSION: &str = "0.4.0";
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct EvaluationCheck {
@@ -889,6 +889,22 @@ pub fn run_worker_supervisor_contract() -> Result<EvaluationReport> {
         "worker.private_ipc_transport_or_fail_closed",
         transport_ok,
         "An anonymous private channel exists on Unix and is refused elsewhere; no public listener is created",
+    ));
+
+    let mut negative_session = WorkerSession::new("eval-negative")?;
+    let mut parent_only = hello.clone();
+    parent_only.run_id = "eval-negative".to_owned();
+    parent_only.request_id = "parent-only".to_owned();
+    parent_only.kind = WorkerMessageKind::Result;
+    let negative_paths = negative_session.validate_for_worker(&parent_only).is_err()
+        && WorkerLifecycle::Reaped
+            .transition(WorkerLifecycle::Running)
+            .is_err()
+        && WorkerSupervisor::start(policy.clone()).is_err();
+    checks.push(check(
+        "worker.negative_paths_fail_closed",
+        negative_paths,
+        "Wrong direction, terminal reuse, and unisolated start are all refused",
     ));
 
     let metrics = BTreeMap::from([
@@ -1778,9 +1794,15 @@ fn persist_report(report: &EvaluationReport) -> Result<()> {
     // previous report under a unique backup until the new file is in place.
     let backup = report_scratch_path(&path, "bak");
     let moved_previous = if path.exists() {
-        fs::rename(&path, &backup)
-            .with_context(|| format!("could not back up {}", path.display()))?;
-        true
+        match fs::rename(&path, &backup) {
+            Ok(()) => true,
+            // Another suite run may have replaced the file between the check
+            // and the rename. Writing our own result is still correct.
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => false,
+            Err(error) => {
+                return Err(error).with_context(|| format!("could not back up {}", path.display()));
+            }
+        }
     } else {
         false
     };
@@ -1824,8 +1846,11 @@ fn persist_markdown_report(path: &std::path::Path, content: &str) -> Result<()> 
     let backup = report_scratch_path(path, "md.bak");
     fs::write(&temporary, content.as_bytes())?;
     let moved_previous = if path.exists() {
-        fs::rename(path, &backup)?;
-        true
+        match fs::rename(path, &backup) {
+            Ok(()) => true,
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => false,
+            Err(error) => return Err(error).context("could not back up markdown report"),
+        }
     } else {
         false
     };
@@ -2118,7 +2143,7 @@ mod tests {
         let report = super::run_worker_supervisor_contract().unwrap();
         assert!(report.passed);
         assert_eq!(report.suite_id, WORKER_SUPERVISOR_SUITE_ID);
-        assert_eq!(report.checks.len(), 7);
+        assert_eq!(report.checks.len(), 8);
     }
 
     #[test]
