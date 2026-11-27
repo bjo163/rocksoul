@@ -949,6 +949,43 @@ mod tests {
     }
 
     #[test]
+    fn audit_records_never_contain_injected_values_or_raw_arguments() {
+        use std::time::{SystemTime, UNIX_EPOCH};
+
+        use crate::tool_audit::{ToolAuditKind, ToolAuditStore};
+
+        let (registry, policy) = configured();
+        let mut executor = FixtureExecutor::new();
+        let nonce = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let path = std::env::temp_dir().join(format!("rocksoul-fixture-redaction-{nonce}.jsonl"));
+        executor
+            .execute_audited(
+                &registry,
+                &policy,
+                &FixtureToolCall {
+                    tool_id: FIXTURE_WRITE_TOOL.to_owned(),
+                    input: "goal=attacker@example.com".to_owned(),
+                },
+                &FixtureAuditContext {
+                    audit_path: path.clone(),
+                    run_id: "fixture-redaction".to_owned(),
+                    first_sequence: 1,
+                    control: InvocationControl::new(std::time::Duration::from_secs(5), 1),
+                },
+            )
+            .unwrap_err();
+        let events = ToolAuditStore::read(&path).unwrap();
+        assert_eq!(events[1].kind, ToolAuditKind::AuthorizationDenied);
+        let persisted = std::fs::read_to_string(&path).unwrap();
+        assert!(!persisted.contains("attacker@example.com"));
+        assert!(!persisted.contains("goal="));
+        std::fs::remove_file(path).unwrap();
+    }
+
+    #[test]
     fn audited_write_without_commitment_is_denied_with_content_free_reason() {
         use std::time::{SystemTime, UNIX_EPOCH};
 

@@ -45,6 +45,12 @@ jobs:
       - name: Run offline memory retrieval evaluation
         run: cargo run --locked -- eval run memory-retrieval
 
+      - name: Run offline authorization contract evaluation
+        run: cargo run --locked -- eval run authorization
+
+      - name: Run offline worker supervisor contract evaluation
+        run: cargo run --locked -- eval run worker-supervisor
+
       - name: Upload core integrity evaluation reports
         uses: actions/upload-artifact@v4
         with:
@@ -62,6 +68,26 @@ jobs:
           path: |
             target/debug/data/evaluations/memory-retrieval/latest.json
             target/debug/data/evaluations/memory-retrieval/latest.md
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload authorization contract evaluation reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: authorization-contract-evaluation
+          path: |
+            target/debug/data/evaluations/rocksoul.authorization-contract/latest.json
+            target/debug/data/evaluations/rocksoul.authorization-contract/latest.md
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload worker supervisor contract evaluation reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: worker-supervisor-contract-evaluation
+          path: |
+            target/debug/data/evaluations/rocksoul.worker-supervisor-contract/latest.json
+            target/debug/data/evaluations/rocksoul.worker-supervisor-contract/latest.md
           if-no-files-found: error
           retention-days: 14
 
@@ -149,6 +175,10 @@ jobs:
             if ($LASTEXITCODE -ne 0) { throw "Portable core evaluation failed" }
             & $exe eval run memory-retrieval
             if ($LASTEXITCODE -ne 0) { throw "Portable memory retrieval evaluation failed" }
+            & $exe eval run authorization
+            if ($LASTEXITCODE -ne 0) { throw "Portable authorization evaluation failed" }
+            & $exe eval run worker-supervisor
+            if ($LASTEXITCODE -ne 0) { throw "Portable worker supervisor evaluation failed" }
             & $exe memory add semantic --content "portable smoke test record"
             if ($LASTEXITCODE -ne 0) { throw "Portable memory write failed" }
             & $exe memory list

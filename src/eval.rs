@@ -2,6 +2,7 @@ use std::{
     collections::BTreeMap,
     fs,
     path::PathBuf,
+    sync::atomic::{AtomicU64, Ordering},
     time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
 
@@ -39,9 +40,9 @@ use crate::{
 pub const CORE_SUITE_ID: &str = "rocksoul.core-integrity";
 pub const CORE_SUITE_VERSION: &str = "1.3.0";
 pub const AUTHORIZATION_SUITE_ID: &str = "rocksoul.authorization-contract";
-pub const AUTHORIZATION_SUITE_VERSION: &str = "0.2.0";
+pub const AUTHORIZATION_SUITE_VERSION: &str = "0.3.0";
 pub const WORKER_SUPERVISOR_SUITE_ID: &str = "rocksoul.worker-supervisor-contract";
-pub const WORKER_SUPERVISOR_SUITE_VERSION: &str = "0.2.0";
+pub const WORKER_SUPERVISOR_SUITE_VERSION: &str = "0.3.0";
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct EvaluationCheck {
@@ -63,6 +64,9 @@ pub struct EvaluationReport {
     pub evaluated_at_unix: u64,
     pub passed: bool,
     pub checks: Vec<EvaluationCheck>,
+    /// Optional machine-readable safety/utility metrics. Absent in older reports.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub metrics: Option<BTreeMap<String, String>>,
 }
 
 /// Typed, bounded evidence contract for model-dependent agent trajectories.
@@ -247,7 +251,7 @@ pub fn list() {
     );
     println!("{AUTHORIZATION_SUITE_ID}  v{AUTHORIZATION_SUITE_VERSION}  offline / deterministic");
     println!(
-        "  Validates request grounding, explicit confirmation, immutable write sets, and denial reason codes."
+        "  Validates request grounding, explicit confirmation, immutable write sets, denial reason codes, and 38 adversarial injections."
     );
     println!(
         "{WORKER_SUPERVISOR_SUITE_ID}  v{WORKER_SUPERVISOR_SUITE_VERSION}  offline / deterministic"
@@ -256,6 +260,50 @@ pub fn list() {
         "  Validates fail-closed isolation, worker lifecycle, policy limits, and protocol direction/replay."
     );
     println!("  External benchmark adapters: planned; no external datasets are downloaded.");
+}
+
+/// Machine-readable suite registry for tooling. Statuses and versions mirror
+/// `data/evaluation/benchmark-manifest.v1.json`.
+pub fn list_json() -> Result<String> {
+    let suites = serde_json::json!([
+        {
+            "id": CORE_SUITE_ID,
+            "version": CORE_SUITE_VERSION,
+            "status": "implemented",
+            "execution": "offline_deterministic_ci",
+        },
+        {
+            "id": "rocksoul.memory-retrieval",
+            "version": "1.0.0",
+            "status": "implemented",
+            "execution": "offline_deterministic_ci",
+        },
+        {
+            "id": "rocksoul.agent-runtime-fixtures",
+            "version": "0.1.0",
+            "status": "implemented",
+            "execution": "offline_deterministic_ci_in_process",
+        },
+        {
+            "id": AUTHORIZATION_SUITE_ID,
+            "version": AUTHORIZATION_SUITE_VERSION,
+            "status": "implemented",
+            "execution": "offline_deterministic_ci",
+        },
+        {
+            "id": WORKER_SUPERVISOR_SUITE_ID,
+            "version": WORKER_SUPERVISOR_SUITE_VERSION,
+            "status": "implemented",
+            "execution": "offline_deterministic_ci_contract_only",
+        },
+        {
+            "id": "rocksoul.agent-trajectory",
+            "version": serde_json::Value::Null,
+            "status": "planned",
+            "execution": "external_adapter_required",
+        },
+    ]);
+    Ok(serde_json::to_string_pretty(&suites)?)
 }
 
 pub fn run_core() -> Result<EvaluationReport> {
@@ -509,6 +557,7 @@ pub fn run_core() -> Result<EvaluationReport> {
         evaluated_at_unix: now,
         passed: checks.iter().all(|item| item.passed),
         checks,
+        metrics: None,
     };
 
     persist_report(&report)?;
@@ -687,11 +736,36 @@ pub fn run_authorization_contract() -> Result<EvaluationReport> {
         ),
     ));
 
+    let metrics = BTreeMap::from([
+        ("cases".to_owned(), metrics.cases.to_string()),
+        ("blocked".to_owned(), metrics.blocked.to_string()),
+        (
+            "benign_accepted".to_owned(),
+            metrics.benign_accepted.to_string(),
+        ),
+        (
+            "false_denials".to_owned(),
+            metrics.false_denials.to_string(),
+        ),
+        (
+            "explicit_confirmations".to_owned(),
+            metrics.explicit_confirmations.to_string(),
+        ),
+        (
+            "token_overhead".to_owned(),
+            if metrics.token_overhead_measured {
+                "measured".to_owned()
+            } else {
+                "not_measured".to_owned()
+            },
+        ),
+    ]);
     let report = build_report(
         AUTHORIZATION_SUITE_ID,
         AUTHORIZATION_SUITE_VERSION,
         now,
         checks,
+        Some(metrics),
     );
     persist_report(&report)?;
     Ok(report)
@@ -817,11 +891,17 @@ pub fn run_worker_supervisor_contract() -> Result<EvaluationReport> {
         "An anonymous private channel exists on Unix and is refused elsewhere; no public listener is created",
     ));
 
+    let metrics = BTreeMap::from([
+        ("sandbox_backend".to_owned(), "none".to_owned()),
+        ("production_dispatch".to_owned(), "disabled".to_owned()),
+        ("os_isolation".to_owned(), "unavailable".to_owned()),
+    ]);
     let report = build_report(
         WORKER_SUPERVISOR_SUITE_ID,
         WORKER_SUPERVISOR_SUITE_VERSION,
         now,
         checks,
+        Some(metrics),
     );
     persist_report(&report)?;
     Ok(report)
@@ -886,6 +966,7 @@ fn build_report(
     suite_version: &str,
     evaluated_at_unix: u64,
     checks: Vec<EvaluationCheck>,
+    metrics: Option<BTreeMap<String, String>>,
 ) -> EvaluationReport {
     EvaluationReport {
         schema_version: 1,
@@ -898,6 +979,7 @@ fn build_report(
         evaluated_at_unix,
         passed: checks.iter().all(|item| item.passed),
         checks,
+        metrics,
     }
 }
 
@@ -1642,13 +1724,43 @@ pub fn print_memory_retrieval_report(report: &MemoryRetrievalEvaluationReport) {
 }
 
 pub fn latest() -> Result<Option<EvaluationReport>> {
-    let path = latest_report_path()?;
+    latest_for(CORE_SUITE_ID)
+}
+
+/// Read the most recent report for an explicit suite. Each suite owns its own
+/// path so one run cannot replace another suite's evidence.
+pub fn latest_for(suite_id: &str) -> Result<Option<EvaluationReport>> {
+    let path = latest_report_path_for(suite_id)?;
     if !path.is_file() {
         return Ok(None);
     }
     let bytes = fs::read(&path).with_context(|| format!("could not read {}", path.display()))?;
     let report = parse_report(&bytes)?;
     Ok(Some(report))
+}
+
+fn report_write_suffix() -> String {
+    static NONCE: AtomicU64 = AtomicU64::new(0);
+    let nanos = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_nanos();
+    format!(
+        "{}-{}-{}",
+        std::process::id(),
+        nanos,
+        NONCE.fetch_add(1, Ordering::Relaxed)
+    )
+}
+
+/// Unique scratch paths prevent concurrent suite runs from clobbering each
+/// other's temporary or backup files.
+fn report_scratch_path(path: &std::path::Path, label: &str) -> PathBuf {
+    let name = path
+        .file_name()
+        .map(|value| value.to_string_lossy().into_owned())
+        .unwrap_or_else(|| "report".to_owned());
+    path.with_file_name(format!("{name}.{label}.{}", report_write_suffix()))
 }
 
 fn persist_report(report: &EvaluationReport) -> Result<()> {
@@ -1658,18 +1770,14 @@ fn persist_report(report: &EvaluationReport) -> Result<()> {
         .context("evaluation report path has no parent")?;
     fs::create_dir_all(parent).with_context(|| format!("could not create {}", parent.display()))?;
     let bytes = serde_json::to_vec_pretty(report)?;
-    let temporary = path.with_extension("json.tmp");
+    let temporary = report_scratch_path(&path, "tmp");
     fs::write(&temporary, bytes)
         .with_context(|| format!("could not write {}", temporary.display()))?;
 
     // Windows rename does not replace an existing destination. Preserve the
-    // previous report until the new file is in place, then remove the backup.
-    let backup = path.with_extension("json.bak");
+    // previous report under a unique backup until the new file is in place.
+    let backup = report_scratch_path(&path, "bak");
     let moved_previous = if path.exists() {
-        if backup.exists() {
-            fs::remove_file(&backup)
-                .with_context(|| format!("could not remove {}", backup.display()))?;
-        }
         fs::rename(&path, &backup)
             .with_context(|| format!("could not back up {}", path.display()))?;
         true
@@ -1681,6 +1789,7 @@ fn persist_report(report: &EvaluationReport) -> Result<()> {
         if moved_previous {
             let _ = fs::rename(&backup, &path);
         }
+        let _ = fs::remove_file(&temporary);
         return Err(error).with_context(|| format!("could not replace {}", path.display()));
     }
     if moved_previous {
@@ -1689,10 +1798,6 @@ fn persist_report(report: &EvaluationReport) -> Result<()> {
     }
     persist_markdown_report(&path.with_extension("md"), &render_core_markdown(report))?;
     Ok(())
-}
-
-fn latest_report_path() -> Result<PathBuf> {
-    latest_report_path_for(CORE_SUITE_ID)
 }
 
 /// Each suite owns its own report file so concurrent runs cannot replace or
@@ -1715,13 +1820,10 @@ fn persist_markdown_report(path: &std::path::Path, content: &str) -> Result<()> 
         .parent()
         .context("Markdown report path has no parent")?;
     fs::create_dir_all(parent)?;
-    let temporary = path.with_extension("md.tmp");
-    let backup = path.with_extension("md.bak");
+    let temporary = report_scratch_path(path, "md.tmp");
+    let backup = report_scratch_path(path, "md.bak");
     fs::write(&temporary, content.as_bytes())?;
     let moved_previous = if path.exists() {
-        if backup.exists() {
-            fs::remove_file(&backup)?;
-        }
         fs::rename(path, &backup)?;
         true
     } else {
@@ -1960,6 +2062,40 @@ mod tests {
     }
 
     #[test]
+    fn older_reports_without_metrics_remain_parseable() {
+        let raw = br#"{"schema_version":1,"suite_id":"legacy","suite_version":"1","rocksoul_version":"0.1.0","rocksoul_commit":"unknown","platform":"test","architecture":"test","evaluated_at_unix":1,"passed":true,"checks":[]}"#;
+        let report = super::parse_report::<super::EvaluationReport>(raw).unwrap();
+        assert!(report.metrics.is_none());
+    }
+
+    #[test]
+    fn authorization_report_has_structured_metrics_and_content_free_markdown() {
+        let report = super::run_authorization_contract().unwrap();
+        let metrics = report.metrics.as_ref().expect("authorization metrics");
+        assert_eq!(metrics.get("cases").map(String::as_str), Some("38"));
+        assert_eq!(metrics.get("blocked").map(String::as_str), Some("38"));
+        assert_eq!(
+            metrics.get("token_overhead").map(String::as_str),
+            Some("not_measured")
+        );
+        let markdown = super::render_core_markdown(&report);
+        assert!(!markdown.contains("attacker@example.com"));
+        assert!(!markdown.contains("team@example.com"));
+    }
+
+    #[test]
+    fn json_suite_registry_matches_manifest_and_constants() {
+        let value: serde_json::Value = serde_json::from_str(&super::list_json().unwrap()).unwrap();
+        let suites = value.as_array().unwrap();
+        assert_eq!(suites.len(), 6);
+        assert_eq!(suites[3]["id"], AUTHORIZATION_SUITE_ID);
+        assert_eq!(suites[3]["version"], AUTHORIZATION_SUITE_VERSION);
+        assert_eq!(suites[4]["id"], WORKER_SUPERVISOR_SUITE_ID);
+        assert_eq!(suites[4]["version"], WORKER_SUPERVISOR_SUITE_VERSION);
+        assert_eq!(suites[5]["status"], "planned");
+    }
+
+    #[test]
     fn suites_persist_to_independent_report_paths() {
         let core = super::latest_report_path_for(CORE_SUITE_ID).unwrap();
         let authorization = super::latest_report_path_for(AUTHORIZATION_SUITE_ID).unwrap();
@@ -2065,6 +2201,7 @@ mod tests {
             architecture: "test".into(),
             evaluated_at_unix: 1,
             passed: false,
+            metrics: None,
             checks: vec![
                 super::check("safe", true, "ok"),
                 super::check("unsafe", false, "veto"),

@@ -957,6 +957,78 @@ mod tests {
     }
 
     #[test]
+    fn confirmation_requires_an_exact_token_not_a_substring() {
+        let grounding =
+            RequestGrounding::from_user_request("task-1", "Send the report to Alex").unwrap();
+        let operation = proposal("alex@example.com");
+        assert!(
+            grounding
+                .confirm_operation(&schema(), &operation, "send to notalex@example.com")
+                .is_err()
+        );
+        assert!(
+            grounding
+                .confirm_operation(&schema(), &operation, "send to alex@example.com now")
+                .is_ok()
+        );
+    }
+
+    #[test]
+    fn failed_confirmation_commit_does_not_consume_the_grant() {
+        let grounding =
+            RequestGrounding::from_user_request("task-1", "Send the report to Alex").unwrap();
+        let schemas = BTreeMap::from([("mail.send".to_owned(), schema())]);
+        let operation = proposal("alex@example.com");
+        let mut grant = grounding
+            .confirm_operation(&schema(), &operation, "send to alex@example.com")
+            .unwrap();
+        let mut changed = operation.clone();
+        changed
+            .arguments
+            .insert("body".to_owned(), "changed by an observation".to_owned());
+        assert!(
+            CommittedWriteSet::commit_with_confirmations(
+                &grounding,
+                &schemas,
+                vec![changed],
+                std::slice::from_mut(&mut grant),
+            )
+            .is_err()
+        );
+        assert!(!grant.is_used());
+    }
+
+    #[test]
+    fn invalid_write_schemas_are_rejected() {
+        let mut empty = schema();
+        empty.arguments.clear();
+        assert!(empty.validate().is_err());
+
+        let mut bad_name = schema();
+        bad_name
+            .arguments
+            .insert("bad name".to_owned(), ArgumentRule::payload(true));
+        assert!(bad_name.validate().is_err());
+
+        let mut empty_control = schema();
+        empty_control
+            .arguments
+            .insert("when".to_owned(), ArgumentRule::temporal_control(false, []));
+        assert!(empty_control.validate().is_err());
+
+        let mut bad_payload = schema();
+        bad_payload.arguments.insert(
+            "body".to_owned(),
+            ArgumentRule {
+                role: ArgumentRole::Payload,
+                required: true,
+                allowed_values: BTreeSet::from(["x".to_owned()]),
+            },
+        );
+        assert!(bad_payload.validate().is_err());
+    }
+
+    #[test]
     fn gate_commits_only_before_the_first_observation() {
         let grounding =
             RequestGrounding::from_user_request("task-1", "Send to alex@example.com").unwrap();
