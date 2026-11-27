@@ -1,6 +1,6 @@
 # Rocksoul Project Progress
 
-**Last updated:** 2026-11-06 (Asia/Jakarta, Issue #71 worker IPC merge and RID taxonomy reconciliation)  
+**Last updated:** 2026-11-27 (Asia/Jakarta, repository consolidation audit and post-November-14 main reconciliation)  
 **Repository:** [bjo163/rocksoul](https://github.com/bjo163/rocksoul)  
 **Canonical branch:** `main`  
 **Current principle:** One Core. Infinite Evolution.
@@ -17,7 +17,7 @@ This is the durable progress snapshot for maintainers and delegated/local AI age
 | Stage 1 follow-through | **Merged and verified** | PR #53 merged as `458df81f`; issue #35 closed; CI #42044132321 passed on Linux and Windows |
 | Stage 2 — Persistent memory | **Complete on main** | Schema v4, locking, retention/forgetting, evaluated retrieval and human-reviewed proposals; see PRs #43/#46/#47/#49/#50/#51 |
 | Stage 2 claim integrity | **Merged** | PR #51 merged as `260d29852bb30f2f63129271a07cd368fafccc3f`; issue #44 closed; CI #42008862735 passed on Linux and Windows |
-| Stage 3 — Skills/tools | **In progress** | Typed deny-by-default registry, bounded fixtures, content-free audit and cooperative invocation controls merged; bounded worker IPC protocol PR #72 merged after exact-head Linux/Windows CI passed; production supervisor, OS sandbox, kill/reap and dispatch remain disabled |
+| Stage 3 — Skills/tools | **In progress** | PR #72 bounded worker IPC protocol, PR #77 message-direction hardening, PR #95 initial request-grounded authorization, and PR #97 roadmap handoff are merged; latest main CI #43549977459 passed Linux and Windows; parent supervisor, OS sandbox, kill/reap, independent verifier and production dispatch remain incomplete |
 | Stage 4 — Application builder | **Not started** | Future bounded project-generation workflow |
 | Stage 5 — Evaluation/evolution | **Partial foundation** | Offline Core Integrity exists; candidate benchmarking, isolated evolution and promotion/rollback remain |
 | Stage 6 — Multi-agent | **Not started** | Deliberately deferred until single-agent foundations justify delegation |
@@ -50,13 +50,13 @@ Exact-head validation:
 
 Integration complete: PR #65 merged; `main` verified at `6474cd130bd8146f03dcacb757d9c341d4b1161a`; Issue #9 closed. No further Issue #9 work remains.
 
-## 1. Accepted baseline on main
+## 1. Historical accepted baseline after PR #65
 
-Verified `main` SHA after PR #65 merge:
+Historical `main` SHA immediately after PR #65 merge:
 
 `6474cd130bd8146f03dcacb757d9c341d4b1161a`
 
-Refresh the remote ref before every new task; this is the handoff baseline, not a permanent pointer.
+This is a historical milestone, not the current repository head. The latest audited `main` SHA on 2026-11-27 is `f2eb06390bb9bf89c8146cc3f4159357ae846fa3` (last commit 2026-11-14). The latest observed CI run on that exact main SHA is [#43549977459](https://github.com/bjo163/rocksoul/actions/runs/43549977459); Linux quality checks and Windows build/package/smoke tests both passed. Refresh the remote ref before every new task.
 
 ### Stage 0 — Seed CLI
 
@@ -235,8 +235,8 @@ Audit conclusions and remaining gates:
 - The lexical screen is a candidate-discovery aid, not proof of independence. The second-pass and third-pass semantic reviews added 24 adjacency guards after reviewing candidate pairs that were not explicit in the prior graph.
 - Correlation between capabilities is expected; the control is distinct measurement targets and non-reused outcome evidence, not a claim that capabilities are statistically independent.
 - Structural validation and editorial boundary review do **not** constitute independent psychometric validation. Trusted evaluator design, held-out benchmark quality, inter-rater reliability, and empirical discriminant validity remain pending.
-- Exact-head Linux/Windows CI must be green before claiming verified completion. Previous exact-head CI at `687e1534e8e7dd30b8d794a1cb17847b0b299470` passed; later report-generation changes require a fresh CI run.
-- Previous CI diagnosis and repairs: `cargo fmt --check` reported formatting drift in `commands.rs`, `rid.rs`, `rid_catalogue.rs`, `rid_store.rs`, and `tui.rs`; formatting is corrected. Windows tests exposed a fixture type mismatch (`Vec<&str>` vs `Vec<String>`), now fixed with owned strings. The next Windows run exposed `Access is denied` during legacy migration because a read-only archive handle was redundantly flushed after the staged file had already been synced; that read-only `sync_all` call is removed. The latest exact-main CI run is queued; do not mark it green until both Linux and Windows jobs finish.
+- Exact-head Linux/Windows CI must be green before claiming verified completion. The latest observed `main` commit `f2eb06390bb9bf89c8146cc3f4159357ae846fa3` passed both jobs in CI run [#43549977459](https://github.com/bjo163/rocksoul/actions/runs/43549977459). This is build/test evidence for that main snapshot, not independent psychometric validation of the 99 capability constructs.
+- Previous CI diagnosis and repairs: `cargo fmt --check` reported formatting drift in `commands.rs`, `rid.rs`, `rid_catalogue.rs`, `rid_store.rs`, and `tui.rs`; formatting is corrected. Windows tests exposed a fixture type mismatch (`Vec<&str>` vs `Vec<String>`), now fixed with owned strings. The next Windows run exposed `Access is denied` during legacy migration because a read-only archive handle was redundantly flushed after the staged file had already been synced; that read-only `sync_all` call is removed.
 
 Next:
 1. Verify exact-head Linux and Windows CI for v2.3.3 and fix any failures.
@@ -317,3 +317,46 @@ The merged `src/worker_protocol.rs` provides a bounded, versioned, length-prefix
 It does **not** provide authenticated IPC, process spawning/supervision, OS isolation, resource enforcement, hard timeout, kill/reap, WASM execution, or an independent verifier. Production dispatch remains disabled.
 
 **Next:** define and implement the parent supervisor with authenticated local IPC, bounded handshake/heartbeat, deadline/cancel enforcement, process termination and OS-observed reaping. Then implement Linux and Windows isolation backends and adversarial kill/reap tests. Keep Issue #13 open until its independent verifier and held-out evaluation gates pass.
+
+
+## 6. Repository state update — 2026-11-27
+
+This section supersedes older handoff statements above where they refer to the current repository head or say the latest main CI is still queued.
+
+### Current GitHub snapshot
+
+- Audited `main`: `f2eb06390bb9bf89c8146cc3f4159357ae846fa3` (last commit 2026-11-14).
+- Latest observed CI on that exact main SHA: [#43549977459](https://github.com/bjo163/rocksoul/actions/runs/43549977459), with Linux quality checks and Windows build/package/portable/installer smoke checks both successful.
+- PR [#99](https://github.com/bjo163/rocksoul/pull/99) adds the repository consolidation audit. Its documentation-only head `831ab27ad874067b89b92cc20fc675754b311f6d` passed both Linux and Windows jobs in [CI run #45947245676](https://github.com/bjo163/rocksoul/actions/runs/45947245676). The PR is open and mergeable; it is not yet part of `main`.
+- The repository audit found 54 historical PRs: 32 merged, 22 closed without merge, and no open PRs before PR #99 was opened. The branch inventory showed 52 refs at the time of the audit; the current audit branch adds one more ref. Treat this count as a dated snapshot, not a permanent invariant.
+
+### Merges after the 2026-11-06 progress snapshot
+
+- PR #72 merged the bounded worker IPC framing/session/lifecycle protocol. It did not implement authenticated OS IPC or a process supervisor.
+- PR #77 merged worker message-direction enforcement.
+- PR #95 merged the first request-grounded write authorization contract: typed authority/payload/temporal-control roles, lexical request grounding, immutable pre-observation write set, ordered single-use execution cursor and adversarial unit tests.
+- PR #96 fixed the cross-platform Clippy lock-contention predicate after exact-head CI surfaced the lint.
+- PR #97 reconciled the worker protocol roadmap and handoff against current main.
+
+Current-main CI [#43549977459](https://github.com/bjo163/rocksoul/actions/runs/43549977459) passed after these merges.
+
+### Security and execution gates that remain open
+
+- [Issue #75](https://github.com/bjo163/rocksoul/issues/75): parent-owned worker supervisor, authenticated OS-bound IPC, monotonic deadlines, hard process-tree termination, OS-observed wait/reap and Linux/Windows adversarial integration tests.
+- [Issue #71](https://github.com/bjo163/rocksoul/issues/71): real Linux and Windows OS isolation and WASM runtime gate. An in-process fixture executor is not a sandbox.
+- [Issue #13](https://github.com/bjo163/rocksoul/issues/13): independent effect verifier and reproducible held-out trajectory evaluation. Its current fixture verifier is explicitly `independent=false`.
+- [Issue #92](https://github.com/bjo163/rocksoul/issues/92): PR #95 delivered only the first authorization contract slice. Semantic ambiguity/negation handling, explicit task-bound confirmation receipts, audit and complete tool-schema integration, broader hostile-content fixtures and benign-utility measurements remain.
+- Production tool dispatch must stay disabled until the sandbox, independent-verifier and evaluation gates have been satisfied. Do not turn a merged protocol or authorization contract into a claim of production-safe execution.
+
+### RID and reference-catalogue governance
+
+- [Issue #5](https://github.com/bjo163/rocksoul/issues/5) remains open even though the Universal 99 v2.3.3 catalogue and migration are present on main. Trusted per-domain evaluator design, held-out benchmark validity, minimum sample counts, empirical discriminant validity and exact evidence provenance remain acceptance work. Keep all stats unrated until trusted evidence exists.
+- [Issue #8](https://github.com/bjo163/rocksoul/issues/8) remains a separate human review of the Asmaul Husna reference catalogue. It must not define technical RID identity or scoring, and AI must not self-approve Arabic, source or language correctness.
+
+### Consolidation follow-through
+
+- `AGENTS.md` main-only source-of-truth rules remain the required workflow.
+- Historical closed-unmerged PRs and diverged refs are not merge candidates by default. Port only demonstrably missing, still-needed behavior onto a fresh branch from latest main.
+- `release-production` remains a special content-review case; do not merge or delete it based on ahead/behind counts.
+- No historical branch was deleted, force-updated or merged during the 2026-11-27 audit.
+- Branch protection for `main` still requires owner-side verification in GitHub Settings. The connected integration could not read the detailed branch-protection endpoint (HTTP 403), so do not claim that required checks or force-push restrictions are enabled.
