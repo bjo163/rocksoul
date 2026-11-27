@@ -1,6 +1,6 @@
 # AGI-Oriented Capability Evaluation
 
-**Status:** Offline deterministic Core Integrity v1.3.0, Memory Retrieval v1.0.0, Agent Runtime Fixtures v0.1.0, Authorization Contract v0.3.0, and Worker Supervisor Contract v0.4.0 are implemented. They emit JSON and Markdown reports with source-commit provenance. The last two are contract suites only: they do not establish OS isolation or run a model trajectory. External agent and generalization suites are planned or candidate integrations, not integrated benchmarks.
+**Status:** Offline deterministic Core Integrity v1.4.0, Memory Retrieval v1.0.0, Agent Runtime Fixtures v0.1.0, Authorization Contract v0.3.0, and Worker Supervisor Contract v0.4.0 are implemented. They emit JSON and Markdown reports with source-commit provenance. The last two are contract suites only: they do not establish OS isolation or run a model trajectory. External agent and generalization suites are planned or candidate integrations, not integrated benchmarks.
 
 ## Purpose and limits
 
@@ -10,7 +10,7 @@ Do not publish one scalar "AGI score". Publish a versioned capability vector wit
 
 ## Evaluation layers
 
-1. **Core Integrity v1.3.0 (offline, deterministic):** turn lifecycle and retry invariants, terminal-state immutability, verified-XP evidence gating and replay behavior, RID identity and 99-stat catalogue integrity, level curve, explicit-memory baseline, workspace crash-window recovery, replay/receipt idempotency, immutable receipt conflict and malformed receipt preservation.
+1. **Core Integrity v1.4.0 (offline, deterministic):** turn lifecycle and retry invariants, terminal-state immutability, verified-XP evidence gating and replay behavior, RID identity and 99-stat catalogue integrity, level curve, explicit-memory baseline, workspace crash-window recovery, replay/receipt idempotency, immutable receipt conflict and malformed receipt preservation, externally calibrated abstention thresholds, and observed-state precedence over claimed history.
 2. **Agent trajectories (planned):** planning quality, permissioned tool selection, observed task success, verifier precision/recall, retries, recovery, action efficiency, and truthful completion reporting.
 3. **Agent runtime fixtures v0.1.0 (offline deterministic):** deny-by-default tool registry, explicit capability grants, bounded in-memory fixture read/write operations with per-run 16-step and 16 KiB aggregate input-byte ceilings, and verifier checks against observed fixture state. This is a runtime safety/evidence-flow test suite only; its verifier is not an independent production evaluator and it is not an OS sandbox or model benchmark.
 4. **Learning and generalization (planned):** memory recall, provenance, retention, forgetting, continual-learning stability/plasticity, held-out cross-domain transfer, world-model prediction, and calibration.
@@ -97,7 +97,7 @@ The worker suite verifies the parent-owned contract only: the production start p
 
 ## Roadmap
 
-- [x] Deterministic Core Integrity v1.3.0 and JSON report.
+- [x] Deterministic Core Integrity v1.4.0 and JSON report.
 - [x] Deterministic Core Integrity and Memory Retrieval suites record the tested source revision in JSON and Markdown reports.
 - [x] CI archives both formats for both deterministic suites.
 - [x] Versioned benchmark manifest registers Core Integrity and Memory Retrieval as implemented offline suites; a Rust test checks suite IDs, versions, statuses and RID registry counts.

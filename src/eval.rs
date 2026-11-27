@@ -16,6 +16,9 @@ use crate::{
         CancellationToken, TurnEvent, TurnPhase, TurnState, VerificationEvidence,
         VerificationOutcome, VerificationRequest, verify_turn_and_award_xp,
     },
+    fixture_runtime::{
+        FIXTURE_WRITE_TOOL, FixtureExecutor, FixtureToolCall, register_fixture_tools,
+    },
     memory::{MEMORY_SCHEMA_VERSION, MemoryKind, MemoryRecord, MemorySearchFilters, MemoryStore},
     paths::AppPaths,
     request_authorization::{
@@ -28,6 +31,7 @@ use crate::{
     sandbox::{FailClosedSandbox, SandboxBackend, SandboxPlatform, SandboxPolicy},
     task_trace::{self, TaskTraceEvent},
     tool_audit::ToolFailureCategory,
+    tool_registry::{ToolCapability, ToolPolicy, ToolRegistry},
     worker_protocol::{
         WORKER_PROTOCOL_VERSION, WorkerFrame, WorkerLifecycle, WorkerMessageKind, WorkerSession,
     },
@@ -38,7 +42,7 @@ use crate::{
 };
 
 pub const CORE_SUITE_ID: &str = "rocksoul.core-integrity";
-pub const CORE_SUITE_VERSION: &str = "1.3.0";
+pub const CORE_SUITE_VERSION: &str = "1.4.0";
 pub const AUTHORIZATION_SUITE_ID: &str = "rocksoul.authorization-contract";
 pub const AUTHORIZATION_SUITE_VERSION: &str = "0.3.0";
 pub const WORKER_SUPERVISOR_SUITE_ID: &str = "rocksoul.worker-supervisor-contract";
@@ -306,6 +310,85 @@ pub fn list_json() -> Result<String> {
     Ok(serde_json::to_string_pretty(&suites)?)
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum AbstentionDecision {
+    Answer,
+    Abstain,
+}
+
+/// An externally calibrated threshold is enforced by the kernel. A model's
+/// stated willingness to answer or abstain is not part of the decision.
+fn threshold_decision(
+    calibrated_score_basis_points: u16,
+    threshold_basis_points: u16,
+    model_claims_willing_to_answer: bool,
+) -> AbstentionDecision {
+    let _ = model_claims_willing_to_answer;
+    if calibrated_score_basis_points >= threshold_basis_points {
+        AbstentionDecision::Answer
+    } else {
+        AbstentionDecision::Abstain
+    }
+}
+
+fn threshold_policy_checks(checks: &mut Vec<EvaluationCheck>) {
+    let scores = [4_000_u16, 7_000_u16, 9_000_u16];
+    let coverage_at_50 = scores
+        .iter()
+        .filter(|score| threshold_decision(**score, 5_000, true) == AbstentionDecision::Answer)
+        .count();
+    let coverage_at_90 = scores
+        .iter()
+        .filter(|score| threshold_decision(**score, 9_000, true) == AbstentionDecision::Answer)
+        .count();
+    checks.push(check(
+        "policy.external_threshold_enforced",
+        coverage_at_50 == 2 && coverage_at_90 == 1 && coverage_at_90 <= coverage_at_50,
+        &format!(
+            "Deterministic coverage changes with the enforced threshold: 50%={coverage_at_50}/3, 90%={coverage_at_90}/3"
+        ),
+    ));
+    checks.push(check(
+        "policy.stated_abstention_is_not_enforcement",
+        threshold_decision(4_000, 5_000, true) == AbstentionDecision::Abstain
+            && threshold_decision(9_000, 5_000, false) == AbstentionDecision::Answer,
+        "Model-reported intent never overrides the externally calibrated threshold",
+    ));
+}
+
+fn history_evidence_checks(checks: &mut Vec<EvaluationCheck>) -> Result<()> {
+    let mut registry = ToolRegistry::default();
+    register_fixture_tools(&mut registry)?;
+    let mut policy = ToolPolicy {
+        max_input_bytes: 4_096,
+        ..ToolPolicy::default()
+    };
+    policy.allow_tool(FIXTURE_WRITE_TOOL);
+    policy.grant(ToolCapability::WorkspaceWrite);
+
+    let claimed_without_effect = FixtureExecutor::new()
+        .verify_state_equals("fixture://state/goal", "done")
+        .is_err();
+    let mut executor = FixtureExecutor::new();
+    let observation = executor.execute(
+        &registry,
+        &policy,
+        &FixtureToolCall {
+            tool_id: FIXTURE_WRITE_TOOL.to_owned(),
+            input: "goal=done".to_owned(),
+        },
+    )?;
+    let observed_effect = executor
+        .verify_state_equals(&observation.evidence_ref, "done")
+        .is_ok_and(|verification| verification.passed);
+    checks.push(check(
+        "evidence.observed_state_overrides_claimed_history",
+        claimed_without_effect && observed_effect,
+        "A claimed completed action without an observed effect fails; observed state wins",
+    ));
+    Ok(())
+}
+
 pub fn run_core() -> Result<EvaluationReport> {
     let now = SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -545,6 +628,8 @@ pub fn run_core() -> Result<EvaluationReport> {
     ));
 
     stage1_workspace_checks(now, &mut checks)?;
+    threshold_policy_checks(&mut checks);
+    history_evidence_checks(&mut checks)?;
 
     let report = EvaluationReport {
         schema_version: 1,
