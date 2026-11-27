@@ -365,6 +365,112 @@ mod tests {
     }
 
     #[test]
+    fn direction_matrix_is_exhaustive() {
+        let worker_allowed = [
+            WorkerMessageKind::Hello,
+            WorkerMessageKind::Heartbeat,
+            WorkerMessageKind::Result,
+            WorkerMessageKind::Failed,
+            WorkerMessageKind::Exited,
+        ];
+        let parent_allowed = [
+            WorkerMessageKind::Ready,
+            WorkerMessageKind::Execute,
+            WorkerMessageKind::Cancel,
+            WorkerMessageKind::Shutdown,
+        ];
+        let all = [
+            WorkerMessageKind::Hello,
+            WorkerMessageKind::Ready,
+            WorkerMessageKind::Execute,
+            WorkerMessageKind::Cancel,
+            WorkerMessageKind::Heartbeat,
+            WorkerMessageKind::Result,
+            WorkerMessageKind::Failed,
+            WorkerMessageKind::Shutdown,
+            WorkerMessageKind::Exited,
+        ];
+        for kind in all {
+            let mut from_worker = frame(1, "worker-direction");
+            from_worker.kind = kind;
+            let mut worker_session = WorkerSession::new("run-1").unwrap();
+            assert_eq!(
+                worker_session.accept_from_worker(&from_worker).is_ok(),
+                worker_allowed.contains(&kind),
+                "worker direction mismatch for {kind:?}"
+            );
+
+            let mut from_parent = frame(1, "parent-direction");
+            from_parent.kind = kind;
+            let mut parent_session = WorkerSession::new("run-1").unwrap();
+            assert_eq!(
+                parent_session.validate_for_worker(&from_parent).is_ok(),
+                parent_allowed.contains(&kind),
+                "parent direction mismatch for {kind:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn lifecycle_transition_matrix_is_exhaustive() {
+        let states = [
+            WorkerLifecycle::Starting,
+            WorkerLifecycle::Ready,
+            WorkerLifecycle::Running,
+            WorkerLifecycle::Cancelling,
+            WorkerLifecycle::Terminating,
+            WorkerLifecycle::Reaped,
+            WorkerLifecycle::Failed,
+        ];
+        let allowed = [
+            (WorkerLifecycle::Starting, WorkerLifecycle::Ready),
+            (WorkerLifecycle::Starting, WorkerLifecycle::Failed),
+            (WorkerLifecycle::Ready, WorkerLifecycle::Running),
+            (WorkerLifecycle::Ready, WorkerLifecycle::Terminating),
+            (WorkerLifecycle::Ready, WorkerLifecycle::Failed),
+            (WorkerLifecycle::Running, WorkerLifecycle::Ready),
+            (WorkerLifecycle::Running, WorkerLifecycle::Cancelling),
+            (WorkerLifecycle::Running, WorkerLifecycle::Terminating),
+            (WorkerLifecycle::Running, WorkerLifecycle::Failed),
+            (WorkerLifecycle::Cancelling, WorkerLifecycle::Terminating),
+            (WorkerLifecycle::Cancelling, WorkerLifecycle::Failed),
+            (WorkerLifecycle::Terminating, WorkerLifecycle::Reaped),
+            (WorkerLifecycle::Terminating, WorkerLifecycle::Failed),
+            (WorkerLifecycle::Failed, WorkerLifecycle::Terminating),
+            (WorkerLifecycle::Failed, WorkerLifecycle::Reaped),
+        ];
+        for from in states {
+            for to in states {
+                assert_eq!(
+                    from.transition(to).is_ok(),
+                    allowed.contains(&(from, to)),
+                    "unexpected transition {from:?} -> {to:?}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn sequence_overflow_and_request_budget_are_rejected() {
+        let mut session = WorkerSession::new("run-1").unwrap();
+        let mut max_sequence = frame(u64::MAX, "max-sequence");
+        max_sequence.kind = WorkerMessageKind::Heartbeat;
+        assert!(session.accept_from_worker(&max_sequence).is_err());
+
+        let mut session = WorkerSession::new("run-1").unwrap();
+        for sequence in 1..=MAX_WORKER_REQUESTS_PER_RUN {
+            let mut heartbeat = frame(sequence as u64, &format!("req-{sequence}"));
+            heartbeat.kind = WorkerMessageKind::Heartbeat;
+            session
+                .accept_from_worker(&heartbeat)
+                .expect("request budget should not be exhausted yet");
+        }
+        let mut extra = frame(MAX_WORKER_REQUESTS_PER_RUN as u64 + 1, "req-over-budget");
+        extra.kind = WorkerMessageKind::Heartbeat;
+        assert!(session.accept_from_worker(&extra).is_err());
+    }
+
+    #[test]
     fn lifecycle_does_not_allow_ready_to_claim_reaped() {
         assert!(
             WorkerLifecycle::Ready

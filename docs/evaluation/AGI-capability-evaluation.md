@@ -1,6 +1,6 @@
 # AGI-Oriented Capability Evaluation
 
-**Status:** Offline deterministic Core Integrity v1.3.0, Memory Retrieval v1.0.0, Agent Runtime Fixtures v0.1.0, Authorization Contract v0.3.0, and Worker Supervisor Contract v0.3.0 are implemented. They emit JSON and Markdown reports with source-commit provenance. The last two are contract suites only: they do not establish OS isolation or run a model trajectory. External agent and generalization suites are planned or candidate integrations, not integrated benchmarks.
+**Status:** Offline deterministic Core Integrity v1.3.0, Memory Retrieval v1.0.0, Agent Runtime Fixtures v0.1.0, Authorization Contract v0.3.0, and Worker Supervisor Contract v0.4.0 are implemented. They emit JSON and Markdown reports with source-commit provenance. The last two are contract suites only: they do not establish OS isolation or run a model trajectory. External agent and generalization suites are planned or candidate integrations, not integrated benchmarks.
 
 ## Purpose and limits
 
@@ -15,7 +15,7 @@ Do not publish one scalar "AGI score". Publish a versioned capability vector wit
 3. **Agent runtime fixtures v0.1.0 (offline deterministic):** deny-by-default tool registry, explicit capability grants, bounded in-memory fixture read/write operations with per-run 16-step and 16 KiB aggregate input-byte ceilings, and verifier checks against observed fixture state. This is a runtime safety/evidence-flow test suite only; its verifier is not an independent production evaluator and it is not an OS sandbox or model benchmark.
 4. **Learning and generalization (planned):** memory recall, provenance, retention, forgetting, continual-learning stability/plasticity, held-out cross-domain transfer, world-model prediction, and calibration.
 5. **Authorization Contract v0.3.0 (offline, deterministic):** exact-token request grounding, explicit task-bound single-use confirmation, a commit-before-observation gate, immutable committed write sets, content-free denial reason codes, and 38 adversarial injections (5 sources × 6 authority fields plus encoded/obfuscated variants). Safety and utility metrics are emitted as a structured, backward-compatible report field. No model, network, or tool side effect is involved.
-6. **Worker Supervisor Contract v0.3.0 (offline, deterministic):** fail-closed sandbox policy, executable-digest and frame-deadline binding, output budgets, OS-observed exit requirement, anonymous private IPC transport, lifecycle transitions, and protocol direction/replay rules. It does not prove OS-enforced isolation, CPU/memory/PID limits, or process-tree reaping by a real OS child.
+6. **Worker Supervisor Contract v0.4.0 (offline, deterministic):** fail-closed sandbox policy, executable-digest and frame-deadline binding, output budgets, OS-observed exit requirement, anonymous private IPC transport, exhaustive lifecycle/direction matrices, negative IPC and termination paths, and protocol direction/replay rules. It does not prove OS-enforced isolation, CPU/memory/PID limits, or process-tree reaping by a real OS child.
 7. **External benchmarks (candidate adapters):** see `data/evaluation/benchmark-manifest.v1.json`. Candidate status does not mean downloaded, licensed, integrated, validated, or scored.
 
 ## Hard gates
